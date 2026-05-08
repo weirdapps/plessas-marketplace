@@ -1,0 +1,8 @@
+{
+  "name": "plessas-marketplace",
+  "description": "Cross-platform Claude Code plugins for productivity at NBG: decks, mail, meetings, chat, excel, docs.",
+  "owner": {
+    "name": "weirdapps"
+  },
+  "plugins": []
+}

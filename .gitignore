@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build artefacts
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# User-generated databases (must NEVER ship — schema-only templates allowed)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Schema templates may be committed if explicitly named *.schema.sql or *.schema.db
+!*.schema.db
+
+# Local plugin overrides
+.local.md
+*.local.md
+
+# Backups
+*.bak
+*.backup
