@@ -1,0 +1,112 @@
+# Strategy Deck Presentation
+# Strategic initiative proposal with infographics and process flows
+
+template: GR
+
+presentation:
+  title: "Digital Transformation Strategy 2026-2028"
+  audience: "Board Strategy Committee"
+  purpose: "Present 3-year digital transformation roadmap"
+  main_recommendation: "Invest EUR 120M over 3 years to achieve digital leadership in Greek banking"
+
+slides:
+  - type: cover
+    content:
+      title: "Digital Transformation Strategy"
+      subtitle: "Roadmap 2026-2028"
+      location: "Athens, Greece"
+      date: "February 2026"
+
+  - type: divider
+    content:
+      number: "01"
+      title: "Strategic Context"
+
+  - type: content
+    content:
+      title: "Digital banking is no longer optional - it determines competitive positioning"
+      bumper: "SITUATION"
+      points:
+        - "85% of Greek banking customers now prefer digital channels"
+        - "Digital-native banks are capturing 15% of new account openings"
+        - "Operational costs for digital transactions are 10x lower than branch"
+        - "Customer expectations are set by tech giants, not banks"
+
+  - type: content
+    content:
+      title: "NBG has a strong foundation but gaps remain in key digital capabilities"
+      bumper: "COMPLICATION"
+      points:
+        - "Mobile app rated 4.2 stars vs competitors' 4.5+ average"
+        - "End-to-end digital onboarding only available for basic accounts"
+        - "AI/ML capabilities limited to fraud detection"
+        - "Legacy core banking limits real-time processing"
+
+  - type: divider
+    content:
+      number: "02"
+      title: "Strategic Pillars"
+
+  - type: infographic
+    recommended_visual: numbered_infographic
+    content:
+      title: "Four strategic pillars will drive digital transformation"
+      items:
+        - title: "Mobile First"
+          description: "Redesign all customer journeys for mobile-native experience"
+        - title: "AI Everywhere"
+          description: "Deploy AI for personalization, service, and operations"
+        - title: "Open Banking"
+          description: "Build ecosystem of partners through API platform"
+        - title: "Cloud Native"
+          description: "Migrate core systems to cloud for agility and scale"
+
+  - type: content
+    content:
+      title: "Pillar 1: Mobile First requires complete redesign of customer experience"
+      bumper: "MOBILE FIRST"
+      points:
+        - "New mobile app platform with modern tech stack (React Native)"
+        - "100% of retail products available for mobile origination"
+        - "Biometric authentication for all transactions"
+        - "Real-time notifications and personalized insights"
+
+  - type: content
+    content:
+      title: "Pillar 2: AI will transform customer engagement and operations"
+      bumper: "AI EVERYWHERE"
+      points:
+        - "AI-powered product recommendations (30% conversion lift)"
+        - "Intelligent virtual assistant for 60% first-contact resolution"
+        - "Predictive analytics for credit decisioning"
+        - "Process automation for back-office operations"
+
+  - type: divider
+    content:
+      number: "03"
+      title: "Investment & Returns"
+
+  - type: table
+    content:
+      title: "Total investment of EUR 120M over 3 years with 2.5x ROI"
+    table:
+      headers: ["Investment Area", "2026", "2027", "2028", "Total"]
+      rows:
+        - ["Mobile Platform", "EUR 15M", "EUR 10M", "EUR 5M", "EUR 30M"]
+        - ["AI/ML Capabilities", "EUR 10M", "EUR 12M", "EUR 8M", "EUR 30M"]
+        - ["Open Banking APIs", "EUR 8M", "EUR 6M", "EUR 4M", "EUR 18M"]
+        - ["Cloud Migration", "EUR 15M", "EUR 18M", "EUR 9M", "EUR 42M"]
+        - ["TOTAL", "EUR 48M", "EUR 46M", "EUR 26M", "EUR 120M"]
+      highlight_column: 4
+
+  - type: content
+    content:
+      title: "Expected benefits of EUR 300M over 5 years justify the investment"
+      bumper: "EXPECTED RETURNS"
+      points:
+        - "Revenue uplift: EUR 150M from digital sales and engagement"
+        - "Cost reduction: EUR 100M from operational efficiency"
+        - "Risk avoidance: EUR 50M from improved fraud detection"
+        - "Payback period: 3 years | IRR: 35%"
+
+  - type: back_cover

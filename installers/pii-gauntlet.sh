@@ -26,8 +26,11 @@ check() {
     --exclude-dir=node_modules \
     --exclude-dir=dist \
     --exclude-dir=__pycache__ \
+    --exclude-dir=.venv \
+    --exclude-dir=venv \
     --exclude=pii-gauntlet.sh \
     --exclude=PII-GAUNTLET.md \
+    --binary-files=without-match \
     "$pattern" . 2>/dev/null || true)
   if [ -n "$hits" ]; then
     echo "FAIL [$label]:"
@@ -62,8 +65,8 @@ check "Family names" "Kitrilaki|Κιτριλάκη"
 # NBG-internal project names (case-insensitive but anchored)
 check "Internal projects" "Διπλή κάρτα|\bdual[- ]card\b|IRIS[[:space:]]+pilot|ECB[[:space:]]+Digital[[:space:]]+Euro[[:space:]]+CfEI"
 
-# External partners discussed in NBG-internal context (with word boundaries to avoid false positives like "iNCRease")
-check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMellon\b|\bMcKinsey\b|\b11FS\b|\bNCR\b"
+# External partners discussed in NBG-internal context (McKinsey excluded — Pyramid Principle / SCQA are public methodology references)
+check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMellon\b|\b11FS\b|\bNCR\b"
 
 # Tax authority refs
 check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"

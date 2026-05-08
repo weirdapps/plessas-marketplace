@@ -1,0 +1,177 @@
+# NBG Slide Catalog
+# Maps semantic slide purposes to template slide indices (0-based)
+# Template has 205 slides total (indices 0-204)
+
+version: "1.0"
+description: "NBG PowerPoint Template Slide Catalog"
+
+templates:
+  GR:
+    path: "assets/templates/NBG-Template-GR.pptx"
+    slides:
+      covers:
+        simple_white: 16          # White background, title + subtitle (has decorative elements)
+        simple_dark: 17           # Dark teal background (has decorative elements)
+        with_image_right: 18      # Image on right side
+        with_image_left: 19       # Image on left side
+        with_image_full: 20       # Full bleed image
+        minimal: 21               # Minimal design - QUIET (preferred)
+        quiet: 21                 # Alias for minimal - clean, no ellipses
+
+      dividers:
+        section_white: 64         # Section divider, white bg (has decorative elements)
+        section_dark: 65          # Section divider, dark bg (has decorative elements)
+        section_with_image: 66    # Section with image (has decorative elements)
+        numbered_01: 88           # "01" style divider
+        quiet_white: 72           # Clean divider, white bg - simple rect only (CLEANEST)
+        quiet_dark: 65            # Dark bg divider (simpler than section_dark)
+
+      content:
+        text_only: 91             # Full text, no images
+        text_with_bullets: 92     # Title + bullet points
+        two_column_text: 93       # Two column text layout
+        text_image_right: 95      # Text left, image right
+        text_image_left: 96       # Image left, text right
+        text_image_quarter: 97    # Quarter image
+        full_page: 98             # Full page content
+
+      charts:
+        pie_single: 157           # Single pie/doughnut chart
+        pie_with_text: 156        # Pie chart + text boxes
+        bar_single: 145           # Single bar chart
+        bar_dual: 144             # Two bar charts side by side
+        line_single: 155          # Single line chart
+        line_with_text: 154       # Line chart + description
+        combo_chart: 156          # Combination chart layout
+        waterfall: 158            # Waterfall chart (has decorative triangles - use bar_single for quiet)
+
+      infographics:
+        numbered_4: 163           # 4 numbered items (01-04)
+        numbered_6: 164           # 6 numbered items (01-06)
+        numbered_9: 165           # 9 numbered items (3x3 grid)
+        funnel: 170               # Funnel/process diagram
+        timeline: 171             # Timeline layout
+        process_horizontal: 172   # Horizontal process steps
+        icons_grid: 173           # Icon grid layout
+
+      tables:
+        half_page: 182            # Table with text description
+        full_page: 183            # Full page table
+        comparison: 184           # Comparison table
+
+      contact:
+        contact_list: 185         # Contact list layout
+        contact_cards: 186        # Contact card grid
+        contact_minimal: 187      # Minimal contact info
+
+      back_covers:
+        plain_logo: 190           # White bg with centered oval NBG building logo (PREFERRED)
+        plain_dark: 193           # Dark background, empty slide
+        plain_minimal: 191        # Minimal back cover
+        plain_white: 192          # White back cover
+        quiet: 190                # Alias for plain_logo - no "Thank You" text
+
+# Back cover specifications (for PptxGenJS generation):
+# - Logo asset: assets/nbg-back-cover-logo.png
+# - Centered position: x=5.44", y=2.98", w=2.45", h=1.54"
+# - NEVER use "Thank You" or "Questions" text on back covers
+
+  EN:
+    path: "assets/templates/NBG-Template-EN.pptx"
+    slides:
+      # Same structure as GR - indices are identical
+      covers:
+        simple_white: 16
+        simple_dark: 17
+        with_image_right: 18
+        with_image_left: 19
+        with_image_full: 20
+        minimal: 21
+        quiet: 21                 # Alias for minimal - clean, no ellipses
+
+      dividers:
+        section_white: 64
+        section_dark: 65
+        section_with_image: 66
+        numbered_01: 88
+        quiet_white: 72           # Clean divider - simple rect only (CLEANEST)
+        quiet_dark: 65
+
+      content:
+        text_only: 91
+        text_with_bullets: 92
+        two_column_text: 93
+        text_image_right: 95
+        text_image_left: 96
+        text_image_quarter: 97
+        full_page: 98
+
+      charts:
+        pie_single: 157
+        pie_with_text: 156
+        bar_single: 145
+        bar_dual: 144
+        line_single: 155
+        line_with_text: 154
+        combo_chart: 156
+        waterfall: 158            # (has decorative triangles - use bar_single for quiet)
+
+      infographics:
+        numbered_4: 163
+        numbered_6: 164
+        numbered_9: 165
+        funnel: 170
+        timeline: 171
+        process_horizontal: 172
+        icons_grid: 173
+
+      tables:
+        half_page: 182
+        full_page: 183
+        comparison: 184
+
+      contact:
+        contact_list: 185
+        contact_cards: 186
+        contact_minimal: 187
+
+      back_covers:
+        plain_logo: 190           # Truly empty slide (CLEANEST)
+        plain_dark: 193
+        plain_minimal: 191
+        plain_white: 192
+        quiet: 190                # Alias - completely empty
+
+# Common slide combinations for typical presentations
+presets:
+  executive_summary:
+    - covers/simple_white
+    - content/text_with_bullets
+    - charts/bar_dual
+    - tables/half_page
+    - back_covers/plain_logo
+
+  competitor_analysis:
+    - covers/simple_white
+    - content/text_with_bullets
+    - tables/half_page
+    - charts/pie_with_text
+    - charts/bar_dual
+    - infographics/numbered_6
+    - back_covers/plain_logo
+
+  quarterly_report:
+    - covers/simple_white
+    - dividers/section_white
+    - charts/line_with_text
+    - charts/bar_dual
+    - tables/full_page
+    - back_covers/plain_logo
+
+  strategy_deck:
+    - covers/simple_white
+    - dividers/numbered_01
+    - content/text_with_bullets
+    - infographics/numbered_6
+    - infographics/timeline
+    - back_covers/plain_logo

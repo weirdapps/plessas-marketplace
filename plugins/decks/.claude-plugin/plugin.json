@@ -1,0 +1,23 @@
+{
+  "name": "decks",
+  "description": "Branded presentation system: storyline → storyboard → graphics → QA. Multi-agent pipeline producing board-ready, NBG-branded PPTX. Bundles icon, infographic, and device-mockup creative agents.",
+  "version": "1.0.0",
+  "author": {
+    "name": "weirdapps"
+  },
+  "license": "MIT",
+  "keywords": [
+    "presentation",
+    "powerpoint",
+    "pptx",
+    "brand",
+    "design",
+    "storyline",
+    "storyboard",
+    "creative",
+    "icon",
+    "infographic",
+    "mockup"
+  ],
+  "commands": "./commands"
+}

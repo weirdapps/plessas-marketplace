@@ -1,0 +1,18 @@
+# NBG Presentation Tools - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# YAML parsing (nbg_build.py, examples/*.yaml)
+pyyaml>=6.0.3
+
+# PPTX generation (nbg_build.py — required for any actual build,
+# not just the lightweight normalize_slide_type / load_catalog code paths)
+python-pptx>=1.0.2
+
+# Low-level OOXML manipulation (nbg_build.py uses lxml.etree.SubElement directly)
+lxml>=6.1.0
+
+# Safe XML parsing for validation (nbg_validate.py)
+defusedxml>=0.7.1
+
+# Optional: image processing if injecting raster assets at build time
+# Pillow>=9.0.0

@@ -4,5 +4,13 @@
   "owner": {
     "name": "weirdapps"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "decks",
+      "version": "1.0.0",
+      "category": "presentations",
+      "source": "./plugins/decks",
+      "description": "Branded presentation system with storyline, storyboard, graphics, QA agents. Bundles icon, infographic, device-mockup creative tools."
+    }
+  ]
 }
