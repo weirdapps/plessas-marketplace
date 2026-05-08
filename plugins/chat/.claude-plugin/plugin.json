@@ -1,0 +1,18 @@
+{
+  "name": "chat",
+  "description": "Microsoft Teams interactive commands. Read chats and channels, draft replies, summarize threads. Bundles teams-bridge MCP wrapping teams-cli.",
+  "version": "1.0.0",
+  "author": {
+    "name": "weirdapps"
+  },
+  "license": "MIT",
+  "keywords": [
+    "teams",
+    "microsoft-teams",
+    "chat",
+    "channels",
+    "messaging",
+    "teams-bridge"
+  ],
+  "commands": "./commands"
+}

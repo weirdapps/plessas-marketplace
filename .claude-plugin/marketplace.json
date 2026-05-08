@@ -25,6 +25,13 @@
       "category": "communications",
       "source": "./plugins/meetings",
       "description": "Calendar-aware meeting briefings with attendee dossiers, post-meeting decision capture."
+    },
+    {
+      "name": "chat",
+      "version": "1.0.0",
+      "category": "communications",
+      "source": "./plugins/chat",
+      "description": "Microsoft Teams interactive commands with bundled teams-bridge MCP. Inbox, reply, summarize, channel digest."
     }
   ]
 }

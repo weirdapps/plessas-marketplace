@@ -1,0 +1,42 @@
+---
+name: chat-reply
+description: Draft a reply to a Microsoft Teams chat message. Shows draft for user approval before sending.
+args:
+  - name: chat_id
+    description: "The chat ID to reply to. If omitted, show recent chats and let the user pick."
+    required: false
+---
+
+# Teams Chat Reply
+
+Draft and optionally send a reply to a Microsoft Teams chat.
+
+## Workflow
+
+1. **If no chat_id provided**: list recent chats via `mcp__teams-bridge__teams_list_chats` (top 10) and present them for the user to pick.
+
+2. **Fetch context**: get the last 10 messages from the selected chat via `mcp__teams-bridge__teams_list_messages`.
+
+3. **Resolve participants** via `mcp__teams-bridge__teams_resolve_mri` if needed.
+
+4. **Draft a reply** matching the thread's language and tone:
+   - If prior messages are in Greek, reply in Greek
+   - Match the formality level of the conversation
+   - Keep it concise — Teams messages are shorter than emails
+   - Reference specific points from recent messages if relevant
+
+5. **Present the draft** to the user for review. Show:
+   - Chat: [participants]
+   - Replying to: [last message preview]
+   - Draft: [your proposed reply]
+   - "Send this reply? (y/N)"
+
+6. **On user approval**: send via `mcp__teams-bridge__teams_send_message` with the chat_id and approved body.
+
+7. **On rejection**: ask what to change, revise, re-present.
+
+## Important
+
+- NEVER auto-send. Always show the draft and wait for explicit approval.
+- Channel sends are not supported (Graph scope limitation). Only chat replies work.
+- Keep replies shorter than emails — Teams is a messaging medium, not email.
