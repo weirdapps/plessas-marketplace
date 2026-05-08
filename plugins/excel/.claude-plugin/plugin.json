@@ -1,0 +1,18 @@
+{
+  "name": "excel",
+  "description": "Excel analysis commands: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx with NBG-shaped patterns (EUR, fiscal year, Aptos styling).",
+  "version": "1.0.0",
+  "author": {
+    "name": "weirdapps"
+  },
+  "license": "MIT",
+  "keywords": [
+    "excel",
+    "xlsx",
+    "analysis",
+    "pivot",
+    "variance",
+    "spreadsheet"
+  ],
+  "commands": "./commands"
+}

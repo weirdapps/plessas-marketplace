@@ -32,6 +32,20 @@
       "category": "communications",
       "source": "./plugins/chat",
       "description": "Microsoft Teams interactive commands with bundled teams-bridge MCP. Inbox, reply, summarize, channel digest."
+    },
+    {
+      "name": "excel",
+      "version": "1.0.0",
+      "category": "analysis",
+      "source": "./plugins/excel",
+      "description": "Excel analysis: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx."
+    },
+    {
+      "name": "docs",
+      "version": "1.0.0",
+      "category": "documents",
+      "source": "./plugins/docs",
+      "description": "Word document creation: reports, formal letters, internal memos. Wraps document-skills:docx."
     }
   ]
 }
