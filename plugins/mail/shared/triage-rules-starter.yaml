@@ -1,0 +1,13 @@
+# plugins/email-handler/shared/triage-rules-starter.yaml
+# Copy this to ~/.claude/triage/rules.yaml and customize.
+rules:
+  - name: Calendar invites
+    when:
+      content_class: "schedule.meeting"
+    action: keep
+
+  - name: NBG newsletters
+    when:
+      sender_contains: "newsletter@nbg.gr"
+    action:
+      move_to: "Inbox/Newsletters"

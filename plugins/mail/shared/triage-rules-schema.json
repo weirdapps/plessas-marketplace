@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["rules"],
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "when", "action"],
+        "properties": {
+          "name": { "type": "string" },
+          "when": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "sender": { "type": "string" },
+              "sender_contains": { "type": "string" },
+              "sender_domain_in": { "type": "array", "items": { "type": "string" } },
+              "subject_contains": { "type": "string" },
+              "subject_matches": { "type": "string", "description": "regex" },
+              "content_class": { "type": "string" },
+              "has_attachments": { "type": "boolean" }
+            }
+          },
+          "action": {
+            "oneOf": [
+              { "const": "keep" },
+              { "const": "keep_locked" },
+              { "type": "object", "required": ["move_to"], "properties": { "move_to": { "type": "string" } } }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "mail",
+  "description": "Outlook mail commands: triage, briefings, drafts, style-matching, self-learning. Bundles outlook-cli MCP wrapper. Reads/sends via outlook-bridge MCP.",
+  "version": "1.0.0",
+  "author": {
+    "name": "weirdapps"
+  },
+  "license": "MIT",
+  "keywords": [
+    "email",
+    "outlook",
+    "outlook-bridge",
+    "inbox",
+    "briefing",
+    "drafting",
+    "triage",
+    "style-matching",
+    "self-learning"
+  ],
+  "commands": "./commands"
+}
