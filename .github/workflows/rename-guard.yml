@@ -28,8 +28,9 @@ jobs:
           set -e
           # /mail-briefing was renamed to /inbox-briefing; /mail-style-rebuild to /style-rebuild;
           # /mail-reply to /reply.
+          # CHANGELOG.md is excluded — it must reference the old names to document the rename.
           if git grep -nE '/mail-briefing|/mail-style-rebuild|/mail-reply' \
-              -- ':!.github/workflows/rename-guard.yml' ; then
+              -- ':!.github/workflows/rename-guard.yml' ':!CHANGELOG.md' ; then
             echo "::error::Found stale slash-command name. Use /inbox-briefing, /style-rebuild, or /reply."
             exit 1
           fi
@@ -60,8 +61,9 @@ jobs:
           set -e
           # The shared brand directory was renamed nbg-brand-system to brand-system on 2026-05-09.
           # Catches both the old marketplace-root path AND the vendored decks-internal path.
+          # CHANGELOG.md is excluded — it must reference the old name to document the rename.
           if git grep -n "nbg-brand-system" \
-              -- ':!.github/workflows/rename-guard.yml' ; then
+              -- ':!.github/workflows/rename-guard.yml' ':!CHANGELOG.md' ; then
             echo "::error::Found stale 'nbg-brand-system' reference. Use 'brand-system'."
             exit 1
           fi
