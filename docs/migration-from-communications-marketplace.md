@@ -87,3 +87,7 @@ iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/main/install
 | — | `/docs-memo` (NEW) |
 
 All existing commands keep the same names. No relearning needed.
+
+## Background scripts
+
+The daily style-guide sync (invoked from `~/SourceCode/second-brain/scripts/launchd/wrappers/sb-daily-sync.sh` after the second-brain ingest) was ported from `communications-marketplace/scripts/style-sync.py` to `plessas-marketplace/plugins/mail/scripts/style-sync.py`. The script writes to `plugins/mail/shared/style-guide.md` (gitignored — the user's real personal style guide). The launchd wrapper has been updated; no user action needed unless you wired up your own automation against the old path.
