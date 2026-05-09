@@ -1,6 +1,33 @@
 // src/subprocess.ts
 import { spawn as nodeSpawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
+import { createRequire } from 'node:module';
+
+// Resolve outlook-tool CLI to an absolute path at module load.
+// Bundled as a github dep in package.json — npm install puts it in node_modules.
+// If resolution fails (e.g. legacy install with global `npm link`), fall back to
+// PATH lookup of `outlook-cli` so we don't break existing setups.
+const _require = createRequire(import.meta.url);
+let CLI_ABS_PATH: string | null = null;
+try {
+  CLI_ABS_PATH = _require.resolve('outlook-tool/dist/cli.js');
+} catch {
+  CLI_ABS_PATH = null;
+}
+
+/** Diagnostic accessor for the doctor tool. */
+export function getResolvedCli(): { mode: 'bundled' | 'path'; path: string; nodeBin: string; cliVersion: string | null } {
+  let cliVersion: string | null = null;
+  if (CLI_ABS_PATH) {
+    try {
+      const pkg = _require('outlook-tool/package.json') as { version?: string };
+      cliVersion = pkg.version ?? null;
+    } catch { /* swallow */ }
+  }
+  return CLI_ABS_PATH
+    ? { mode: 'bundled', path: CLI_ABS_PATH, nodeBin: process.execPath, cliVersion }
+    : { mode: 'path', path: 'outlook-cli', nodeBin: process.execPath, cliVersion: null };
+}
 
 export type OutlookCliErrorCode =
   | 'invalid_input'      // exit 2
@@ -61,7 +88,12 @@ export function __setSpawnForTests(impl: SpawnLike | undefined): void {
 function spawnOnce(args: string[], timeoutMs: number): Promise<SpawnResult> {
   return new Promise((resolve, reject) => {
     const isWindows = process.platform === 'win32';
-    const child = spawnImpl('outlook-cli', args, { stdio: ['ignore', 'pipe', 'pipe'], ...(isWindows && { shell: true }) } as any);
+    // Use absolute paths (current node + bundled CLI) when available — survives
+    // PATH stripping in launchd/GUI launches and fnm session-bin rotation.
+    // Fall back to bare command name if outlook-tool isn't installed as a dep.
+    const cmd = CLI_ABS_PATH ? process.execPath : 'outlook-cli';
+    const finalArgs = CLI_ABS_PATH ? [CLI_ABS_PATH, ...args] : args;
+    const child = spawnImpl(cmd, finalArgs, { stdio: ['ignore', 'pipe', 'pipe'], ...(isWindows && { shell: true }) } as any);
     let stdout = '', stderr = '';
     child.stdout.on('data', (b: Buffer) => { stdout += b.toString(); });
     child.stderr.on('data', (b: Buffer) => { stderr += b.toString(); });

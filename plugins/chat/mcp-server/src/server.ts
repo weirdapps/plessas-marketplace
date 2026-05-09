@@ -12,17 +12,20 @@ import { listMessagesTool } from './tools/list-messages.js';
 import { sendMessageTool } from './tools/send-message.js';
 import { resolveMriTool } from './tools/resolve-mri.js';
 import { loginTool } from './tools/login.js';
+import { doctorTool } from './tools/doctor.js';
 import { TeamsCliError } from './subprocess.js';
 
 const TOOLS = [
   authCheckTool, authRenewTool, healthCheckTool, loginTool,
   listTeamsTool, listChannelsTool, listChatsTool, listMessagesTool,
   sendMessageTool, resolveMriTool,
+  // Diagnostics
+  doctorTool,
 ];
 const TOOLS_BY_NAME = Object.fromEntries(TOOLS.map(t => [t.name, t]));
 
 const server = new Server(
-  { name: 'teams-bridge', version: '0.1.0' },
+  { name: 'teams-bridge', version: '0.2.0' },
   { capabilities: { tools: {} } },
 );
 

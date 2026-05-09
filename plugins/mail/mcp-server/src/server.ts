@@ -18,6 +18,7 @@ import { sendMailTool } from './tools/send-mail.js';
 import { replyTool, replyAllTool } from './tools/reply.js';
 import { forwardTool } from './tools/forward.js';
 import { captureSignatureTool } from './tools/capture-signature.js';
+import { doctorTool } from './tools/doctor.js';
 import { OutlookCliError } from './subprocess.js';
 
 const TOOLS = [
@@ -27,11 +28,13 @@ const TOOLS = [
   createFolderTool, moveMailTool,
   // Write-side (v0.2.0)
   sendMailTool, replyTool, replyAllTool, forwardTool, captureSignatureTool,
+  // Diagnostics (v0.4.0)
+  doctorTool,
 ];
 const TOOLS_BY_NAME = Object.fromEntries(TOOLS.map(t => [t.name, t]));
 
 const server = new Server(
-  { name: 'outlook-bridge', version: '0.3.0' },
+  { name: 'outlook-bridge', version: '0.4.0' },
   { capabilities: { tools: {} } },
 );
 

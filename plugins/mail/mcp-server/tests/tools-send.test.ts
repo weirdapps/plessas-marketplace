@@ -19,9 +19,22 @@ import {
 
 let capturedArgs: string[] = [];
 
+/**
+ * Strip the absolute CLI script path prefix from spawn args.
+ *
+ * subprocess.ts spawns via `spawn(NODE_BIN, [CLI_PATH, ...meaningfulArgs])` when
+ * outlook-tool is bundled as a dep, or via `spawn('outlook-cli', meaningfulArgs)`
+ * when falling back to PATH. Tests assert on the meaningful args regardless.
+ */
+function meaningfulArgs(args: readonly string[]): string[] {
+  const first = args[0] ?? '';
+  const looksLikeCliPath = first.endsWith('cli.js') || first.endsWith('cli.cjs') || first.endsWith('cli.mjs');
+  return looksLikeCliPath ? [...args.slice(1)] : [...args];
+}
+
 function captureSpawn(stdoutJson: unknown): SpawnLike {
   return ((_cmd: string, args: readonly string[]) => {
-    capturedArgs = [...args];
+    capturedArgs = meaningfulArgs(args);
     const stdout = new EventEmitter();
     const stderr = new EventEmitter();
     const child = new EventEmitter() as any;
@@ -81,9 +94,9 @@ describe('outlook_send_mail', () => {
     const fs = await import('node:fs/promises');
     let tmpPathSeen = '';
     __setSpawnForTests(((_cmd: string, args: readonly string[]) => {
-      capturedArgs = [...args];
-      const idx = args.indexOf('--html');
-      if (idx >= 0) tmpPathSeen = args[idx + 1] as string;
+      capturedArgs = meaningfulArgs(args);
+      const idx = capturedArgs.indexOf('--html');
+      if (idx >= 0) tmpPathSeen = capturedArgs[idx + 1] as string;
       const stdout = new EventEmitter();
       const stderr = new EventEmitter();
       const child = new EventEmitter() as any;
