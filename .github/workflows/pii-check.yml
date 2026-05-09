@@ -12,10 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run PII gauntlet
+      - name: Run PII gauntlet (CI mode — git-tracked files only)
         run: |
           chmod +x installers/pii-gauntlet.sh
-          ./installers/pii-gauntlet.sh
+          ./installers/pii-gauntlet.sh --mode=ci
 
       - name: Summary
         if: always()
