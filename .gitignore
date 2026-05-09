@@ -45,6 +45,8 @@ Thumbs.db
 *.bak
 *.backup
 
+# Local memory / session logs (never commit)
+.remember/
 
 # Claude Code plugin cache (auto-generated at marketplace root)
 /chat/[0-9]*/

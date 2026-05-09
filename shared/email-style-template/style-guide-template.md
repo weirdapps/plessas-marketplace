@@ -1,6 +1,6 @@
 # Email Style Guide — Template
 
-> **What this is:** A template for the `mail` plugin's style guide. The plugin uses this to match your voice when drafting replies. Copy to `<plugin-root>/shared/style-guide.md` and customise the `<< REPLACE >>` blocks. For best results, regenerate it from your actual sent mail using `/mail-style-rebuild` after a few weeks of usage.
+> **What this is:** A template for the `mail` plugin's style guide. The plugin uses this to match your voice when drafting replies. Copy to `<plugin-root>/shared/style-guide.md` and customise the `<< REPLACE >>` blocks. For best results, regenerate it from your actual sent mail using `/style-rebuild` after a few weeks of usage.
 
 ---
 
@@ -170,7 +170,7 @@ When the `mail` plugin drafts a reply, it:
 
 ## Maintenance
 
-- After ~1 month of usage: run `/mail-style-rebuild` to regenerate this guide from your actual sent mail
+- After ~1 month of usage: run `/style-rebuild` to regenerate this guide from your actual sent mail
 - `/mail-style-sync` does an incremental update with new sent mail since last sync
 - `/mail-style-stats` shows accuracy trends (drafted vs. actual)
 - `/mail-style-rollback` restores a previous version from backup

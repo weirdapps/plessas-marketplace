@@ -28,8 +28,10 @@ check() {
     --exclude-dir=__pycache__ \
     --exclude-dir=.venv \
     --exclude-dir=venv \
+    --exclude-dir=.remember \
     --exclude=pii-gauntlet.sh \
     --exclude=PII-GAUNTLET.md \
+    --exclude=package-lock.json \
     --binary-files=without-match \
     "$pattern" . 2>/dev/null || true)
   if [ -n "$hits" ]; then

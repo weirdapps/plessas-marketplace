@@ -119,6 +119,6 @@ Write-Host ''
 Write-Host "Next steps:"
 Write-Host "  1. Run the auth wizard:  $InstallDir\installers\auth-wizard.ps1"
 Write-Host "  2. Check status:         $InstallDir\installers\status.ps1"
-Write-Host "  3. Open Claude Code and try: /mail-briefing"
+Write-Host "  3. Open Claude Code and try: /inbox-briefing"
 Write-Host ''
 Write-Host "Documentation: $InstallDir\docs\"

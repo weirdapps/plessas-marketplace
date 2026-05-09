@@ -133,7 +133,7 @@ echo
 echo "Next steps:"
 echo "  1. Run the auth wizard:  $INSTALL_DIR/installers/auth-wizard.sh"
 echo "  2. Check status:         $INSTALL_DIR/installers/status.sh"
-echo "  3. Open Claude Code and try: /mail-briefing"
+echo "  3. Open Claude Code and try: /inbox-briefing"
 echo
 echo "Documentation: $INSTALL_DIR/docs/"
 echo "Day-one guide: $INSTALL_DIR/docs/day-one.md"
