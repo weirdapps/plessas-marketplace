@@ -96,21 +96,55 @@ if [ -f "plugins/decks/bundled/creative/tools/device-mockup/requirements.txt" ];
   ok "device-mockup Python deps installed"
 fi
 
-# --- Install outlook-cli and teams-cli if not available ---
+# --- Install outlook-cli and teams-cli ---
+# Both CLIs live in their own repos (weirdapps/outlook-access, weirdapps/teams-access).
+# We clone them into installers/deps/ inside the marketplace, build, and `npm link`
+# so `outlook-cli` and `teams-cli` are available on PATH.
 echo
-if ! command -v outlook-cli >/dev/null 2>&1; then
-  warn "outlook-cli not found. Mail plugin requires it."
-  echo "  Install: git clone https://github.com/weirdapps/outlook-access.git && cd outlook-access && npm install && npm run build && npm link"
-else
-  ok "outlook-cli found"
-fi
+echo "Installing required CLIs (outlook-cli, teams-cli)..."
 
-if ! command -v teams-cli >/dev/null 2>&1; then
-  warn "teams-cli not found. Chat plugin requires it."
-  echo "  Install: git clone https://github.com/weirdapps/teams-access.git && cd teams-access && npm install && npm run build && npm link"
-else
-  ok "teams-cli found"
-fi
+DEPS_DIR="$INSTALL_DIR/installers/deps"
+mkdir -p "$DEPS_DIR"
+
+install_cli_from_repo() {
+  local repo_name="$1"   # e.g. outlook-access
+  local cli_name="$2"    # e.g. outlook-cli
+  local repo_url="https://github.com/weirdapps/${repo_name}.git"
+  local target="$DEPS_DIR/$repo_name"
+
+  # If the CLI is already on PATH AND we don't manage it (no clone in deps/),
+  # respect the existing install and skip.
+  if command -v "$cli_name" >/dev/null 2>&1 && [ ! -d "$target/.git" ]; then
+    ok "$cli_name already on PATH (not managed by this installer) — skipping"
+    return 0
+  fi
+
+  # Otherwise: clone fresh OR update our managed clone, then build + link.
+  if [ -d "$target/.git" ]; then
+    echo "  Updating $repo_name..."
+    (cd "$target" && git pull --ff-only 2>&1 | tail -2)
+  else
+    echo "  Cloning $repo_name..."
+    git clone --depth 1 "$repo_url" "$target" 2>&1 | tail -2
+  fi
+
+  echo "  Building $cli_name..."
+  (cd "$target" && npm install --silent 2>&1 | tail -3 && npm run build --silent 2>&1 | tail -2)
+
+  echo "  Linking $cli_name globally (npm link)..."
+  if (cd "$target" && npm link --silent 2>&1 | tail -2); then
+    if command -v "$cli_name" >/dev/null 2>&1; then
+      ok "$cli_name installed and linked"
+    else
+      warn "$cli_name built but not on PATH. Add $(npm prefix -g)/bin to PATH."
+    fi
+  else
+    warn "npm link failed for $cli_name. On systems with global npm in /usr/local, try: cd $target && sudo npm link"
+  fi
+}
+
+install_cli_from_repo outlook-access outlook-cli
+install_cli_from_repo teams-access teams-cli
 
 # --- Drop CLAUDE.md template ---
 echo

@@ -79,21 +79,60 @@ if (Test-Path 'plugins\chat\mcp-server') {
     Write-Ok 'teams-bridge MCP built'
 }
 
-# --- Check for outlook-cli and teams-cli ---
+# --- Install outlook-cli and teams-cli ---
+# Both CLIs live in their own repos (weirdapps/outlook-access, weirdapps/teams-access).
+# We clone them into installers\deps inside the marketplace, build, and `npm link`
+# so `outlook-cli` and `teams-cli` are available on PATH.
 Write-Host ''
-if (-not (Get-Command outlook-cli -ErrorAction SilentlyContinue)) {
-    Write-Warn 'outlook-cli not found. Mail plugin requires it.'
-    Write-Host '  Install: git clone https://github.com/weirdapps/outlook-access.git && cd outlook-access && npm install && npm run build && npm link'
-} else {
-    Write-Ok 'outlook-cli found'
+Write-Host 'Installing required CLIs (outlook-cli, teams-cli)...'
+
+$DepsDir = Join-Path $InstallDir 'installers\deps'
+if (-not (Test-Path $DepsDir)) { New-Item -ItemType Directory -Path $DepsDir -Force | Out-Null }
+
+function Install-CliFromRepo {
+    param(
+        [string]$RepoName,    # e.g. outlook-access
+        [string]$CliName      # e.g. outlook-cli
+    )
+    $repoUrl = "https://github.com/weirdapps/$RepoName.git"
+    $target  = Join-Path $DepsDir $RepoName
+
+    # If the CLI is already on PATH AND we don't manage it (no clone in deps\),
+    # respect the existing install and skip.
+    if ((Get-Command $CliName -ErrorAction SilentlyContinue) -and -not (Test-Path (Join-Path $target '.git'))) {
+        Write-Ok "$CliName already on PATH (not managed by this installer) — skipping"
+        return
+    }
+
+    if (Test-Path (Join-Path $target '.git')) {
+        Write-Host "  Updating $RepoName..."
+        Push-Location $target
+        git pull --ff-only 2>&1 | Select-Object -Last 2
+        Pop-Location
+    } else {
+        Write-Host "  Cloning $RepoName..."
+        git clone --depth 1 $repoUrl $target 2>&1 | Select-Object -Last 2
+    }
+
+    Write-Host "  Building $CliName..."
+    Push-Location $target
+    npm install --silent 2>&1 | Out-Null
+    npm run build --silent 2>&1 | Out-Null
+
+    Write-Host "  Linking $CliName globally (npm link)..."
+    npm link --silent 2>&1 | Out-Null
+    Pop-Location
+
+    if (Get-Command $CliName -ErrorAction SilentlyContinue) {
+        Write-Ok "$CliName installed and linked"
+    } else {
+        $npmPrefix = npm prefix -g
+        Write-Warn "$CliName built but not on PATH. Add $npmPrefix\bin to PATH."
+    }
 }
 
-if (-not (Get-Command teams-cli -ErrorAction SilentlyContinue)) {
-    Write-Warn 'teams-cli not found. Chat plugin requires it.'
-    Write-Host '  Install: git clone https://github.com/weirdapps/teams-access.git && cd teams-access && npm install && npm run build && npm link'
-} else {
-    Write-Ok 'teams-cli found'
-}
+Install-CliFromRepo -RepoName 'outlook-access' -CliName 'outlook-cli'
+Install-CliFromRepo -RepoName 'teams-access'   -CliName 'teams-cli'
 
 # --- Drop CLAUDE.md template ---
 Write-Host ''

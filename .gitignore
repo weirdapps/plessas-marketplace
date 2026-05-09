@@ -55,3 +55,7 @@ Thumbs.db
 /mail/[0-9]*/
 /meetings/[0-9]*/
 /docs/[0-9]*/
+
+# CLI dependencies cloned by install.sh (outlook-access, teams-access, …).
+# These are upstream repos auto-fetched on install — never commit them here.
+/installers/deps/
