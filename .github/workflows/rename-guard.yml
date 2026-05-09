@@ -1,0 +1,45 @@
+name: rename-guard
+
+# Two safety guards for plessas-marketplace:
+#   1. No stale legacy command names (e.g. /mail-briefing, /mail-style-rebuild — fixed 2026-05-09).
+#   2. Every plugin command file declares `allowed-tools` (chat/docs/excel previously
+#      used a {name, args[]} schema that the loader does NOT enforce, granting
+#      unconstrained tool access. Standardized 2026-05-09.)
+# Runs on push to master and on every PR.
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  no-stale-command-names:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for legacy slash-command names
+        run: |
+          set -e
+          # /mail-briefing was renamed to /inbox-briefing; /mail-style-rebuild to /style-rebuild.
+          if git grep -nE '/mail-briefing|/mail-style-rebuild' \
+              -- ':!.github/workflows/rename-guard.yml' ; then
+            echo "::error::Found stale slash-command name. Use /inbox-briefing or /style-rebuild."
+            exit 1
+          fi
+          echo "OK — no stale command-name references."
+
+  every-command-declares-allowed-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify every plugin command has `allowed-tools` in its frontmatter
+        run: |
+          set -e
+          missing=$(grep -L '^allowed-tools:' plugins/*/commands/*.md 2>/dev/null || true)
+          if [ -n "$missing" ]; then
+            echo "::error::These command files are missing 'allowed-tools' in frontmatter:"
+            echo "$missing"
+            echo "Without 'allowed-tools', the command runs with UNCONSTRAINED tool access."
+            exit 1
+          fi
+          echo "OK — every plugin command declares allowed-tools."
