@@ -4,6 +4,33 @@ argument-hint: "[week|month] [--recipient NAME]"
 allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
 ---
 
+<preflight>
+## Pre-flight: knowledge store check (MANDATORY)
+
+This command requires the **second-brain knowledge store** — a local SQLite database that ingests your sent/received email. It ships separately from `plessas-marketplace`.
+
+Before doing anything else, run:
+
+```bash
+test -f ~/SourceCode/second-brain/data/brain.db && echo "ok" || echo "missing"
+```
+
+If the file is **missing**, stop immediately and tell the user verbatim:
+
+> `/comm-report` requires the second-brain knowledge store, which is not yet installed on this machine.
+>
+> The knowledge store is a local SQLite database that holds your full email corpus, classified and indexed. The `mail` plugin in `plessas-marketplace` does not include it — install it separately:
+>
+> ```bash
+> git clone https://github.com/weirdapps/second-brain.git ~/SourceCode/second-brain
+> cd ~/SourceCode/second-brain && cat README.md   # follow the setup steps
+> ```
+>
+> Once the database exists at `~/SourceCode/second-brain/data/brain.db`, re-run `/comm-report`.
+
+Do NOT attempt to fall back to Outlook or live mailbox queries — this report's analytics rely on the full ingested corpus with classifications.
+</preflight>
+
 <objective>
 Generate a strategic communication health report powered by the knowledge store (SQLite database at `~/SourceCode/second-brain/data/brain.db`), covering relationship patterns, response behavior, delegation effectiveness, and language trends.
 
@@ -18,16 +45,9 @@ User request: $ARGUMENTS
 - `month`: last 30 days (default)
 - Use current date and compute the start date
 
-### 1b. Verify Database Access
-Check that the knowledge store DB exists:
-```bash
-test -f ~/SourceCode/second-brain/data/brain.db && echo "DB found" || echo "DB NOT FOUND"
-```
-If the DB is missing: stop and tell the user: "The knowledge store database was not found at `~/SourceCode/second-brain/data/brain.db`. Run `cd ~/SourceCode/second-brain && git pull` then activate the venv (`source .venv/bin/activate` on macOS/Linux or `.venv\Scripts\activate` on Windows) and run `python -m src.cli sync` to set it up."
-
 > **Note**: For simple queries (decisions, actions, person context), prefer MCP tools (`mcp__second_brain__*`) over direct SQL. Direct SQL is used here for complex analytical queries only.
 
-### 1c. Apply Recipient Filter (if --recipient specified)
+### 1b. Apply Recipient Filter (if --recipient specified)
 When `--recipient NAME` is specified, add a filter to ALL queries below to scope results to emails involving that person:
 ```sql
 -- Add to every query as an extra JOIN + WHERE clause:

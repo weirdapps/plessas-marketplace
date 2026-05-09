@@ -4,6 +4,33 @@ argument-hint: "[--recipient NAME] [--dry-run]"
 allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
 ---
 
+<preflight>
+## Pre-flight: knowledge store check (MANDATORY)
+
+This command requires the **second-brain knowledge store** — a local SQLite database that ingests your sent/received email. It ships separately from `plessas-marketplace`.
+
+Before doing anything else, run:
+
+```bash
+test -f ~/SourceCode/second-brain/data/brain.db && echo "ok" || echo "missing"
+```
+
+If the file is **missing**, stop immediately and tell the user verbatim:
+
+> `/style-rebuild` requires the second-brain knowledge store, which is not yet installed on this machine.
+>
+> The knowledge store is a local SQLite database that holds your full email corpus, classified and indexed. The `mail` plugin in `plessas-marketplace` does not include it — install it separately:
+>
+> ```bash
+> git clone https://github.com/weirdapps/second-brain.git ~/SourceCode/second-brain
+> cd ~/SourceCode/second-brain && cat README.md   # follow the setup steps
+> ```
+>
+> Once the database exists at `~/SourceCode/second-brain/data/brain.db`, re-run `/style-rebuild`.
+
+Do NOT attempt to fall back to Outlook, Sent Items, or other data sources — the analysis is statistically meaningful only with the full ingested corpus.
+</preflight>
+
 <objective>
 Perform a comprehensive corpus analysis of ALL sent emails stored in the knowledge store (SQLite database at `~/SourceCode/second-brain/data/brain.db`) to generate a statistically-grounded style guide with per-recipient profiles.
 
