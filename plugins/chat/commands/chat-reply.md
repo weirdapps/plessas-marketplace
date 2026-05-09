@@ -1,10 +1,7 @@
 ---
-name: chat-reply
-description: Draft a reply to a Microsoft Teams chat message. Shows draft for user approval before sending.
-args:
-  - name: chat_id
-    description: "The chat ID to reply to. If omitted, show recent chats and let the user pick."
-    required: false
+description: "Draft a reply to a Microsoft Teams chat message. Shows draft for user approval before sending."
+argument-hint: "[chat_id]"
+allowed-tools: Read, Write, Bash, mcp__teams-bridge__teams_auth_check, mcp__teams-bridge__teams_list_chats, mcp__teams-bridge__teams_list_messages, mcp__teams-bridge__teams_resolve_mri, mcp__teams-bridge__teams_send_message
 ---
 
 # Teams Chat Reply

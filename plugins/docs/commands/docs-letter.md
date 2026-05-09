@@ -1,13 +1,7 @@
 ---
-name: docs-letter
-description: Create a formal business letter in Word format.
-args:
-  - name: recipient
-    description: "Recipient name and/or title."
-    required: true
-  - name: subject
-    description: "Letter subject or purpose."
-    required: true
+description: "Create a formal business letter in Word format."
+argument-hint: "<recipient> <subject>"
+allowed-tools: Read, Write, Bash, Skill(document-skills:docx)
 ---
 
 # Formal Letter

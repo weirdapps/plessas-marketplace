@@ -1,13 +1,7 @@
 ---
-name: chat-summarize
-description: Summarise a Microsoft Teams chat or thread — decisions, action items, key points.
-args:
-  - name: chat_id
-    description: "The chat ID to summarise. If omitted, show recent chats for selection."
-    required: false
-  - name: hours
-    description: "Lookback window in hours (default: 24)."
-    required: false
+description: "Summarise a Microsoft Teams chat or thread — decisions, action items, key points."
+argument-hint: "[chat_id] [hours]"
+allowed-tools: Read, Bash, mcp__teams-bridge__teams_auth_check, mcp__teams-bridge__teams_list_chats, mcp__teams-bridge__teams_list_messages, mcp__teams-bridge__teams_resolve_mri
 ---
 
 # Teams Chat Summarise

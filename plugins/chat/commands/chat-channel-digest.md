@@ -1,16 +1,7 @@
 ---
-name: chat-channel-digest
-description: Digest a Microsoft Teams channel — executive summary of recent activity across threads.
-args:
-  - name: team_id
-    description: "Team ID. If omitted, list teams for selection."
-    required: false
-  - name: channel_id
-    description: "Channel ID. If omitted, list channels in the team for selection."
-    required: false
-  - name: hours
-    description: "Lookback window in hours (default: 48)."
-    required: false
+description: "Digest a Microsoft Teams channel — executive summary of recent activity across threads."
+argument-hint: "[team_id] [channel_id] [hours]"
+allowed-tools: Read, Write, Bash, mcp__teams-bridge__teams_auth_check, mcp__teams-bridge__teams_list_teams, mcp__teams-bridge__teams_list_channels, mcp__teams-bridge__teams_list_messages, mcp__teams-bridge__teams_resolve_mri
 ---
 
 # Teams Channel Digest

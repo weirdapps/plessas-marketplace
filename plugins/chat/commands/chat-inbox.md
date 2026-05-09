@@ -1,6 +1,6 @@
 ---
-name: chat-inbox
-description: Summarise unread Microsoft Teams chats. Lists recent chats, highlights unread, surfaces urgent items.
+description: "Summarise unread Microsoft Teams chats. Lists recent chats, highlights unread, surfaces urgent items."
+allowed-tools: Read, Bash, mcp__teams-bridge__teams_auth_check, mcp__teams-bridge__teams_list_chats, mcp__teams-bridge__teams_list_messages, mcp__teams-bridge__teams_resolve_mri
 ---
 
 # Teams Chat Inbox

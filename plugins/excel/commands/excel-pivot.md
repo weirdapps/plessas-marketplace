@@ -1,13 +1,7 @@
 ---
-name: excel-pivot
-description: Build a pivot table from an Excel workbook — suggest or execute groupings, aggregations, and insights.
-args:
-  - name: file
-    description: "Path to the .xlsx file."
-    required: true
-  - name: intent
-    description: "What you want to analyse, e.g. 'revenue by region and quarter'. If omitted, suggest pivots."
-    required: false
+description: "Build a pivot table from an Excel workbook — suggest or execute groupings, aggregations, and insights."
+argument-hint: "<file> [intent]"
+allowed-tools: Read, Write, Bash, Skill(document-skills:xlsx)
 ---
 
 # Excel Pivot

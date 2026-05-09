@@ -1,10 +1,7 @@
 ---
-name: excel-summary
-description: Analyse and summarise an Excel workbook — structure, KPIs, anomalies, data quality.
-args:
-  - name: file
-    description: "Path to the .xlsx file to analyse."
-    required: true
+description: "Analyse and summarise an Excel workbook — structure, KPIs, anomalies, data quality."
+argument-hint: "<file>"
+allowed-tools: Read, Bash, Skill(document-skills:xlsx)
 ---
 
 # Excel Summary

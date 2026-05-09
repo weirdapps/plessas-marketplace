@@ -1,16 +1,7 @@
 ---
-name: excel-variance
-description: Variance analysis between two periods, columns, or sheets in an Excel workbook.
-args:
-  - name: file
-    description: "Path to the .xlsx file."
-    required: true
-  - name: base
-    description: "Base period/column/sheet name for comparison."
-    required: false
-  - name: target
-    description: "Target period/column/sheet name for comparison."
-    required: false
+description: "Variance analysis between two periods, columns, or sheets in an Excel workbook."
+argument-hint: "<file> [base] [target]"
+allowed-tools: Read, Write, Bash, Skill(document-skills:xlsx)
 ---
 
 # Excel Variance

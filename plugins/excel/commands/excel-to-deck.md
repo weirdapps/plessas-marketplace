@@ -1,13 +1,7 @@
 ---
-name: excel-to-deck
-description: Extract key insights from an Excel workbook and hand off to the decks plugin to create a presentation.
-args:
-  - name: file
-    description: "Path to the .xlsx file."
-    required: true
-  - name: audience
-    description: "Who the deck is for, e.g. 'Board', 'ExCo', 'team standup'."
-    required: false
+description: "Extract key insights from an Excel workbook and hand off to the decks plugin to create a presentation."
+argument-hint: "<file> [audience]"
+allowed-tools: Read, Write, Bash, Agent, Skill(document-skills:xlsx), Skill(document-skills:pptx)
 ---
 
 # Excel to Deck

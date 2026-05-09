@@ -1,13 +1,7 @@
 ---
-name: docs-create
-description: Create a structured Word document from content or a brief.
-args:
-  - name: topic
-    description: "Topic or title for the document."
-    required: true
-  - name: type
-    description: "Document type: report, proposal, brief, notes. Default: report."
-    required: false
+description: "Create a structured Word document from content or a brief."
+argument-hint: "<topic> [type:report|proposal|brief|notes]"
+allowed-tools: Read, Write, Bash, Skill(document-skills:docx)
 ---
 
 # Create Word Document

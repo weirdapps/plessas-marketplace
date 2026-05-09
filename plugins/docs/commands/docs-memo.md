@@ -1,13 +1,7 @@
 ---
-name: docs-memo
-description: Create an internal memo in Word format.
-args:
-  - name: to
-    description: "Memo recipient(s)."
-    required: true
-  - name: subject
-    description: "Memo subject."
-    required: true
+description: "Create an internal memo in Word format."
+argument-hint: "<to> <subject>"
+allowed-tools: Read, Write, Bash, Skill(document-skills:docx)
 ---
 
 # Internal Memo
