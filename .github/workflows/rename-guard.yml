@@ -1,10 +1,16 @@
 name: rename-guard
 
-# Two safety guards for plessas-marketplace:
-#   1. No stale legacy command names (e.g. /mail-briefing, /mail-style-rebuild — fixed 2026-05-09).
+# Safety guards for plessas-marketplace renames and tool-name standardisation:
+#   1. No stale legacy slash-command names (e.g. /mail-briefing, /mail-style-rebuild,
+#      /mail-reply — fixed 2026-05-09).
 #   2. Every plugin command file declares `allowed-tools` (chat/docs/excel previously
 #      used a {name, args[]} schema that the loader does NOT enforce, granting
 #      unconstrained tool access. Standardized 2026-05-09.)
+#   3. No references to the old shared/nbg-brand-system path (renamed to
+#      shared/brand-system on 2026-05-09).
+#   4. No `Task` in `allowed-tools` (the Claude Code tool was renamed to `Agent`;
+#      `Task` is a deprecated alias — standardised on Agent 2026-05-09).
+# All run blocks use only static strings — no interpolation of untrusted input.
 # Runs on push to master and on every PR.
 
 on:
@@ -20,10 +26,11 @@ jobs:
       - name: Grep for legacy slash-command names
         run: |
           set -e
-          # /mail-briefing was renamed to /inbox-briefing; /mail-style-rebuild to /style-rebuild.
-          if git grep -nE '/mail-briefing|/mail-style-rebuild' \
+          # /mail-briefing was renamed to /inbox-briefing; /mail-style-rebuild to /style-rebuild;
+          # /mail-reply to /reply.
+          if git grep -nE '/mail-briefing|/mail-style-rebuild|/mail-reply' \
               -- ':!.github/workflows/rename-guard.yml' ; then
-            echo "::error::Found stale slash-command name. Use /inbox-briefing or /style-rebuild."
+            echo "::error::Found stale slash-command name. Use /inbox-briefing, /style-rebuild, or /reply."
             exit 1
           fi
           echo "OK — no stale command-name references."
@@ -43,3 +50,35 @@ jobs:
             exit 1
           fi
           echo "OK — every plugin command declares allowed-tools."
+
+  no-stale-brand-system-path:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for stale shared/nbg-brand-system path
+        run: |
+          set -e
+          # The shared brand directory was renamed nbg-brand-system to brand-system on 2026-05-09.
+          # Catches both the old marketplace-root path AND the vendored decks-internal path.
+          if git grep -n "nbg-brand-system" \
+              -- ':!.github/workflows/rename-guard.yml' ; then
+            echo "::error::Found stale 'nbg-brand-system' reference. Use 'brand-system'."
+            exit 1
+          fi
+          echo "OK — no stale brand-system references."
+
+  no-task-in-allowed-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify no command frontmatter declares the deprecated `Task` tool
+        run: |
+          set -e
+          # `Task` is the deprecated alias for `Agent`. Standardised on Agent 2026-05-09.
+          hits=$(grep -nE '^allowed-tools:.*\bTask\b' plugins/*/commands/*.md 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Found 'Task' in allowed-tools. Use 'Agent' (current Claude Code tool name)."
+            echo "$hits"
+            exit 1
+          fi
+          echo "OK — no 'Task' references in allowed-tools."
