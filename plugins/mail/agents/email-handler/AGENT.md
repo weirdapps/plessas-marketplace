@@ -201,7 +201,7 @@ Before drafting each reply, recall these actual replies:
 | Team asks about UNITY entity | 20-word delegation + justification | "θα το κυνηγήσω εγώ" (5 words) |
 | External consultant follow-up | "Good to hear from you..." | "Hi T! we are progressing quite fast..." (200 words, showcase) |
 | Boss-originated escalation | "I agree this is unacceptable..." | FW only (no body) |
-| Scheduling with external | "When works for you?" | "η Χριστίνα θα οργανώσει" |
+| Scheduling with external | "When works for you?" | "θα οργανωθεί από [assistant name]" |
 | Delegated meeting | "I'll attend" | "εγώ optional" |
 
 For each email, assign one or more actions:

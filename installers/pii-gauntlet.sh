@@ -57,7 +57,7 @@ check "Personal address" "174[[:space:]]+Syggrou|Συγγρού[[:space:]]+174"
 check "9-digit ID pattern" "[^0-9][0-9]{9}[^0-9]"
 
 # Peer names (NBG colleagues / direct reports / managers)
-check "Peer/colleague names" "Volioti|Bitrou|Sioutis|Theofilidi|Lygeros|Oikonomou|Maraveas|Xona|Petropoulou|Laspas|Koutra|Giemelou"
+check "Peer/colleague names" "Volioti|Bitrou|Sioutis|Theofilidi|Θεοφιλίδη|Χριστίνα|Lygeros|Oikonomou|Maraveas|Xona|Petropoulou|Laspas|Koutra|Giemelou"
 
 # Family names
 check "Family names" "Kitrilaki|Κιτριλάκη"

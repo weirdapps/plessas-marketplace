@@ -6,8 +6,8 @@ rules:
       content_class: "schedule.meeting"
     action: keep
 
-  - name: NBG newsletters
+  - name: Internal newsletters
     when:
-      sender_contains: "newsletter@nbg.gr"
+      sender_contains: "newsletter@"
     action:
       move_to: "Inbox/Newsletters"
