@@ -23,7 +23,7 @@ Write-Host ''
 if (Test-Path (Join-Path $InstallDir '.claude-plugin')) { Check 'Marketplace installed' 'ok' } else { Check 'Marketplace NOT installed' 'fail' }
 
 # Plugins present?
-foreach ($plugin in @('decks','mail','meetings','chat','excel','docs')) {
+foreach ($plugin in @('decks','mail','mail-pro','meetings','chat','excel','docs')) {
     $pj = Join-Path $InstallDir "plugins\$plugin\.claude-plugin\plugin.json"
     if (Test-Path $pj) { Check "Plugin: $plugin" 'ok' } else { Check "Plugin: $plugin — MISSING" 'fail' }
 }

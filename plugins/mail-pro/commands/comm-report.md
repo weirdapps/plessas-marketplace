@@ -17,14 +17,18 @@ test -f ~/SourceCode/second-brain/data/brain.db && echo "ok" || echo "missing"
 
 If the file is **missing**, stop immediately and tell the user verbatim:
 
-> `/comm-report` requires the second-brain knowledge store, which is not yet installed on this machine.
+> `/comm-report` requires the second-brain knowledge store, which is not installed on this machine.
 >
-> The knowledge store is a local SQLite database that holds your full email corpus, classified and indexed. The `mail` plugin in `plessas-marketplace` does not include it — install it separately:
+> The knowledge store is a local SQLite database that holds your full email corpus, classified and indexed. It ships in the `second-brain` repo, which is **currently a private GitHub repo** under the `weirdapps` organisation.
+>
+> If you have access to `weirdapps`, install it:
 >
 > ```bash
 > git clone https://github.com/weirdapps/second-brain.git ~/SourceCode/second-brain
 > cd ~/SourceCode/second-brain && cat README.md   # follow the setup steps
 > ```
+>
+> If you do **not** have access, ask the marketplace maintainer to grant it, or skip this command — the rest of the `mail` plugin works without it.
 >
 > Once the database exists at `~/SourceCode/second-brain/data/brain.db`, re-run `/comm-report`.
 

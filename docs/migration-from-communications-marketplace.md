@@ -15,6 +15,7 @@ If you previously installed `communications-marketplace`, here's how to switch t
 | — | **chat** (NEW) | Interactive Teams commands |
 | — | **excel** (NEW) | Excel analysis |
 | — | **docs** (NEW) | Word document creation |
+| — | **mail-pro** (NEW) | Optional companion to `mail` for users with the private `second-brain` knowledge store. Hosts `/comm-report` and `/style-rebuild`. |
 
 ## Migration steps
 
@@ -59,7 +60,7 @@ iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/main/install
 ## What you may need to redo
 
 - **Personal email style guide**: if you customised `email-handler/shared/style-guide.md`, that's specific to the old plugin. After installing the new marketplace, run `/style-rebuild` to regenerate from your sent mail corpus.
-- **Recipient profiles**: the `recipient-profiles.db` was user-generated. It rebuilds organically from your `/mail-reply` usage. No action needed unless you want to accelerate it.
+- **Recipient profiles**: the `recipient-profiles.db` was user-generated. It rebuilds organically from your `/reply` usage. No action needed unless you want to accelerate it.
 - **Triage rules**: if you customised triage rules in the old email-handler, copy them to `plugins/mail/shared/triage-rules-starter.yaml` in the new marketplace.
 
 ## Command mapping
@@ -85,9 +86,11 @@ iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/main/install
 | — | `/docs-create` (NEW) |
 | — | `/docs-letter` (NEW) |
 | — | `/docs-memo` (NEW) |
+| `/comm-report` | `/comm-report` (moved to **mail-pro** plugin — requires private second-brain repo access) |
+| `/style-rebuild` | `/style-rebuild` (moved to **mail-pro** plugin — same reason) |
 
-All existing commands keep the same names. No relearning needed.
+All existing commands keep the same names. The two corpus-driven commands moved to a new `mail-pro` plugin so users without the private `second-brain` knowledge store still get a fully functional `mail` plugin.
 
 ## Background scripts
 
-The daily style-guide sync (invoked from `~/SourceCode/second-brain/scripts/launchd/wrappers/sb-daily-sync.sh` after the second-brain ingest) was ported from `communications-marketplace/scripts/style-sync.py` to `plessas-marketplace/plugins/mail/scripts/style-sync.py`. The script writes to `plugins/mail/shared/style-guide.md` (gitignored — the user's real personal style guide). The launchd wrapper has been updated; no user action needed unless you wired up your own automation against the old path.
+The daily style-guide sync (invoked from `~/SourceCode/second-brain/scripts/launchd/wrappers/sb-daily-sync.sh` after the second-brain ingest) was ported from `communications-marketplace/scripts/style-sync.py` to `plessas-marketplace/plugins/mail-pro/scripts/style-sync.py` (moved out of `mail` into `mail-pro` on 2026-05-09 along with the other second-brain-dependent commands). The script writes to `plugins/mail/shared/style-guide.md` (gitignored — the user's real personal style guide). The launchd wrapper has been updated; no user action needed unless you wired up your own automation against the old path.

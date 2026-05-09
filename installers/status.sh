@@ -33,7 +33,7 @@ echo
 [ -d "$INSTALL_DIR/.claude-plugin" ] && check "Marketplace installed" "ok" || check "Marketplace NOT installed" "fail"
 
 # Plugins present?
-for plugin in decks mail meetings chat excel docs; do
+for plugin in decks mail mail-pro meetings chat excel docs; do
   if [ -f "$INSTALL_DIR/plugins/$plugin/.claude-plugin/plugin.json" ]; then
     check "Plugin: $plugin" "ok"
   else

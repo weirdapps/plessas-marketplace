@@ -25,12 +25,17 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
+# This script lives in `mail-pro` (the second-brain-dependent companion to the
+# `mail` plugin) but writes to the style guide consumed by `mail`. Resolve the
+# style guide relative to this script so it works from any install location:
+#   plugins/mail-pro/scripts/style-sync.py → ../../mail/shared/style-guide.md
+SCRIPT_DIR = Path(__file__).resolve().parent
+STYLE_GUIDE = SCRIPT_DIR.parent.parent / "mail" / "shared" / "style-guide.md"
+
+# DB path defaults to a sibling second-brain checkout but is overridable via --db.
+# Teammates without second-brain installed must pass --db or this script exits.
 DB_PATH = Path.home() / "SourceCode/second-brain/data/brain.db"
-STYLE_GUIDE = (
-    Path.home()
-    / "SourceCode/plessas-marketplace"
-    / "plugins/mail/shared/style-guide.md"
-)
+
 SYNC_STATE = Path.home() / ".claude/drafts/style-sync-state.json"
 BACKUP_DIR = Path.home() / ".claude/drafts/style-guide-backups"
 
