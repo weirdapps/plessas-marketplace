@@ -115,7 +115,7 @@ Group recipients into style clusters:
 Before overwriting, create a timestamped backup:
 ```bash
 TZ='Europe/Athens' date '+%Y%m%d%H%M'
-cp plugins/email-handler/shared/style-guide.md \
+cp plugins/mail/shared/style-guide.md \
    ~/.claude/drafts/style-guide-backups/YYYYMMDDHHMM_style-guide.md
 ```
 Create the backups directory if it doesn't exist.
