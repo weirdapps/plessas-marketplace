@@ -109,7 +109,7 @@ TRIAGE ACCURACY:
 ### 6. Update Style Guide
 **Before updating**, save a timestamped backup of the current style guide:
 ```bash
-cp plugins/email-handler/shared/style-guide.md ~/.claude/drafts/style-guide-backups/$(TZ='Europe/Athens' date '+%Y%m%d%H%M')_style-guide.md
+cp plugins/mail/shared/style-guide.md ~/.claude/drafts/style-guide-backups/$(TZ='Europe/Athens' date '+%Y%m%d%H%M')_style-guide.md
 ```
 
 Update `shared/style-guide.md` with:

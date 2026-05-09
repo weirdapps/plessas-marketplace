@@ -84,3 +84,25 @@ jobs:
             exit 1
           fi
           echo "OK — no 'Task' references in allowed-tools."
+
+  no-old-plugin-directory-names:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for deprecated plugin directory names
+        run: |
+          set -e
+          # The plugins were renamed when moving from communications-marketplace:
+          #   presentation-maker/ -> decks/
+          #   email-handler/      -> mail/
+          #   meeting-prep/       -> meetings/
+          #   creative-toolkit/   -> bundled inside decks/
+          # CHANGELOG.md and the migration doc are excluded — they document the rename.
+          if git grep -nE 'presentation-maker/|email-handler/|meeting-prep/|creative-toolkit/' \
+              -- ':!.github/workflows/rename-guard.yml' \
+                 ':!CHANGELOG.md' \
+                 ':!docs/migration-from-communications-marketplace.md' ; then
+            echo "::error::Found deprecated plugin directory name. Use decks/, mail/, meetings/, or decks/bundled/creative/."
+            exit 1
+          fi
+          echo "OK — no deprecated plugin directory names."

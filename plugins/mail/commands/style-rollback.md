@@ -37,12 +37,12 @@ If no date was provided and not `list`, ask the user which version to restore.
 Before overwriting, save the current style guide:
 ```bash
 TZ='Europe/Athens' date '+%Y%m%d%H%M'
-cp plugins/email-handler/shared/style-guide.md \
+cp plugins/mail/shared/style-guide.md \
    ~/.claude/drafts/style-guide-backups/YYYYMMDDHHMM_style-guide.md
 ```
 
 ### 4. Restore Selected Version
-Copy the selected backup to `plugins/email-handler/shared/style-guide.md`.
+Copy the selected backup to `plugins/mail/shared/style-guide.md`.
 
 ### 5. Show Diff Summary
 Briefly summarize what changed between the restored version and the one it replaced:

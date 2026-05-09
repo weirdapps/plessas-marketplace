@@ -1,4 +1,4 @@
-# plugins/email-handler/shared/triage-rules-starter.yaml
+# plugins/mail/shared/triage-rules-starter.yaml
 # Copy this to ~/.claude/triage/rules.yaml and customize.
 rules:
   - name: Calendar invites
