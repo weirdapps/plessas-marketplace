@@ -1,7 +1,7 @@
 ---
 description: "Quick polish of existing slides to NBG standards"
 argument-hint: "[slide content or path to file]"
-allowed-tools: Read, Task, Write, Skill(document-skills:pptx)
+allowed-tools: Read, Agent, Write, Skill(document-skills:pptx)
 ---
 
 <objective>

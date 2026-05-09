@@ -2,7 +2,7 @@
 
 Comprehensive library of NBG brand assets for presentations.
 
-**Base path:** `plugins/presentation-maker/assets/`
+**Base path:** `plugins/decks/assets/`
 
 ---
 

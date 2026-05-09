@@ -13,8 +13,8 @@ You are a **Data Visualization Expert**. You transform complex data and concepts
 
 **Default brand**: NBG (National Bank of Greece)
 
-When called from `presentation-maker`, read the full brand spec at:
-`presentation-maker/shared/nbg-brand-system/README.md`
+When called from `decks`, read the full brand spec at:
+`shared/brand-system/README.md`
 
 When called standalone, use the NBG defaults below (colors, fonts, chart specs). If a different brand is specified in the request, adapt accordingly.
 
@@ -276,7 +276,7 @@ Pie charts are prohibited. Always convert any pie chart request to doughnut:
 
 **Best For**: Financial flows, step-by-step changes
 
-**IMPORTANT**: For OOXML editing (existing presentations), waterfall charts are created as stacked bar charts with three series: Base (invisible), Increase (cyan), and Decrease (red). When called from presentation-maker, see `presentation-maker/shared/nbg-brand-system/ooxml-charts.md` for detailed XML structure.
+**IMPORTANT**: For OOXML editing (existing presentations), waterfall charts are created as stacked bar charts with three series: Base (invisible), Increase (cyan), and Decrease (red). When called from decks, see `shared/brand-system/ooxml-charts.md` for detailed XML structure.
 
 #### PptxGenJS Approach
 ```javascript

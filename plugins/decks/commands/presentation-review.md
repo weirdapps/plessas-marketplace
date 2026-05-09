@@ -1,7 +1,7 @@
 ---
 description: "Compare a finalized presentation against its draft to learn style preferences"
 argument-hint: "[path/to/final.pptx]"
-allowed-tools: Task, Read, Write, Bash, Skill(document-skills:pptx)
+allowed-tools: Agent, Read, Write, Bash, Skill(document-skills:pptx)
 ---
 
 <objective>

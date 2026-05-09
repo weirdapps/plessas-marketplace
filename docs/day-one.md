@@ -68,6 +68,6 @@ Edit `~/.claude/CLAUDE.md` and replace the `<< REPLACE >>` sections with your ow
 
 ## 5. What's next
 
-- **Email style learning**: after using `/mail-reply` for a week, run `/style-rebuild` to generate a personalised style guide from your sent mail
+- **Email style learning**: after using `/reply` for a week, run `/style-rebuild` to generate a personalised style guide from your sent mail
 - **Pivot and variance**: try `/excel-pivot` and `/excel-variance` on a financial report
 - **Teams digest**: try `/chat-channel-digest` on a busy channel to catch up

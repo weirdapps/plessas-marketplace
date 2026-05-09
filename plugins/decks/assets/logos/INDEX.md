@@ -1,6 +1,6 @@
 # NBG Logos Library — Index
 
-**Base path:** `plugins/presentation-maker/assets/logos/`
+**Base path:** `plugins/decks/assets/logos/`
 **Total:** 10 logos
 **Format:** PNG (some with transparent background, some with solid app icon background)
 
@@ -79,7 +79,7 @@ def add_logo(slide, logo_path, left, top, target_width_px=None, target_height_px
 # Example: place Retail Mobile Banking app icon at 80x80px
 add_logo(
     slide,
-    "plugins/presentation-maker/assets/logos/Retail Mobile Banking.png",
+    "plugins/decks/assets/logos/Retail Mobile Banking.png",
     left=Emu(500000), top=Emu(500000),
     target_width_px=80
 )

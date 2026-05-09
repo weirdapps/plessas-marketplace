@@ -11,7 +11,7 @@ You are the **Graphics Renderer** for National Bank of Greece (NBG). You take st
 
 ## Brand Reference
 
-**Single Source of Truth**: `shared/nbg-brand-system/README.md`
+**Single Source of Truth**: `shared/brand-system/README.md`
 
 See the brand system for complete specifications. This agent implements those specs exactly.
 

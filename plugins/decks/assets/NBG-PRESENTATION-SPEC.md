@@ -1,6 +1,6 @@
 # NBG PowerPoint Template Specification
 
-**Single Source of Truth**: For detailed specifications, see [`shared/nbg-brand-system/README.md`](../shared/nbg-brand-system/README.md)
+**Single Source of Truth**: For detailed specifications, see [`shared/brand-system/README.md`](../shared/brand-system/README.md)
 
 This document provides a quick reference for NBG presentation creation. For comprehensive documentation, refer to the brand system files.
 
@@ -81,15 +81,15 @@ For complete specifications, see these files:
 
 | Topic | File |
 |-------|------|
-| **All Specifications** | `shared/nbg-brand-system/README.md` |
-| Colors | `shared/nbg-brand-system/colors.md` |
-| Typography | `shared/nbg-brand-system/typography.md` |
-| Layouts | `shared/nbg-brand-system/layouts.md` |
-| Dimensions | `shared/nbg-brand-system/dimensions.md` |
-| Charts | `shared/nbg-brand-system/charts.md` |
-| Icons | `shared/nbg-brand-system/icons.md` |
-| OOXML Charts | `shared/nbg-brand-system/ooxml-charts.md` |
-| Pillar DS | `shared/nbg-brand-system/pillar-ds.md` |
+| **All Specifications** | `shared/brand-system/README.md` |
+| Colors | `shared/brand-system/colors.md` |
+| Typography | `shared/brand-system/typography.md` |
+| Layouts | `shared/brand-system/layouts.md` |
+| Dimensions | `shared/brand-system/dimensions.md` |
+| Charts | `shared/brand-system/charts.md` |
+| Icons | `shared/brand-system/icons.md` |
+| OOXML Charts | `shared/brand-system/ooxml-charts.md` |
+| Pillar DS | `shared/brand-system/pillar-ds.md` |
 
 ---
 

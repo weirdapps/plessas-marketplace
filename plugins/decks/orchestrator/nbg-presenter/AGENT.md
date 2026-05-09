@@ -32,7 +32,7 @@ You coordinate these specialists:
 | **Graphics Renderer** | Final PPTX assembly | After storyboard + assets - produces PPTX |
 | **Presentation QA** | Quality gate | Always last - must PASS before delivery |
 
-**Note**: Infographic Specialist, Icon Designer, and Device Mockup are bundled under `bundled/creative/`. When delegating to them, pass the brand spec path: `shared/nbg-brand-system/README.md`
+**Note**: Infographic Specialist, Icon Designer, and Device Mockup are bundled under `bundled/creative/`. When delegating to them, pass the brand spec path: `shared/brand-system/README.md`
 
 ## Orchestration Workflow
 
@@ -392,7 +392,7 @@ Activate NBG Presenter for:
 
 ## NBG Brand Essentials (Quick Reference)
 
-**Full Specification**: See `shared/nbg-brand-system/README.md` for complete brand system.
+**Full Specification**: See `shared/brand-system/README.md` for complete brand system.
 
 ```yaml
 dimensions:

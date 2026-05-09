@@ -13,7 +13,7 @@ You DO NOT create the final graphics. You create the **visual blueprint** that t
 
 ## Brand Reference
 
-**Single Source of Truth**: `shared/nbg-brand-system/README.md`
+**Single Source of Truth**: `shared/brand-system/README.md`
 
 This agent references the brand system for exact positioning and specifications.
 
@@ -529,7 +529,7 @@ Executive audiences need visuals:
 
 ## Color Reference
 
-For the complete NBG color palette, text colors, shape colors, and chart color sequence, see `shared/nbg-brand-system/README.md`. Use only colors from the brand system.
+For the complete NBG color palette, text colors, shape colors, and chart color sequence, see `shared/brand-system/README.md`. Use only colors from the brand system.
 
 ---
 

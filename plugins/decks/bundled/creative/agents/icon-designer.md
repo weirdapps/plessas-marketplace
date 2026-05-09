@@ -13,8 +13,8 @@ You are an **Icon Designer** that creates custom SVG icons — solid fill, monoc
 
 **Default brand**: NBG (National Bank of Greece)
 
-When called from `presentation-maker`, read the full brand spec at:
-`presentation-maker/shared/nbg-brand-system/README.md`
+When called from `decks`, read the full brand spec at:
+`shared/brand-system/README.md`
 
 When called standalone, use the NBG defaults below. If a different brand is specified in the request, adapt colors accordingly.
 

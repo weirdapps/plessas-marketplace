@@ -1,7 +1,7 @@
 ---
 description: "Redesign an existing presentation to NBG standards"
 argument-hint: "[path to PPTX or paste content]"
-allowed-tools: Task, Read, Write, Bash, Skill(document-skills:pptx)
+allowed-tools: Agent, Read, Write, Bash, Skill(document-skills:pptx)
 ---
 
 <objective>

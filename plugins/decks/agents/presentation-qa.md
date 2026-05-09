@@ -17,7 +17,7 @@ You are an **independent reviewer**, not the creator. You evaluate with fresh ey
 
 ## Brand Reference
 
-**Single Source of Truth**: `shared/nbg-brand-system/README.md`
+**Single Source of Truth**: `shared/brand-system/README.md`
 
 ---
 
@@ -47,7 +47,7 @@ Run `nbg_validate.py` on the generated PPTX. This checks:
 | Bank branding | Competitor bank charts use official brand colors and logos |
 
 ```bash
-python plugins/presentation-maker/tools/nbg-presentation/nbg_validate.py <path-to-pptx>
+python plugins/decks/tools/nbg-presentation/nbg_validate.py <path-to-pptx>
 ```
 
 If `nbg_validate.py` reports ANY failures → **automatic FAIL**. No need to proceed to Layer 2 until Layer 1 passes.

@@ -1,7 +1,7 @@
 ---
 description: "Create a new NBG-branded presentation from content or brief"
 argument-hint: "[topic, content, or brief]"
-allowed-tools: Task, Read, Write, Bash, Skill(manage-nano-banana), Skill(document-skills:pptx)
+allowed-tools: Agent, Read, Write, Bash, Skill(manage-nano-banana), Skill(document-skills:pptx)
 ---
 
 <objective>

@@ -35,25 +35,36 @@ Branded presentation system. Multi-agent pipeline producing board-ready PPTX wit
 
 ```
 decks/
-├── plugin.json
+├── .claude-plugin/plugin.json
 ├── README.md
-├── orchestrator/nbg-presenter/   # Master orchestrator
-├── agents/                        # Core presentation agents
-│   ├── storyline-architect/
-│   ├── storyboard-designer/
-│   └── graphics-renderer/
-├── bundled/creative/              # Bundled creative agents (was creative-toolkit)
+├── orchestrator/nbg-presenter/AGENT.md   # Master orchestrator
+├── agents/                                # Core presentation agents (flat)
+│   ├── storyline-architect.md
+│   ├── storyboard-designer.md
+│   ├── graphics-renderer.md
+│   └── presentation-qa.md
+├── commands/                              # Slash commands
+│   ├── create-presentation.md
+│   ├── redesign-deck.md
+│   ├── polish-slides.md
+│   └── presentation-review.md
+├── bundled/creative/                      # Bundled creative agents (was creative-toolkit)
 │   ├── agents/
-│   │   ├── icon-designer/
-│   │   ├── infographic-specialist/
-│   │   └── device-mockup/
+│   │   ├── icon-designer.md
+│   │   ├── infographic-specialist.md
+│   │   └── device-mockup.md
 │   ├── commands/
+│   │   ├── create-icon.md
+│   │   ├── create-infographic.md
+│   │   └── create-mockup.md
 │   ├── tools/device-mockup/
 │   └── assets/device-frames/
-├── shared/nbg-brand-system/       # Brand specs (colours, fonts, layouts)
-├── assets/                        # Brand assets (logos, icons, templates)
-├── examples/                      # Sample YAML storylines
-└── tools/nbg-presentation/        # Python build/validation tools
+├── shared/                                # Plugin-internal shared resources
+│   ├── brand-system/                      # Brand specs (colours, fonts, layouts)
+│   └── presentation-style-guide.md        # Optional user-customisable style preferences
+├── assets/                                # Brand assets (logos, icons, templates, mockups)
+├── examples/                              # Sample YAML storylines
+└── tools/nbg-presentation/                # Python build/validation tools
 ```
 
 ## Brand Quick Reference

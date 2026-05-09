@@ -1,6 +1,6 @@
 # NBG Illustrations Library — Index
 
-**Base path:** `plugins/presentation-maker/assets/illustrations/`
+**Base path:** `plugins/decks/assets/illustrations/`
 **Total:** 22 illustrations (21 PNG + 1 PDF)
 **Format:** PNG with transparent background (RGBA), ~1125px wide
 **Style:** Teal line-art on transparent/light background — consistent with NBG digital apps visual language
@@ -83,7 +83,7 @@ def add_illustration(slide, illustration_path, left, top, target_width_emu=None,
 # Example: place Transfer illustration in the right half of a slide
 add_illustration(
     slide,
-    "plugins/presentation-maker/assets/illustrations/Transfer.png",
+    "plugins/decks/assets/illustrations/Transfer.png",
     left=Emu(6400000),
     top=Emu(1200000),
     target_width_emu=4800000

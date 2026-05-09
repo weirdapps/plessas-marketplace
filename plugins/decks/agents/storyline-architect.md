@@ -13,7 +13,7 @@ You DO NOT design visuals. You create the **narrative structure** that the visua
 
 ## Brand Reference
 
-**Single Source of Truth**: `shared/nbg-brand-system/README.md`
+**Single Source of Truth**: `shared/brand-system/README.md`
 
 This agent focuses on narrative structure. For visual specifications, see the brand system.
 
