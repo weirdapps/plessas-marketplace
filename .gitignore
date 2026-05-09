@@ -44,3 +44,12 @@ Thumbs.db
 # Backups
 *.bak
 *.backup
+
+
+# Claude Code plugin cache (auto-generated at marketplace root)
+/chat/[0-9]*/
+/decks/[0-9]*/
+/excel/[0-9]*/
+/mail/[0-9]*/
+/meetings/[0-9]*/
+/docs/[0-9]*/
