@@ -49,20 +49,27 @@ aspect_ratio: 16:9
 
 | Rule | Enforcement |
 |------|-------------|
-| **White backgrounds ONLY** | Never use dark themes |
-| **ALWAYS use Greek logo** | Use `nbg-logo-gr.svg` for ALL presentations - NEVER use the English logo |
-| **NO Bright Cyan backgrounds** | `00DFF8` is TOO BRIGHT for box/card backgrounds - use `F5F8F6` (off-white) instead |
+| **BUILD FROM SCRATCH** | **Never use NBG template files** (`Presentation()` not `Presentation(template)`). Templates carry phantom "Placeholder text" artifacts. See `generation-methods.md`. |
+| **White backgrounds ONLY** | Never use dark themes, dark dividers, or colored cover backgrounds |
+| **ALWAYS use Greek logo** | Use `nbg-logo-gr.png` for ALL presentations — NEVER use the English logo |
+| **NO Bright Cyan backgrounds** | `00DFF8` is TOO BRIGHT for box/card backgrounds — use `F5F8F6` (off-white) instead |
+| **NO dark bg + light text** | Fails accessibility. Use light backgrounds (#F5F8F6, #FFFFFF) with dark text (#003841, #202020) |
 | **NO pie charts** | Always use doughnut instead |
 | **NO "Thank You" slides** | Use plain back cover with centered logo |
 | **Title weight** | Aptos Regular (NOT SemiBold) |
 | **Text boxes** | `margin: 0`, `valign: 'top'` ALWAYS |
 | **Content title size** | 24pt (NOT 44pt or larger) |
-| **Cover subtitle** | 36pt (NOT 48pt). Lists units: `Cards \| GoForMore \| Embedded \| Digital \| SSB \| Direct \| Fraud \| Controls` — NOT "Cards and Digital Business" |
-| **Line charts** | Smooth curves, 3pt lines, visible markers |
-| **Chart colors** | ALWAYS specify explicit NBG colors |
+| **Body text size** | 14-16pt preferred. 12pt minimum where space is tight. Never 11pt or below for body. |
+| **Cover subtitle** | 24pt pipe-separated unit list (`Cards \| GoForMore \| Embedded \| Digital \| SSB \| Direct \| Fraud \| Controls`). NOT "Cards and Digital Business". No periods. |
+| **Dividers** | Title only — no subtitle/description. White background. Large logo (same as cover). |
+| **Line charts** | Thick lines (3.5pt), hollow "donut" markers (white fill + colored ring matching line width) |
+| **Chart colors** | ALWAYS specify explicit NBG colors. Same `#00ADBF` for both column AND bar charts. |
+| **Table numbers** | Right-aligned. Text columns left-aligned. Zebra rows: alternate #FFFFFF / #F5F8F6. |
 | **NO shadows** | All shapes, pills, boxes must have no shadow |
-| **Bumper is a pill** | Rounded rect 1.3x0.3, fill 007B85, 9pt Bold white ALL CAPS |
-| **Charts are native** | Use proper Excel/python-pptx charts, NOT shape-drawn boxes |
+| **Bumper is a pill** | Rounded rect, fill 007B85, 9pt Bold white ALL CAPS |
+| **Charts are native** | Use proper python-pptx/PptxGenJS charts, NOT shape-drawn boxes |
+| **Page numbers** | On content/chart/table slides ONLY. Not on cover, dividers, back cover. Position: (12.23, 7.16). |
+| **No periods in titles** | Titles and subtitles have no trailing periods |
 
 ## Typography Hierarchy
 
@@ -74,10 +81,11 @@ aspect_ratio: 16:9
 | Divider title | **48pt** | 003841 | Regular |
 | Contents header | **32pt** | 003841 | Bold |
 | Content title | **24pt** | 003841 | Regular |
-| Body text | 11-12pt | 202020 | Regular |
+| Body text | **14-16pt** | 202020 | Regular |
 | Bumper (pill) | 9pt | FFFFFF on 007B85 | Bold |
-| Metric value | **50pt** | 003841 | Bold |
-| Metric label | **16pt** | 5A5F5A | Regular |
+| KPI big number | **50pt** | **007B85** | **Bold** |
+| KPI caption | **16pt** | **5A5F5A** | Regular |
+| Owner subtitle | **14pt** | **5A5F5A** | Regular |
 | Page number | 10pt | 939793 | Regular |
 
 ## Chart Color Sequence

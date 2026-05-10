@@ -1,20 +1,50 @@
 # Presentation Generation Methods
 
-This document provides guidance on when to use PptxGenJS (JavaScript library) vs OOXML editing (direct XML manipulation).
+This document provides guidance on when to use PptxGenJS (JavaScript library) vs OOXML editing (direct XML manipulation) vs python-pptx (Python library).
+
+## CRITICAL RULE: Always Build From Scratch — Never Use NBG Templates
+
+**Do NOT use `Presentation(template_path)` to inherit from NBG-Template-GR.pptx or any other template file.** Always create a blank presentation and add all elements manually:
+
+```python
+# CORRECT — from scratch
+prs = Presentation()
+prs.slide_width = 12192000   # 13.33" in EMU
+prs.slide_height = 6858000   # 7.5" in EMU
+slide = prs.slides.add_slide(prs.slide_layouts[6])  # Blank layout
+```
+
+```javascript
+// CORRECT — from scratch (PptxGenJS)
+const pptx = new PptxGenJS();
+pptx.layout = 'LAYOUT_WIDE';
+const slide = pptx.addSlide();
+```
+
+**Why**: NBG template files contain orphan "Placeholder text" textboxes, decorative freeforms, and colored background fills on master slides that leak into generated output as phantom artifacts. Building from scratch eliminates this entire class of bugs.
+
+**What you add manually per slide**:
+- Title text box at standard position (0.36, 0.81)
+- Eyebrow pill if needed (rounded rect #007B85 fill, 9pt white bold ALL CAPS)
+- NBG Greek logo image at bottom-left (0.374, 7.071, 0.822×0.236 for content; 0.374, 6.271, 2.191×0.630 for cover/dividers)
+- Page number at bottom-right (12.23, 7.16, 10pt #939793) — content slides only
+- Content shapes (charts, tables, text, cards, icons)
+- Back cover: centered NBG oval logo (5.44, 2.98, 2.45×1.54)
+
+This adds ~4 lines of code per slide but guarantees zero template artifacts.
 
 ## Quick Decision Matrix
 
 | Scenario | Method | Why |
 |----------|--------|-----|
-| Create new presentation | **PptxGenJS** | Clean, programmatic control |
+| Create new presentation | **python-pptx / PptxGenJS from scratch** | Clean, zero artifacts |
 | Update chart data only | **OOXML editing** | Preserves formatting |
 | Replace text in existing deck | **OOXML editing** | Preserves layout |
-| Add new slides to existing deck | **PptxGenJS + merge** | More reliable |
+| Add new slides to existing deck | **python-pptx from scratch + merge** | More reliable |
 | Complex chart customization | **OOXML editing** | Full control over XML |
-| Batch generation | **PptxGenJS** | Scalable, repeatable |
-| Template-based generation | **PptxGenJS** | Consistent results |
+| Batch generation | **python-pptx / PptxGenJS** | Scalable, repeatable |
 
-## PptxGenJS (Recommended Default)
+## PptxGenJS (JavaScript)
 
 ### When to Use
 
