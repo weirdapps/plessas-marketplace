@@ -59,13 +59,13 @@ INBOX BRIEFING — 2026-05-10, 09:14
 
 NEW SINCE LAST RUN (4 emails)
 ───────────────────────────────────────────────
-1. Volioti, Christina — Q1 Cards revenue update
+1. Cards Sector Director — Q1 Cards revenue update
    GIST: Cards Q1 revenue beat plan +12%; flags fee mix shifting toward credit
    ACTION: ↩️ REPLY — needs ack + decision on whether to brief CEO this week
 
-2. Bitrou, Stelios — Digital channel CSAT
+2. Digital Director — Digital channel CSAT
    GIST: New release dropped CSAT 4 points; A/B test results inconclusive
-   ACTION: 👉 DELEGATE — Stelios should escalate to Customer Insights team
+   ACTION: 👉 DELEGATE — Customer Insights team should own this
 
 3. CFO Office — Board pack draft for May
    GIST: Draft board pack ready for review; deadline 2026-05-13
@@ -77,8 +77,8 @@ NEW SINCE LAST RUN (4 emails)
 
 INSIGHTS
 ───────────────────────────────────────────────
-- 1 email needs your decision today (Volioti — CEO brief)
-- Bitrou's CSAT issue is the second escalation this month — pattern
+- 1 email needs your decision today (Cards Sector Director — CEO brief)
+- Digital channel CSAT issue is the second escalation this month — pattern
 - Board pack deadline is 3 days out — reserve time Wed AM
 ═══════════════════════════════════════════════
 ```

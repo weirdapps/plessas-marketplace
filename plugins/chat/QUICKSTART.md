@@ -49,26 +49,26 @@ TEAMS INBOX — 2026-05-10, 09:14
 
 NEEDS RESPONSE (3)
 ───────────────────────────────────────────────
-1. Volioti, Christina (1:1) — 2 unread
+1. Cards Sector Director (1:1) — 2 unread
    "Need your sign-off on Q1 cards revenue slide before
     the 11:00 ExCo prep — see attached deck"
    ACTION: Reply with sign-off or redlines (deadline: 11:00)
 
 2. Cards Leadership (group, 6 people) — 4 unread
-   Discussion on dual card €6/yr opt-out flow; Laspas
-   raised a fraud-vector concern that needs a call.
+   Discussion on the new fee-restructure rollout; Fraud
+   Director raised a vector concern that needs a call.
    ACTION: Decide if call needed or async resolution OK
 
-3. Bitrou, Stelios (1:1) — 1 unread
+3. Digital Director (1:1) — 1 unread
    CSAT drop on new release — escalation path question
    ACTION: Delegate to Customer Insights or take ownership
 
 FYI (4)
 ───────────────────────────────────────────────
-4. Direct Reports (group) — 2 unread (Petropoulou kudos thread)
-5. NBG Pay Subsidiary (group) — 1 unread (board pack reminder)
-6. Embedded Banking Project (channel) — 7 unread across 2 threads
-7. Maraveas, Pantelis (1:1) — 1 unread (BB peer sync request)
+4. Direct Reports (group) — 2 unread (loyalty programme kudos thread)
+5. Subsidiary leadership (group) — 1 unread (board pack reminder)
+6. Embedded Banking project (channel) — 7 unread across 2 threads
+7. Peer AGM (1:1) — 1 unread (Business Banking sync request)
 
 LOW PRIORITY (3)
 ───────────────────────────────────────────────

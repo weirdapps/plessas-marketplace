@@ -41,45 +41,45 @@ Output (typical):
 MEETING PREP — 2026-05-11 (today, 3 meetings)
 ═══════════════════════════════════════════════
 
-09:30–10:00  1:1 with Volioti, Christina (Cards)
+09:30–10:00  1:1 with Cards Sector Director
 ───────────────────────────────────────────────
 ATTENDEES:
-  • Volioti, Christina — Director, Cards Sector
-DOSSIER (Volioti):
+  • Cards Sector Director
+DOSSIER:
   - Last email: yesterday, Q1 Cards revenue update (+12% vs plan)
-  - Open actions: 2 (CEO brief decision; dual-card pricing memo to ΧΘ)
-  - Recent decision: Dual-card €6/yr opt-out approved at last ExCo
+  - Open actions: 2 (CEO brief decision; fee-restructure memo to ExCo)
+  - Recent decision: Fee-restructure rollout approved at last ExCo
 TALKING POINTS:
   • Confirm Wed slot to brief CEO on Q1 numbers
-  • Status of ΧΘ approval for dual-card pricing
+  • Status of ExCo approval for new pricing
   • Fee mix shift toward credit — sustainability?
 
 11:00–12:00  ExCo monthly review
 ───────────────────────────────────────────────
 ATTENDEES:
-  • Mylonas, Pavlos (CEO)
-  • Lygeros, Christos (Deputy)
+  • CEO
+  • Deputy CEO
   • + 6 others
 RELATED INBOX:
   - CFO Office: Board pack draft for May (deadline 2026-05-13)
 TALKING POINTS:
   • Cards Q1 beat (+12%) — flag for May Board pack
-  • Bitrou's CSAT issue — second escalation this month
+  • Digital channel CSAT issue — second escalation this month
 
-15:00–15:30  Mellon partner sync (ATM modernization)
+15:00–15:30  ATM hardware partner sync
 ───────────────────────────────────────────────
 ATTENDEES:
-  • Papadopoulos, K. (Mellon)
+  • Vendor account lead
 RELATED INBOX:
-  - Mellon: K3A platform Q2 roadmap (3 days ago, no reply yet)
+  - Vendor: ATM platform Q2 roadmap (3 days ago, no reply yet)
 TALKING POINTS:
-  • SD20 timeline confirmation
+  • Hardware refresh timeline confirmation
   • Digital euro readiness — pilot scope
 
 DAY SUMMARY
 ───────────────────────────────────────────────
 - 1 decision needed today (CEO brief slot)
-- 1 stale thread to address before 15:00 (Mellon)
+- 1 stale thread to address before 15:00 (vendor)
 ═══════════════════════════════════════════════
 ```
 
