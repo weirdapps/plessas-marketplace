@@ -2,7 +2,7 @@
 # Install with: pip install -r requirements.txt
 
 # Image manipulation (frame compositing, masking)
-Pillow>=9.0.0
+Pillow>=12.2.0
 
 # Flood-fill masking for screen-area detection
 numpy>=1.24.0
