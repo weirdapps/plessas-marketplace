@@ -273,7 +273,7 @@ Card 3: Rectangle at (8.81, 2.15, 3.5, 3.0)   fill = #F5F8F6, no border
 |---|---|---|---|---|---|
 | Unit pill (rounded chip) | (0.37, 0.45, ~1.4–2.3, 0.4) — fill `#003841` | Aptos | 16pt | white | **Bold** |
 | Section title (next to pill) | (~1.92–2.82, 0.48, 5.0, 0.38) | Aptos | 22pt | `#003841` | Regular |
-| Owner subtitle ("Head: E. Volioti") | (0.37, 1.05, 4.0, 0.3) | Aptos | 14pt | `#5A5F5A` | Regular |
+| Owner subtitle ("Head: A. Smith") | (0.37, 1.05, 4.0, 0.3) | Aptos | 14pt | `#5A5F5A` | Regular |
 
 Big-number examples Plessas uses: `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`. Caption examples: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
 

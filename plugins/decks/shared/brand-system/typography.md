@@ -83,7 +83,7 @@ Used on Key Figures / Progress & Priorities slides.
 |---------|------|------|-------|--------|
 | Unit pill (rounded chip — "Cards", "Digital Banking") | Aptos | **16pt** | `#FFFFFF` on `#003841` fill | **Bold** |
 | Section title (next to unit pill) | Aptos | **22pt** | `#003841` | Regular |
-| Owner subtitle ("Head: E. Volioti") | Aptos | **14pt** | `#5A5F5A` | Regular |
+| Owner subtitle ("Head: A. Smith") | Aptos | **14pt** | `#5A5F5A` | Regular |
 
 ### Status Pills (Plessas signature)
 
