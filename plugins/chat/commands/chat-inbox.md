@@ -26,6 +26,7 @@ Summarise the user's recent Microsoft Teams chats, highlighting chats with unrea
 ## Output Format
 
 Present as a concise briefing — not a raw dump. Group by urgency:
+
 1. **Needs response** — someone asked you a question or tagged you
 2. **FYI** — informational messages, no action needed
 3. **Low priority** — group chats with ambient activity
@@ -33,6 +34,7 @@ Present as a concise briefing — not a raw dump. Group by urgency:
 ## Auth Error Handling
 
 If `teams_auth_check` returns `missing` or `expired`:
+
 ```
 Teams auth is not active. Please run:
   teams-cli login

@@ -17,6 +17,7 @@ User request: $ARGUMENTS
 ## 1. Identify the source message
 
 Same options as `/reply`:
+
 - **A. Direct id**: user provides `AAMk-...` → use as `message_id`.
 - **B. Natural language**: "forward Maria's budget email to Alex" → list recent mail, filter by sender/subject substring, confirm the pick.
 - **C. Conversation context**: re-use an id from a recent `/mail-review` or `/inbox-briefing`.
@@ -32,6 +33,7 @@ Optional: CC and BCC. CC-self is NOT auto-applied for forwards (the original mes
 ## 3. Compose the forwarding note (optional)
 
 If the user wants to add context to the forward ("FYI for the Q2 review"), prepare the HTML note:
+
 - Aptos 12pt #404040
 - Brief — usually 1-3 lines
 - Do NOT include the original (auto-quoted) or the signature (auto-appended)
@@ -52,6 +54,7 @@ If the user has nothing to add, use a minimal placeholder like `<p>FYI</p>` or s
 **Default behavior**: creates a forward DRAFT (with `FW:` subject prefix), patches body to inject your note ABOVE the auto-quoted original, sets ToRecipients/CcRecipients/BccRecipients, appends signature from `~/.outlook-cli/signature.html`, activates Outlook desktop.
 
 **Optional flags**:
+
 - `send_now: true` — dispatch immediately, skip draft
 - `no_signature: true` — skip signature
 - `signature_file: "/path"` — custom signature file
@@ -74,6 +77,7 @@ If the user has nothing to add, use a minimal placeholder like `<p>FYI</p>` or s
 ```
 
 Report:
+
 - "Forward draft created (id `AAMk-...`) → [recipients]. Microsoft Outlook activated. Review and send."
 - If `signatureApplied: false` and the user expected one: tell them to run `outlook-cli capture-signature` once.
 - If error: report and suggest fixes.

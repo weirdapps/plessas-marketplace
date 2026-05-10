@@ -16,6 +16,7 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. Load Previous State
+
 - Read `~/.claude/drafts/inbox-state.json` (if exists) to know which emails were seen before
 
 ### 2. Read Emails via outlook-bridge MCP
@@ -23,6 +24,7 @@ User request: $ARGUMENTS
 Call `mcp__outlook-bridge__outlook_auth_check` first; if `status != "ok"`, surface the auth flow before continuing.
 
 **Reading the inbox:**
+
 ```
 Tool: mcp__outlook-bridge__outlook_list_mail
 Args: {
@@ -33,6 +35,7 @@ Args: {
 ```
 
 **Reading archive:**
+
 ```
 Tool: mcp__outlook-bridge__outlook_list_mail
 Args: {
@@ -43,12 +46,14 @@ Args: {
 ```
 
 **Reading full message body** (for important/complex emails):
+
 ```
 Tool: mcp__outlook-bridge__outlook_get_mail
 Args: { "id": "<Id>", "body": "html" }   # use "text" for plain-text extraction
 ```
 
 **Key points:**
+
 - One `outlook_list_mail` call returns up to 100 messages — use `since` + `all:true` + `max` for larger sweeps
 - `select` keeps payloads small; only request body via `outlook_get_mail` when needed
 - For `--unread` flag: include `IsRead` in `select` and filter client-side (`IsRead == false`)
@@ -64,23 +69,28 @@ Args: { "id": "<Id>", "out": "/tmp/mail_att", "overwrite": true }
 ```
 
 The tool returns the absolute paths of saved files. Then convert each saved attachment:
+
 ```bash
 markitdown "/tmp/mail_att/filename.pptx" | head -200
 ```
 
 Use the extracted text to include a one-line attachment summary in the briefing gist, e.g.:
+
 - "ATTACHMENT: Q1 Cards Revenue Report — revenue up 12% YoY, 3 action items"
 - "ATTACHMENT: Project timeline (Excel) — 15 milestones, next deadline April 3"
 
 Only extract attachments for emails marked REPLY, URGENT, or DELEGATE — skip for MONITOR/SKIP to save time.
 
 ### 3. Classify New vs Previously Seen
+
 Compare current inbox against `inbox-state.json`:
+
 - **NEW**: Emails not in the previous state
 - **PREVIOUSLY SEEN**: Emails present in a prior run
   - Note if user appears to have acted (email moved to archive, reply sent, etc.)
 
 ### 4. Analyze & Recommend Actions
+
 For each email, determine one or more actions:
 
 | Action | When | Symbol |
@@ -94,7 +104,9 @@ For each email, determine one or more actions:
 | **FOLLOW-UP** | You already replied but thread needs follow-up check | 🔄 |
 
 ### 5. Generate Gist
+
 For each email, write a 1-2 sentence gist:
+
 - What is this about? (substance, not just subject line)
 - What does the sender want from you specifically?
 - Any context that matters (deadline, escalation, repeat request)
@@ -135,7 +147,9 @@ INSIGHTS
 ```
 
 ### 7. Save Inbox State
+
 Write `~/.claude/drafts/inbox-state.json`:
+
 ```json
 {
   "last_run": "ISO-8601 timestamp",
@@ -152,6 +166,7 @@ Write `~/.claude/drafts/inbox-state.json`:
   ]
 }
 ```
+
 </process>
 
 <specifications>
@@ -164,6 +179,7 @@ Write `~/.claude/drafts/inbox-state.json`:
 | `--unread` | No | `false` | Only process unread emails |
 
 ## Output
+
 - Inbox briefing with new vs previously seen separation
 - 1-2 sentence gist per email
 - Action recommendations with symbols
@@ -175,22 +191,27 @@ Write `~/.claude/drafts/inbox-state.json`:
 ## Usage Examples
 
 ### Quick inbox scan
+
 ```
 /inbox-briefing
 ```
 
 ### Include archive context
+
 ```
 /inbox-briefing both
 ```
 
 ### Only unread
+
 ```
 /inbox-briefing --unread
 ```
 
 ### Deep archive scan
+
 ```
 /inbox-briefing archive --count 50
 ```
+
 </examples>

@@ -76,6 +76,7 @@ For pixel-perfect mockups, use clean screenshots that have no device frame baked
 ### Why Flood-Fill Masking?
 
 The frame PNG has TWO transparent regions:
+
 - **Outer**: Rounded corners outside the phone shape
 - **Inner**: The actual screen area inside the bezel
 
@@ -90,6 +91,7 @@ Simple alpha checking would include both. Flood-fill from the center only finds 
 ## File Naming (Mandatory)
 
 Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.png`
+
 - Timestamp in Athens time: `TZ='Europe/Athens' date '+%Y%m%d%H%M'`
 - All lowercase, spaces/hyphens → underscores
 - Timestamp = save time (updates on re-save)

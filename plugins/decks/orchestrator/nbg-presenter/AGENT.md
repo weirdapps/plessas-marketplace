@@ -114,18 +114,22 @@ INPUT
 ## Input Types
 
 ### Type A: Raw Content
+
 - Bullets, text, data
 - Action: Full pipeline (all agents)
 
 ### Type B: Existing Presentation
+
 - Messy or off-brand PPTX
 - Action: Analyze → Storyline → Storyboard → Render
 
 ### Type C: Quick Polish
+
 - Already structured, needs formatting
 - Action: Skip to Graphics Renderer
 
 ### Type D: Specific Asset
+
 - Just need a chart/infographic/icon
 - Action: Direct to specialist agent
 
@@ -156,21 +160,25 @@ IF input contains app screenshots needing device frames:
 ## Quality Gates
 
 ### Gate 1: Post-Storyline
+
 - [ ] Every slide has ONE key message
 - [ ] Titles are insight-driven
 - [ ] Logical flow achieved
 
 ### Gate 2: Post-Storyboard
+
 - [ ] Layouts match content types
 - [ ] Visual elements support messages
 - [ ] NBG margins respected
 
 ### Gate 3: Pre-Render
+
 - [ ] All assets ready (charts, icons)
 - [ ] All content finalized
 - [ ] All positions specified
 
 ### Gate 4: Post-Render (automated by Graphics Renderer)
+
 - [ ] Dimensions: 13.33" x 7.5" (LAYOUT_WIDE)
 - [ ] Background: white
 - [ ] Font: Aptos
@@ -180,6 +188,7 @@ IF input contains app screenshots needing device frames:
 - [ ] Charts: doughnut (NEVER pie), enhanced line charts
 
 ### Gate 5: QA Review (independent — Presentation QA Agent)
+
 This is the **mandatory final gate**. The deck does NOT ship until QA passes.
 
 - [ ] **Layer 1 — Brand compliance**: `nbg_validate.py` reports 0 failures
@@ -190,6 +199,7 @@ This is the **mandatory final gate**. The deck does NOT ship until QA passes.
 - [ ] **Layer 2E — Structure**: Cover, back cover, dividers (if needed), correct page numbers
 
 **If QA returns FAIL:**
+
 1. Parse the fix list — each item has a specific slide number and fix instruction
 2. Route title/message fixes to **Storyline Architect** for rewording
 3. Route visual/layout/brand fixes to **Graphics Renderer** for re-render
@@ -228,6 +238,7 @@ handoff:
 ### Status Updates
 
 Keep user informed:
+
 - "Analyzing content structure..."
 - "Creating narrative outline..."
 - "Designing visual layouts..."
@@ -241,19 +252,23 @@ Keep user informed:
 
 ## Error Handling
 
-### If Storyline fails:
+### If Storyline fails
+
 - Request clarification from user
 - Provide example of what's needed
 
-### If Storyboard fails:
+### If Storyboard fails
+
 - Fall back to simple layouts
 - Flag for manual review
 
-### If Specialist fails:
+### If Specialist fails
+
 - Use template alternatives
 - Note limitation to user
 
-### If Renderer fails:
+### If Renderer fails
+
 - Output specification instead of PPTX
 - Provide manual instructions
 
@@ -291,6 +306,7 @@ end tell
 3. **Age-based cleanup**: If a draft record is older than 30 days with no matching email or local file, archive it to `reviewed/` with status `EXPIRED`.
 
 If a finalized version is found (via email or local):
+
 1. Extract the PPTX from the email attachment (save to temp dir)
 2. Run a quick slide-by-slide comparison against the draft record's content snapshot
 3. Classify each slide: `USED_AS_IS`, `MODIFIED`, `HEAVILY_REWRITTEN`, `NOT_USED`, `NEW`
@@ -360,6 +376,7 @@ If `style_prefs` is empty (no preferences learned yet), omit the field entirely 
 ### Post-Creation
 
 After the Graphics Renderer completes:
+
 1. A draft record is automatically saved by the renderer to `~/.claude/presentations/pending/`
 2. Display prominently:
 
@@ -377,12 +394,14 @@ After the Graphics Renderer completes:
 ```
 
 ### Post-Completion Hooks
+
 - Offer to email the deck via `/send-mail` (cross-plugin workflow bridge)
 - If the deck was created from an email thread (`--from-email`), reference the source thread
 
 ## Trigger Phrases
 
 Activate NBG Presenter for:
+
 - "Create NBG presentation"
 - "Make this board-ready"
 - "Redesign this deck"

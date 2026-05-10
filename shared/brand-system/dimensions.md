@@ -36,6 +36,7 @@ margins:
 | Height | Fit content | No oversized boxes |
 
 ### Title Box Sizing
+
 - Single-line title: `h: 0.4"`
 - Two-line title: `h: 0.7"`
 - Never use large heights that leave empty space
@@ -43,6 +44,7 @@ margins:
 ## Logo Placement (from Template)
 
 ### Small Logo - Content Slides
+
 Use for all content slides, charts, tables, infographics.
 
 ```javascript
@@ -57,6 +59,7 @@ const LOGO_SMALL = {
 ```
 
 ### Large Logo - Covers & Dividers
+
 Use for cover slides and section dividers only.
 
 ```javascript
@@ -70,6 +73,7 @@ const LOGO_LARGE = {
 ```
 
 ### Back Cover Logo - Centered
+
 Plain back cover with centered oval NBG building logo (NO "Thank You" text).
 
 ```javascript
@@ -104,6 +108,7 @@ const PAGE_NUMBER = {
 ```
 
 ### Which Slides Get Page Numbers
+
 | Slide Type | Page Number |
 |------------|-------------|
 | Cover | No |
@@ -117,6 +122,7 @@ const PAGE_NUMBER = {
 ## Content Areas
 
 ### Full Width Content
+
 ```yaml
 full_width:
   x: 0.37"
@@ -126,6 +132,7 @@ full_width:
 ```
 
 ### Two Column (50/50)
+
 ```yaml
 two_column_even:
   left:
@@ -141,6 +148,7 @@ two_column_even:
 ```
 
 ### Two Column (40/60 - Text/Chart)
+
 ```yaml
 two_column_text_chart:
   text:
@@ -156,6 +164,7 @@ two_column_text_chart:
 ```
 
 ### Three Column
+
 ```yaml
 three_column:
   col1:
@@ -175,6 +184,7 @@ three_column:
 ## Slide Element Positions
 
 ### Cover Slide
+
 ```yaml
 cover:
   title:
@@ -196,6 +206,7 @@ cover:
 ```
 
 ### Divider Slide
+
 ```yaml
 divider:
   number:
@@ -211,6 +222,7 @@ divider:
 ```
 
 ### Content Slide
+
 ```yaml
 content:
   bumper_pill:   # Optional — rounded rect, fill 007B85, 9pt Bold white ALL CAPS

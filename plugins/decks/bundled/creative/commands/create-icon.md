@@ -11,20 +11,24 @@ User request: $ARGUMENTS
 </objective>
 
 <icon_rules>
+
 ## Icon Specifications (NBG Defaults)
 
 ### Canvas
+
 - Size: 64 x 64 px
 - ViewBox: "0 0 64 64"
 - Padding: 5-8px from edges
 
 ### Style
+
 - **Fill only** - NO strokes
 - **Monochrome** - Single color
 - **Geometric** - Clean, simple shapes
 - **Solid** - 100% opaque fills
 
 ### Colors
+
 | Context | Fill Color |
 |---------|------------|
 | Standard (white bg) | #003841 |
@@ -34,6 +38,7 @@ User request: $ARGUMENTS
 | Alert | #AA0028 |
 
 ### Template
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#003841" d="[path data]"/>
@@ -41,6 +46,7 @@ User request: $ARGUMENTS
 ```
 
 ### What NOT to use
+
 - Strokes or outlines
 - Gradients
 - Transparency/opacity
@@ -57,6 +63,7 @@ User request: $ARGUMENTS
 </process>
 
 <success_criteria>
+
 - [ ] Canvas is 64x64, viewBox="0 0 64 64"
 - [ ] Uses solid fill (no strokes)
 - [ ] Color is from target brand palette (NBG default)

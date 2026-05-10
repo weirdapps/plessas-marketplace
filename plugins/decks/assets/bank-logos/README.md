@@ -16,11 +16,13 @@ This directory contains official logos for major Greek banks, for use in competi
 When adding bank logos to slides via XML editing:
 
 ### 1. Copy logo files to media folder
+
 ```bash
 cp alpha-bank.png /path/to/unpacked/ppt/media/
 ```
 
 ### 2. Add relationship in slide .rels file
+
 ```xml
 <Relationship Id="rId11"
               Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
@@ -28,6 +30,7 @@ cp alpha-bank.png /path/to/unpacked/ppt/media/
 ```
 
 ### 3. Add picture element to slide XML
+
 ```xml
 <p:pic>
   <p:nvPicPr>
@@ -104,6 +107,7 @@ When comparing systemic banks in charts/tables, each bank **MUST** use its offic
 ## Chart Axis Usage
 
 When bank logos replace text axis labels in charts:
+
 - Logos must be **centered** under/beside their respective bars
 - Use `addBankLogo()` helper to handle NBG's oval aspect ratio automatically
 - Hide the category axis text labels (`catAxisHidden: true`)

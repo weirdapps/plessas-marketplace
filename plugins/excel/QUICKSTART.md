@@ -78,6 +78,7 @@ Bonus: `/excel-to-deck <file>` — extract the headline insights and hand off to
 ## Common patterns
 
 **Quarterly review** (full pipeline to ExCo deck):
+
 ```
 /excel-summary ~/Downloads/cards_q1_results.xlsx
 # … pick the one or two stories worth telling …
@@ -88,11 +89,13 @@ Bonus: `/excel-to-deck <file>` — extract the headline insights and hand off to
 ```
 
 **Quick KPI check before a meeting** (90 seconds):
+
 ```
 /excel-summary ~/Downloads/branch_pnl_april.xlsx
 ```
 
 **Build a pivot you'd normally PT-by-hand**:
+
 ```
 /excel-pivot ~/Downloads/customer_attrition_2026.xlsx \
   "group by Branch, sum Revenue and Costs, sort by Revenue desc"

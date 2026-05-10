@@ -153,18 +153,21 @@ All checks passed! Presentation follows NBG guidelines.
 Available slide types (see `assets/slide-catalog.yaml`):
 
 ### Covers
+
 - `covers/simple_white` - White background title slide
 - `covers/simple_dark` - Dark teal background
 - `covers/with_image_right` - Image on right
 - `covers/with_image_left` - Image on left
 
 ### Content
+
 - `content/text_only` - Full text layout
 - `content/text_with_bullets` - Title + bullets
 - `content/two_column_text` - Two columns
 - `content/text_image_right` - Text + image
 
 ### Charts
+
 - `charts/pie_single` - Pie/doughnut chart
 - `charts/pie_with_text` - Pie + text boxes
 - `charts/bar_single` - Single bar chart
@@ -172,26 +175,31 @@ Available slide types (see `assets/slide-catalog.yaml`):
 - `charts/line_single` - Line chart
 
 ### Infographics
+
 - `infographics/numbered_4` - 4 items (01-04)
 - `infographics/numbered_6` - 6 items (01-06)
 - `infographics/numbered_9` - 9 items (3x3)
 - `infographics/funnel` - Funnel diagram
 
 ### Tables
+
 - `tables/half_page` - Table with description
 - `tables/full_page` - Full page table
 
 ### Back Covers
+
 - `back_covers/plain_logo` - Plain with NBG logo (ALWAYS use this)
 
 ## NBG Brand Guidelines
 
 ### Dimensions
+
 - Width: 13.33 inches (LAYOUT_WIDE)
 - Height: 7.5 inches
 - Matches LAYOUT_WIDE standard
 
 ### Colors
+
 | Color | Hex | Usage |
 |-------|-----|-------|
 | Dark Teal | #003841 | Titles, headings |
@@ -201,6 +209,7 @@ Available slide types (see `assets/slide-catalog.yaml`):
 | White | #FFFFFF | Background |
 
 ### Chart Colors (in order)
+
 1. #00ADBF - Cyan
 2. #003841 - Dark Teal
 3. #007B85 - NBG Teal
@@ -209,11 +218,13 @@ Available slide types (see `assets/slide-catalog.yaml`):
 6. #00DFF8 - Bright Cyan
 
 ### Fonts
+
 - Primary: Aptos
 - Bullets: Arial
 - Fallback: Calibri, Tahoma
 
 ### Rules
+
 - Always use white or off-white backgrounds
 - **Never include "Thank You" slides**
 - Always end with plain back cover with logo

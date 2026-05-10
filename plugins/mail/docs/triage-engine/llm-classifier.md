@@ -5,6 +5,7 @@ Stage 2 of the triage cascade. For emails not matched by any rule, ask Claude Ha
 ## Prompt
 
 System: "You are an email triage assistant. Given the user's existing folder list and a new email, suggest the best destination folder. Reply with EXACTLY one of these formats:
+
 - `MOVE: <folder-path>` — move to an existing folder
 - `KEEP` — leave in inbox (action required)
 - `ARCHIVE` — move to Inbox/Archive-<current-year>

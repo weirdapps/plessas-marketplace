@@ -25,6 +25,7 @@ Move all messages in a conversation thread to `Inbox/Archive-<current-year>`, cr
 4. Display to user: count, date range, sample subjects. Wait for confirmation.
 5. On confirmation: split message Ids into batches of 20, call `mcp__outlook-bridge__outlook_move_mail` per batch with `continueOnError: true`.
 6. Append batch summary to `~/.claude/triage/audit-log.jsonl`:
+
 ```json
 {"ts":"<iso>","action":"archive-thread","subject":"...","conversation_id":"...","moved_count":N,"to_folder":"Inbox/Archive-2026","from_folder":"Inbox","ids":["..."]}
 ```

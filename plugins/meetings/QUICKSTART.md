@@ -94,18 +94,21 @@ DAY SUMMARY
 ## Common patterns
 
 **Morning routine** (5 min, with coffee):
+
 ```
 /meeting-prep
 # … scan dossiers, decide which talking points to lead with …
 ```
 
 **Pre-Board prep** (the day before):
+
 ```
 /meeting-prep --date 2026-05-13
 # … review attendee dossiers and related inbox threads in advance …
 ```
 
 **Post-1:1 capture** (right after the meeting, send summary to attendee):
+
 ```
 /meeting-debrief --distribute
 # … type decisions and actions in free text; Claude structures them and drafts the email …

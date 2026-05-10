@@ -120,7 +120,9 @@ def get_frames_dir():
     return frames_dir
 
 
-def create_mockup(screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, frames_dir=None):
+def create_mockup(
+    screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, frames_dir=None
+):
     """
     Create a pixel-perfect iPhone mockup.
 
@@ -235,7 +237,9 @@ Available frames:
         choices=list(FRAMES.keys()),
         help=f"iPhone frame to use (default: {DEFAULT_FRAME})",
     )
-    parser.add_argument("--list-frames", action="store_true", help="List available frames")
+    parser.add_argument(
+        "--list-frames", action="store_true", help="List available frames"
+    )
     parser.add_argument("--frames-dir", help="Override device-frames directory")
 
     args = parser.parse_args()

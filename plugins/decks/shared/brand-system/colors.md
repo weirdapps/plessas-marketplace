@@ -5,6 +5,7 @@
 ## Theme Colors (NBG Colors 2)
 
 ### Core Theme Colors
+
 | Name | Hex | RGB | Usage |
 |------|-----|-----|-------|
 | Dark 1 (Black) | `#000000` | 0, 0, 0 | Pure black text |
@@ -13,6 +14,7 @@
 | Light 2 (Off-white) | `#F5F8F6` | 245, 248, 246 | Light backgrounds |
 
 ### Accent Colors
+
 | Accent | Hex | RGB | Usage |
 |--------|-----|-----|-------|
 | Accent 1 (Dark Teal) | `#003841` | 0, 56, 65 | Primary titles, headings |
@@ -25,6 +27,7 @@
 ## Primary Brand Colors
 
 ### Most Frequently Used
+
 | Hex | Name | Usage | Frequency |
 |-----|------|-------|-----------|
 | `#00DFF8` | Bright Cyan | Primary accent | Very High (365+) |
@@ -34,6 +37,7 @@
 | `#202020` | Dark Text | Body text | Medium |
 
 ### Extended Palette
+
 | Hex | Name | Usage |
 |-----|------|-------|
 | `#00DEF8` | Bright Cyan Alt | Logo element (GR theme) |
@@ -105,6 +109,7 @@ These are the colors observed across Plessas's own 7 reference decks — used in
 ## Chart Color Sequence
 
 Use these colors in order for chart data series:
+
 1. `#00ADBF` - Cyan (primary)
 2. `#003841` - Dark Teal
 3. `#007B85` - NBG Teal
@@ -140,9 +145,11 @@ const PFM_CHART_COLORS = [
 ## Background Guidelines
 
 ### IMPORTANT: White Backgrounds Only
+
 **User preference: ALWAYS use white backgrounds. Never use dark themes.**
 
 ### Light Theme (REQUIRED)
+
 | Element | Color |
 |---------|-------|
 | Slide background | `#FFFFFF` (white) - **ALWAYS** |
@@ -153,6 +160,7 @@ const PFM_CHART_COLORS = [
 | **Info cards** | `#F5F8F6` (light gray background) |
 
 ### Card Backgrounds
+
 | Card Type | Background | Border |
 |-----------|------------|--------|
 | Metric card | `#F5F8F6` | 1pt `#333333` |
@@ -160,6 +168,7 @@ const PFM_CHART_COLORS = [
 | Highlight card | `#CBFAFF` | None |
 
 ### Dark Theme (DO NOT USE)
+
 Dark backgrounds are not used per user preference. All slides should be white.
 
 ## PptxGenJS Color Configuration
@@ -244,6 +253,7 @@ const NBG_CHART_COLORS = [
 ### Cover Slide Contrast — CRITICAL
 
 Cover layouts may have overlapping graphic elements. Rules:
+
 1. All cover text must have sufficient contrast against BOTH the background AND any decorative graphics
 2. Use **Dark Teal `#003841`** for the main title — readable on light backgrounds
 3. Use **NBG Teal `#007B85`** for the subtitle — ensures visibility

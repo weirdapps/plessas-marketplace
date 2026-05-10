@@ -14,6 +14,7 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. Load Pending Drafts
+
 Read all JSON files from `~/.claude/drafts/pending/`.
 Also optionally read `~/.claude/drafts/reviewed/` for historical reference.
 
@@ -31,6 +32,7 @@ Args: {
 ```
 
 Then for each candidate match, fetch the body:
+
 ```
 Tool: mcp__outlook-bridge__outlook_get_mail
 Args: { "id": "<Id>", "body": "text" }
@@ -43,6 +45,7 @@ Args: { "id": "<Id>", "body": "text" }
 - Read the actual email body via `outlook_get_mail` (use `body: "text"` for cheap plain-text extraction)
 
 ### 3. Analyze Deltas
+
 For each matched pair (draft vs actual), analyze:
 
 | Dimension | Check |
@@ -55,14 +58,17 @@ For each matched pair (draft vs actual), analyze:
 | **Skip/Reply** | Did they reply to something we skipped, or skip what we drafted? |
 
 Classify each:
+
 - **SENT_AS_IS**: Draft sent unchanged (score: perfect)
 - **MODIFIED**: Altered tone/length/words (score: partial — learn from diff)
 - **REWRITTEN**: Substantially different (score: miss — analyze why)
 - **NOT_SENT**: No matching email found (score: triage error — should have been SKIP)
 
 ### 4. Scan Organic Emails
+
 Also scan last 20 sent items for emails NOT matching any draft.
 These reveal patterns the style guide may be missing:
+
 - New recipients not yet profiled
 - New reply patterns
 - Evolving vocabulary
@@ -70,6 +76,7 @@ These reveal patterns the style guide may be missing:
 ### 4B. Deep Organic Analysis
 
 For organic emails found in step 4, perform full style analysis:
+
 - **Sentence structure**: Simple, compound, or complex sentence patterns
 - **Average sentence length**: Word count per sentence
 - **Question frequency**: How often the user asks questions vs makes statements
@@ -79,6 +86,7 @@ For organic emails found in step 4, perform full style analysis:
 - If patterns are consistent across 3+ organic emails, propose a style guide update
 
 ### 5. Generate Delta Report
+
 ```
 STYLE DELTA REPORT — [date]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -107,12 +115,15 @@ TRIAGE ACCURACY:
 ```
 
 ### 6. Update Style Guide
+
 **Before updating**, save a timestamped backup of the current style guide:
+
 ```bash
 cp plugins/mail/shared/style-guide.md ~/.claude/drafts/style-guide-backups/$(TZ='Europe/Athens' date '+%Y%m%d%H%M')_style-guide.md
 ```
 
 Update `shared/style-guide.md` with:
+
 - New patterns discovered
 - Corrections to existing patterns
 - New recipient profiles
@@ -120,7 +131,9 @@ Update `shared/style-guide.md` with:
 - New example phrases (anonymize sensitive content)
 
 ### 7. Archive Processed Drafts
+
 Move processed drafts from `pending/` to `reviewed/` with added fields:
+
 ```json
 {
   "actual_text": "what the user actually sent",
@@ -131,6 +144,7 @@ Move processed drafts from `pending/` to `reviewed/` with added fields:
 ```
 
 ### 8. Append to Learning Log
+
 Append the delta report to `~/.claude/drafts/learnings.md` with date header.
 This builds a historical record of how drafting accuracy improves over time.
 </process>
@@ -145,6 +159,7 @@ This builds a historical record of how drafting accuracy improves over time.
 | `--update` | No | `true` | Auto-update style guide (set false for dry run) |
 
 ## Output
+
 - Delta report with accuracy score
 - Specific style corrections
 - Updated style guide
@@ -154,22 +169,27 @@ This builds a historical record of how drafting accuracy improves over time.
 ## Usage Examples
 
 ### Review pending drafts (default)
+
 ```
 /draft-review
 ```
 
 ### Review with wider search window
+
 ```
 /draft-review --days 7
 ```
 
 ### Focus on specific recipient
+
 ```
 /draft-review --recipient LASTNAME
 ```
 
 ### Dry run — see report without updating style guide
+
 ```
 /draft-review --update false
 ```
+
 </examples>

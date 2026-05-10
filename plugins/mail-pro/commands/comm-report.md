@@ -45,6 +45,7 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. Determine Report Period
+
 - `week`: last 7 days
 - `month`: last 30 days (default)
 - Use current date and compute the start date
@@ -52,21 +53,26 @@ User request: $ARGUMENTS
 > **Note**: For simple queries (decisions, actions, person context), prefer MCP tools (`mcp__second_brain__*`) over direct SQL. Direct SQL is used here for complex analytical queries only.
 
 ### 1b. Apply Recipient Filter (if --recipient specified)
+
 When `--recipient NAME` is specified, add a filter to ALL queries below to scope results to emails involving that person:
+
 ```sql
 -- Add to every query as an extra JOIN + WHERE clause:
 JOIN email_people ep_filter ON e.id = ep_filter.email_id
 JOIN people p_filter ON ep_filter.person_id = p_filter.id
 WHERE p_filter.name LIKE '%[NAME]%'
 ```
+
 Skip the Relationship Heatmap section (step 3) when filtering by a single recipient — it's redundant. Instead, present a detailed communication timeline for that person.
 
 ### 2. Query Communication Volume
+
 From the knowledge store DB (`~/SourceCode/second-brain/data/brain.db`).
 
 **Data source note:** All analytics are powered exclusively by the knowledge store DB. Do NOT query Sent Items — the user regularly empties it. The user CCs himself on all replies, so sent emails appear in the Archive mailbox and are ingested into the DB.
 
 **Emails sent by user:**
+
 ```sql
 SELECT COUNT(*) as sent_count,
        DATE(date_received) as day
@@ -78,6 +84,7 @@ ORDER BY day;
 ```
 
 **Emails received by user:**
+
 ```sql
 SELECT COUNT(*) as received_count,
        DATE(e.date_received) as day
@@ -92,7 +99,9 @@ ORDER BY day;
 ```
 
 ### 3. Relationship Heatmap
+
 Top contacts ranked by email volume (sent + received):
+
 ```sql
 -- Top recipients of user's emails
 SELECT p.name, p.email, COUNT(*) as email_count
@@ -108,6 +117,7 @@ LIMIT 15;
 ```
 
 Present as heatmap:
+
 ```
 RELATIONSHIP HEATMAP (last [period])
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -119,7 +129,9 @@ RELATIONSHIP HEATMAP (last [period])
 ```
 
 ### 4. Reactive vs Proactive Ratio
+
 Classify sent emails:
+
 - **Reactive**: replies (has `in_reply_to` or `conversation_id` with prior inbound)
 - **Proactive**: new threads initiated by user
 
@@ -145,7 +157,9 @@ Proactive:  ██████            28% (N emails)
 ```
 
 ### 5. Delegation Effectiveness
+
 Query action items from second-brain:
+
 ```sql
 SELECT ai.task, ai.owner, ai.deadline, ai.status, e.subject
 FROM action_items ai
@@ -155,13 +169,16 @@ ORDER BY ai.deadline;
 ```
 
 Report:
+
 - Tasks delegated vs completed
 - Overdue items
 - Top delegates by task count
 - Completion rate per delegate
 
 ### 6. Response Time Analysis
+
 For conversation threads, estimate response time:
+
 ```sql
 -- Find reply pairs in the same conversation
 SELECT e1.date_received as received,
@@ -185,6 +202,7 @@ Median: X hours
 ```
 
 ### 7. Language Distribution Trends
+
 ```sql
 SELECT language, COUNT(*) as count
 FROM emails
@@ -194,6 +212,7 @@ GROUP BY language;
 ```
 
 ### 8. Sentiment Overview
+
 ```sql
 SELECT sentiment, COUNT(*) as count
 FROM emails
@@ -202,6 +221,7 @@ GROUP BY sentiment;
 ```
 
 ### 9. Present Full Report
+
 Combine all sections into the strategic report with clear headers and visual indicators.
 </process>
 
@@ -214,6 +234,7 @@ Combine all sections into the strategic report with clear headers and visual ind
 | `--recipient` | No | all | Focus on communication with a specific person |
 
 ## Output
+
 - Relationship heatmap
 - Reactive vs proactive ratio
 - Delegation effectiveness with overdue alerts
@@ -226,17 +247,21 @@ Combine all sections into the strategic report with clear headers and visual ind
 ## Usage Examples
 
 ### Monthly communication report (default)
+
 ```
 /comm-report
 ```
 
 ### Weekly report
+
 ```
 /comm-report week
 ```
 
 ### Focus on a specific relationship
+
 ```
 /comm-report month --recipient Papadopoulos
 ```
+
 </examples>

@@ -91,6 +91,7 @@ Bonus commands: `/chat-channel-digest <channel>` (executive summary of a project
 ## Common patterns
 
 **Morning Teams triage** (5 min):
+
 ```
 /chat-inbox
 # … scan the urgency groups, pick what needs a reply now …
@@ -99,6 +100,7 @@ Bonus commands: `/chat-channel-digest <channel>` (executive summary of a project
 ```
 
 **Catch up on a project channel** (e.g. Embedded Banking after a few days away):
+
 ```
 /chat-channel-digest <channel>
 # Returns: executive summary across recent threads —
@@ -106,6 +108,7 @@ Bonus commands: `/chat-channel-digest <channel>` (executive summary of a project
 ```
 
 **Reply with auto-language detection**:
+
 ```
 /chat-reply <chat_id>
 # Greek thread → Greek reply (matches recipient register)

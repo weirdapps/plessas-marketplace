@@ -32,6 +32,7 @@ Args: { "id": "AAMkAGI..." }
 ```
 
 **Advantages of outlook-bridge MCP:**
+
 - M365 source of truth via Microsoft Graph (no local sync drift)
 - Structured JSON responses (subject, start/end, attendees with response status, body, location)
 - No AppleScript fragility on long-running events or recurring series
@@ -79,6 +80,7 @@ Query: "Do I have any back-to-back meetings today?"
 ```
 
 **When to use WorkIQ instead of outlook-bridge:**
+
 - The query is genuinely natural-language and doesn't map to a date range + attendee filter
 - You need cross-app reasoning (calendar + Teams + chat) that outlook-cli can't see
 - outlook-bridge is unavailable (MCP server down, `outlook-cli` not authenticated)

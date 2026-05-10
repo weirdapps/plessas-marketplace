@@ -78,9 +78,11 @@ chmod +x ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.s
 Two possibilities:
 
 1. The marketplace isn't added to Claude Code yet:
+
    ```
    /plugin marketplace add weirdapps/plessas-marketplace
    ```
+
 2. The plugin name is misspelled. Valid names: `mail`, `meetings`, `chat`, `decks`, `excel`, `docs`, `mail-pro`.
 
 ---
@@ -312,6 +314,7 @@ Then follow the [README install steps](../README.md#install--10-minutes) from sc
 File an issue: [github.com/weirdapps/plessas-marketplace/issues](https://github.com/weirdapps/plessas-marketplace/issues)
 
 Include:
+
 1. The exact command you ran
 2. The exact error message (copy-paste, don't paraphrase)
 3. The output of `~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh`

@@ -35,12 +35,14 @@ If still ambiguous after natural-language matching, ask the user to disambiguate
 ## 3. Compose the reply body
 
 Prepare the user's NEW reply content as HTML:
+
 - Convert any markdown to HTML
 - Aptos 12pt #404040, no `<p>` tags, `<br>`/`<br><br>` for spacing
 - Keep it brief and on-tone — match the user's style from `shared/style-guide.md`
 - The auto-quoted original AND the signature are appended automatically — do NOT include either in your HTML
 
 Example:
+
 ```html
 <html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">
 Thanks for the update — confirming the timeline works on our end.<br><br>
@@ -60,6 +62,7 @@ Will circulate the revised deck tomorrow morning.
 **Default behavior**: creates a reply DRAFT (with `RE:` subject prefix from M365), patches the body to inject your reply ABOVE the auto-quoted original, appends your signature from `~/.outlook-cli/signature.html`, activates Outlook desktop.
 
 **Optional flags**:
+
 - `send_now: true` — bypass draft, dispatch immediately
 - `no_signature: true` — skip signature appending (rarely needed)
 - `signature_file: "/path/to/custom-sig.html"` — override default signature
@@ -69,6 +72,7 @@ Will circulate the revised deck tomorrow morning.
 ## 5. Confirm result
 
 The tool returns:
+
 ```json
 {
   "kind": "reply",
@@ -83,6 +87,7 @@ The tool returns:
 ```
 
 Report:
+
 - "Reply draft created (id `AAMk-...`) — Microsoft Outlook activated. Review and send. Signature applied: ✓ Auto-quote: ✓"
 - If `signatureApplied: false` and the user expected one: warn that `~/.outlook-cli/signature.html` is missing — run `outlook-cli capture-signature` (or invoke `mcp__outlook-bridge__outlook_capture_signature`) once.
 - If error: report and suggest fixes (auth → `outlook-cli auth-check`; bad message id → re-list).

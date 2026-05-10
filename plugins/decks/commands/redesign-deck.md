@@ -55,27 +55,32 @@ User request: $ARGUMENTS
 </process>
 
 <redesign_principles>
+
 ## Executive Design Principles
 
 ### Content Refinement (Without Changing Meaning)
+
 - Shorten long sentences
 - Turn dense text into sharp, executive bullets
 - Replace paragraphs with structured layouts
 - Make slides scannable in 5-7 seconds
 
 ### Visual Enhancement
+
 - Improve layout balance and spacing
 - Reduce visual noise
 - Create clear hierarchy
 - Use alignment, grids, whitespace properly
 
 ### Slide Structure
+
 - ONE clear message per slide
 - Strong, insight-driven titles
 - Logical flow from slide to slide
 </redesign_principles>
 
 <success_criteria>
+
 - [ ] Content meaning preserved
 - [ ] NBG branding applied consistently
 - [ ] Visual quality improved

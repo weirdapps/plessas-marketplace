@@ -45,12 +45,15 @@ User request: $ARGUMENTS
 </process>
 
 <nbg_quick_reference>
+
 ## NBG Formatting Specs
 
 ### Dimensions
+
 - 13.33" x 7.5" (LAYOUT_WIDE) (NOT default)
 
 ### Colors (no # for PptxGenJS)
+
 - darkTeal: '003841' (titles)
 - teal: '007B85' (section numbers)
 - brightCyan: '00DFF8' (bullets)
@@ -58,19 +61,23 @@ User request: $ARGUMENTS
 - white: 'FFFFFF' (background)
 
 ### Fonts
+
 - Primary: Aptos
 - Fallback: Arial, Calibri
 
 ### Logo (from Template)
+
 - Small (content): x=0.374", y=7.071", 0.822" x 0.236"
 - Large (covers): x=0.374", y=6.271", 2.191" x 0.630"
 - Back cover: centered oval logo (5.44", 2.98"), NO text
 
 ### Text Box Rule
+
 - margin: 0 (always)
 </nbg_quick_reference>
 
 <success_criteria>
+
 - [ ] Correct dimensions applied
 - [ ] NBG colors used
 - [ ] Aptos font throughout

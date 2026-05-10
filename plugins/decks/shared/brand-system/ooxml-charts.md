@@ -5,6 +5,7 @@ This document provides detailed specifications for creating and editing charts d
 ## Chart File Structure
 
 Charts in PPTX files are stored in:
+
 ```
 ppt/
 ├── charts/
@@ -18,6 +19,7 @@ ppt/
 ## NBG Chart Style Defaults
 
 ### Common Settings
+
 ```xml
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
               xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -31,6 +33,7 @@ ppt/
 ```
 
 ### NBG Color Palette (for charts)
+
 | Order | Hex Code | Name | Usage |
 |-------|----------|------|-------|
 | 1 | `00ADBF` | Cyan | Primary data series |
@@ -49,6 +52,7 @@ ppt/
 **Use for**: Monthly/quarterly data, time series comparisons
 
 ### Key Elements
+
 ```xml
 <c:barChart>
   <c:barDir val="col"/>        <!-- "col" for vertical, "bar" for horizontal -->
@@ -57,6 +61,7 @@ ppt/
 ```
 
 ### Series Definition
+
 ```xml
 <c:ser>
   <c:idx val="0"/>
@@ -80,6 +85,7 @@ ppt/
 ```
 
 ### Data Labels (NBG Style)
+
 ```xml
 <c:dLbls>
   <c:numFmt formatCode="#,##0.0" sourceLinked="0"/>
@@ -111,6 +117,7 @@ ppt/
 ```
 
 ### Category Axis (NBG Style)
+
 ```xml
 <c:catAx>
   <c:axId val="2094734554"/>
@@ -154,6 +161,7 @@ ppt/
 ```
 
 ### Hidden Value Axis
+
 ```xml
 <c:valAx>
   <c:axId val="2094734552"/>
@@ -175,6 +183,7 @@ ppt/
 **Use for**: Comparing composition across categories (e.g., VISA/MC vs DIAS transactions)
 
 ### Key Differences from Column Chart
+
 ```xml
 <c:barChart>
   <c:barDir val="col"/>
@@ -187,6 +196,7 @@ ppt/
 ```
 
 ### Multiple Series Colors
+
 ```xml
 <!-- Series 1: Dark Teal -->
 <c:ser>
@@ -210,6 +220,7 @@ ppt/
 ```
 
 ### Stacked Data Labels (White on Bar)
+
 ```xml
 <c:txPr>
   <a:bodyPr wrap="square" lIns="38100" tIns="19050" rIns="38100" bIns="19050" anchor="ctr">
@@ -236,6 +247,7 @@ ppt/
 **Use for**: Comparing categories side-by-side (e.g., bank transaction volumes)
 
 ### Key Settings
+
 ```xml
 <c:barChart>
   <c:barDir val="bar"/>  <!-- Horizontal bars -->
@@ -244,6 +256,7 @@ ppt/
 ```
 
 ### Manual Layout (for precise positioning)
+
 ```xml
 <c:layout>
   <c:manualLayout>
@@ -259,6 +272,7 @@ ppt/
 ```
 
 ### Hidden Category Axis (when using logo images instead)
+
 ```xml
 <c:catAx>
   <c:delete val="1"/>  <!-- Hide category labels -->
@@ -268,6 +282,7 @@ ppt/
 ```
 
 ### Bottom Legend
+
 ```xml
 <c:legend>
   <c:legendPos val="b"/>  <!-- Bottom position -->
@@ -297,11 +312,13 @@ ppt/
 **Use for**: Financial flows, showing how values add/subtract to reach a total
 
 Waterfall charts in OOXML are created using a stacked bar chart with three series:
+
 1. **Base** (invisible) - positions the colored bars
 2. **Increase** (cyan) - positive additions
 3. **Decrease** (red) - subtractions
 
 ### Data Structure (Excel)
+
 | Category | Base | Increase | Decrease |
 |----------|------|----------|----------|
 | Start Item | 0 | 2084 | 0 |
@@ -312,6 +329,7 @@ Waterfall charts in OOXML are created using a stacked bar chart with three serie
 **Base calculation**: For each row, Base = previous running total after that row's change
 
 ### Chart Definition
+
 ```xml
 <c:barChart>
   <c:barDir val="col"/>
@@ -451,6 +469,7 @@ Hide labels for zero values by using individual `<c:dLbl>` elements:
 ```
 
 ### Waterfall Axis (minimal)
+
 ```xml
 <c:catAx>
   <c:axId val="100"/>
@@ -499,6 +518,7 @@ Hide labels for zero values by using individual `<c:dLbl>` elements:
 Each chart references an embedded Excel file for its data.
 
 ### Chart Relationship File (chart1.xml.rels)
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -509,13 +529,16 @@ Each chart references an embedded Excel file for its data.
 ```
 
 ### Content Types Entry
+
 Add to `[Content_Types].xml`:
+
 ```xml
 <Override PartName="/ppt/charts/chart1.xml"
           ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>
 ```
 
 ### Creating Excel Workbook Programmatically
+
 ```javascript
 // Using exceljs
 const ExcelJS = require('exceljs');
@@ -552,6 +575,7 @@ await workbook.xlsx.writeFile('Microsoft_Excel_Worksheet1.xlsx');
 ## Adding Charts to Slides
 
 ### Slide Relationship Entry (slide1.xml.rels)
+
 ```xml
 <Relationship Id="rId3"
               Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
@@ -559,6 +583,7 @@ await workbook.xlsx.writeFile('Microsoft_Excel_Worksheet1.xlsx');
 ```
 
 ### Chart Frame in Slide XML
+
 ```xml
 <p:graphicFrame>
   <p:nvGraphicFramePr>
@@ -581,6 +606,7 @@ await workbook.xlsx.writeFile('Microsoft_Excel_Worksheet1.xlsx');
 ```
 
 ### EMU Conversion
+
 - 1 inch = 914400 EMU
 - 1 point = 12700 EMU
 - 1 cm = 360000 EMU
@@ -590,6 +616,7 @@ await workbook.xlsx.writeFile('Microsoft_Excel_Worksheet1.xlsx');
 ## Chart Styling Summary
 
 ### NBG Font Settings
+
 | Element | Font | Size | Bold | Color |
 |---------|------|------|------|-------|
 | Category labels | Aptos | 10pt | No | #202020 |
@@ -600,11 +627,13 @@ await workbook.xlsx.writeFile('Microsoft_Excel_Worksheet1.xlsx');
 | Waterfall total | Aptos | 14pt | Yes | #404040 |
 
 ### Axis Line
+
 - Width: 12700 EMU (1pt)
 - Color: #BEC1BE (Light Gray)
 - Style: Solid
 
 ### Chart Background
+
 ```xml
 <c:spPr>
   <a:noFill/>

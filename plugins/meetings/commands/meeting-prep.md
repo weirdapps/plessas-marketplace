@@ -14,6 +14,7 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 0. Verify Outlook MCP Available (FAIL-FAST)
+
 This plugin reads the calendar via `mcp__outlook-bridge__*` tools, which are bundled in the **mail** plugin. Before doing anything else, check the bridge is reachable:
 
 ```
@@ -29,11 +30,13 @@ If the tool is **not available** (no `mcp__outlook-bridge__*` tools listed in yo
 Do not attempt the AppleScript fallback unless the user explicitly passes `--outlook`. If the tool exists but returns `auth_required`, surface the `outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com` flow.
 
 ### 1. Parse Arguments
+
 - `--date YYYY-MM-DD`: Prep for a specific date (default: today)
 - `--outlook`: Use Outlook AppleScript instead of the MCP path (emergency fallback only)
 - `--no-inbox`: Skip inbox cross-referencing (faster)
 
 ### 2. Read Calendar
+
 Read events using outlook-bridge MCP as the primary source (Microsoft Graph via `outlook-cli`):
 
 ```
@@ -42,6 +45,7 @@ Args: { "from": "now", "to": "end of day" }   # or explicit ISO range when --dat
 ```
 
 For full attendee/body detail on a specific event:
+
 ```
 Tool: mcp__outlook-bridge__outlook_get_event
 Args: { "id": "<event Id>" }
@@ -52,12 +56,15 @@ Extract: summary, start/end time, location, attendees, notes.
 See `shared/calendar-access.md` for the full access-pattern matrix.
 
 ### 3. Build Attendee Dossiers
+
 For each unique attendee, query the knowledge store via MCP:
+
 ```
 Use `mcp__second_brain__person_context` with `name_or_email="<attendee_name>"`
 ```
 
 ### 4. Cross-Reference Inbox and Archive
+
 Search Inbox and Archive for emails related to meeting topics or from meeting attendees via the outlook-bridge MCP:
 
 ```
@@ -71,13 +78,16 @@ Args: { "folder": "Archive", "top": 50, "select": "Id,Subject,From,ToRecipients,
 Filter client-side by attendee email and topic keywords. Archive is the canonical source for the user's own sent mail (user CCs himself on everything, Sent Items is regularly emptied). For body content on relevant matches, follow up with `mcp__outlook-bridge__outlook_get_mail`.
 
 ### 5. Generate Briefing
+
 Produce a structured briefing per meeting:
+
 - Attendee dossiers (last contact, open items, recent decisions, sentiment)
 - Related inbox emails
 - Suggested talking points based on open items and context
 - Summary with conflict warnings and cross-meeting patterns
 
 ### 6. Present
+
 Display the full briefing in the conversation.
 </process>
 
@@ -91,6 +101,7 @@ Display the full briefing in the conversation.
 | `--no-inbox` | No | false | Skip inbox cross-referencing |
 
 ## Output
+
 - Per-meeting briefing with attendee dossiers
 - Related inbox emails
 - Suggested talking points
@@ -101,27 +112,33 @@ Display the full briefing in the conversation.
 ## Usage Examples
 
 ### Today's meetings (default)
+
 ```
 /meeting-prep
 ```
 
 ### Prep for tomorrow
+
 ```
 /meeting-prep --date 2026-03-22
 ```
 
 ### Use Outlook calendar
+
 ```
 /meeting-prep --outlook
 ```
 
 ### Quick prep without inbox scan
+
 ```
 /meeting-prep --no-inbox
 ```
+
 </examples>
 
 <related_commands>
+
 ## Related Commands
 
 | Command | When to Use |

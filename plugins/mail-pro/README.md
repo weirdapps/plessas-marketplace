@@ -31,6 +31,7 @@ The script writes to `plugins/mail/shared/style-guide.md` — i.e. it lives in `
 ## Why split from `mail`?
 
 Three reasons:
+
 1. `second-brain` is a substantial parallel system (ingestion pipeline, weeks of email to populate, ongoing daily sync). Forcing every teammate to install it just to use the basic mail plugin would be wrong.
 2. `second-brain` is currently private. Public-marketplace plugins shouldn't have hard dependencies on private repos.
 3. Splitting makes the dependency boundary explicit. If `second-brain` ever becomes public (or gets replaced by a slimmer alternative), only `mail-pro` needs to change.

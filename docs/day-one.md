@@ -19,39 +19,51 @@ You should see 15/15 green checks.
 Open Claude Code and type these commands:
 
 ### Mail — see your inbox
+
 ```
 /inbox-briefing
 ```
+
 This reads your Outlook inbox and produces a briefing with summaries, priorities, and suggested actions.
 
 ### Chat — see your Teams unreads
+
 ```
 /chat-inbox
 ```
+
 This summarises your recent Microsoft Teams chats and highlights anything that needs a reply.
 
 ### Excel — analyse a spreadsheet
+
 ```
 /excel-summary ~/Downloads/any-file.xlsx
 ```
+
 Replace with any .xlsx file you have. Claude will read the structure, surface KPIs, and flag anomalies.
 
 ### Docs — create a Word document
+
 ```
 /docs-create quarterly update
 ```
+
 Claude produces a structured .docx file and saves it to ~/Downloads/.
 
 ### Decks — create a presentation
+
 ```
 /create-presentation Q4 results summary for leadership
 ```
+
 This runs the full multi-agent pipeline: storyline → storyboard → graphics → QA. Takes a few minutes.
 
 ### Meetings — prepare for your next meeting
+
 ```
 /meeting-prep
 ```
+
 Claude reads your calendar, identifies your next meeting, and prepares a briefing with attendee dossiers.
 
 ## 3. Customise your CLAUDE.md

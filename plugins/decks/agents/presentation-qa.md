@@ -77,6 +77,7 @@ Each content slide should have a purposeful mix of visual elements and text. Pur
 | **Poor** | D | Text wall with no visual relief. Or visual-only with no context. Needs rework. |
 
 **Rules:**
+
 - No more than 2 consecutive slides rated C or below
 - No slide rated D ships — must be reworked
 - Cover, divider, and back cover slides are exempt from this check
@@ -119,6 +120,7 @@ Every text element must meet minimum readability standards. The validator (`nbg_
 | Page numbers | 10pt | 10pt | <9pt |
 
 **Rules:**
+
 - **10pt is the absolute floor** for all visible text except footnotes/sources (which may be 8pt)
 - Footnotes and source attributions are the ONLY elements allowed below 10pt
 - If any body text, label, or card text is below the minimum, it's a **FAIL** — the renderer must increase the font size, not squeeze content
@@ -134,6 +136,7 @@ Content must not crowd the action title. There must be clear visual breathing ro
 | Title box height | Fits content tightly (0.4" for single line) | Oversized title box that wastes space |
 
 **Measurement:**
+
 - Title is at y=0.5", h=0.4" → title bottom edge = 0.9"
 - First content element should start at y ≥1.05" (minimum 0.15" gap)
 - Recommended first content at y=1.1"–1.3" depending on slide type
@@ -152,17 +155,20 @@ Slides should use the available content area (1.1"–6.85" vertically = 5.75" he
 | **Too dense** | Content fills >90% with no breathing room, elements touching each other | Fail — reduce content, split into 2 slides, or restructure |
 
 **How to assess:**
+
 - Calculate the bounding box of all content elements (excluding logo and page number)
 - Compare against the total safe area (12.59" × 5.75" = 72.4 sq inches)
 - Content coverage below 40% means the slide looks empty and wastes the reader's attention
 - Content coverage above 90% means the slide is cramped and hard to scan
 
 **Common sparse patterns to flag:**
+
 - 2–3 short bullets floating in the upper portion with the entire bottom half empty
 - A small chart in one corner with no supporting text or annotation
 - Metric cards only occupying the top 1" with nothing below
 
 **Fixes for sparse slides:**
+
 - Increase font sizes to better fill the space
 - Add a supporting visual element (chart, diagram, icon grid)
 - Expand metric cards to be larger and more prominent
@@ -181,6 +187,7 @@ When a presentation compares the four Greek systemic banks, **brand colors and l
 | Alpha Bank | Blue | `#02509C` | Square (64x64) |
 
 **Rules:**
+
 - Each bank's bar/column in comparison charts **MUST** use its official brand color
 - Bank comparison charts **MUST** be built with manual shapes (rect + addBankLogo), NOT PptxGenJS chart engine — the chart engine's auto-layout makes logo-bar centering unreliable
 - Bank logos **MUST** replace text axis labels, centered under each bar using the same `centerX` coordinate
@@ -190,6 +197,7 @@ When a presentation compares the four Greek systemic banks, **brand colors and l
 - Logo files are in `assets/bank-logos/` (nbg.png, eurobank.png, piraeus-bank.png, alpha-bank.png)
 
 **What to check:**
+
 - Are all 4 brand colors present? (no generic NBG palette colors substituted)
 - Are logos **exactly** centered under their bars? (bars and logos must share the same centerX)
 - Is NBG's logo visibly wider than the others? (oval, not square — if it looks the same width as the others, it's been squished)
@@ -213,6 +221,7 @@ When a presentation compares the four Greek systemic banks, **brand colors and l
 After both layers, produce a structured verdict:
 
 ### PASS
+
 All Layer 1 checks pass AND no Layer 2 D-rated slides AND no structural issues.
 
 ```yaml
@@ -348,6 +357,7 @@ def extract_slide_content(pptx_path):
 ```
 
 Use this extraction to perform Layer 2 assessments. For each slide, determine:
+
 - Is the title an action title or a label?
 - What's the text-to-visual ratio?
 - How many bullets/text blocks?

@@ -12,11 +12,13 @@ GitHub manages the disclosure flow privately — only the maintainers see the re
 ## Scope
 
 In scope:
+
 - The marketplace plugins themselves (`decks`, `mail`, `mail-pro`, `meetings`, `chat`, `excel`, `docs`)
 - The bundled MCP servers (`outlook-bridge`, `teams-bridge`)
 - The installer scripts (`installers/install.{sh,ps1}`, `installers/auth-wizard.{sh,ps1}`, `installers/pii-gauntlet.sh`)
 
 Out of scope:
+
 - Vulnerabilities in upstream dependencies (`outlook-cli`, `teams-cli`, `second-brain`) — please report those in their own repositories
 - Vulnerabilities in Claude Code itself — report at <https://github.com/anthropics/claude-code/issues>
 

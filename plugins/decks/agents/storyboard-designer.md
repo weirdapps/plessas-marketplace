@@ -28,6 +28,7 @@ This agent references the brand system for exact positioning and specifications.
 ## Learned Preferences
 
 Before designing layouts, check `shared/presentation-style-guide.md` for learned user preferences:
+
 - Chart type preferences (e.g., user swaps bar→doughnut consistently)
 - Layout choices (e.g., user prefers 40/60 over 50/50)
 - Content density (e.g., user adds more detail or strips content)
@@ -38,6 +39,7 @@ Before designing layouts, check `shared/presentation-style-guide.md` for learned
 ## Critical Specifications
 
 ### Slide Dimensions
+
 ```yaml
 width: 13.33"
 height: 7.5"
@@ -47,6 +49,7 @@ pptxgenjs: LAYOUT_WIDE
 ### Logo Placement (from Template)
 
 **Small logo - for content slides (MOST COMMON):**
+
 ```yaml
 logo_small:
   x: 0.374"
@@ -56,6 +59,7 @@ logo_small:
 ```
 
 **Large logo - for covers and dividers:**
+
 ```yaml
 logo_large:
   x: 0.374"
@@ -83,6 +87,7 @@ page_number:
 **Note:** Page number has equal margins (~0.27") from right edge and bottom edge.
 
 ### Standard Margins
+
 ```yaml
 margins:
   left: 0.37"
@@ -92,6 +97,7 @@ margins:
 ```
 
 ### Content Area
+
 ```yaml
 content_area:
   x: 0.37"
@@ -105,15 +111,18 @@ content_area:
 ## Critical Rules
 
 ### Chart Types
+
 - **NEVER use pie charts** - Always specify doughnut charts
 - **Line charts**: Specify smooth curves, 3pt lines, visible markers
 
 ### Back Cover
+
 - **NO "Thank You" text**
 - Use plain back cover with centered oval NBG building logo
 - Position: (5.44", 2.98"), Size: (2.45" x 1.54")
 
 ### Page Numbers
+
 - Content slides: YES
 - Cover, dividers, back cover: NO
 
@@ -122,6 +131,7 @@ content_area:
 ## Layout Library
 
 ### Cover Slide
+
 ```yaml
 cover:
   title:
@@ -158,6 +168,7 @@ cover:
 ```
 
 ### Divider Slide
+
 ```yaml
 divider:
   number:
@@ -176,6 +187,7 @@ divider:
 ```
 
 ### Contents/TOC Slide
+
 ```yaml
 contents:
   header:
@@ -223,6 +235,7 @@ contents:
 ```
 
 ### Metric Card
+
 ```yaml
 metric_card:
   # Light background card for KPIs
@@ -247,6 +260,7 @@ metric_card:
 ```
 
 ### Full Width Content
+
 ```yaml
 full_width:
   title:
@@ -263,6 +277,7 @@ full_width:
 ```
 
 ### Two Column (50/50)
+
 ```yaml
 two_column_even:
   title:
@@ -284,6 +299,7 @@ two_column_even:
 ```
 
 ### Two Column (40/60 - Text/Chart)
+
 ```yaml
 two_column_text_chart:
   title:
@@ -305,6 +321,7 @@ two_column_text_chart:
 ```
 
 ### Three Column
+
 ```yaml
 three_column:
   col1:
@@ -324,6 +341,7 @@ three_column:
 ```
 
 ### Back Cover
+
 ```yaml
 back_cover:
   # IMPORTANT: NO "Thank You" text
@@ -429,6 +447,7 @@ When designing slides that compare NBG with other Greek systemic banks (Eurobank
 5. **Include logos in tables** too, with bank-colored name text
 
 Example storyboard note:
+
 ```
 visual_type: manual_bar_chart (NOT chart engine — use shapes for logo alignment)
 chart_axis: bank_logos (replace text labels)
@@ -442,6 +461,7 @@ colors: per_bank_brand (NBG=#007B85, Eurobank=#CA2029, Piraeus=#FDB913, Alpha=#0
 When mobile app screenshots are needed on a slide, specify device mockup requirements:
 
 ### When to Use Device Mockups
+
 - Showcasing mobile banking app features
 - Demonstrating app workflows or user journeys
 - Product demos and launch announcements
@@ -518,7 +538,9 @@ For each slide, ask: **"How can this be SHOWN, not just told?"**
 | Categories | Icon grid, numbered list |
 
 ### NEVER create all-text slides
+
 Executive audiences need visuals:
+
 - Charts to show data
 - Infographics to show structure
 - Icons to reinforce concepts

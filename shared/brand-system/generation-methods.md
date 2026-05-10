@@ -153,21 +153,25 @@ Need a presentation?
 
 ## Tool Selection by Task
 
-### Use `nbg_build.py` (python-pptx-based) for:
+### Use `nbg_build.py` (python-pptx-based) for
+
 - Creating presentations from YAML outlines
 - Standard executive decks
 - Data-driven presentations with simple charts
 
-### Use `inject_chart_data.py` (OOXML) for:
+### Use `inject_chart_data.py` (OOXML) for
+
 - Updating chart data in existing presentations
 - Preserving original chart formatting
 - Complex chart types
 
-### Use `inject_table_data.py` (OOXML) for:
+### Use `inject_table_data.py` (OOXML) for
+
 - Updating table data in existing presentations
 - Preserving table styling
 
-### Use direct OOXML editing for:
+### Use direct OOXML editing for
+
 - Custom chart configurations
 - Adding bank logos to chart slides
 - Fine-grained control over positioning

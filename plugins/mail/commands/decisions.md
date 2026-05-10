@@ -14,18 +14,21 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. Determine Scope
+
 - `today`: decisions from the current day
 - `week`: decisions from the last 7 days (default)
 - `[TOPIC]`: filter decisions by topic name
 - `--pending`: show only pending/undecided items
 
 ### 2. Load Local Decision Log
+
 Read `~/.claude/drafts/decisions.json` for locally tracked decisions.
 If the file doesn't exist, create it with an empty array.
 
 ### 3. Query Knowledge Store Decisions (via MCP)
 
 Use `mcp__second_brain__query_decisions` with:
+
 - `days=7` (for week scope) or `days=1` (for today scope)
 - `topic="[topic]"` if a topic filter was specified
 - `person="[person]"` if filtering by decision-maker
@@ -33,6 +36,7 @@ Use `mcp__second_brain__query_decisions` with:
 ### 4. Query Action Items (via MCP)
 
 Use `mcp__second_brain__query_actions` with:
+
 - `status="open"` for pending items
 - `owner="[owner]"` if filtering by owner
 
@@ -41,13 +45,17 @@ Use `mcp__second_brain__query_actions` with:
 Use `mcp__second_brain__query_decisions` with `topic="[topic]"`
 
 ### 6. Cross-Reference Local and DB
+
 Merge local decisions with DB decisions:
+
 - Identify decisions present in both (reconcile)
 - Flag decisions only in local log (not yet in DB)
 - Flag decisions only in DB (not tracked locally)
 
 ### 7. Delegation Tracker with Aging
+
 For action items with assigned owners:
+
 ```
 DELEGATION TRACKER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -66,7 +74,9 @@ COMPLETED:
 ```
 
 ### 8. Decision Consistency Checks
+
 Look for potential contradictions:
+
 - Same topic, different decisions on different dates
 - Reversals (approved then denied, or vice versa)
 - Conflicting delegations (same task assigned to multiple people)
@@ -79,6 +89,7 @@ CONSISTENCY ALERTS
 ```
 
 ### 9. Present Decision Report
+
 ```
 DECISIONS — [period]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -95,6 +106,7 @@ DELEGATION STATUS:
 CONSISTENCY: [OK | N alerts found]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
 </process>
 
 <specifications>
@@ -107,6 +119,7 @@ CONSISTENCY: [OK | N alerts found]
 | `--owner` | No | all | Filter delegations by owner name |
 
 ## Output
+
 - Decision summary for the period
 - Delegation tracker with aging alerts
 - Consistency check results
@@ -116,27 +129,33 @@ CONSISTENCY: [OK | N alerts found]
 ## Usage Examples
 
 ### This week's decisions (default)
+
 ```
 /decisions
 ```
 
 ### Today's decisions only
+
 ```
 /decisions today
 ```
 
 ### Filter by topic
+
 ```
 /decisions cards
 ```
 
 ### Show only pending items
+
 ```
 /decisions --pending
 ```
 
 ### Filter delegations by owner
+
 ```
 /decisions week --owner Georgiou
 ```
+
 </examples>

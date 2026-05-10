@@ -19,6 +19,7 @@ User request: $ARGUMENTS
 ## 1. Parse the user's request
 
 Extract:
+
 - **To**: One or more recipient email addresses (REQUIRED)
 - **CC**: Optional CC recipients (the user's UPN from `shared/style-guide.md` is automatically CC'd unless `--no-cc-self` is requested)
 - **BCC**: Optional BCC recipients
@@ -48,6 +49,7 @@ If the user hasn't provided required fields (To, Subject), ask before proceeding
 ## 3. Prepare attachments
 
 If attachments are specified:
+
 - Verify each file exists using Glob or Read
 - Collect absolute POSIX paths
 - If a file doesn't exist, warn the user and ask whether to proceed without it
@@ -71,6 +73,7 @@ Invoke `mcp__outlook-bridge__outlook_send_mail` with:
 **Default behavior**: creates a DRAFT, returns `{id, webLink}`, activates Microsoft Outlook desktop. User finds the draft in Drafts folder (top of list since just created), reviews, and sends manually. Outlook desktop will add the signature automatically when the user edits/sends.
 
 **Optional flags**:
+
 - `send_now: true` — bypass draft, dispatch immediately. Only use when the user explicitly requested immediate send. **Warning**: signature will be MISSING (no Outlook desktop edit step).
 - `no_cc_self: true` — suppress automatic CC to the authenticated user. Only use when the user explicitly requests no self-copy.
 - `no_save_sent: true` — don't save to Sent folder (only meaningful with `send_now`).
@@ -82,6 +85,7 @@ Invoke `mcp__outlook-bridge__outlook_send_mail` with:
 ## 5. Confirm result
 
 After execution, the tool returns JSON like:
+
 ```json
 {
   "mode": "draft",
@@ -94,6 +98,7 @@ After execution, the tool returns JSON like:
 ```
 
 Report to the user:
+
 - For **draft mode** (default): "Draft created in Outlook Drafts folder — Microsoft Outlook activated. Review and send. (id: `AAMk-...`)"
 - For **send_now**: "Email sent to [recipients] with subject [subject]. CC-self: copy in your inbox shortly."
 - If error: report the error JSON and suggest fixes (auth issues → run `outlook-cli auth-check`; file not found → check attachment paths).

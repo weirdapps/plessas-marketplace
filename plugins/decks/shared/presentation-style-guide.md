@@ -11,11 +11,13 @@ Learned preferences from comparing draft presentations to user-modified finals. 
 The user's most consistent change is increasing font sizes. The generated deck used 8-12pt for body text; the user bumped nearly everything up by 2-4pt.
 
 ### Minimum Font Sizes (HARD RULE)
+
 - **Absolute minimum**: 9pt — the user removed ALL 7pt and 8pt text
 - **Footnotes**: 10.5pt minimum (not 8pt)
 - **Phase/badge labels**: 9-10.5pt (not 7-8pt)
 
 ### Target Font Sizes by Element
+
 | Element | Generated | User Preferred | Delta |
 |---------|-----------|---------------|-------|
 | Card/pillar body text | 11-12pt | **14pt** | +2-3 |
@@ -30,6 +32,7 @@ The user's most consistent change is increasing font sizes. The generated deck u
 | Cover subtitle | 36pt | **28pt** | -8 |
 
 ### Key Principle
+
 **Fill the available space.** When there's white space left on a slide, increase font sizes rather than leaving it empty. The user prefers larger, more readable text over compact layouts with breathing room.
 
 ---
@@ -53,7 +56,9 @@ The user's most consistent change is increasing font sizes. The generated deck u
 - **Legends**: Remove if the table is self-explanatory (user deleted the traffic-light legend row)
 
 ### Less-Is-More Principle
+
 The user consistently simplifies:
+
 - Removed an entire decision card (3 → 2) because one was premature/not needed
 - Reduced bullets from 4 to 1, keeping only the strategic punch line
 - Removed the legend from a color-coded table (obvious without it)

@@ -29,12 +29,15 @@ Email command center — inbox briefings, action recommendations, style-matched 
 ## How It Works
 
 ### Inbox Briefing
+
 Every run separates emails into **NEW** (since last run) and **PREVIOUSLY SEEN**, with:
+
 - 1-2 sentence gist of each email
 - Recommended action (reply, delegate, forward, monitor, skip, urgent, follow-up)
 - Insights: who's waiting, cross-thread patterns, urgency flags, delegation opportunities
 
 ### Self-Learning Loop
+
 ```
 /mail-review → drafts saved to ~/.claude/drafts/pending/
     ↓
@@ -48,6 +51,7 @@ Style guide updated → next drafts are more accurate
 No manual `/draft-review` needed — learning runs automatically at the start of every `/mail-review`. Use `/draft-review` only for deep analysis or focused recipient review.
 
 ### Persistent State
+
 | File | Purpose |
 |------|---------|
 | `~/.claude/drafts/pending/` | Saved drafts awaiting comparison |
@@ -59,6 +63,7 @@ No manual `/draft-review` needed — learning runs automatically at the start of
 ## Setup
 
 Requires:
+
 - The `outlook-bridge` plugin installed and built (handled by the marketplace installer)
 - `outlook-cli` installed and authenticated (`outlook-cli login`) — see https://github.com/weirdapps/outlook-access
 - Optional: `second-brain` MCP server for `/comm-report` and `/style-rebuild` (these commands query a SQLite knowledge store; without it they are unavailable)
@@ -76,6 +81,7 @@ The legacy AppleScript send path is preserved in git history but no longer wired
 Built by analyzing thousands of actual emails from your sent folder. The style guide lives at `shared/style-guide.md` (gitignored — yours stays local). A sanitized template is at `shared/style-guide-example.md` to show the structure.
 
 The shipped reference style guide (NBG context) is characterized by:
+
 - **Ultra-brief**: 60%+ of replies are 1-10 words
 - **No greetings/closings**: Straight to the point (BRIEF format)
 - **Lowercase**: Almost always starts lowercase in Greek

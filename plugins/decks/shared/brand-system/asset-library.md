@@ -78,18 +78,21 @@ See `assets/icons/INDEX.md` for complete icon reference.
 ### Icon Workflow Decision Guide
 
 **When to use EXISTING icons (338 available):**
+
 - Standard banking concepts (cards, payments, accounts)
 - Common UI elements (arrows, settings, notifications)
 - Status indicators (success, error, warning)
 - Business categories (devices, documents, people)
 
 **When to use Icon Designer agent:**
+
 - Highly specific concept not in library (e.g., "AI-powered mortgage analyzer")
 - Custom metaphor combining multiple concepts
 - Brand-new product or feature without existing icon
 - Unique illustration style requirement
 
 **Decision Flowchart:**
+
 ```
 Need an icon?
     │
@@ -222,10 +225,12 @@ See `assets/logos/INDEX.md` for complete reference.
 ### Aspect Ratio Rules (Critical)
 
 **Never stretch screenshots.** Strategy:
+
 1. **Fit whole screenshot** inside placeholder, centered (preferred)
 2. **Crop only as fallback** — if fit looks bad
 
 **NEVER crop these products — always fit:**
+
 - `retail-mobile` (mobile UI would be cut off)
 - `next-app` (mobile UI would be cut off)
 - `business-mobile` (mobile UI would be cut off)

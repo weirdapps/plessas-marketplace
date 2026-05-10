@@ -3,17 +3,20 @@
 ## Font Family
 
 ### Primary Font (Presentations)
+
 - **Name**: Aptos
 - **Weight**: **Regular** (preferred for all elements including titles)
 - **Fallback**: Calibri, Tahoma
 
 ### Digital Products Font (Pillar DS)
+
 - **Name**: Aeonik Pro
 - **Weights**: Regular (400), Medium (500), Bold (700)
 - **Fallback**: Aptos, Arial
 - **Usage**: NBG digital products, apps, web interfaces
 
 ### Bullet Font
+
 - **Name**: Arial
 - **Purpose**: Bullet characters only
 
@@ -97,6 +100,7 @@
 ## Text Box Settings
 
 **CRITICAL**: All text boxes must use:
+
 ```javascript
 {
   margin: 0,  // or [0, 0, 0, 0]
@@ -131,6 +135,7 @@ bullet:
 Reference for digital product consistency. See [pillar-ds.md](pillar-ds.md) for full details.
 
 ### Font: Aeonik Pro
+
 | Weight | Value | Usage |
 |--------|-------|-------|
 | Regular | 400 | Body text |
@@ -138,6 +143,7 @@ Reference for digital product consistency. See [pillar-ds.md](pillar-ds.md) for 
 | Bold | 700 | Headings, titles |
 
 ### Mobile Typography
+
 | Element | Size | Line Height | Weight |
 |---------|------|-------------|--------|
 | Body | 12pt | 16px | Regular |
@@ -145,6 +151,7 @@ Reference for digital product consistency. See [pillar-ds.md](pillar-ds.md) for 
 | Heading | 16pt | 20px | Bold |
 
 ### Desktop Typography
+
 | Element | Size | Line Height | Weight |
 |---------|------|-------------|--------|
 | Body | 14pt | 18px | Regular |

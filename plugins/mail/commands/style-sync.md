@@ -14,6 +14,7 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. Load Sync State
+
 Read `~/.claude/drafts/style-sync-state.json` for the last sync timestamp.
 If the file doesn't exist, treat this as the first sync and process all sent emails (equivalent to `/style-rebuild`).
 
@@ -28,11 +29,13 @@ If the file doesn't exist, treat this as the first sync and process all sent ema
 ### 2. Query New Sent Emails
 
 **Data source priority:**
+
 1. **Knowledge store DB** (primary) — query for emails since last sync
 2. **Archive mailbox** via `mcp__outlook-bridge__outlook_list_mail` (supplementary) — check for very recent sent emails not yet in DB. The user CCs himself on all replies, so sent mail appears in Archive (`folder: "Archive"`); filter client-side to messages where `From.upn` matches the user's UPN.
 3. **Sent Items** — NEVER use. The user regularly empties Sent Items.
 
 Fetch sent emails from knowledge store DB since last sync:
+
 ```sql
 SELECT e.id, e.date_received, e.sender_name, e.sender_address,
        e.subject, e.summary, e.sentiment, e.language, e.content,
@@ -44,6 +47,7 @@ ORDER BY e.date_received ASC;
 ```
 
 Optionally supplement with recent Archive emails not yet in DB via the outlook-bridge MCP:
+
 ```
 Tool: mcp__outlook-bridge__outlook_list_mail
 Args: {
@@ -58,7 +62,9 @@ Filter the results client-side to messages where `From.upn` matches the user's U
 If no new emails found in either source, report "Already up to date" and exit.
 
 ### 3. Map Recipients for New Emails
+
 For each new sent email, identify recipients:
+
 ```sql
 SELECT p.name, p.email, ep.role_in_email
 FROM email_people ep
@@ -67,11 +73,14 @@ WHERE ep.email_id = ? AND ep.role_in_email IN ('to', 'cc');
 ```
 
 ### 4. Compute Incremental Metrics
+
 For each recipient with new emails:
+
 - Compute the same metrics as `/style-rebuild` but only on new data
 - Compare against existing profile in `shared/style-guide.md`
 
 ### 5. Detect Style Drift
+
 Flag when new patterns diverge from existing profile:
 
 | Drift Type | Trigger |
@@ -83,6 +92,7 @@ Flag when new patterns diverge from existing profile:
 | **New recipient** | Recipient not yet profiled in style guide |
 
 ### 6. Backup and Update Style Guide
+
 - Create timestamped backup in `~/.claude/drafts/style-guide-backups/`
 - Update `shared/style-guide.md` with:
   - Updated per-recipient profiles (merge new data with existing)
@@ -91,7 +101,9 @@ Flag when new patterns diverge from existing profile:
   - Drift annotations where detected
 
 ### 7. Update Sync State
+
 Write updated `~/.claude/drafts/style-sync-state.json`:
+
 ```json
 {
   "last_sync": "ISO-8601 timestamp (now)",
@@ -102,6 +114,7 @@ Write updated `~/.claude/drafts/style-sync-state.json`:
 ```
 
 ### 8. Present Sync Report
+
 ```
 STYLE SYNC REPORT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -123,6 +136,7 @@ NO CHANGES:
   [Name], [Name] — no new data
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
 </process>
 
 <specifications>
@@ -135,6 +149,7 @@ NO CHANGES:
 | `--min-emails` | No | `3` | Minimum emails to create a new recipient profile |
 
 ## Output
+
 - Sync report with drift alerts
 - Updated style-guide.md (unless --dry-run)
 - Updated sync state file
@@ -144,17 +159,21 @@ NO CHANGES:
 ## Usage Examples
 
 ### Sync since last run
+
 ```
 /style-sync
 ```
 
 ### Force full re-sync
+
 ```
 /style-sync --force
 ```
 
 ### Preview changes without applying
+
 ```
 /style-sync --dry-run
 ```
+
 </examples>

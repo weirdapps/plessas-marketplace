@@ -9,6 +9,7 @@ This document provides a quick reference for NBG presentation creation. For comp
 ## Quick Reference
 
 ### Slide Dimensions
+
 ```
 Width:  13.33" (12,192,000 EMU)
 Height: 7.5"  (6,858,000 EMU)
@@ -16,6 +17,7 @@ Layout: LAYOUT_WIDE (16:9)
 ```
 
 ### Essential Colors
+
 | Purpose | Hex | Color Name |
 |---------|-----|------------|
 | Title text | `003841` | Dark Teal |
@@ -26,11 +28,13 @@ Layout: LAYOUT_WIDE (16:9)
 | Cards | `F5F8F6` | Off-white |
 
 **Chart Colors** (in order):
+
 ```javascript
 ['00ADBF', '003841', '007B85', '939793', 'BEC1BE', '00DFF8']
 ```
 
 ### Typography
+
 | Element | Font | Size |
 |---------|------|------|
 | Cover title | Aptos | 48pt |
@@ -42,6 +46,7 @@ Layout: LAYOUT_WIDE (16:9)
 **Text Boxes**: Always use zero margins (`margin: 0`)
 
 ### Logo Positioning
+
 | Type | Position (x, y) | Size (w × h) |
 |------|-----------------|--------------|
 | Small (content) | 0.374", 7.071" | 0.822" × 0.236" |
@@ -49,6 +54,7 @@ Layout: LAYOUT_WIDE (16:9)
 | Back cover (centered) | 5.44", 2.98" | 2.45" × 1.54" |
 
 ### Page Numbers
+
 - **Position**: 12.71", 7.1554"
 - **Size**: 0.33" × 0.152"
 - **On slides**: Content, charts, tables, infographics
@@ -59,6 +65,7 @@ Layout: LAYOUT_WIDE (16:9)
 ## Critical Rules
 
 ### MUST DO
+
 - Use **LAYOUT_WIDE** (13.33" x 7.5")
 - Use **white backgrounds** (`#FFFFFF`)
 - Use **Aptos** font (Arial fallback)
@@ -67,6 +74,7 @@ Layout: LAYOUT_WIDE (16:9)
 - Set text box **margins to 0**
 
 ### MUST NOT DO
+
 - Use pie charts (use doughnut)
 - Include "Thank You" text on back cover
 - Put page numbers on covers/dividers

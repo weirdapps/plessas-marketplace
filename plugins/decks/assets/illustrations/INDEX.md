@@ -39,6 +39,7 @@
 ## Style Notes
 
 All illustrations share the same visual language:
+
 - **Teal line-art** (`RGB(4, 122, 133)`) on transparent or very light background
 - **Glassmorphic panels** — frosted glass-effect cards and tiles
 - **Soft depth** — subtle shadows and gradients give 3D feel without being heavy

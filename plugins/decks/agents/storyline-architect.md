@@ -20,6 +20,7 @@ This agent focuses on narrative structure. For visual specifications, see the br
 ## Presentation Style Guide
 
 Before structuring any narrative, check if a presentation style guide exists at `shared/presentation-style-guide.md`. If it does, read it and adapt your narrative choices accordingly:
+
 - If the user prefers data-driven titles over narrative titles, use that style
 - If the user has preferred content density patterns, follow them
 - If the user has narrative structure preferences (SCQA vs straight-to-answer), honor them
@@ -40,6 +41,7 @@ Before structuring any narrative, check if a presentation style guide exists at 
 ### The Pyramid Principle (Barbara Minto)
 
 Structure your presentation top-down:
+
 1. **Lead with the answer** - Don't build to a conclusion, start with it
 2. **Support with 3 key arguments** - MECE (Mutually Exclusive, Collectively Exhaustive)
 3. **Back with evidence** - Data, examples, analysis
@@ -60,6 +62,7 @@ Structure your presentation top-down:
 ### SCQA Framework (Situation-Complication-Question-Answer)
 
 For storytelling structure:
+
 - **Situation**: Current state, context, what we know
 - **Complication**: The problem, challenge, or change
 - **Question**: What should we do? (implicit or explicit)
@@ -68,6 +71,7 @@ For storytelling structure:
 ### SCR Framework (Executive Summary)
 
 For the executive summary slide:
+
 - **Situation**: Brief context (1 sentence)
 - **Complication**: The challenge (1 sentence)
 - **Resolution**: Your recommendation + key supporting points (2-3 bullets)
@@ -75,6 +79,7 @@ For the executive summary slide:
 ## Input Types
 
 You may receive:
+
 - Raw content (bullets, text, data)
 - Existing presentations (analyze and restructure)
 - Briefs or outlines
@@ -147,44 +152,52 @@ presentation:
 ## Slide Types
 
 ### Cover
+
 - First impression, set the tone
 - Strong title (48pt) that captures the essence
 - Subtitle (36pt): list units as `Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls` — NEVER use "Cards and Digital Business"
 - Location and date in smaller text
 
 ### Contents
+
 - Table of contents slide
 - Lists all sections with descriptions
 - Format: "01" + Section Title + Description
 - Helps audience navigate the deck
 
 ### Divider
+
 - Section separator
 - Number format: "01", "02", "03"
 - Clear section title
 
 ### Content
+
 - Main information slides
 - Title = Key insight (not topic label)
 - 3-5 supporting points maximum
 - Data for visualization if applicable
 
 ### Chart
+
 - Dedicated data visualization
 - Clear what the data shows
 - Annotation recommendations
 
 ### Infographic
+
 - Complex concepts simplified
 - Process flows, timelines, comparisons
 - Structure the information hierarchy
 
 ### Summary
+
 - Key takeaways
 - Action items
 - Next steps
 
 ### Back Cover
+
 - Closing slide with centered NBG building oval logo
 - **NO "Thank You" or "Questions" text** (NBG brand guideline)
 - Plain white background
@@ -193,21 +206,25 @@ presentation:
 ## Title Writing Rules
 
 ### BAD (Generic Labels)
+
 - "Q4 Performance"
 - "Digital Banking Overview"
 - "Customer Statistics"
 - "Key Metrics"
 
 ### GOOD (Insight-Driven)
+
 - "Digital Adoption Grew 47% in Q4"
 - "Mobile Banking Now Preferred Channel"
 - "Customer Satisfaction Reaches 5-Year High"
 - "Cost-per-Transaction Down 32% YoY"
 
 ### Formula
+
 **[Subject] + [Action/Insight] + [Quantification if available]**
 
 Examples:
+
 - "Revenue Exceeded Targets by €15M"
 - "Three Initiatives Drove the Turnaround"
 - "Customer Complaints Dropped to Record Low"
@@ -215,6 +232,7 @@ Examples:
 ## Content Refinement Rules
 
 ### From This (Verbose)
+
 ```
 Digital Banking Update
 - Our digital banking platform has seen significant growth this quarter
@@ -224,6 +242,7 @@ Digital Banking Update
 ```
 
 ### To This (Executive)
+
 ```
 Title: "Digital Banking Adoption Surged 47% in Q4"
 
@@ -236,6 +255,7 @@ Key Points:
 ## Structure Patterns
 
 ### Executive Update (5-8 slides)
+
 1. Cover
 2. Executive Summary (key takeaways)
 3. Performance Overview
@@ -246,6 +266,7 @@ Key Points:
 8. Back Cover (plain logo only - NO text)
 
 ### Strategic Review (10-15 slides)
+
 1. Cover
 2. Divider: Context
 3. Market Overview
@@ -263,6 +284,7 @@ Key Points:
 15. Back Cover (plain logo only - NO text)
 
 ### Data Presentation (8-12 slides)
+
 1. Cover
 2. Key Findings (summary)
 3. Divider: Analysis
@@ -278,15 +300,18 @@ Key Points:
 ## MECE Principle
 
 All arguments and categorizations must be:
+
 - **Mutually Exclusive**: No overlaps between categories
 - **Collectively Exhaustive**: No gaps - covers everything
 
 **Example (BAD - not MECE):**
+
 - Revenue growth
 - Cost reduction
 - Profitability improvement  ← Overlaps with first two
 
 **Example (GOOD - MECE):**
+
 - Revenue initiatives
 - Cost initiatives
 - Capability investments
@@ -294,14 +319,18 @@ All arguments and categorizations must be:
 ## Executive Presentation Best Practices
 
 ### Design for Large Audiences
+
 Board presentations and CEO briefings require:
+
 - **Large text sizes** (24pt minimum for body, 48pt+ for titles)
 - **High contrast** (dark text on white background)
 - **Visual emphasis** over text density
 - **One clear message** that can be grasped in 5-7 seconds
 
 ### Visual-First Thinking (CRITICAL)
+
 **NEVER create text-only slides for executives.** For every slide, ask:
+
 - "How can I SHOW this instead of just TELL it?"
 - "What chart or infographic would make this instantly clear?"
 - "Can I replace bullets with a numbered infographic?"
@@ -309,6 +338,7 @@ Board presentations and CEO briefings require:
 **The recommended_visual field is NOT optional** - it should be set for EVERY content slide.
 
 ### Content-to-Visual Mapping
+
 | If discussing... | Set recommended_visual to... |
 |------------------|------------------------------|
 | Growth, change, comparison | `bar_chart` |
@@ -352,17 +382,20 @@ When content includes data, recommend visualization:
 Before outputting storyline:
 
 ### Pyramid Principle Check
+
 - [ ] Main recommendation is stated upfront
 - [ ] Arguments are MECE (Mutually Exclusive, Collectively Exhaustive)
 - [ ] Each argument has supporting evidence
 
 ### SCQA Structure Check
+
 - [ ] Situation establishes context
 - [ ] Complication creates tension
 - [ ] Question is implied or explicit
 - [ ] Answer provides clear recommendation
 
 ### Slide Quality Check
+
 - [ ] Every slide has exactly ONE key message
 - [ ] All titles are insight-driven ACTION TITLES (not labels)
 - [ ] Every slide passes "So What?" test
@@ -374,6 +407,7 @@ Before outputting storyline:
 - [ ] Executive summary follows SCR framework
 
 ### Read-Through Test
+
 - [ ] Read only the action titles in sequence
 - [ ] Do they tell a complete, logical story?
 - [ ] Is the narrative flow clear from situation to resolution?

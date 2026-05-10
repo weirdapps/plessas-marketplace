@@ -14,6 +14,7 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 0. Verify Outlook MCP Available (FAIL-FAST)
+
 This plugin reads the calendar via `mcp__outlook-bridge__*` tools bundled in the **mail** plugin. Check the bridge is reachable:
 
 ```
@@ -27,6 +28,7 @@ If the tool is **not available**, stop and tell the user:
 > Then re-run `/meeting-debrief`.
 
 ### 1. Identify Meeting
+
 - If user specifies a meeting name, match it against today's calendar
 - If no meeting specified, show today's calendar events and ask which one
 - If only one meeting today (or one recently ended), use it automatically
@@ -47,7 +49,9 @@ Fall back to WorkIQ MCP (`mcp__workiq__ask_work_iq`) for free-form natural-langu
 See `shared/calendar-access.md` for access patterns.
 
 ### 3. Capture Debrief
+
 Ask the user to provide (free text is fine):
+
 - **Decisions made** — what was decided, by whom
 - **Action items** — what, who owns it, deadline
 - **Follow-ups** — things to track or revisit
@@ -56,8 +60,10 @@ Ask the user to provide (free text is fine):
 Parse and structure the user's input.
 
 ### 4. Save Debrief
+
 Ensure `~/.claude/meetings/debriefs/` exists.
 Save as `YYYY-MM-DD-meeting-name.json` with structured data:
+
 - Meeting metadata (name, date, time, attendees)
 - Decisions with attribution
 - Action items with owners and deadlines
@@ -65,7 +71,9 @@ Save as `YYYY-MM-DD-meeting-name.json` with structured data:
 - Free-form notes
 
 ### 5. Distribute Summary (if `--distribute` or user confirms)
+
 Compose a concise HTML meeting summary with:
+
 - Decisions listed
 - Action items table (action, owner, deadline)
 - Next steps
@@ -73,6 +81,7 @@ Compose a concise HTML meeting summary with:
 Use `/send-mail` to create the email via Outlook, addressed to all attendees.
 
 ### 6. Log to Decision Tracker
+
 If `plugins/_shared/decision-tracker/` exists, append decisions and action items.
 </process>
 
@@ -85,6 +94,7 @@ If `plugins/_shared/decision-tracker/` exists, append decisions and action items
 | `--distribute` | No | false | Send summary to attendees after capture |
 
 ## Output
+
 - Structured debrief saved to `~/.claude/meetings/debriefs/`
 - Optional email summary sent to attendees
 - Decisions and actions logged to tracker (if available)
@@ -94,30 +104,36 @@ If `plugins/_shared/decision-tracker/` exists, append decisions and action items
 ## Usage Examples
 
 ### Debrief the most recent meeting
+
 ```
 /meeting-debrief
 ```
 
 ### Debrief a specific meeting
+
 ```
 /meeting-debrief project review
 ```
 
 ### Debrief and send summary to attendees
+
 ```
 /meeting-debrief --distribute
 ```
 
 ### Provide debrief inline
+
 ```
 /meeting-debrief project review
 Decisions: Go with vendor A, budget approved at 50K
 Actions: Maria to send PO by Friday, John to schedule kickoff
 Follow-up: Check delivery timeline in 2 weeks
 ```
+
 </examples>
 
 <related_commands>
+
 ## Related Commands
 
 | Command | When to Use |

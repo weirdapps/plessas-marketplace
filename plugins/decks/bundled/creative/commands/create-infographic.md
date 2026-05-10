@@ -45,9 +45,11 @@ User request: $ARGUMENTS
 </process>
 
 <nbg_colors>
+
 ## Infographic Colors (NBG Defaults)
 
 ### Chart Color Sequence (in order)
+
 1. #00ADBF - Cyan (primary)
 2. #003841 - Dark Teal
 3. #007B85 - NBG Teal
@@ -56,6 +58,7 @@ User request: $ARGUMENTS
 6. #00DFF8 - Bright Cyan
 
 ### Status Colors
+
 - Success: #73AF3C
 - Alert: #AA0028
 - Gold: #D9A757
@@ -63,6 +66,7 @@ User request: $ARGUMENTS
 </nbg_colors>
 
 <success_criteria>
+
 - [ ] Infographic generated successfully
 - [ ] Colors match target brand palette (NBG default)
 - [ ] Clean, professional appearance

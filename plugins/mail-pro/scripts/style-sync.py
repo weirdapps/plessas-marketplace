@@ -210,10 +210,16 @@ def detect_drift(old_state, new_metrics):
 # ---------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description="Sync style guide aggregate metrics")
-    parser.add_argument("--dry-run", action="store_true", help="Preview without writing")
-    parser.add_argument("--force", action="store_true", help="Recompute even if no new data")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview without writing"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Recompute even if no new data"
+    )
     parser.add_argument("--db", type=Path, default=DB_PATH, help="Path to brain.db")
-    parser.add_argument("--quiet", action="store_true", help="Minimal output (for cron)")
+    parser.add_argument(
+        "--quiet", action="store_true", help="Minimal output (for cron)"
+    )
     args = parser.parse_args()
 
     if not args.db.exists():
@@ -261,25 +267,41 @@ def main():
 
     # Only canonical categories for percentage tracking
     canonical_langs = {"greek", "mixed", "english"}
-    canonical_sents = {"collaborative", "informational", "directive", "escalation", "celebratory"}
+    canonical_sents = {
+        "collaborative",
+        "informational",
+        "directive",
+        "escalation",
+        "celebratory",
+    }
     lang_pcts = {
-        lang: c / total * 100 for lang, c in lang_dist if (lang or "").lower() in canonical_langs
+        lang: c / total * 100
+        for lang, c in lang_dist
+        if (lang or "").lower() in canonical_langs
     }
     sent_pcts = {
-        sent: c / total * 100 for sent, c in sent_dist if (sent or "").lower() in canonical_sents
+        sent: c / total * 100
+        for sent, c in sent_dist
+        if (sent or "").lower() in canonical_sents
     }
 
     conn.close()
 
     # ── Drift detection ──────────────────────────────────────────────────
 
-    new_metrics = {"total": total, "language_pcts": lang_pcts, "sentiment_pcts": sent_pcts}
+    new_metrics = {
+        "total": total,
+        "language_pcts": lang_pcts,
+        "sentiment_pcts": sent_pcts,
+    }
     drift_alerts = detect_drift(old_state, new_metrics)
 
     # Preserve manually-added drift alerts
     existing_drift = old_state.get("drift_detected", [])
     manual_drift = [
-        d for d in existing_drift if not d.startswith(("Language drift:", "Sentiment drift:"))
+        d
+        for d in existing_drift
+        if not d.startswith(("Language drift:", "Sentiment drift:"))
     ]
     all_drift = manual_drift + drift_alerts
 
@@ -291,13 +313,19 @@ def main():
     guide = update_header(guide, total, months)
     guide = update_daily_volume(guide, total, days)
     guide = update_section_n_counts(guide, total)
-    guide = update_distribution_table(guide, "## Language Distribution", lang_dist, total)
-    guide = update_distribution_table(guide, "## Sentiment Distribution", sent_dist, total)
+    guide = update_distribution_table(
+        guide, "## Language Distribution", lang_dist, total
+    )
+    guide = update_distribution_table(
+        guide, "## Sentiment Distribution", sent_dist, total
+    )
 
     # ── Write results ────────────────────────────────────────────────────
 
     changed_lines = sum(
-        1 for a, b in zip(guide.splitlines(), original.splitlines(), strict=False) if a != b
+        1
+        for a, b in zip(guide.splitlines(), original.splitlines(), strict=False)
+        if a != b
     )
 
     if guide != original:

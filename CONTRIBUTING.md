@@ -18,16 +18,19 @@ Use the **Question** issue template. Tag with the plugin name. Please check the 
 ## Suggesting a change
 
 For small fixes (typos, broken links, command-name corrections):
+
 1. Fork
 2. Open a PR with a short description
 
 For substantive changes (new commands, new plugins, refactoring):
+
 1. Open an issue first to discuss the approach
 2. Wait for maintainer feedback before writing code — we may have already considered it or have constraints from the NBG context
 
 ## Pull request requirements
 
 All PRs must pass the CI guards:
+
 - **PII Check**: scans for personal data leakage. See `installers/pii-gauntlet.sh`. Run locally with `bash installers/pii-gauntlet.sh --mode=doctor` to check before pushing.
 - **rename-guard**: catches stale command names, missing `allowed-tools` declarations, deprecated tool names.
 

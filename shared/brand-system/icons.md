@@ -7,12 +7,14 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 ## Design System Rules
 
 ### Canvas & ViewBox
+
 - **Canvas size**: 64 x 64 px
 - **viewBox**: `0 0 64 64`
 - **xmlns**: `http://www.w3.org/2000/svg`
 - **fill attribute**: Set on root SVG or individual paths
 
 ### Color Palette
+
 | Use Case | Hex Color | Usage |
 |----------|-----------|-------|
 | Standard icons | `#003841` | Dark Teal - primary icon color |
@@ -22,17 +24,21 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 | Alert indicators | `#AA0028` | Red - negative/warning status |
 
 ### Stroke vs Fill System
+
 **CRITICAL**: NBG icons use **solid fills, not strokes**.
+
 - `stroke-width="0"` (no strokes)
 - `fill="#003841"` (solid fill)
 - Single color per icon (monochrome)
 
 ### Grid & Alignment
+
 - **Inner padding**: ~5-8px from canvas edge for main elements
 - **Optical centering**: Icons balanced around 32x32 center point
 - **Generous breathing room**: Avoid edge-to-edge designs
 
 ### Shape Language
+
 - **Geometric and precise**: Clean, simple shapes
 - **Solid fill**: No outlines or strokes
 - **Single color**: Monochrome design
@@ -40,7 +46,7 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 
 ## Icon Generation Rules
 
-### When User Requests an Icon:
+### When User Requests an Icon
 
 1. **Analyze the request**
    - Identify the core concept
@@ -74,6 +80,7 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 ## Example NBG Icon Structure
 
 ### Basic Icon Template
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#003841" d="[path data here]"/>
@@ -81,6 +88,7 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 ```
 
 ### Icon with Multiple Shapes
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect x="12" y="12" width="40" height="40" rx="4" fill="#003841"/>
@@ -89,6 +97,7 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 ```
 
 ### Icon for Dark Background
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#F5F8F6" d="[path data here]"/>
@@ -98,21 +107,25 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 ## Common Icon Categories
 
 ### Banking & Finance
+
 - Cards, wallets, money transfers
 - Account types, statements
 - Loans, investments, savings
 
 ### Navigation & UI
+
 - Arrows, chevrons, menus
 - Settings, search, help
 - Close, expand, collapse
 
 ### Status & Alerts
+
 - Success (green #73AF3C)
 - Warning/Alert (red #AA0028)
 - Information (teal #007B85)
 
 ### Business Segments
+
 - Business Banking (blue #0D90FF)
 - Corporate (green #73AF3C)
 - Premium (gold #D9A757)
@@ -130,6 +143,7 @@ Generate SVG icons that match exactly the visual language of the NBG iconography
 ## Quality Gate Checklist
 
 Before outputting any icon, verify:
+
 - [ ] Canvas is 64x64, viewBox="0 0 64 64"
 - [ ] Uses solid fill (no strokes)
 - [ ] Primary color is #003841 (or appropriate variant)
@@ -142,11 +156,13 @@ Before outputting any icon, verify:
 ## Behavior Rules
 
 ### Default Behavior
+
 - Generate icon immediately without asking questions
 - Output only raw SVG code
 - No preamble or explanation
 
 ### What NOT to Do
+
 - Never use strokes (stroke-based icons)
 - Never use gradients or patterns
 - Never add excessive detail
@@ -172,6 +188,7 @@ Before outputting any icon, verify:
 For competitive analysis, interbank comparisons, and market context slides, external bank logos are available:
 
 ### Greek Bank Logos
+
 Location: `assets/bank-logos/`
 
 | Bank | File | Usage |
@@ -183,6 +200,7 @@ Location: `assets/bank-logos/`
 ### Usage in OOXML Editing
 
 When adding external logos to slides via XML:
+
 1. Copy PNG files to `ppt/media/` folder
 2. Add relationship entries in slide `.rels` file
 3. Add `<p:pic>` elements to slide XML
@@ -192,6 +210,7 @@ See `assets/bank-logos/README.md` for detailed XML snippets and positioning guid
 ### Positioning for Horizontal Bar Charts
 
 When replacing chart category labels with logos:
+
 ```
 Logo size: 350,000 x 350,000 EMU (~0.38")
 X position: 450,000 EMU (aligned left)

@@ -3,13 +3,17 @@
 ## Critical Rules
 
 ### NEVER Use Pie Charts
+
 **Pie charts are PROHIBITED.** Always use **doughnut charts** instead:
+
 - More modern and professional appearance
 - Center hole provides space for key metrics
 - Better visual hierarchy
 
 ### Always Specify Explicit Colors
+
 **CRITICAL:** Always specify explicit NBG colors for all chart elements to avoid PptxGenJS defaults (like #333333):
+
 - `catAxisLabelColor`
 - `valAxisLabelColor`
 - `catAxisLineColor`
@@ -273,6 +277,7 @@ slide.addChart(pptx.ChartType.line, chartData, {
 ## Chart Design Best Practices
 
 ### Clean, Minimal Charts
+
 1. **Remove clutter**: Hide gridlines where possible
 2. **Single focus**: Each chart = ONE key message
 3. **Data labels**: Only show if they add value
@@ -280,11 +285,13 @@ slide.addChart(pptx.ChartType.line, chartData, {
 5. **Colors**: Max 3-4 colors per chart
 
 ### Supporting Key Messages
+
 - Add callout boxes for insights (e.g., "+47%", "-800K")
 - Use roundRect shapes for highlight callouts
 - Keep subtitle explaining the data context
 
 ### Layout Tips
+
 - **Two-column**: Chart on right, text/bullets on left (40/60 split)
 - **Full-width**: Single important chart with annotations
 - **Bar charts**: Use `barGapWidthPct: 35` for clean spacing
@@ -384,6 +391,7 @@ markerSize: 10,        // larger for visibility
 ```
 
 In python-pptx:
+
 ```python
 series.format.line.width = Pt(3.5)
 series.marker.style = 8  # circle
@@ -408,6 +416,7 @@ lineSize: 2.5,
 ```
 
 In python-pptx, apply alpha via XML manipulation on each series' solid fill:
+
 ```python
 alpha_el = etree.SubElement(color_elem, qn("a:alpha"))
 alpha_el.set("val", "40000")  # 40% = softer than 25%, more readable than 60%
@@ -424,6 +433,7 @@ alpha_el.set("val", "40000")  # 40% = softer than 25%, more readable than 60%
 ```
 
 In python-pptx:
+
 ```python
 numeric_cols = {1, 2, 3, 4}  # indices of numeric columns
 for p in cell.text_frame.paragraphs:

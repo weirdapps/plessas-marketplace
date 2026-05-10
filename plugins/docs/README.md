@@ -31,21 +31,27 @@ You then open the file in Word, review, and edit as needed. The plugin never mod
 ## Document templates
 
 ### Report
+
 Title page · executive summary · numbered sections with headings · conclusions · appendix slot.
 
 ### Proposal
+
 Title · problem statement · proposed solution · timeline · budget · next steps · sign-off block.
 
 ### Brief
+
 Title · background (1-2 paragraphs) · key points (bulleted) · recommendation · author/date footer.
 
 ### Notes
+
 Title · date · attendees (if applicable) · numbered discussion points · action items table.
 
 ### Letter (`/docs-letter`)
+
 Letterhead with sender block · date · recipient address · salutation (`Dear <name>,` or Greek equivalent) · body paragraphs · valediction · signature block (name + title).
 
 ### Memo (`/docs-memo`)
+
 TO/FROM/DATE/RE header block · introduction · structured body (one section per ask) · clear close (decision needed by, action requested, FYI).
 
 ## Setup

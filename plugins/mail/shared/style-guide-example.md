@@ -5,6 +5,7 @@
 ## Identity
 
 **[Your Name]** — [Your Title], [Your Organization]
+
 - Email: [your.email@company.com]
 - Always CC self on replies (Archive is the canonical source for sent mail)
 
@@ -26,6 +27,7 @@
 **Daily volume**: ~XX emails/day average
 
 **Peak hours**:
+
 - **12:00-17:00**: XX% — primary productivity window
 - **18:00-22:00**: XX% — after-hours activity
 
@@ -58,10 +60,12 @@
 ### 2. FORMAT VARIANTS
 
 **BRIEF replies (~XX%)**:
+
 - No greeting, no closing
 - Dives straight into message
 
 **FULL emails (~XX%)**:
+
 - Greeting + body + closing + name
 
 ### 3. GREETING PATTERNS (from corpus)
@@ -87,12 +91,14 @@
 ## Per-Recipient Profiles
 
 ### [BOSS NAME]
+
 - **N=XXX emails** | Avg reply: XX words | Confidence: HIGH
 - **Formality**: Medium-High
 - **Emoji**: Never
 - **Style**: Strategic framing, data-heavy
 
 ### [PA/ASSISTANT NAME]
+
 - **N=XXX emails** | Avg reply: XX words | Confidence: HIGH
 - **Formality**: Low
 - **Style**: Short delegations

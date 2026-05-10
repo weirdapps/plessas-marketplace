@@ -8,6 +8,7 @@
 ## Color Palette
 
 ### Greyscale
+
 | Name | Hex | RGB | Usage |
 |------|-----|-----|-------|
 | Black | `#162020` | 22, 32, 32 | Primary text |
@@ -18,6 +19,7 @@
 | White | `#FFFFFF` | 255, 255, 255 | Backgrounds |
 
 ### Teal Scale (Primary Brand)
+
 | Name | Hex | RGB | Usage |
 |------|-----|-----|-------|
 | Teal 08 | `#003841` | 0, 56, 65 | Darkest - titles, icons |
@@ -33,6 +35,7 @@
 ### Alert Colors
 
 #### Success (Green)
+
 | Name | Hex | Usage |
 |------|-----|-------|
 | Green Dark | `#1D8151` | Dark mode text |
@@ -41,6 +44,7 @@
 | Green Light | `#E9FFEA` | Success background |
 
 #### Error (Red)
+
 | Name | Hex | Usage |
 |------|-----|-------|
 | Red Dark | `#A83535` | Dark mode text |
@@ -50,6 +54,7 @@
 | Red Lightest | `#FFECEC` | Subtle error BG |
 
 #### Warning (Orange)
+
 | Name | Hex | Usage |
 |------|-----|-------|
 | Orange Dark | `#B35600` | Dark mode text |
@@ -101,6 +106,7 @@ Use these for data visualization with category-based charts:
 ## Typography
 
 ### Font Family
+
 | Type | Font | Fallback |
 |------|------|----------|
 | Primary | Aeonik Pro | Aptos, Arial |
@@ -109,6 +115,7 @@ Use these for data visualization with category-based charts:
 | Weight - Bold | 700 | Headings |
 
 ### Mobile Typography
+
 | Element | Size | Line Height | Weight |
 |---------|------|-------------|--------|
 | Body | 12pt | 16px | Regular |
@@ -116,6 +123,7 @@ Use these for data visualization with category-based charts:
 | Heading | 16pt | 20px | Bold |
 
 ### Desktop Typography
+
 | Element | Size | Line Height | Weight |
 |---------|------|-------------|--------|
 | Body | 14pt | 18px | Regular |
@@ -127,6 +135,7 @@ Use these for data visualization with category-based charts:
 ## Component Specifications
 
 ### Border Radius
+
 | Component | Radius |
 |-----------|--------|
 | Buttons | 8px |
@@ -136,6 +145,7 @@ Use these for data visualization with category-based charts:
 | Inputs | 4px |
 
 ### Shadows
+
 ```css
 /* Standard shadow */
 box-shadow: 0 4px 16px rgba(33, 104, 120, 0.04);
@@ -148,6 +158,7 @@ box-shadow: 0 8px 24px rgba(33, 104, 120, 0.12);
 ```
 
 ### Spacing Scale
+
 | Token | Value |
 |-------|-------|
 | xs | 4px |
@@ -162,6 +173,7 @@ box-shadow: 0 8px 24px rgba(33, 104, 120, 0.12);
 ## Alert Components
 
 ### Mobile Alerts
+
 | Property | Value |
 |----------|-------|
 | Border Radius | 8px |
@@ -171,6 +183,7 @@ box-shadow: 0 8px 24px rgba(33, 104, 120, 0.12);
 | Min Height | 48px |
 
 ### Desktop Alerts
+
 | Property | Value |
 |----------|-------|
 | Border Radius | 8px |
@@ -180,6 +193,7 @@ box-shadow: 0 8px 24px rgba(33, 104, 120, 0.12);
 | Min Height | 56px |
 
 ### Alert Types
+
 | Type | Icon Color | Background (Light) | Background (Dark) |
 |------|------------|-------------------|-------------------|
 | Success | `#26A567` | `#E9FFEA` | `#1D3D2E` |
@@ -193,6 +207,7 @@ box-shadow: 0 8px 24px rgba(33, 104, 120, 0.12);
 ## Badge Components
 
 ### Sizes
+
 | Size | Height | Padding H | Font Size |
 |------|--------|-----------|-----------|
 | Small | 20px | 8px | 10pt |
@@ -200,6 +215,7 @@ box-shadow: 0 8px 24px rgba(33, 104, 120, 0.12);
 | Large | 28px | 12px | 14pt |
 
 ### Badge Types
+
 | Type | Background | Text Color |
 |------|------------|------------|
 | Default | `#E0E6E1` | `#162020` |
@@ -214,6 +230,7 @@ box-shadow: 0 8px 24px rgba(33, 104, 120, 0.12);
 ## PptxGenJS Integration
 
 ### Pillar DS Constants
+
 ```javascript
 const PILLAR_DS = {
   colors: {
@@ -340,6 +357,7 @@ const PILLAR_DS = {
 ## Icon Components
 
 ### Icon Sizes
+
 | Size | Dimensions | Usage |
 |------|------------|-------|
 | Large | 64 x 64 px | Feature icons, hero sections |
@@ -347,6 +365,7 @@ const PILLAR_DS = {
 | Small | 32 x 32 px | Compact UI, lists |
 
 ### Icon Colors
+
 | Element | Color | Hex |
 |---------|-------|-----|
 | Primary stroke | Teal 06 | `#087681` |
@@ -356,31 +375,38 @@ const PILLAR_DS = {
 ### Icon Categories (Digital Banking)
 
 **Devices & Channels:**
+
 - Mobile, Mobile Minimal, Tablet, Laptop, Computer, Devices
 - No Computer (crossed out), Device Registration
 
 **Payments & Cards:**
+
 - Credit Card Back, Credit Card Lost, Credit Cards
 - Credit Card Angle, ATM Credit Card, Mastercard
 - Card Pay, New Card, Mobile Pay, E-Pay
 
 **Communication:**
+
 - Phone, Video Chat, Video Call, Register
 
 **Calendar & Time:**
+
 - Calendar, Calendar Event, Calendar Schedule, Calendar Check
 - Calendar Everyday Needs, Time, Time Minimal
 - 24 Hours, Alarm Clock, Stopwatch, Hourglass, Watch
 - Standing Order, Subscription
 
 **AI & Innovation:**
+
 - AI, AI Rhombus
 
 **Tools:**
+
 - Calculator, Computer Apps, Computer Charts
 - Screen Dimension
 
 ### Icon Design Rules (Pillar DS)
+
 - **Stroke width**: 2px (scales with icon size)
 - **Corner radius**: Rounded corners on rectangles
 - **Style**: Outline with selective fills for accents

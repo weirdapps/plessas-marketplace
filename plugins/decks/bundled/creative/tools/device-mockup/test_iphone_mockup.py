@@ -28,7 +28,13 @@ def test_frames_dict_has_expected_keys():
 
 
 def test_frames_have_required_fields():
-    required_fields = {"path", "content_left", "content_top", "content_right", "content_bottom"}
+    required_fields = {
+        "path",
+        "content_left",
+        "content_top",
+        "content_right",
+        "content_bottom",
+    }
     for key, config in iphone_mockup.FRAMES.items():
         assert required_fields.issubset(config.keys()), f"Frame {key} missing fields"
 
@@ -55,6 +61,8 @@ def test_list_frames_exits_cleanly():
 def test_missing_screenshot_gives_error():
     script = Path(__file__).parent / "iphone_mockup.py"
     result = subprocess.run(
-        [sys.executable, str(script), "/nonexistent/screenshot.png"], capture_output=True, text=True
+        [sys.executable, str(script), "/nonexistent/screenshot.png"],
+        capture_output=True,
+        text=True,
     )
     assert result.returncode != 0

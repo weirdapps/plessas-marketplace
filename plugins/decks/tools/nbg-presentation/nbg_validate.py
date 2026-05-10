@@ -90,7 +90,14 @@ NBG_GUIDELINES: dict[str, Any] = {
         "primary": ["003841", "007B85", "00ADBF", "00DFF8"],
     },
     "fonts": {
-        "allowed": ["Aptos", "Aptos SemiBold", "Aptos Display", "Arial", "Calibri", "Tahoma"],
+        "allowed": [
+            "Aptos",
+            "Aptos SemiBold",
+            "Aptos Display",
+            "Arial",
+            "Calibri",
+            "Tahoma",
+        ],
         "primary": "Aptos",
     },
 }
@@ -104,7 +111,9 @@ NAMESPACES = {
 
 
 class ValidationResult:
-    def __init__(self, name: str, passed: bool, message: str, details: list[str] | None = None):
+    def __init__(
+        self, name: str, passed: bool, message: str, details: list[str] | None = None
+    ):
         self.name = name
         self.passed = passed
         self.message = message
@@ -143,7 +152,9 @@ def check_dimensions(unpacked_dir: Path) -> ValidationResult:
 
     if width_ok and height_ok:
         return ValidationResult(
-            "Dimensions", True, f'{actual_w:.2f}" x {actual_h:.2f}" (NBG standard = LAYOUT_WIDE)'
+            "Dimensions",
+            True,
+            f'{actual_w:.2f}" x {actual_h:.2f}" (NBG standard = LAYOUT_WIDE)',
         )
     else:
         return ValidationResult(
@@ -191,7 +202,9 @@ def check_colors(unpacked_dir: Path) -> ValidationResult:
     valid = colors & allowed
 
     if not invalid:
-        return ValidationResult("Colors", True, f"All {len(valid)} colors within NBG palette")
+        return ValidationResult(
+            "Colors", True, f"All {len(valid)} colors within NBG palette"
+        )
     else:
         details = [f"#{c} (not in NBG palette)" for c in sorted(invalid)]
         return ValidationResult(
@@ -273,10 +286,14 @@ def check_logo_present(unpacked_dir: Path) -> ValidationResult:
 
     if images or has_logo_ref:
         return ValidationResult(
-            "Logo", True, f"{len(images)} media file(s) found (verify NBG logo manually)"
+            "Logo",
+            True,
+            f"{len(images)} media file(s) found (verify NBG logo manually)",
         )
     else:
-        return ValidationResult("Logo", False, "No media files or logo references found")
+        return ValidationResult(
+            "Logo", False, "No media files or logo references found"
+        )
 
 
 def check_slide_count(unpacked_dir: Path) -> ValidationResult:
@@ -289,7 +306,9 @@ def check_slide_count(unpacked_dir: Path) -> ValidationResult:
     slide_count = len(list(slides_dir.glob("slide*.xml")))
 
     if slide_count > 0:
-        return ValidationResult("Slides", True, f"{slide_count} slide(s) in presentation")
+        return ValidationResult(
+            "Slides", True, f"{slide_count} slide(s) in presentation"
+        )
     else:
         return ValidationResult("Slides", False, "No slides found")
 
@@ -341,7 +360,9 @@ def check_element_boundaries(unpacked_dir: Path) -> ValidationResult:
                     )
 
     if not out_of_bounds:
-        return ValidationResult("Boundaries", True, "All elements within slide boundaries")
+        return ValidationResult(
+            "Boundaries", True, "All elements within slide boundaries"
+        )
     else:
         return ValidationResult(
             "Boundaries",
@@ -415,7 +436,15 @@ def check_decorative_elements(unpacked_dir: Path) -> ValidationResult:
         return ValidationResult("Decorative", False, "No slides folder found")
 
     # Shapes that are typically decorative
-    decorative_shapes = {"ellipse", "oval", "triangle", "star", "heart", "moon", "cloud"}
+    decorative_shapes = {
+        "ellipse",
+        "oval",
+        "triangle",
+        "star",
+        "heart",
+        "moon",
+        "cloud",
+    }
 
     found_decorations = []
 
@@ -461,7 +490,9 @@ def check_pie_charts(unpacked_dir: Path) -> ValidationResult:
             ".//{http://schemas.openxmlformats.org/drawingml/2006/chart}pieChart"
         )
         if pie_elems:
-            pie_charts_found.append(f"{chart_name}: pieChart found (use doughnutChart instead)")
+            pie_charts_found.append(
+                f"{chart_name}: pieChart found (use doughnutChart instead)"
+            )
 
         # Count doughnut charts (good)
         doughnut_elems = root.findall(
@@ -523,7 +554,9 @@ def check_thank_you_slides(unpacked_dir: Path) -> ValidationResult:
                 break
 
     if not found_issues:
-        return ValidationResult("Thank You Check", True, 'No "Thank You" slides found (correct)')
+        return ValidationResult(
+            "Thank You Check", True, 'No "Thank You" slides found (correct)'
+        )
     else:
         return ValidationResult(
             "Thank You Check",
@@ -568,7 +601,9 @@ def check_text_margins(unpacked_dir: Path) -> ValidationResult:
 
             # If any margin is > 50000 EMU (~0.05 inch), flag it
             if lIns > 50000 or rIns > 50000:
-                non_zero_margins.append(f"Slide {slide_num}: text box has non-zero margins")
+                non_zero_margins.append(
+                    f"Slide {slide_num}: text box has non-zero margins"
+                )
                 break
 
     total_slides = len(list(slides_dir.glob("slide*.xml")))
@@ -599,7 +634,9 @@ def check_back_cover(unpacked_dir: Path) -> ValidationResult:
         return ValidationResult("Back Cover", False, "No slides folder found")
 
     # Sort numerically, not alphabetically (slide10.xml > slide2.xml)
-    slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
+    slide_files = sorted(
+        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
+    )
     if not slide_files:
         return ValidationResult("Back Cover", False, "No slides found")
 
@@ -613,14 +650,20 @@ def check_back_cover(unpacked_dir: Path) -> ValidationResult:
 
     # Back cover should have minimal or no text (just logo)
     if len(text_content) < 50 and "thank you" not in text_content:
-        return ValidationResult("Back Cover", True, "Last slide appears to be a plain back cover")
+        return ValidationResult(
+            "Back Cover", True, "Last slide appears to be a plain back cover"
+        )
     elif "thank you" in text_content:
         return ValidationResult(
-            "Back Cover", False, 'Last slide contains "Thank You" (use plain back cover instead)'
+            "Back Cover",
+            False,
+            'Last slide contains "Thank You" (use plain back cover instead)',
         )
     else:
         return ValidationResult(
-            "Back Cover", False, f"Last slide has significant text ({len(text_content)} chars)"
+            "Back Cover",
+            False,
+            f"Last slide has significant text ({len(text_content)} chars)",
         )
 
 
@@ -658,7 +701,9 @@ def check_content_safe_zones(unpacked_dir: Path) -> ValidationResult:
     total_slides = 0
 
     # Count total slides to identify cover (first) and back cover (last)
-    all_slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
+    all_slide_files = sorted(
+        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
+    )
     total_slide_count = len(all_slide_files)
 
     for slide_file in all_slide_files:
@@ -732,11 +777,16 @@ def check_content_safe_zones(unpacked_dir: Path) -> ValidationResult:
 
     if not violations:
         return ValidationResult(
-            "Safe Zones", True, f"All content within safe zones across {total_slides} slides"
+            "Safe Zones",
+            True,
+            f"All content within safe zones across {total_slides} slides",
         )
     else:
         return ValidationResult(
-            "Safe Zones", False, f"{len(violations)} safe zone violation(s) found", violations[:10]
+            "Safe Zones",
+            False,
+            f"{len(violations)} safe zone violation(s) found",
+            violations[:10],
         )
 
 
@@ -818,7 +868,10 @@ def check_font_sizes(unpacked_dir: Path) -> ValidationResult:
         # Deduplicate similar violations per slide
         unique = list(dict.fromkeys(violations))
         return ValidationResult(
-            "Font Sizes", False, f"{len(unique)} font size violation(s) found", unique[:10]
+            "Font Sizes",
+            False,
+            f"{len(unique)} font size violation(s) found",
+            unique[:10],
         )
 
 
@@ -841,7 +894,9 @@ def check_content_spacing(unpacked_dir: Path) -> ValidationResult:
     # So first content should start at 0.9" + 0.15" = 1.05" = 960120 EMU
     MIN_CONTENT_Y = TITLE_BOTTOM + MIN_GAP
 
-    all_slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
+    all_slide_files = sorted(
+        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
+    )
     total_slide_count = len(all_slide_files)
 
     violations = []
@@ -898,11 +953,16 @@ def check_content_spacing(unpacked_dir: Path) -> ValidationResult:
 
     if not violations:
         return ValidationResult(
-            "Content Spacing", True, "Adequate spacing between titles and content on all slides"
+            "Content Spacing",
+            True,
+            "Adequate spacing between titles and content on all slides",
         )
     else:
         return ValidationResult(
-            "Content Spacing", False, f"{len(violations)} spacing issue(s) found", violations[:10]
+            "Content Spacing",
+            False,
+            f"{len(violations)} spacing issue(s) found",
+            violations[:10],
         )
 
 
@@ -919,7 +979,9 @@ def check_title_overflow(unpacked_dir: Path) -> ValidationResult:
 
     MAX_TITLE_CHARS = 80  # Safe single-line limit at 22-24pt Aptos in 12.59" width
 
-    all_slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
+    all_slide_files = sorted(
+        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
+    )
     total_slide_count = len(all_slide_files)
 
     violations = []
@@ -976,7 +1038,9 @@ def check_title_overflow(unpacked_dir: Path) -> ValidationResult:
 
     if not violations:
         return ValidationResult(
-            "Title Length", True, f"All titles fit within {MAX_TITLE_CHARS}-char single-line limit"
+            "Title Length",
+            True,
+            f"All titles fit within {MAX_TITLE_CHARS}-char single-line limit",
         )
     else:
         return ValidationResult(
@@ -1040,7 +1104,9 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
     # If fewer than 2 banks mentioned, this isn't a bank comparison slide
     if len(banks_found) < 2:
         return ValidationResult(
-            "Bank Branding", True, "No multi-bank comparison detected — check not applicable"
+            "Bank Branding",
+            True,
+            "No multi-bank comparison detected — check not applicable",
         )
 
     violations = []
@@ -1073,7 +1139,9 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
     for bank_key in banks_found:
         expected_logo = BANK_BRAND[bank_key]["logo"].lower()
         # Check if any media file contains the bank logo name pattern
-        logo_found = any(expected_logo.replace(".png", "") in fname for fname in media_files)
+        logo_found = any(
+            expected_logo.replace(".png", "") in fname for fname in media_files
+        )
         # PptxGenJS embeds base64 images as imageN.png — check slide rels
         # for image count as a heuristic (logos add extra images)
         if not logo_found:
@@ -1097,7 +1165,10 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
         )
     else:
         return ValidationResult(
-            "Bank Branding", False, f"{len(violations)} bank branding issue(s) found", violations
+            "Bank Branding",
+            False,
+            f"{len(violations)} bank branding issue(s) found",
+            violations,
         )
 
 

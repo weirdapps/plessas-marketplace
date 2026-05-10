@@ -31,6 +31,7 @@ When called standalone, use the NBG defaults below. If a different brand is spec
 ## Technical Specifications
 
 ### Canvas & ViewBox
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <!-- Content here -->
@@ -93,6 +94,7 @@ When called standalone, use the NBG defaults below. If a different brand is spec
 ### Shape Language
 
 **DO USE:**
+
 - Rectangles with consistent corner radius (0, 4, or 8px)
 - Circles and ellipses
 - Simple polygons
@@ -100,6 +102,7 @@ When called standalone, use the NBG defaults below. If a different brand is spec
 - Balanced optical weight
 
 **DON'T USE:**
+
 - Organic/freeform shapes
 - Complex curves
 - Thin lines that look like strokes
@@ -123,6 +126,7 @@ If not, simplify.
 ## Icon Template
 
 ### Basic Single Shape
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#003841" d="M32 8C18.75 8 8 18.75 8 32s10.75 24 24 24 24-10.75 24-24S45.25 8 32 8z"/>
@@ -130,6 +134,7 @@ If not, simplify.
 ```
 
 ### Multiple Shapes (Compound Icon)
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect x="12" y="16" width="40" height="32" rx="4" fill="#003841"/>
@@ -138,6 +143,7 @@ If not, simplify.
 ```
 
 ### Icon with Cutout (Negative Space)
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#003841" fill-rule="evenodd" clip-rule="evenodd"
@@ -150,29 +156,34 @@ If not, simplify.
 ## Common Icon Categories
 
 ### Banking & Finance
+
 - Cards, wallets, transfers
 - Accounts, statements
 - Loans, investments, savings
 - Euro symbol, currency
 
 ### Navigation & UI
+
 - Arrows, chevrons, menus
 - Settings, search, help
 - Close, expand, collapse
 - Home, user, notifications
 
 ### Communication
+
 - Messages, email, chat
 - Phone, video
 - Notifications, alerts
 
 ### Business
+
 - Charts, reports, documents
 - Calendar, clock
 - Location, building
 - Team, organization
 
 ### Status & Indicators
+
 - Check/success (green)
 - Warning/alert (red)
 - Information (teal)
@@ -183,6 +194,7 @@ If not, simplify.
 ## Icon Examples
 
 ### Home Icon
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#003841" d="M32 10L8 30v24c0 2.2 1.8 4 4 4h12V42h16v16h12c2.2 0 4-1.8 4-4V30L32 10z"/>
@@ -190,6 +202,7 @@ If not, simplify.
 ```
 
 ### User/Person Icon
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <circle cx="32" cy="20" r="10" fill="#003841"/>
@@ -198,6 +211,7 @@ If not, simplify.
 ```
 
 ### Card/Payment Icon
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect x="8" y="14" width="48" height="36" rx="4" fill="#003841"/>
@@ -207,6 +221,7 @@ If not, simplify.
 ```
 
 ### Chart/Analytics Icon
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect x="10" y="36" width="10" height="18" fill="#003841"/>
@@ -216,6 +231,7 @@ If not, simplify.
 ```
 
 ### Checkmark/Success Icon
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <circle cx="32" cy="32" r="24" fill="#73AF3C"/>
@@ -224,6 +240,7 @@ If not, simplify.
 ```
 
 ### Alert/Warning Icon
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#AA0028" d="M32 8L6 54h52L32 8z"/>
@@ -237,6 +254,7 @@ If not, simplify.
 ## File Naming (Mandatory)
 
 Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.svg`
+
 - Timestamp in Athens time: `TZ='Europe/Athens' date '+%Y%m%d%H%M'`
 - All lowercase, spaces/hyphens → underscores
 - Timestamp = save time (updates on re-save)
@@ -244,12 +262,14 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.svg`
 ## Output Rules
 
 ### Default Behavior
+
 1. Receive icon concept/description
 2. Analyze requirements (context, background, size)
 3. Design icon following brand rules (NBG default)
 4. Output ONLY the SVG code
 
 ### Output Format
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <path fill="#003841" d="..."/>
@@ -257,6 +277,7 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.svg`
 ```
 
 ### What NOT to Output
+
 - No explanations or commentary
 - No markdown formatting around SVG
 - No comments inside SVG
@@ -300,12 +321,14 @@ Before outputting any icon:
 ## Technical Constraints
 
 ### DO
+
 - Use `fill` attribute on paths
 - Use basic shapes (rect, circle, ellipse, path)
 - Use `fill-rule="evenodd"` for cutouts
 - Keep path data clean and optimized
 
 ### DON'T
+
 - Use `stroke` or `stroke-width`
 - Use `opacity` or `fill-opacity`
 - Use gradients (`linearGradient`, `radialGradient`)

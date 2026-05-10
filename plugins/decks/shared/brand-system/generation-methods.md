@@ -24,6 +24,7 @@ const slide = pptx.addSlide();
 **Why**: NBG template files contain orphan "Placeholder text" textboxes, decorative freeforms, and colored background fills on master slides that leak into generated output as phantom artifacts. Building from scratch eliminates this entire class of bugs.
 
 **What you add manually per slide**:
+
 - Title text box at standard position (0.36, 0.81)
 - Eyebrow pill if needed (rounded rect #007B85 fill, 9pt white bold ALL CAPS)
 - NBG Greek logo image at bottom-left (0.374, 7.071, 0.822×0.236 for content; 0.374, 6.271, 2.191×0.630 for cover/dividers)
@@ -183,21 +184,25 @@ Need a presentation?
 
 ## Tool Selection by Task
 
-### Use `nbg_build.py` (python-pptx-based) for:
+### Use `nbg_build.py` (python-pptx-based) for
+
 - Creating presentations from YAML outlines
 - Standard executive decks
 - Data-driven presentations with simple charts
 
-### Use `inject_chart_data.py` (OOXML) for:
+### Use `inject_chart_data.py` (OOXML) for
+
 - Updating chart data in existing presentations
 - Preserving original chart formatting
 - Complex chart types
 
-### Use `inject_table_data.py` (OOXML) for:
+### Use `inject_table_data.py` (OOXML) for
+
 - Updating table data in existing presentations
 - Preserving table styling
 
-### Use direct OOXML editing for:
+### Use direct OOXML editing for
+
 - Custom chart configurations
 - Adding bank logos to chart slides
 - Fine-grained control over positioning

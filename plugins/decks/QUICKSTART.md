@@ -87,6 +87,7 @@ Other commands: `/presentation-review` (teach the system your style), plus bundl
 ## Common patterns
 
 **Build an ExCo pack from scratch** (10-15 min):
+
 ```
 /create-presentation <one-paragraph brief or paste content here>
 # … review the generated PPTX in ~/Downloads …
@@ -96,12 +97,14 @@ Other commands: `/presentation-review` (teach the system your style), plus bundl
 ```
 
 **Rescue a partner deck before a board meeting**:
+
 ```
 /redesign-deck ~/Downloads/mellon_atm_proposal.pptx
 # Storyline kept, layout/colour/typography rebuilt to NBG standards
 ```
 
 **Quick polish on something you wrote yourself**:
+
 ```
 /polish-slides ~/Downloads/sector_offsite_draft.pptx
 # Fonts → Aptos, colours → NBG palette, spacing → grid, no structural changes

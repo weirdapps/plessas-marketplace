@@ -98,6 +98,7 @@ Other commands: `/reply`, `/forward`, `/archive-thread`, `/triage-inbox`, `/mail
 ## Common patterns
 
 **Morning triage** (5 min):
+
 ```
 /inbox-briefing
 # … scan the actions, decide what's worth your time …
@@ -106,17 +107,21 @@ Other commands: `/reply`, `/forward`, `/archive-thread`, `/triage-inbox`, `/mail
 ```
 
 **Bulk-archive a noisy thread**:
+
 ```
 /archive-thread "<subject keyword>"
 ```
 
 **Send a quick reply that matches your style for that recipient**:
+
 ```
 /reply <message_id>
 ```
+
 Pulls the thread, drafts the reply, opens Outlook with the draft pre-loaded for your final review and send.
 
 **Send a new email** (e.g. follow-up to direct report after a meeting):
+
 ```
 /send-mail
 # Claude asks: To, Subject, Body. Draft is opened in Outlook desktop.

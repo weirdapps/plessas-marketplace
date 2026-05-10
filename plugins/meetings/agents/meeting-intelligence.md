@@ -43,6 +43,7 @@ Args: { "from": "start of today", "to": "end of today" }   # or explicit ISO ran
 ```
 
 For full attendee/body detail on a specific event:
+
 ```
 Tool: mcp__outlook-bridge__outlook_get_event
 Args: { "id": "<event Id>" }
@@ -97,6 +98,7 @@ APPLESCRIPT
 ```
 
 **Calendar selection logic:**
+
 - Use outlook-bridge MCP first (M365-synced via Microsoft Graph, structured JSON, authoritative)
 - For free-form natural-language queries that don't fit structured args, fall back to WorkIQ MCP
 - If both MCPs are unavailable, fall back to Outlook AppleScript
@@ -106,6 +108,7 @@ APPLESCRIPT
 ### Phase 2: EXTRACT ATTENDEES
 
 For each meeting event:
+
 1. Parse the attendee list (name + email)
 2. Identify the current user and exclude from dossier generation
 3. Clean up attendee names — strip email domain, normalize capitalization
@@ -118,6 +121,7 @@ For each unique attendee across all meetings, query the knowledge store via MCP:
 **Primary — single call per attendee:**
 
 Use `mcp__second_brain__person_context` with `name_or_email="<attendee_name>"` — returns everything needed for a dossier in one call:
+
 - Recent emails with summaries
 - Topics they're involved in
 - Sentiment distribution
@@ -132,6 +136,7 @@ Use `mcp__second_brain__person_context` with `name_or_email="<attendee_name>"` �
 - `mcp__second_brain__topic_context` with `topic="<meeting_topic>"` — topic-specific context
 
 Build a dossier for each attendee:
+
 - **Last communication**: Date and topic of most recent email exchange
 - **Communication frequency**: How often you interact (daily, weekly, monthly, rare)
 - **Open items**: Action items they own or are waiting on from you
@@ -257,12 +262,14 @@ SUMMARY
 
 1. If user specifies which meeting, use that
 2. Otherwise, read today's calendar and present the list:
+
    ```
    Which meeting are you debriefing?
    1. [10:00] Team standup
    2. [14:00] Project review with [names]
    3. [16:00] Client call
    ```
+
 3. If only one meeting today, use it automatically
 4. If the most recent past meeting is obvious, suggest it
 
@@ -332,6 +339,7 @@ Ask the user if they want to send a summary to attendees:
 ### Phase 5: LOG TO DECISION TRACKER (OPTIONAL)
 
 If the `_shared/decision-tracker/` directory exists:
+
 1. Append decisions to the tracker
 2. Append action items to the tracker
 3. This integrates with the email-handler's decision tracking
@@ -339,6 +347,7 @@ If the `_shared/decision-tracker/` directory exists:
 ## Calendar Access
 
 See `shared/calendar-access.md` for detailed patterns covering:
+
 - WorkIQ MCP queries (primary — M365-synced, authoritative)
 - Outlook AppleScript fallback
 - Date range queries

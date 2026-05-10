@@ -91,7 +91,9 @@ def find_chart_files(unpacked_dir: Path) -> dict[str, Path]:
 def find_slide_charts(unpacked_dir: Path, slide_num: int) -> list:
     """Find chart references in a specific slide."""
     unpacked_dir / "ppt" / "slides" / f"slide{slide_num + 1}.xml"
-    slide_rels = unpacked_dir / "ppt" / "slides" / "_rels" / f"slide{slide_num + 1}.xml.rels"
+    slide_rels = (
+        unpacked_dir / "ppt" / "slides" / "_rels" / f"slide{slide_num + 1}.xml.rels"
+    )
 
     chart_refs = []
 
@@ -215,7 +217,9 @@ def update_bar_chart(chart_file: Path, data: dict, title: str | None = None):
                             pt_count.set("val", str(len(data["categories"])))
 
                         for i, cat_label in enumerate(data["categories"]):
-                            pt = SubElement(str_cache, "{{{}}}pt".format(NAMESPACES["c"]))
+                            pt = SubElement(
+                                str_cache, "{{{}}}pt".format(NAMESPACES["c"])
+                            )
                             pt.set("idx", str(i))
                             v = SubElement(pt, "{{{}}}v".format(NAMESPACES["c"]))
                             v.text = str(cat_label)
@@ -235,7 +239,9 @@ def update_bar_chart(chart_file: Path, data: dict, title: str | None = None):
                             pt_count.set("val", str(len(series_data["values"])))
 
                         for i, value in enumerate(series_data["values"]):
-                            pt = SubElement(num_cache, "{{{}}}pt".format(NAMESPACES["c"]))
+                            pt = SubElement(
+                                num_cache, "{{{}}}pt".format(NAMESPACES["c"])
+                            )
                             pt.set("idx", str(i))
                             v = SubElement(pt, "{{{}}}v".format(NAMESPACES["c"]))
                             v.text = str(value)
@@ -285,7 +291,9 @@ def update_line_chart(chart_file: Path, data: dict, title: str | None = None):
                             pt_count.set("val", str(len(data["categories"])))
 
                         for i, cat_label in enumerate(data["categories"]):
-                            pt = SubElement(str_cache, "{{{}}}pt".format(NAMESPACES["c"]))
+                            pt = SubElement(
+                                str_cache, "{{{}}}pt".format(NAMESPACES["c"])
+                            )
                             pt.set("idx", str(i))
                             v = SubElement(pt, "{{{}}}v".format(NAMESPACES["c"]))
                             v.text = str(cat_label)
@@ -305,7 +313,9 @@ def update_line_chart(chart_file: Path, data: dict, title: str | None = None):
                             pt_count.set("val", str(len(series_data["values"])))
 
                         for i, value in enumerate(series_data["values"]):
-                            pt = SubElement(num_cache, "{{{}}}pt".format(NAMESPACES["c"]))
+                            pt = SubElement(
+                                num_cache, "{{{}}}pt".format(NAMESPACES["c"])
+                            )
                             pt.set("idx", str(i))
                             v = SubElement(pt, "{{{}}}v".format(NAMESPACES["c"]))
                             v.text = str(value)
@@ -357,7 +367,9 @@ def inject_chart_data(pptx_path: str, config_path: str, output_path: str):
                 chart_file = all_charts.get(chart_name)
 
                 if chart_file and chart_file.exists():
-                    print(f"Updating {chart_type} chart on slide {slide_num + 1}: {chart_name}")
+                    print(
+                        f"Updating {chart_type} chart on slide {slide_num + 1}: {chart_name}"
+                    )
 
                     if chart_type in ("pie", "doughnut"):
                         update_pie_chart(chart_file, data, title)
@@ -370,7 +382,9 @@ def inject_chart_data(pptx_path: str, config_path: str, output_path: str):
                 else:
                     print(f"  Warning: Chart file not found for {chart_name}")
             else:
-                print(f"  Warning: Chart index {chart_index} not found on slide {slide_num + 1}")
+                print(
+                    f"  Warning: Chart index {chart_index} not found on slide {slide_num + 1}"
+                )
 
         # Repack PPTX
         with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -384,7 +398,9 @@ def inject_chart_data(pptx_path: str, config_path: str, output_path: str):
 
 def main():
     if len(sys.argv) < 4:
-        print("Usage: python inject_chart_data.py <input.pptx> <config.json> <output.pptx>")
+        print(
+            "Usage: python inject_chart_data.py <input.pptx> <config.json> <output.pptx>"
+        )
         print("\nExample config.json:")
         print(
             json.dumps(

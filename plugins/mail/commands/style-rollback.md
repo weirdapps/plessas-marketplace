@@ -14,10 +14,12 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. List Available Backups
+
 Scan `~/.claude/drafts/style-guide-backups/` for backup files.
 Files follow the naming convention: `YYYYMMDDHHMM_style-guide.md`
 
 Present available versions:
+
 ```
 STYLE GUIDE BACKUPS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -30,11 +32,14 @@ STYLE GUIDE BACKUPS
 If user passed `list` as argument, stop here after showing the list.
 
 ### 2. Select Version
+
 If a date argument was provided (YYYYMMDD or YYYYMMDDHHMM), find the matching backup.
 If no date was provided and not `list`, ask the user which version to restore.
 
 ### 3. Backup Current Version
+
 Before overwriting, save the current style guide:
+
 ```bash
 TZ='Europe/Athens' date '+%Y%m%d%H%M'
 cp plugins/mail/shared/style-guide.md \
@@ -42,16 +47,20 @@ cp plugins/mail/shared/style-guide.md \
 ```
 
 ### 4. Restore Selected Version
+
 Copy the selected backup to `plugins/mail/shared/style-guide.md`.
 
 ### 5. Show Diff Summary
+
 Briefly summarize what changed between the restored version and the one it replaced:
+
 - Recipient profiles added/removed
 - Tone changes
 - Length changes
 - Any other notable differences
 
 ### 6. Confirm
+
 ```
 STYLE GUIDE RESTORED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -60,6 +69,7 @@ Current saved as: [new backup filename]
 Changes: [brief summary]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
 </process>
 
 <specifications>
@@ -71,6 +81,7 @@ Changes: [brief summary]
 | `list` | No | — | Just list available backups without restoring |
 
 ## Output
+
 - List of available backups (always shown)
 - Restored style guide (if date selected)
 - Diff summary between restored and replaced versions
@@ -80,22 +91,27 @@ Changes: [brief summary]
 ## Usage Examples
 
 ### List available backups
+
 ```
 /style-rollback list
 ```
 
 ### Restore a specific date
+
 ```
 /style-rollback 20260318
 ```
 
 ### Restore with exact timestamp
+
 ```
 /style-rollback 202603180600
 ```
 
 ### Interactive — will prompt for selection
+
 ```
 /style-rollback
 ```
+
 </examples>

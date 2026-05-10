@@ -114,6 +114,7 @@ const PAGE_NUMBER_EMU = {
 ```
 
 **Positioning Logic:**
+
 - Bottom margin: `7.5" - 7.1554" - 0.076"` ≈ 0.27" (half of height centered)
 - Right margin: `13.33" - 12.71" - 0.33"` ≈ 0.29" (approximately equal)
 - This creates visually balanced margins from both edges
@@ -512,6 +513,7 @@ barData.forEach((d, i) => {
 ```
 
 **Key rules:**
+
 - `barCenterX` is shared between bar and logo — this is what guarantees alignment
 - `addBankLogo()` handles NBG's oval aspect ratio automatically
 - Use `addBankLogo()` in tables too — never manually size bank logos
@@ -745,6 +747,7 @@ Maintain aspect ratio (approx 1:2 for Pro Max frames).
 ### Clean Screenshot Requirements
 
 **CRITICAL**: Only use clean screenshots without device frame artifacts:
+
 - Use screenshots from `assets/screenshots/retail-mobile/`
 - Do NOT use screenshots that already have bezels/frames baked in
 - The flood-fill masking only works with clean screenshots
@@ -752,11 +755,13 @@ Maintain aspect ratio (approx 1:2 for Pro Max frames).
 ### Technical Details
 
 The Device Mockup Agent uses flood-fill masking to:
+
 1. Find only the INNER transparent region (screen area)
 2. Exclude the OUTER transparent region (corners outside phone)
 3. Place screenshot content precisely within the screen bounds
 
 Frame specifications:
+
 ```yaml
 16_pro_max:
   frame_size: 1520 x 3068 px
@@ -772,15 +777,17 @@ Frame specifications:
 
 ## Quality Checklist
 
-### Before completing any presentation:
+### Before completing any presentation
 
 **Dimensions & Layout**
+
 - [ ] Slide: 13.33" x 7.5" (LAYOUT_WIDE)
 - [ ] Margins: 0.37" sides
 - [ ] Small logo on content slides (0.822" x 0.236")
 - [ ] Page numbers on content slides only
 
 **Typography**
+
 - [ ] Font: Aptos throughout
 - [ ] Title: 24pt, Dark Teal (003841)
 - [ ] Body: 11-14pt, Dark Text (202020)
@@ -789,17 +796,20 @@ Frame specifications:
 - [ ] Title boxes sized to fit (~0.4" single-line)
 
 **Colors**
+
 - [ ] Background: white (FFFFFF)
 - [ ] Bullets: Bright Cyan (00DFF8)
 - [ ] Charts use explicit NBG colors
 - [ ] No #333333 or other defaults
 
 **Charts**
+
 - [ ] NO pie charts (use doughnut)
 - [ ] Line charts: smooth, 3pt, markers visible
 - [ ] Explicit axis colors specified
 
 **Back Cover**
+
 - [ ] Centered oval logo
 - [ ] NO "Thank You" text
 - [ ] NO corner logo
@@ -810,6 +820,7 @@ Frame specifications:
 ## File Naming (Mandatory)
 
 Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.pptx`
+
 - Timestamp in Athens time: `TZ='Europe/Athens' date '+%Y%m%d%H%M'`
 - All lowercase, spaces/hyphens → underscores
 - Timestamp = save time (updates on re-save)
@@ -819,6 +830,7 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.pptx`
 **Run these checks before saving any presentation:**
 
 ### 1. Contrast Validation
+
 - [ ] Cover text uses explicit colors (never inherited/theme)
 - [ ] Cover title: Dark Teal `003841`
 - [ ] Cover subtitle: NBG Teal `007B85`, lists units (`Cards | GoForMore | ...`) — NOT "Cards and Digital Business"
@@ -826,33 +838,39 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.pptx`
 - [ ] No dark text on dark backgrounds
 
 ### 2. Divider Consistency
+
 - [ ] All dividers use the SAME style (never mix)
 - [ ] Divider numbers are sequential ("01", "02", etc.)
 - [ ] Long titles don't overlap with descriptions
 
 ### 3. Slide Numbers
+
 - [ ] Present on ALL content slides
 - [ ] NOT present on: Cover, Dividers, Back Cover
 - [ ] Position: bottom-right (12.71", 7.1554")
 - [ ] Sequential numbering matches slide order
 
 ### 4. Asset Integrity
+
 - [ ] Images preserve aspect ratio (never stretched)
 - [ ] Mobile screenshots never cropped (fit whole)
 - [ ] Icons consistently sized per slide
 - [ ] Illustrations on light backgrounds only
 
 ### 5. Empty Placeholder Cleanup
+
 - [ ] No empty text placeholders visible
 - [ ] No placeholder text ("Click to add...")
 - [ ] Unused shapes removed
 
 ### 6. Background Validation
+
 - [ ] All slides have explicit white (`FFFFFF`) background
 - [ ] No slides rely on inherited/theme backgrounds (can render as black)
 - [ ] Cover and divider slides with dark backgrounds have white/light text
 
 ### 7. Content Safe Zone Enforcement
+
 - [ ] No content element extends below y=6.85" (footer exclusion zone)
 - [ ] No content element starts above y=1.1" (unless it IS the title/bumper)
 - [ ] No element exceeds left margin (x ≥ 0.37") or right margin (x+w ≤ 12.96")
@@ -860,17 +878,20 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.pptx`
 - [ ] Charts/tables bottom edge clears 6.85" with breathing room
 
 ### 8. Footnote & Caption Overlap Prevention
+
 - [ ] Footnotes don't overlap with logo placement area
 - [ ] Source citations positioned above footer exclusion zone
 - [ ] Caption text doesn't collide with page numbers
 
 ### 9. Container & Text Overflow
+
 - [ ] Long titles that exceed one line get increased height (0.4" → 0.7")
 - [ ] Body text boxes sized to fit actual content (no 5" tall empty boxes)
 - [ ] Multi-line bullet lists have adequate height for all items
 - [ ] Table cells have enough height for wrapped text
 
 ### 10. Single Divider Enforcement
+
 - [ ] Each divider slide has exactly ONE horizontal divider line (if any)
 - [ ] No duplicate or stacked divider lines from template remnants
 - [ ] Divider line spans full content width at consistent y-position
@@ -883,6 +904,7 @@ After generating any PPTX, save a draft record for the learning system:
 
 1. Create directory if needed: ~/.claude/presentations/pending/
 2. Save JSON record:
+
 ```json
 {
   "id": "pres-YYYY-MM-DD-NNN",

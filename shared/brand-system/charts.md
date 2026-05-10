@@ -3,13 +3,17 @@
 ## Critical Rules
 
 ### NEVER Use Pie Charts
+
 **Pie charts are PROHIBITED.** Always use **doughnut charts** instead:
+
 - More modern and professional appearance
 - Center hole provides space for key metrics
 - Better visual hierarchy
 
 ### Always Specify Explicit Colors
+
 **CRITICAL:** Always specify explicit NBG colors for all chart elements to avoid PptxGenJS defaults (like #333333):
+
 - `catAxisLabelColor`
 - `valAxisLabelColor`
 - `catAxisLineColor`
@@ -270,6 +274,7 @@ slide.addChart(pptx.ChartType.line, chartData, {
 ## Chart Design Best Practices
 
 ### Clean, Minimal Charts
+
 1. **Remove clutter**: Hide gridlines where possible
 2. **Single focus**: Each chart = ONE key message
 3. **Data labels**: Only show if they add value
@@ -277,11 +282,13 @@ slide.addChart(pptx.ChartType.line, chartData, {
 5. **Colors**: Max 3-4 colors per chart
 
 ### Supporting Key Messages
+
 - Add callout boxes for insights (e.g., "+47%", "-800K")
 - Use roundRect shapes for highlight callouts
 - Keep subtitle explaining the data context
 
 ### Layout Tips
+
 - **Two-column**: Chart on right, text/bullets on left (40/60 split)
 - **Full-width**: Single important chart with annotations
 - **Bar charts**: Use `barGapWidthPct: 35` for clean spacing

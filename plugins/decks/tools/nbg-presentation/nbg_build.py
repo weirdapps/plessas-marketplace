@@ -84,7 +84,18 @@ PAGE_NUM = {"x": 12.71, "y": 7.1554, "w": 0.33, "h": 0.152}
 
 
 def _add_textbox(
-    slide, x, y, w, h, text, *, font_size=14, color=None, bold=False, align=None, font_name=FONT
+    slide,
+    x,
+    y,
+    w,
+    h,
+    text,
+    *,
+    font_size=14,
+    color=None,
+    bold=False,
+    align=None,
+    font_name=FONT,
 ):
     """Add a text box with NBG defaults: margin=0, valign=top, Aptos."""
     if color is None:
@@ -551,19 +562,51 @@ def create_cover_slide(prs, content):
 
     if content.get("title"):
         _add_textbox(
-            slide, 0.37, 1.39, 7.86, 1.00, content["title"], font_size=48, color=C_DARK_TEAL
+            slide,
+            0.37,
+            1.39,
+            7.86,
+            1.00,
+            content["title"],
+            font_size=48,
+            color=C_DARK_TEAL,
         )
 
     if content.get("subtitle"):
-        _add_textbox(slide, 0.37, 2.27, 7.86, 0.80, content["subtitle"], font_size=36, color=C_TEAL)
+        _add_textbox(
+            slide,
+            0.37,
+            2.27,
+            7.86,
+            0.80,
+            content["subtitle"],
+            font_size=36,
+            color=C_TEAL,
+        )
 
     if content.get("location"):
         _add_textbox(
-            slide, 0.37, 4.58, 4, 0.4, content["location"], font_size=14, color=C_DARK_TEAL
+            slide,
+            0.37,
+            4.58,
+            4,
+            0.4,
+            content["location"],
+            font_size=14,
+            color=C_DARK_TEAL,
         )
 
     if content.get("date"):
-        _add_textbox(slide, 0.37, 4.97, 4, 0.4, content["date"], font_size=14, color=C_MEDIUM_GRAY)
+        _add_textbox(
+            slide,
+            0.37,
+            4.97,
+            4,
+            0.4,
+            content["date"],
+            font_size=14,
+            color=C_MEDIUM_GRAY,
+        )
 
     _add_logo(slide, "large")
     return slide
@@ -589,7 +632,16 @@ def create_divider_slide(prs, content):
         _add_textbox(slide, 0.37, 2.84, 1.2, 1.0, number, font_size=60, color=C_TEAL)
 
     if content.get("title"):
-        _add_textbox(slide, 1.86, 2.84, 9.5, 1.0, content["title"], font_size=48, color=C_DARK_TEAL)
+        _add_textbox(
+            slide,
+            1.86,
+            2.84,
+            9.5,
+            1.0,
+            content["title"],
+            font_size=48,
+            color=C_DARK_TEAL,
+        )
 
     _add_logo(slide, "large")
     return slide
@@ -650,14 +702,32 @@ def create_contents_slide(prs, sections, page_number):
     slide.background.fill.fore_color.rgb = C_WHITE
 
     _add_textbox(
-        slide, 0.37, 0.36, 10, 0.70, "Contents", font_size=32, color=C_DARK_TEAL, bold=True
+        slide,
+        0.37,
+        0.36,
+        10,
+        0.70,
+        "Contents",
+        font_size=32,
+        color=C_DARK_TEAL,
+        bold=True,
     )
 
     for i, section in enumerate(sections):
         y = 1.48 + (i * 0.85)
 
         number = section.get("number", str(i + 1).zfill(2))
-        _add_textbox(slide, 0.37, y, 0.60, 0.60, str(number), font_size=18, color=C_TEAL, bold=True)
+        _add_textbox(
+            slide,
+            0.37,
+            y,
+            0.60,
+            0.60,
+            str(number),
+            font_size=18,
+            color=C_TEAL,
+            bold=True,
+        )
 
         if section.get("title"):
             _add_textbox(
@@ -842,7 +912,9 @@ def build_presentation(outline_path, output_path):
         template = outline.get("template", "GR")
         print("\n[McKinsey Quality] Using Pyramid Principle structure")
         if presentation.get("main_recommendation"):
-            print(f"  Main recommendation: {presentation['main_recommendation'][:60]}...")
+            print(
+                f"  Main recommendation: {presentation['main_recommendation'][:60]}..."
+            )
     else:
         template = outline.get("template", "GR")
         slides = outline.get("slides", [])
@@ -875,7 +947,9 @@ def build_presentation(outline_path, output_path):
 
         elif category == "divider":
             create_divider_slide(prs, content)
-            print(f"  [divider] {content.get('number', '')} {content.get('title', '')[:50]}")
+            print(
+                f"  [divider] {content.get('number', '')} {content.get('title', '')[:50]}"
+            )
 
         elif category == "contents":
             page_number += 1
@@ -885,7 +959,9 @@ def build_presentation(outline_path, output_path):
 
         elif category == "chart":
             page_number += 1
-            chart_subtype = raw_type.replace("_chart", "") if "_chart" in raw_type else "bar"
+            chart_subtype = (
+                raw_type.replace("_chart", "") if "_chart" in raw_type else "bar"
+            )
             create_chart_slide(prs, content, page_number, chart_type=chart_subtype)
             print(f"  [chart:{chart_subtype}] {content.get('title', '')[:50]}")
 

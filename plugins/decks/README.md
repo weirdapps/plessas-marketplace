@@ -70,6 +70,7 @@ decks/
 ## Brand Quick Reference
 
 ### Primary Colours
+
 | Name | Hex | Usage |
 |------|-----|-------|
 | Dark Teal | `003841` | Titles, icons |
@@ -80,6 +81,7 @@ decks/
 ### Quality Standards
 
 Every presentation must pass:
+
 - Dimensions: 13.33" x 7.5" (LAYOUT_WIDE)
 - Background: white (#FFFFFF)
 - Font: Aptos throughout

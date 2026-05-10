@@ -1,6 +1,7 @@
 # NBG Slide Layout Catalog
 
 ## Slide Dimensions
+
 ```yaml
 width: 13.33"
 height: 7.5"
@@ -11,6 +12,7 @@ emu: 12,192,000 x 6,858,000
 ## Logo Placement (from Template)
 
 ### Small Logo - Content Slides
+
 Use for ALL content slides, charts, tables, infographics.
 
 | Element | Position (x, y) | Size (w x h) | Edge Distance |
@@ -18,6 +20,7 @@ Use for ALL content slides, charts, tables, infographics.
 | Small Logo | 0.374", 7.071" | 0.822" x 0.236" | 0.19" from bottom |
 
 ### Large Logo - Covers & Dividers
+
 Use for cover slides and section dividers only.
 
 | Element | Position (x, y) | Size (w x h) |
@@ -25,6 +28,7 @@ Use for cover slides and section dividers only.
 | Large Logo | 0.374", 6.271" | 2.191" x 0.630" |
 
 ### Back Cover Logo - Centered
+
 Plain back cover with centered oval NBG building logo (NO text).
 
 | Element | Position (x, y) | Size (w x h) | Notes |
@@ -36,6 +40,7 @@ Asset: `assets/nbg-back-cover-logo.png`
 ## Page Numbers
 
 ### Placement
+
 Page numbers appear on **content slides only** (not cover, dividers, back cover).
 
 | Element | Position (x, y) | Size (w x h) | Edge Distance |
@@ -43,11 +48,13 @@ Page numbers appear on **content slides only** (not cover, dividers, back cover)
 | Page Number | 12.71", 7.1554" | 0.33" x 0.152" | 0.29" right, 0.27" bottom |
 
 ### Styling
+
 - **Font**: Aptos, 10pt
 - **Color**: Medium Gray `#939793`
 - **Alignment**: Right
 
 ### Which Slides Get Page Numbers
+
 | Slide Type | Page Number |
 |------------|-------------|
 | Cover | No |
@@ -59,6 +66,7 @@ Page numbers appear on **content slides only** (not cover, dividers, back cover)
 | Back Cover | No |
 
 ## Standard Margins
+
 | Edge | Value |
 |------|-------|
 | Left margin | 0.37" |
@@ -69,6 +77,7 @@ Page numbers appear on **content slides only** (not cover, dividers, back cover)
 ## Cover Slides
 
 ### Elements
+
 | Element | Font | Size | Position (x, y) |
 |---------|------|------|-----------------|
 | Title | Aptos | 48pt | 0.37", 1.39" |
@@ -77,17 +86,22 @@ Page numbers appear on **content slides only** (not cover, dividers, back cover)
 | Date | Aptos | 14pt | 0.37", 4.97" |
 
 ### Dimensions
+
 - Title text box: 7.86" wide x 1.00" tall
 - Subtitle text box: 7.86" wide x 0.80" tall
 
 ### Cover Subtitle Content
+
 The subtitle lists the organizational units, NOT the generic department name:
+
 ```
 Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls
 ```
+
 Never use "Cards and Digital Business" — always list the individual units separated by pipes.
 
 ### Colors
+
 - Title: Dark Teal `#003841`
 - Subtitle: NBG Teal `#007B85`
 - Location: Dark Teal `#003841`
@@ -96,6 +110,7 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 ## Contents / TOC Slide
 
 ### Elements
+
 | Element | Font | Size | Color | Position |
 |---------|------|------|-------|----------|
 | "Contents" Header | Aptos Bold | **32pt** | #003841 | 0.37", 0.36" |
@@ -104,6 +119,7 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 | Description | Aptos | **12pt** | #595959 | 1.10", y + 0.35" |
 
 ### Spacing
+
 - First item Y: 1.48"
 - Vertical spacing: 0.85" per item
 - Max items: 6-7 (to fit with logo)
@@ -111,12 +127,14 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 ## Section Dividers
 
 ### Elements
+
 | Element | Font | Size | Position |
 |---------|------|------|----------|
 | Section Number | Aptos | 60pt | 0.37", 2.84" |
 | Section Title | Aptos | **48pt** | 1.86", 2.84" |
 
 ### Number Format
+
 - Two-digit: "01", "02", "03", etc.
 - Color: NBG Teal `#007B85`
 - Title Color: Dark Teal `#003841`
@@ -134,6 +152,7 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 ### Preventing Text Overlap
 
 If the section title is long (>25 characters) and wraps to multiple lines, the description text may overlap. Fix by:
+
 1. Shortening the title if possible
 2. Pushing the description element down
 3. Using line breaks intentionally
@@ -141,6 +160,7 @@ If the section title is long (>25 characters) and wraps to multiple lines, the d
 ## Content Layouts
 
 ### Full Width Content
+
 ```yaml
 full_width:
   title:
@@ -156,6 +176,7 @@ full_width:
 ```
 
 ### Two Column (50/50)
+
 ```yaml
 two_column_even:
   left:
@@ -171,6 +192,7 @@ two_column_even:
 ```
 
 ### Two Column (40/60 - Text/Chart)
+
 ```yaml
 two_column_text_chart:
   text:
@@ -186,6 +208,7 @@ two_column_text_chart:
 ```
 
 ### Three Column
+
 ```yaml
 three_column:
   col1:
@@ -217,6 +240,7 @@ three_column:
 **IMPORTANT**: NBG presentations should NOT use "Thank You" or "Questions" text. Use a **plain back cover** instead.
 
 ### Plain Back Cover (REQUIRED)
+
 - White background
 - Centered oval NBG building logo
 - **NO text at all**
@@ -224,6 +248,7 @@ three_column:
 - **NO page number**
 
 ### What NOT to Include
+
 - "Thank You" text
 - "Questions?" text
 - "Q&A" labels
@@ -233,6 +258,7 @@ three_column:
 ## Metric Card Component
 
 ### Standard KPI Card
+
 Light background card for displaying key metrics.
 
 | Property | Value |
@@ -243,31 +269,37 @@ Light background card for displaying key metrics.
 | Size | 1.40" x 0.80" (typical) |
 
 ### Card Elements
+
 | Element | Font | Size | Color | Alignment |
 |---------|------|------|-------|-----------|
 | Value | Aptos Bold | **18pt** | #007B85 | Center |
 | Label | Aptos | **9pt** | #202020 | Center |
 
 ### Usage
+
 Place metric cards in the right margin of chart slides for key callouts.
 
 ## Infographic Patterns
 
 ### Numbered List (3x3 grid)
+
 - 9 items with numbers 1-9
 - Each: Number + Title + Description
 - Numbers: Large, teal colored
 
 ### Sequential Steps (2x3 grid)
+
 - 6 items with "01", "02", etc.
 - Two-digit numbering
 
 ### KPI Dashboard
+
 - 2x3 grid layout
 - Large numbers with labels
 - Use Metric Card components
 
 ### Timeline (Horizontal)
+
 - Month/date markers
 - Milestone points
 - Event descriptions
@@ -285,18 +317,23 @@ Place metric cards in the right margin of chart slides for key callouts.
 ## Communication Use Case Guide
 
 ### Executive Summaries
+
 Cover -> Key Metrics -> Charts -> Back Cover
 
 ### Project Updates
+
 Cover -> Contents -> Timeline -> Status -> Next Steps -> Back Cover
 
 ### Data Presentations
+
 Cover -> Contents -> Charts (bar, line, doughnut) -> Tables -> Key Takeaways -> Back Cover
 
 **Note**: Never use pie charts - always use doughnut.
 
 ### Strategy Decks
+
 Cover -> Dividers -> Infographics -> Process Flows -> Timeline -> Back Cover
 
 ### Financial Reports
+
 Cover -> Contents -> KPI Metrics -> Charts -> Tables -> Disclaimers -> Back Cover

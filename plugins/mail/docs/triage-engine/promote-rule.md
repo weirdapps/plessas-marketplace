@@ -5,8 +5,10 @@ Stage 3 — self-learning. After /triage-inbox runs, scan the audit log for repe
 ## Detection
 
 Read `~/.claude/triage/audit-log.jsonl`. For each unique `(sender_domain, suggested_folder)` pair where `rule_or_llm == "llm"`:
+
 - Count occurrences in the last 30 days
 - If count >= 3, add to `~/.claude/triage/pending-promotions.json`:
+
 ```json
 {
   "sender_domain": "microsoft.com",

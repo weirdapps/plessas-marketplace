@@ -29,6 +29,7 @@ When called standalone, use the NBG defaults below (colors, fonts, chart specs).
 ## Input Types
 
 You receive:
+
 - Data sets (tables, numbers, metrics)
 - Visual briefs from Storyboard Designer
 - Context from Storyline Architect
@@ -127,6 +128,7 @@ dot markers, no grid lines, no axis lines, muted gray axis labels. Pair with a K
 **Plain line variant** (no fill): Use `type: "line"` when area fill would be misleading
 (e.g. multiple overlapping series) or when data labels are needed on each point.
 Same styling rules apply (straight segments, markers, no grid lines, muted axis labels).
+
 ```
 
 ### Doughnut Chart
@@ -189,6 +191,7 @@ A doughnut chart configured as a gauge with a large center hole displaying the k
 ```
 
 **OOXML Implementation Notes:**
+
 - Third segment uses transparent fill: `<a:srgbClr val="F5F9F6"><a:alpha val="0"/></a:srgbClr>`
 - `<c:firstSliceAng val="270"/>` starts chart at bottom
 - `<c:holeSize val="75"/>` creates large center area
@@ -230,6 +233,7 @@ A horizontal stacked bar showing percentage distribution across categories.
 ```
 
 **OOXML Structure:**
+
 ```xml
 <c:barChart>
   <c:barDir val="bar"/>
@@ -256,6 +260,7 @@ A horizontal stacked bar showing percentage distribution across categories.
 ```
 
 **Semantic Colors for Status Bars:**
+
 | Status | Hex | Usage |
 |--------|-----|-------|
 | Pass/Success | `097681` | Completed successfully |
@@ -268,6 +273,7 @@ A horizontal stacked bar showing percentage distribution across categories.
 **ALWAYS use Doughnut charts instead of Pie charts.**
 
 Pie charts are prohibited. Always convert any pie chart request to doughnut:
+
 - More modern appearance
 - Center hole can display key metric
 - Better visual hierarchy
@@ -279,6 +285,7 @@ Pie charts are prohibited. Always convert any pie chart request to doughnut:
 **IMPORTANT**: For OOXML editing (existing presentations), waterfall charts are created as stacked bar charts with three series: Base (invisible), Increase (cyan), and Decrease (red). When called from decks, see `shared/brand-system/ooxml-charts.md` for detailed XML structure.
 
 #### PptxGenJS Approach
+
 ```javascript
 {
   type: "waterfall",
@@ -297,6 +304,7 @@ Pie charts are prohibited. Always convert any pie chart request to doughnut:
 #### OOXML Stacked Bar Approach (for editing existing PPTX)
 
 Data structure for embedded Excel:
+
 | Category | Base | Increase | Decrease |
 |----------|------|----------|----------|
 | Start Item | 0 | 100 | 0 |
@@ -308,10 +316,12 @@ Data structure for embedded Excel:
 **Base calculation**: Previous running total that positions the visible bar.
 
 Colors:
+
 - Base series: `<a:noFill/>` (invisible)
 - Increase series: `00ADBF` (NBG Cyan)
 - Decrease series: `AA0028` (NBG Red)
 - Total bar: Can use `003841` (Dark Teal) or same as Increase
+
 ```
 
 ---
@@ -592,6 +602,7 @@ const altRowStyle = {
 ## File Naming (Mandatory)
 
 Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.{png,svg}`
+
 - Timestamp in Athens time: `TZ='Europe/Athens' date '+%Y%m%d%H%M'`
 - All lowercase, spaces/hyphens → underscores
 - Timestamp = save time (updates on re-save)
@@ -599,6 +610,7 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.{png,svg}`
 ## Output Format
 
 ### For Standard Charts
+
 ```yaml
 visual_spec:
   type: chart
@@ -611,6 +623,7 @@ visual_spec:
 ```
 
 ### For Infographics
+
 ```yaml
 visual_spec:
   type: infographic
@@ -621,6 +634,7 @@ visual_spec:
 ```
 
 ### For Custom SVG
+
 ```yaml
 visual_spec:
   type: svg

@@ -8,6 +8,7 @@
 
 `<< REPLACE >>` Your name, role, and email. Example:
 > Name Surname — Role at NBG
+>
 > - Email: firstname.lastname@nbg.gr (primary)
 > - Always CC self on replies — Archive is the canonical source for sent mail
 
@@ -16,6 +17,7 @@
 > The mail plugin's drafting commands NEVER include the signature in reply text — Outlook adds it automatically from `~/.outlook-cli/signature.html`.
 
 `<< REPLACE >>` Your signature lines. Example:
+
 ```
 Name Surname
 Role
@@ -113,11 +115,13 @@ Greek is the dominant language for internal NBG communication. Mixed Greek/Engli
 Two distinct shapes:
 
 **External-content briefings** (forwarding/summarising what came from outside)
+
 - Facts only, minimal opinion
 - Source attribution at top
 - Bold the lead point in green (`<span style="color:#00B050;font-weight:bold;">...</span>`)
 
 **Internal/performance briefings** (your own analysis)
+
 - Synthesis upfront, three bullets
 - Bold the lead point in green
 - Detail and tables below

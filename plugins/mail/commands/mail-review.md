@@ -16,11 +16,14 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 0. Learn from Previous Drafts (AUTOMATIC — runs silently every time)
+
 **First run**: If `~/.claude/drafts/` directory structure doesn't exist, create it automatically. If no `inbox-state.json` exists, treat all emails as NEW. Skip learning if no pending drafts.
 
 Check `~/.claude/drafts/pending/` for unprocessed draft files.
 If pending drafts exist:
+
 1. Read Archive via `mcp__outlook-bridge__outlook_list_mail` to find matching sent emails (Archive is the primary source — user regularly empties Sent Items, but all replies are CC'd to self and land in Archive):
+
    ```
    Tool: mcp__outlook-bridge__outlook_list_mail
    Args: {
@@ -29,6 +32,7 @@ If pending drafts exist:
      "select": "Id,Subject,From,ToRecipients,CcRecipients,ReceivedDateTime,ConversationId"
    }
    ```
+
    Filter client-side to messages where `From.upn` matches the user's UPN. For body content, follow up per-Id with `mcp__outlook-bridge__outlook_get_mail`.
    - Also check Sent Items (`folder: "Sent Items"`) as a supplement for very recent emails (last 1-2 hours) that may not yet be in Archive
    - Match by subject keywords and approximate date (within 72h of draft creation)
@@ -49,11 +53,13 @@ If pending drafts exist:
    - Move processed drafts to `reviewed/` with `delta_type`, `learnings`, `reviewed_date`
    - Append a dated entry to `~/.claude/drafts/learnings.md` with accuracy score
 7. Show a brief learning summary:
+
    ```
    LEARNING: Processed N drafts — accuracy X/10
      SENT_AS_IS: X | MODIFIED: X | REWRITTEN: X | NOT_SENT: X
    Style guide updated: [changes]
    ```
+
 6. Ingest ALL recent sent emails (continuous learning)
    - Read last 20 Archive messages via `mcp__outlook-bridge__outlook_list_mail` (`folder: "Archive", top: 20`), filter client-side to messages where `From.upn` matches the user's UPN
      (Archive is the canonical source — Sent Items gets emptied regularly; user CCs himself on all replies)
@@ -63,6 +69,7 @@ If pending drafts exist:
    - Log: `"CONTINUOUS LEARNING: Analyzed N organic emails, M style updates applied"`
 
 ### 1. Load Context
+
 - Read the communication style guide from `shared/style-guide.md`
 - Read `~/.claude/drafts/inbox-state.json` to know which emails were seen in the previous run
 
@@ -71,6 +78,7 @@ If pending drafts exist:
 Call `mcp__outlook-bridge__outlook_auth_check` first; if `status != "ok"`, surface the auth flow before continuing.
 
 **Reading inbox messages:**
+
 ```
 Tool: mcp__outlook-bridge__outlook_list_mail
 Args: {
@@ -81,6 +89,7 @@ Args: {
 ```
 
 **Reading archive:**
+
 ```
 Tool: mcp__outlook-bridge__outlook_list_mail
 Args: {
@@ -91,12 +100,14 @@ Args: {
 ```
 
 **Reading full message body** (for important/complex emails that need deeper analysis):
+
 ```
 Tool: mcp__outlook-bridge__outlook_get_mail
 Args: { "id": "<Id>", "body": "html" }   # use "text" for plain-text extraction
 ```
 
 **Key points:**
+
 - One `outlook_list_mail` call returns up to 100 messages — use `since` + `all:true` + `max` for larger sweeps
 - Use `select` to keep payloads small; only request body via `outlook_get_mail` when needed
 - For `--unread` flag: include `IsRead` in `select` and filter client-side (`IsRead == false`)
@@ -113,23 +124,28 @@ Args: { "id": "<Id>", "out": "/tmp/mail_att", "overwrite": true }
 ```
 
 The tool returns the absolute paths of saved files. Then convert each saved attachment:
+
 ```bash
 markitdown "/tmp/mail_att/filename.pptx" | head -200
 ```
 
 Use the extracted text to include a one-line attachment summary in the briefing gist, e.g.:
+
 - "ATTACHMENT: Q1 Cards Revenue Report — revenue up 12% YoY, 3 action items"
 - "ATTACHMENT: Project timeline (Excel) — 15 milestones, next deadline April 3"
 
 Only extract attachments for emails marked REPLY, URGENT, or DELEGATE — skip for MONITOR/SKIP to save time. Clean up temp files after extraction: `rm -rf /tmp/mail_att/*`
 
 ### 3. Classify New vs Previously Seen
+
 Compare current inbox against `inbox-state.json`:
+
 - **NEW**: Emails not in the previous state (arrived since last run)
 - **PREVIOUSLY SEEN**: Emails that were in inbox during a prior run
   - If previously seen with an action recommendation, note if the user acted on it or not
 
 ### 4. Analyze & Recommend Actions
+
 For each email, determine:
 
 | Action | When | Symbol |
@@ -145,12 +161,15 @@ For each email, determine:
 Multiple actions can apply (e.g., URGENT + REPLY).
 
 ### 5. Generate Gist
+
 For each email, write a 1-2 sentence gist:
+
 - What is this about? (substance, not just subject)
 - What does the sender want from you specifically?
 - Any context that matters (deadline, escalation, repeat request)
 
 ### 6. Present Inbox Briefing
+
 Present the briefing in this format:
 
 ```
@@ -192,6 +211,7 @@ INSIGHTS
 If `second-brain` is available, query it to enrich draft context. The style guide tells you HOW to write; second-brain tells you WHAT to say.
 
 **For each email marked REPLY, DELEGATE, FOLLOW-UP, or FORWARD, run in parallel:**
+
 1. `mcp__second_brain__search_emails` — search by subject keywords to find thread history and prior decisions
 2. `mcp__second_brain__topic_context` — get broader topic context (related threads, key people, open actions)
 3. `mcp__second_brain__person_context` — for senders/recipients where relationship context would sharpen the draft
@@ -199,6 +219,7 @@ If `second-brain` is available, query it to enrich draft context. The style guid
 5. `mcp__second_brain__query_emails` — filter by person + date range for recent exchanges on the topic
 
 **Use the gathered context to:**
+
 - Reference specific facts, numbers, or prior decisions in the draft
 - Route delegations to the correct person/team (not just a name)
 - Add productive pressure by citing deadlines, audit findings, or commitments
@@ -207,22 +228,28 @@ If `second-brain` is available, query it to enrich draft context. The style guid
 **Keep drafts BRIEF** — context makes them sharper, not longer. A 10-word draft that references the right fact beats a 50-word draft that's vague.
 
 **Skip second-brain queries for:**
+
 - SKIP/MONITOR emails (no draft needed)
 - Simple acknowledgments ("ευχαριστώ [name]") where no context is needed
 - Forwarding with no body text (Type 7)
 
 ### 7. Draft Replies
+
 For each email marked REPLY or DELEGATE:
+
 - Generate a reply following the style guide exactly
 - Adapt tone per recipient using per-recipient profiles
 - Incorporate context from step 6b to make drafts substantively accurate
 - For DELEGATE: draft a forwarding message or a reply that assigns ownership
 
 For each email marked FORWARD:
+
 - Suggest who to forward to and draft forwarding text (if any)
 
 ### 8. Save State
+
 **Save drafts**: For each draft created, save a JSON file to `~/.claude/drafts/pending/`:
+
 ```json
 {
   "id": "YYYYMMDD-NNN",
@@ -241,6 +268,7 @@ For each email marked FORWARD:
 ```
 
 **Update inbox state**: Write `~/.claude/drafts/inbox-state.json`:
+
 ```json
 {
   "last_run": "ISO-8601 timestamp",
@@ -267,15 +295,18 @@ Present each draft reply as TEXT in the conversation for user review.
 Reply drafts are presented as text in the conversation (not auto-injected into Outlook) so the user retains final review before send and so signature/threading is handled by Outlook's native Reply flow on paste.
 
 **For each reply draft:**
+
 1. Display the draft text in the conversation
 2. **Copy to clipboard as rich text** (justified alignment preserved) — platform-aware:
    - **macOS**: `printf '<html>…</html>' | textutil -stdin -format html -convert rtf -stdout | pbcopy`
    - **Windows**: `Get-Content file.html | Set-Clipboard` (PowerShell) or `clip < file.html` (plain HTML)
    - **Linux**: `xclip -selection clipboard -t text/html < file.html`
+
    ```bash
    # macOS example:
    printf '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' | textutil -stdin -format html -convert rtf -stdout | pbcopy
    ```
+
    Use `<br>` for line breaks and `<br><br>` for paragraph spacing in the HTML.
 3. Include the clipboard workflow instructions: the user opens the original email in Outlook, clicks Reply/Reply All, and pastes using Ctrl+V (Cmd+V on macOS) (formatting and justified alignment are preserved)
 4. For delegation or forwarding emails that don't need the original thread, use `/send-mail` to create a new email via `make new outgoing message`
@@ -295,6 +326,7 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
 | `--briefing-only` | No | `false` | Show briefing and insights only, skip drafting |
 
 ## Output
+
 - Learning summary (if pending drafts found)
 - Inbox briefing with new vs previously seen separation
 - Action recommendations with gists
@@ -306,27 +338,33 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
 ## Usage Examples
 
 ### Full workflow — briefing + drafts (auto-learns first)
+
 ```
 /mail-review
 ```
 
 ### Just the briefing, no drafts
+
 ```
 /mail-review --briefing-only
 ```
 
 ### Read last 50 from archive
+
 ```
 /mail-review archive --count 50
 ```
 
 ### Only unread emails
+
 ```
 /mail-review --unread
 ```
 
 ### Learning mode only — process pending drafts
+
 ```
 /mail-review --learn
 ```
+
 </examples>

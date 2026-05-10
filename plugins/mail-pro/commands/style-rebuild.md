@@ -45,20 +45,25 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. Connect to Knowledge Store DB
+
 Open the SQLite database at `~/SourceCode/second-brain/data/brain.db`.
 
 Verify tables exist:
+
 ```bash
 sqlite3 ~/SourceCode/second-brain/data/brain.db ".tables"
 ```
 
 **Data source priority:**
+
 1. **Knowledge store DB** (primary) — contains the full email corpus with content, already classified
 2. **Archive mailbox** via `mcp__outlook-bridge__outlook_list_mail` (supplementary) — for very recent emails not yet ingested into DB. The user CCs himself on all replies, so sent mail appears in Archive (`folder: "Archive"`); filter client-side to messages where `From.upn` matches the user's UPN.
 3. **Sent Items** — NEVER use for historical analysis. The user regularly empties Sent Items. Only useful for emails sent in the last few hours (call `outlook_list_mail` with `folder: "Sent Items"` if ever needed).
 
 ### 2. Extract All Sent Emails
+
 Query all emails where the user is the sender (from second-brain DB):
+
 ```sql
 SELECT e.id, e.date_received, e.sender_name, e.sender_address,
        e.subject, e.summary, e.sentiment, e.language, e.content,
@@ -69,7 +74,9 @@ ORDER BY e.date_received DESC;
 ```
 
 ### 3. Map Recipients for Each Sent Email
+
 For each sent email, identify recipients:
+
 ```sql
 SELECT p.name, p.email, p.role, p.department, ep.role_in_email
 FROM email_people ep
@@ -78,6 +85,7 @@ WHERE ep.email_id = ? AND ep.role_in_email IN ('to', 'cc');
 ```
 
 ### 4. Per-Recipient Analysis
+
 For each unique recipient, compute:
 
 | Metric | How |
@@ -94,7 +102,9 @@ For each unique recipient, compute:
 | **Time-of-day patterns** | Hour distribution of sent emails to this person |
 
 ### 5. Global Style Analysis
+
 Across all sent emails:
+
 - Overall average reply length (mean, median, p10, p90)
 - Language split (Greek / English / mixed)
 - Most common greeting patterns (with N counts)
@@ -104,7 +114,9 @@ Across all sent emails:
 - Delegation patterns: how tasks are assigned vs requested
 
 ### 6. Identify Style Clusters
+
 Group recipients into style clusters:
+
 - **Formal**: Board, C-suite, external partners
 - **Semi-formal**: Peers, cross-department heads
 - **Casual**: Direct reports, close colleagues
@@ -112,22 +124,28 @@ Group recipients into style clusters:
 - **Detailed**: Recipients who get longer, structured replies
 
 ### 7. Backup Current Style Guide
+
 Before overwriting, create a timestamped backup:
+
 ```bash
 TZ='Europe/Athens' date '+%Y%m%d%H%M'
 cp plugins/mail/shared/style-guide.md \
    ~/.claude/drafts/style-guide-backups/YYYYMMDDHHMM_style-guide.md
 ```
+
 Create the backups directory if it doesn't exist.
 
 ### 8. Generate New Style Guide
+
 Write the rebuilt `shared/style-guide.md` with:
+
 - Statistical backing for every claim (e.g., "Based on N=47 emails to X")
 - Per-recipient profiles with evidence counts
 - Global defaults with distributions
 - Confidence indicators (high/medium/low based on sample size)
 
 ### 9. Present Summary Report
+
 ```
 STYLE REBUILD REPORT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -152,6 +170,7 @@ STYLE CLUSTERS:
   Casual: N recipients
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
 </process>
 
 <specifications>
@@ -164,6 +183,7 @@ STYLE CLUSTERS:
 | `--min-emails` | No | `3` | Minimum emails to create a recipient profile |
 
 ## Output
+
 - Backup of current style guide
 - Rebuilt style-guide.md with statistical backing
 - Summary report with corpus statistics
@@ -173,22 +193,27 @@ STYLE CLUSTERS:
 ## Usage Examples
 
 ### Full rebuild from all sent emails
+
 ```
 /style-rebuild
 ```
 
 ### Rebuild for a specific recipient
+
 ```
 /style-rebuild --recipient Papadopoulos
 ```
 
 ### Preview without overwriting
+
 ```
 /style-rebuild --dry-run
 ```
 
 ### Only profile recipients with 5+ emails
+
 ```
 /style-rebuild --min-emails 5
 ```
+
 </examples>

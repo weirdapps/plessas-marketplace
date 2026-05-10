@@ -15,9 +15,12 @@ import nbg_build  # noqa: E402
 
 def test_normalize_slide_type_passthrough():
     """Catalog paths with slashes pass through unchanged."""
-    assert nbg_build.normalize_slide_type("covers/simple_white") == "covers/simple_white"
     assert (
-        nbg_build.normalize_slide_type("content/text_with_bullets") == "content/text_with_bullets"
+        nbg_build.normalize_slide_type("covers/simple_white") == "covers/simple_white"
+    )
+    assert (
+        nbg_build.normalize_slide_type("content/text_with_bullets")
+        == "content/text_with_bullets"
     )
 
 
@@ -33,7 +36,10 @@ def test_normalize_slide_type_with_visual():
     """recommended_visual hint overrides base type."""
     assert nbg_build.normalize_slide_type("content", "bar_chart") == "charts/bar_single"
     assert nbg_build.normalize_slide_type("content", "table") == "tables/half_page"
-    assert nbg_build.normalize_slide_type("content", "kpi_dashboard") == "content/text_only"
+    assert (
+        nbg_build.normalize_slide_type("content", "kpi_dashboard")
+        == "content/text_only"
+    )
 
 
 def test_normalize_slide_type_unknown_defaults():

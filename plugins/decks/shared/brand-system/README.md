@@ -7,6 +7,7 @@ All agents and commands should reference these specifications. Do NOT create dup
 ## Quick Reference
 
 ### Slide Dimensions (CRITICAL)
+
 ```yaml
 width: 13.33"       # LAYOUT_WIDE in PptxGenJS
 height: 7.5"
@@ -15,6 +16,7 @@ aspect_ratio: 16:9
 ```
 
 ### Primary Colors (no # prefix for PptxGenJS)
+
 | Name | Hex | Usage |
 |------|-----|-------|
 | Dark Teal | `003841` | Titles, icons, headings |
@@ -26,6 +28,7 @@ aspect_ratio: 16:9
 | Off-white | `F5F8F6` | Light backgrounds for cards, metric boxes |
 
 ### Fonts
+
 | Type | Font |
 |------|------|
 | Primary | Aptos (Regular weight) |
@@ -33,6 +36,7 @@ aspect_ratio: 16:9
 | Fallback | Calibri, Tahoma |
 
 ### Logo Placement (from Template)
+
 | Type | Position | Size | Usage |
 |------|----------|------|-------|
 | Small | 0.374", 7.071" | 0.822" x 0.236" | Content slides |
@@ -40,6 +44,7 @@ aspect_ratio: 16:9
 | Back Cover | 5.44", 2.98" | 2.45" x 1.54" | Centered oval |
 
 ### Page Numbers
+
 - **Position**: 12.71", 7.1554" (0.33" x 0.152")
 - **Font**: Aptos 10pt, color `939793`
 - **On**: Content, chart, table, infographic slides
@@ -91,11 +96,13 @@ aspect_ratio: 16:9
 ## Chart Color Sequence
 
 Use in order for data series:
+
 ```javascript
 ['00ADBF', '003841', '007B85', '939793', 'BEC1BE', '00DFF8']
 ```
 
 ### Semantic Colors
+
 | Status | Hex |
 |--------|-----|
 | Positive/Growth | 73AF3C |
@@ -171,6 +178,7 @@ const NBG = {
 ## Text Box Defaults
 
 **ALWAYS apply these to all text boxes:**
+
 ```javascript
 {
   margin: 0,

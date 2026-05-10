@@ -77,16 +77,19 @@ Open the file in Word. Edit as needed. The plugin never touches it again.
 ## Common patterns
 
 **Memo to leadership team**:
+
 ```
 /docs-memo "Cards Q1 review"
 ```
 
 **Formal letter to regulator**:
+
 ```
 /docs-letter "Bank of Greece, Supervision" "Quarterly compliance update"
 ```
 
 **Internal proposal** (board paper, sponsor brief, etc.):
+
 ```
 /docs-create "New mobile credit card product" type:proposal
 ```

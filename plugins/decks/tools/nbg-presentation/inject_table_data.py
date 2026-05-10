@@ -81,7 +81,9 @@ def find_tables_in_slide(slide_file: Path) -> list:
     return tables
 
 
-def update_table_cell(cell: Element, text: str, is_header: bool = False, highlight: bool = False):
+def update_table_cell(
+    cell: Element, text: str, is_header: bool = False, highlight: bool = False
+):
     """Update the text content of a table cell."""
     # Find or create the text body
     txBody = cell.find(".//{{{}}}txBody".format(NAMESPACES["a"]))
@@ -183,7 +185,9 @@ def inject_table_data(pptx_path: str, config_path: str, output_path: str):
                 update_table(tbl, data, highlight_column)
                 tree.write(file_path, xml_declaration=True, encoding="UTF-8")
             else:
-                print(f"Warning: Table index {table_index} not found on slide {slide_num + 1}")
+                print(
+                    f"Warning: Table index {table_index} not found on slide {slide_num + 1}"
+                )
 
         # Repack PPTX
         with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -197,7 +201,9 @@ def inject_table_data(pptx_path: str, config_path: str, output_path: str):
 
 def main():
     if len(sys.argv) < 4:
-        print("Usage: python inject_table_data.py <input.pptx> <config.json> <output.pptx>")
+        print(
+            "Usage: python inject_table_data.py <input.pptx> <config.json> <output.pptx>"
+        )
         print("\nExample config.json:")
         print(
             json.dumps(

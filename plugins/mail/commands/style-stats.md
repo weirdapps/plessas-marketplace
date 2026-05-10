@@ -14,11 +14,14 @@ User request: $ARGUMENTS
 ## Workflow
 
 ### 1. Load Learning History
+
 Read `~/.claude/drafts/learnings.md` for the full historical record of draft reviews.
 Read all files from `~/.claude/drafts/reviewed/` for detailed draft-vs-actual comparisons.
 
 ### 2. Compute Accuracy Trend
+
 For each review session (by date), calculate:
+
 - Total drafts reviewed
 - SENT_AS_IS count (perfect matches)
 - MODIFIED count (partial matches)
@@ -27,6 +30,7 @@ For each review session (by date), calculate:
 - Accuracy score: (SENT_AS_IS + 0.5 * MODIFIED) / total
 
 Plot trend as text sparkline or ASCII chart:
+
 ```
 ACCURACY TREND (last 10 sessions)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -39,7 +43,9 @@ Overall: X% accuracy across N drafts
 ```
 
 ### 3. Top Corrections
+
 Aggregate learnings to find recurring correction patterns:
+
 - Group similar corrections (e.g., "too formal", "too long", "wrong greeting")
 - Rank by frequency
 - Show top 5 with examples
@@ -55,7 +61,9 @@ TOP 5 CORRECTIONS
 ```
 
 ### 4. Per-Recipient Accuracy
+
 For each recipient with reviewed drafts:
+
 ```
 RECIPIENT ACCURACY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -65,7 +73,9 @@ RECIPIENT ACCURACY
 ```
 
 ### 5. Style Guide Evolution Timeline
+
 Track how the style guide has changed over time using backups in `~/.claude/drafts/style-guide-backups/`:
+
 - List backup dates
 - Summarize key changes between versions (diff analysis)
 - Show when recipient profiles were added/modified
@@ -80,6 +90,7 @@ STYLE GUIDE EVOLUTION
 ```
 
 ### 6. Present Full Report
+
 Combine all sections into a comprehensive stats report.
 </process>
 
@@ -92,6 +103,7 @@ Combine all sections into a comprehensive stats report.
 | `--days` | No | `30` | How many days of history to analyze |
 
 ## Output
+
 - Accuracy trend over time
 - Top 5 most common corrections
 - Per-recipient accuracy breakdown
@@ -102,17 +114,21 @@ Combine all sections into a comprehensive stats report.
 ## Usage Examples
 
 ### Full stats overview
+
 ```
 /style-stats
 ```
 
 ### Stats for a specific recipient
+
 ```
 /style-stats --recipient Papadopoulos
 ```
 
 ### Last 7 days only
+
 ```
 /style-stats --days 7
 ```
+
 </examples>
