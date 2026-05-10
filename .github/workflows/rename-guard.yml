@@ -22,7 +22,7 @@ jobs:
   no-stale-command-names:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Grep for legacy slash-command names
         run: |
           set -e
@@ -39,7 +39,7 @@ jobs:
   every-command-declares-allowed-tools:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Verify every plugin command has `allowed-tools` in its frontmatter
         run: |
           set -e
@@ -55,7 +55,7 @@ jobs:
   no-stale-brand-system-path:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Grep for stale shared/nbg-brand-system path
         run: |
           set -e
@@ -72,7 +72,7 @@ jobs:
   no-task-in-allowed-tools:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Verify no command frontmatter declares the deprecated `Task` tool
         run: |
           set -e
@@ -88,7 +88,7 @@ jobs:
   no-old-plugin-directory-names:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Grep for deprecated plugin directory names
         run: |
           set -e
