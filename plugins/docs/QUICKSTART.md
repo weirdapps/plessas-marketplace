@@ -46,15 +46,15 @@ Q1 closed +12% vs plan on revenue, with credit-card fee mix
 shifting 4 points higher than budget. Three areas warrant a
 Q2 course-correction.
 
-1. Pricing — dual-card €6/yr opt-out is on track; legal
-   defence holds (€6/yr = €6 over 3 years vs prior). Recommend
-   ΧΘ approval by end-May to lock the Q3 P&L assumption.
+1. Pricing — fee-restructure rollout is on track; legal
+   defence holds (small annual fee equivalent to prior multi-year).
+   Recommend ExCo approval by end-May to lock the Q3 P&L assumption.
 
 2. Acquisition — digital channel CSAT dropped 4 points after
    the April release. A/B inconclusive; recommend a controlled
    rollback plus targeted follow-up with Customer Insights.
 
-3. Risk — fraud loss ratio is 8 bps under benchmark; Laspas's
+3. Risk — fraud loss ratio is 8 bps under benchmark; the Fraud
    team should keep the current rule set. No change needed.
 
 Decision needed by Friday 16 May on items 1 and 2.
