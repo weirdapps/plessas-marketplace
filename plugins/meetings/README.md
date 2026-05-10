@@ -1,6 +1,8 @@
 # Meeting Prep Plugin
 
-Meeting intelligence for the communications marketplace. Reads your calendar, builds per-attendee dossiers from knowledge store context (via MCP), and captures post-meeting decisions.
+Meeting intelligence for `plessas-marketplace`. Reads your calendar, builds per-attendee dossiers from knowledge store context (via MCP), and captures post-meeting decisions.
+
+> **Requires the `mail` plugin.** This plugin uses the `outlook-bridge` MCP server bundled inside `mail` to read your calendar. Install `mail` first (or alongside): `/plugin install mail@plessas-marketplace`.
 
 ## Commands
 

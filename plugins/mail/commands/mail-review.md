@@ -185,16 +185,18 @@ INSIGHTS
 ═══════════════════════════════════════════════
 ```
 
-### 6b. Gather Context from Second-Brain (before drafting)
+### 6b. (OPTIONAL) Enrich drafts with knowledge-store context
 
-For each email marked REPLY, DELEGATE, FOLLOW-UP, or FORWARD, query the second-brain MCP to enrich the draft with substantive context. The style guide tells you HOW to write; second-brain tells you WHAT to say.
+> **Only run this step if `mcp__second_brain__*` tools are available in your environment.** The `second-brain` MCP server is part of the optional `mail-pro` plugin (which itself requires the private `weirdapps/second-brain` repo). If you don't see `mcp__second_brain__*` tools listed, **skip this entire section** — the `mail` plugin is fully functional without it, drafts will just lean on the email thread itself + the style guide.
 
-**For each actionable email, run in parallel:**
-1. `search_emails` — search by subject keywords to find thread history and prior decisions
-2. `topic_context` — get broader topic context (related threads, key people, open actions)
-3. `person_context` — for senders/recipients where relationship context would sharpen the draft
-4. `query_decisions` — if the thread involves a pending decision or approval
-5. `query_emails` — filter by person + date range for recent exchanges on the topic
+If `second-brain` is available, query it to enrich draft context. The style guide tells you HOW to write; second-brain tells you WHAT to say.
+
+**For each email marked REPLY, DELEGATE, FOLLOW-UP, or FORWARD, run in parallel:**
+1. `mcp__second_brain__search_emails` — search by subject keywords to find thread history and prior decisions
+2. `mcp__second_brain__topic_context` — get broader topic context (related threads, key people, open actions)
+3. `mcp__second_brain__person_context` — for senders/recipients where relationship context would sharpen the draft
+4. `mcp__second_brain__query_decisions` — if the thread involves a pending decision or approval
+5. `mcp__second_brain__query_emails` — filter by person + date range for recent exchanges on the topic
 
 **Use the gathered context to:**
 - Reference specific facts, numbers, or prior decisions in the draft

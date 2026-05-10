@@ -1,6 +1,6 @@
 {
   "name": "meetings",
-  "description": "Meeting intelligence plugin. Calendar-aware briefings, attendee dossiers from knowledge store context (via MCP), and post-meeting debrief with decision capture.",
+  "description": "Meeting intelligence plugin. Calendar-aware briefings, attendee dossiers from knowledge store context (via MCP), and post-meeting debrief with decision capture. Requires the `mail` plugin (uses its bundled outlook-bridge MCP server for calendar access).",
   "version": "1.0.0",
   "author": {
     "name": "weirdapps"

@@ -13,6 +13,21 @@ User request: $ARGUMENTS
 <process>
 ## Workflow
 
+### 0. Verify Outlook MCP Available (FAIL-FAST)
+This plugin reads the calendar via `mcp__outlook-bridge__*` tools, which are bundled in the **mail** plugin. Before doing anything else, check the bridge is reachable:
+
+```
+Tool: mcp__outlook-bridge__outlook_auth_check
+```
+
+If the tool is **not available** (no `mcp__outlook-bridge__*` tools listed in your environment), stop and tell the user:
+
+> The `meetings` plugin requires the `mail` plugin to be installed (it bundles the `outlook-bridge` MCP server). Install it with:
+> `/plugin install mail@plessas-marketplace`
+> Then run `~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh` and try `/meeting-prep` again.
+
+Do not attempt the AppleScript fallback unless the user explicitly passes `--outlook`. If the tool exists but returns `auth_required`, surface the `outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com` flow.
+
 ### 1. Parse Arguments
 - `--date YYYY-MM-DD`: Prep for a specific date (default: today)
 - `--outlook`: Use Outlook AppleScript instead of the MCP path (emergency fallback only)

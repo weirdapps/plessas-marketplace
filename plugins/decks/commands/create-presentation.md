@@ -44,9 +44,9 @@ Use the Storyboard Designer skill for visual layout:
 - Ensure adequate white space (don't crowd slides)
 
 ### 4. Asset Generation (if needed)
-- **Infographic Specialist**: Charts, diagrams, KPI dashboards
-- **Icon Designer**: Custom NBG-compliant icons
-- **manage-nano-banana**: Complex infographics requiring image generation
+- **Infographic Specialist** (always available): Charts, diagrams, KPI dashboards (SVG-based)
+- **Icon Designer** (always available): Custom NBG-compliant SVG icons
+- **manage-nano-banana** (OPTIONAL — only if `plessas-lab` marketplace is installed): Complex AI-generated infographics requiring rasterised image output. If the `Skill(manage-nano-banana)` is not available in your environment, silently skip this step and rely on the SVG-based Infographic Specialist + Icon Designer for all visuals — every deck remains fully producible without it.
 - Apply semantic colors: green=good, red=bad, gray=neutral
 
 ### 5. Final Assembly (Graphics Renderer)

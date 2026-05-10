@@ -4,6 +4,18 @@ All notable changes to `plessas-marketplace` are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed (team-rollout readiness pass — 2026-05-10)
+- **`installers/pii-gauntlet.sh`**: 9-digit-ID regex was matching SHA fragments inside nested `package-lock.json` files (e.g. `plugins/mail/mcp-server/package-lock.json`), turning the GitHub Actions PII Check workflow red on `master`. Tightened the file exclusion to match common lockfiles (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `poetry.lock`, `Pipfile.lock`) at any depth. `./installers/pii-gauntlet.sh --mode=ci` now passes.
+- **All `raw.githubusercontent.com/.../main/...` URLs → `master/...`**: the curl one-liner installer was 404'ing because the default branch is `master`, not `main`. Updated 6 locations: `README.md` (×2), `installers/install.sh`, `installers/install.ps1`, `docs/migration-from-communications-marketplace.md` (×2).
+- **`plugins/decks/commands/create-presentation.md`**: gated the `manage-nano-banana` skill (which lives in the separate `plessas-lab` marketplace, not bundled here). The command now silently degrades to SVG-based `Infographic Specialist` + `Icon Designer` if `Skill(manage-nano-banana)` is unavailable, instead of failing.
+- **`plugins/mail/commands/mail-review.md`**: gated section 6b ("Gather Context from Second-Brain") behind `mcp__second_brain__*` availability. Users without the optional `mail-pro` plugin (and its private `second-brain` dependency) no longer hit "skill not found" errors mid-flow.
+- **`plugins/meetings/`**: added a fail-fast Step 0 to both `/meeting-prep` and `/meeting-debrief` that checks for `mcp__outlook-bridge__outlook_auth_check` availability. If the `mail` plugin (which bundles `outlook-bridge`) isn't installed, users now get a clear error and install instruction instead of a silent failure. `plugin.json` description updated to surface the dependency.
+- **`plugins/meetings/README.md`**: removed stale "Meeting intelligence for the communications marketplace" tagline; clarified `mail`-plugin dependency.
+
+### Added (team-rollout readiness pass — 2026-05-10)
+- **`plugins/chat/README.md`**, **`plugins/excel/README.md`**, **`plugins/docs/README.md`**: per-plugin READMEs for the three plugins that previously shipped without one. Use the `mail-pro/README.md` skeleton (overview, command table, how-it-works, setup, tips, license).
+- **`README.md` install section rewritten**: now leads with the Claude Code marketplace flow (`/plugin marketplace add weirdapps/plessas-marketplace` → `installers/install.sh` → `/plugin install <name>` → `auth-wizard.sh`). The curl one-liner is preserved as an "Advanced — One-line installer" path for CI / unattended deploys.
+
 ### Added
 - New `mail-pro` plugin (companion to `mail`) hosting the second-brain-dependent `/comm-report` and `/style-rebuild` commands plus `style-sync.py`. Lets the base `mail` plugin work for everyone, and isolates the private-repo dependency. See [`docs/workflows/mail-pro.md`](docs/workflows/mail-pro.md).
 - `install.sh` and `install.ps1` now auto-clone, build, and `npm link` `outlook-cli` and `teams-cli` into `installers/deps/`. No more manual side-quest. Existing installs of those CLIs are detected and respected.

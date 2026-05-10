@@ -1,5 +1,5 @@
 # plessas-marketplace installer (Windows PowerShell)
-# Usage: iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/main/installers/install.ps1 | iex
+# Usage: iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.ps1 | iex
 
 $ErrorActionPreference = 'Stop'
 
