@@ -48,17 +48,32 @@
 | Black | `#212121` | 33, 33, 33 | Alternative text |
 | Aqua Light | `#3EDEF8` | 62, 222, 248 | Light accent |
 | Light Grey | `#BEC1BE` | 190, 193, 190 | Subtle elements |
-| Grey | `#595959` | 89, 89, 89 | Secondary text |
-| Pale Grey | `#F5F8F6` | 245, 248, 246 | Light backgrounds |
+| Grey | `#595959` | 89, 89, 89 | Secondary text (TOC descriptions) |
+| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, table notes (Plessas signature — 43+ uses across 7 reference decks)** |
+| Pale Grey | `#F5F8F6` | 245, 248, 246 | Light backgrounds, KPI card fill |
 
 ## Status/Semantic Colors
 
+### Official NBG Corporate Palette (charts, brand graphics)
+
 | Status | Hex | RGB | Usage |
 |--------|-----|-----|-------|
-| Success | `#73AF3C` | 115, 175, 60 | Positive indicators |
-| Alert | `#AA0028` | 170, 0, 40 | Negative indicators |
+| Success | `#73AF3C` | 115, 175, 60 | Positive indicators (charts, official brand graphics) |
+| Alert | `#AA0028` | 170, 0, 40 | Negative indicators (charts, official brand graphics) |
 | Gold | `#D9A757` | 217, 167, 87 | Premium accent |
 | Blue | `#1E478E` | 30, 71, 142 | Information |
+
+### Plessas Practical Status Colors (DIY decks, status pills, "Delivered/Priorities" patterns)
+
+These are the colors observed across Plessas's own 7 reference decks — used in status badges, "Delivered" rows, priority pills. Cleaner reading at small sizes than the chart-grade NBG palette above.
+
+| Status | Hex | Light variant | Usage |
+|--------|-----|---------------|-------|
+| **OK / Delivered** | `#008000` | `#E8F5E9` | Status pill (text white on #008000), "Delivered" row accent stripe + pale fill |
+| **TBD / In progress** | `#CC9900` | `#FFFFCC` | Amber priority pill (text white on #CC9900) |
+| **Warning / Risk** | `#CC0000` | — | Severe priority indicator (text white) |
+
+**When to use which palette**: Charts and official brand graphics → corporate palette. Status pills and DIY KPI/Progress decks → practical palette.
 
 ## Status Colors (Tables & Charts Only)
 
@@ -194,17 +209,22 @@ const NBG_CHART_COLORS = [
 | Slide background | `#FFFFFF` (White) - **ALWAYS** |
 | Slide title | `#003841` (Dark Teal) |
 | Body text | `#202020` (Dark Text) |
-| Section numbers | `#007B85` (NBG Teal) |
+| Section numbers (divider) | `#007B85` (NBG Teal) |
 | Bullet points | `#00DFF8` (Bright Cyan) |
 | Primary accent | `#007B85` (NBG Teal) |
 | Bright accent | `#00DFF8` (Bright Cyan) |
 | Subtle elements | `#939793` (Medium Gray) |
-| **Card background** | `#F5F8F6` (Off-white) |
-| **Metric value** | `#007B85` (NBG Teal) |
-| **Metric label** | `#202020` (Dark Text) |
+| **KPI card background** | `#F5F8F6` (Off-white) |
+| **KPI big number** | `#007B85` (NBG Teal) — **50pt Aptos BOLD** |
+| **KPI caption / owner subtitle** | `#5A5F5A` (Caption Gray) — Plessas signature |
+| **Unit pill (header chip)** | fill `#003841` (Dark Teal), text white |
 | TOC description | `#595959` (Gray) |
 | Page number | `#939793` (Medium Gray) |
 | Icons | `#003841` (Dark Teal) |
+| **Status — OK** | `#008000` fill, white text — DIY status pills |
+| **Status — TBD** | `#CC9900` fill, white text — DIY status pills |
+| **Status — Warn** | `#CC0000` fill, white text — DIY status pills |
+| **Delivered row stripe + pale fill** | accent `#008000` + body `#E8F5E9` |
 
 ---
 

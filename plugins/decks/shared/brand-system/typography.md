@@ -24,9 +24,14 @@
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | Title | Aptos | 48pt | #003841 | Regular |
-| Subtitle | Aptos | **36pt** | #007B85 | Regular |
+| Subtitle (NBG-template covers — `13_Cover` etc.) | Aptos | **36pt** | #007B85 | Regular |
+| Subtitle (Plessas DIY cover on Blank — pipe-separated units list) | Aptos | **24pt** | #007B85 | Regular |
 | Location | Aptos | 14pt | #003841 | Regular |
 | Date | Aptos | 14pt | #939793 | Regular |
+
+**Pipe-separated units list** (Plessas DIY cover signature, observed in `gm_retail_update`):
+`Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls`
+The full unit list is the subtitle — NOT a generic "Cards and Digital Business" string.
 
 ### Divider Slide
 
@@ -55,12 +60,41 @@
 | Bullet L3 | Aptos | 11pt | #202020 | Regular |
 | Footnotes | Aptos | 8pt | #939793 | Regular |
 
-### Metric Cards (KPIs)
+### Metric Cards (KPIs) — Plessas signature pattern
+
+Used for "Key Figures" slides — 3-up cards (3.5" × 3.0", `#F5F8F6` fill). Observed 30+ times across reference decks.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| Metric Value | Aptos | **50pt** | #003841 | Bold |
-| Metric Label | Aptos | **16pt** | #5A5F5A | Regular |
+| KPI big number | Aptos | **50pt** | **#007B85** (NBG Teal) | **Bold** |
+| KPI caption | Aptos | **16pt** | **#5A5F5A** (Caption Gray) | Regular |
+
+Examples of KPI big-number text Plessas uses: `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`.
+
+Caption is the metric label — short, lowercase or sentence case, no period: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
+
+**Note**: earlier brand-system drafts used `#003841` for the KPI value; the actual Plessas pattern is `#007B85` (NBG Teal). Bold + Teal makes the big number pop without competing with the dark-teal title above.
+
+### Page Header Components (Plessas signature)
+
+Used on Key Figures / Progress & Priorities slides.
+
+| Element | Font | Size | Color | Weight |
+|---------|------|------|-------|--------|
+| Unit pill (rounded chip — "Cards", "Digital Banking") | Aptos | **16pt** | `#FFFFFF` on `#003841` fill | **Bold** |
+| Section title (next to unit pill) | Aptos | **22pt** | `#003841` | Regular |
+| Owner subtitle ("Head: E. Volioti") | Aptos | **14pt** | `#5A5F5A` | Regular |
+
+### Status Pills (Plessas signature)
+
+Used on Progress & Priorities slides.
+
+| Element | Font | Size | Color | Weight |
+|---------|------|------|-------|--------|
+| Numbered bullet (oval) | Aptos | **10pt** | `#FFFFFF` on `#007B85` fill | **Bold** |
+| Status badge ("OK"/"TBD"/"H2") | Aptos | **11pt** | `#FFFFFF` on color fill | **Bold** |
+| Bullet body text | Aptos | **14pt** | `#202020` | Regular |
+| "Delivered ✓" row text | Arial | **15pt** | `#008000` | **Bold** |
 
 ### Charts & Tables
 
@@ -69,8 +103,18 @@
 | Chart Title | Aptos | **12pt** | #202020 | Bold |
 | Chart Labels | Aptos | 10pt | #202020 | Regular |
 | Chart Values | Aptos | 10pt | #202020 | Bold |
-| Table Header | Aptos | 11pt | #FFFFFF | Bold |
-| Table Cell | Aptos | 10pt | #202020 | Regular |
+| Table Header (Plessas pattern) | Aptos | **10.5pt** | `#FFFFFF` on `#003841` fill | **Bold** |
+| Table First Column (label) | Aptos | **12pt** | `#202020` | **Bold** |
+| Table Body Cell | Aptos | **10.5pt** | `#202020` | Regular |
+| Table Numeric Cell | Aptos | **12pt** | `#202020` | Regular |
+| Table Notes (footnote) | Aptos | **10pt** | `#5A5F5A` | Regular |
+| In-cell positive emphasis ("+1") | Aptos | 10.5pt | `#007B85` | Bold |
+| In-cell priority flag ("H2") | Aptos | 10.5pt | `#CC9900` | Bold |
+
+**Plessas table styling rules** (from real decks):
+- Zebra rows: alternate `#FFFFFF` and `#F5F8F6`
+- NO custom border overrides (default thin)
+- Status emphasis goes in-cell (color + bold), NOT full-cell fills
 
 ### Page Number
 

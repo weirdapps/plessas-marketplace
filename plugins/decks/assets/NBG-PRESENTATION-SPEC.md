@@ -156,8 +156,7 @@ const NBG_PAGE_NUMBER = { x: 12.71, y: 7.1554, w: 0.33, h: 0.152 };
 | English logo | `assets/nbg-logo.svg` |
 | Back cover logo | `assets/nbg-back-cover-logo.png` |
 | Slide catalog | `assets/slide-catalog.yaml` |
-| Template (GR) | `assets/templates/NBG-Template-GR.pptx` |
-| Template (EN) | `assets/templates/NBG-Template-EN.pptx` |
+| Template (GR — sole template) | `assets/templates/NBG-Template-GR.pptx` |
 
 ---
 
