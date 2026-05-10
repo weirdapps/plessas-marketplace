@@ -13,6 +13,19 @@ User request: $ARGUMENTS
 <process>
 ## Workflow
 
+### 0. Verify Outlook MCP Available (FAIL-FAST)
+This plugin reads the calendar via `mcp__outlook-bridge__*` tools bundled in the **mail** plugin. Check the bridge is reachable:
+
+```
+Tool: mcp__outlook-bridge__outlook_auth_check
+```
+
+If the tool is **not available**, stop and tell the user:
+
+> The `meetings` plugin requires the `mail` plugin to be installed.
+> Install it with: `/plugin install mail@plessas-marketplace`
+> Then re-run `/meeting-debrief`.
+
 ### 1. Identify Meeting
 - If user specifies a meeting name, match it against today's calendar
 - If no meeting specified, show today's calendar events and ask which one

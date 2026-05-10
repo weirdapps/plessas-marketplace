@@ -45,7 +45,12 @@ INFO=0
 
 # Build the file list once. CI mode = tracked only. Doctor mode = working tree.
 if [ "$MODE" = "ci" ]; then
-  TRACKED=$(git ls-files | grep -v '^installers/pii-gauntlet.sh$' | grep -v '^package-lock.json$' || true)
+  # Exclude self + auto-generated lockfiles at any depth (lockfiles contain SHAs / hashes that
+  # collide with the 9-digit-ID regex but carry no PII risk).
+  TRACKED=$(git ls-files \
+    | grep -v '^installers/pii-gauntlet.sh$' \
+    | grep -vE '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Pipfile\.lock)$' \
+    || true)
   TRACKED_TMP=$(mktemp)
   printf '%s\n' "$TRACKED" > "$TRACKED_TMP"
 fi

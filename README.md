@@ -16,23 +16,64 @@ Cross-platform Claude Code plugins for productivity at a financial-services work
 | `excel` | Excel analysis: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx. |
 | `docs` | Word document creation: generic, formal letter, internal memo. Wraps document-skills:docx. |
 
-## Install (5 minutes)
+## Install (≈ 10 minutes)
 
-### macOS / Linux
+Four steps. Do them in order.
+
+### 1. Add the marketplace to Claude Code
+
+Inside Claude Code:
+
+```
+/plugin marketplace add weirdapps/plessas-marketplace
+```
+
+This clones the marketplace into `~/.claude/plugins/marketplaces/plessas-marketplace`.
+
+### 2. Run the one-time setup script
+
+Open your terminal:
+
+**macOS / Linux:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/main/installers/install.sh | bash
+bash ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh
 ```
 
-### Windows (PowerShell, no admin needed)
+**Windows (PowerShell, no admin needed):**
 
 ```powershell
-iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/main/installers/install.ps1 | iex
+& ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.ps1
 ```
 
-After install, run the auth wizard:
-- macOS/Linux: `~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh`
-- Windows: `~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.ps1`
+This installs `outlook-cli` and `teams-cli`, builds the bundled MCP servers (Outlook + Teams bridges), and creates Python virtual environments for the `decks` plugin. Idempotent — safe to re-run.
+
+### 3. Install the plugins you want
+
+Inside Claude Code:
+
+```
+/plugin install mail@plessas-marketplace
+/plugin install meetings@plessas-marketplace
+/plugin install chat@plessas-marketplace
+/plugin install decks@plessas-marketplace
+/plugin install excel@plessas-marketplace
+/plugin install docs@plessas-marketplace
+```
+
+Skip any you don't need. `mail-pro` is optional — only install if you have access to the private `weirdapps/second-brain` repo.
+
+### 4. Authenticate Outlook + Teams
+
+```bash
+~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
+```
+
+(Windows: `auth-wizard.ps1`)
+
+The wizard opens your browser twice — once for Microsoft 365 / Outlook sign-in, once for Teams. It also captures your Outlook signature for use in `/send-mail`.
+
+**You're done.** Try `/inbox-briefing` to verify everything works.
 
 ## Prerequisites
 
@@ -41,7 +82,35 @@ After install, run the auth wizard:
 - Git
 - Python 3.11+ (for `decks` plugin's PowerPoint tooling)
 
-The installer will check these and provide download links if any are missing.
+The installer in step 2 checks these and provides download links if any are missing.
+
+## Updating
+
+Inside Claude Code:
+
+```
+/plugin update plessas-marketplace
+```
+
+Re-run `installers/install.sh` after major updates so the bundled MCPs and CLIs refresh too.
+
+## Advanced — One-line installer (CI / unattended deploys)
+
+For scripted installs (CI, IT-managed laptops), the setup script can be triggered directly without going through Claude Code's marketplace UI:
+
+**macOS / Linux:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.ps1 | iex
+```
+
+You'll still need to run `/plugin install <name>` inside Claude Code afterwards.
 
 ## Documentation
 

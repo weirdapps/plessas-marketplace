@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # plessas-marketplace installer (macOS / Linux)
-# Usage: curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/main/installers/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.sh | bash
 
 REPO_URL="https://github.com/weirdapps/plessas-marketplace.git"
 INSTALL_DIR="$HOME/.claude/plugins/marketplaces/plessas-marketplace"
