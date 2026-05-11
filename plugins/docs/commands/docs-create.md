@@ -1,7 +1,7 @@
 ---
 description: "Create a structured Word document from content or a brief."
 argument-hint: "<topic> [type:report|proposal|brief|notes]"
-allowed-tools: Read, Write, Bash, Skill(document-skills:docx)
+allowed-tools: Read, Write, Bash, Agent
 ---
 
 # Create Word Document
@@ -10,7 +10,10 @@ Generate a structured Word document (.docx) from content provided by the user.
 
 ## Workflow
 
-1. **Invoke `document-skills:docx`** to set up document creation.
+1. **Create the document** using `python-docx`:
+   - Install if missing: `pip3 install python-docx`
+   - Use `from docx import Document` to create the document programmatically
+   - Apply styles, fonts, and formatting via python-docx API
 
 2. **Structure the document** based on type:
    - **Report**: title page, table of contents, executive summary, sections with headings, conclusions

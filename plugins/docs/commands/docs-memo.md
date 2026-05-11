@@ -1,7 +1,7 @@
 ---
 description: "Create an internal memo in Word format."
 argument-hint: "<to> <subject>"
-allowed-tools: Read, Write, Bash, Skill(document-skills:docx)
+allowed-tools: Read, Write, Bash, Agent
 ---
 
 # Internal Memo
@@ -10,7 +10,9 @@ Generate an internal memo in Word format (.docx).
 
 ## Workflow
 
-1. **Invoke `document-skills:docx`** for document creation.
+1. **Create the document** using `python-docx`:
+   - Install if missing: `pip3 install python-docx`
+   - Use `from docx import Document` to create the document programmatically
 
 2. **Memo structure**:
    - Header block:

@@ -1,7 +1,7 @@
 ---
 description: "Extract key insights from an Excel workbook and hand off to the decks plugin to create a presentation."
 argument-hint: "<file> [audience]"
-allowed-tools: Read, Write, Bash, Agent, Skill(document-skills:xlsx), Skill(document-skills:pptx)
+allowed-tools: Read, Write, Bash, Agent
 ---
 
 # Excel to Deck
@@ -10,7 +10,10 @@ Bridge from data analysis to presentation creation.
 
 ## Workflow
 
-1. **Invoke `document-skills:xlsx`** to read and analyse the workbook.
+1. **Read the workbook** using one of these methods (try in order):
+   - **openpyxl/pandas via Python** (preferred): use `openpyxl` to read and `pandas` for analysis — install with `pip3 install openpyxl pandas` if missing
+   - **Desktop Commander MCP** (`mcp__desktop-commander__read_file`): reads `.xlsx` natively as JSON 2D arrays
+   - **Read tool**: for `.csv`/`.tsv` files, read directly as text
 
 2. **Extract presentation-worthy insights**:
    - Top 3-5 KPIs with current values and trends

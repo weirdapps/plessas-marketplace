@@ -1,7 +1,7 @@
 ---
 description: "Build a pivot table from an Excel workbook — suggest or execute groupings, aggregations, and insights."
 argument-hint: "<file> [intent]"
-allowed-tools: Read, Write, Bash, Skill(document-skills:xlsx)
+allowed-tools: Read, Write, Bash, Agent
 ---
 
 # Excel Pivot
@@ -10,7 +10,10 @@ Build pivot-style analysis from an Excel workbook.
 
 ## Workflow
 
-1. **Invoke `document-skills:xlsx`** to read the file.
+1. **Read the workbook** using one of these methods (try in order):
+   - **openpyxl/pandas via Python** (preferred): use `openpyxl` to read and `pandas` for pivot operations — install with `pip3 install openpyxl pandas` if missing
+   - **Desktop Commander MCP** (`mcp__desktop-commander__read_file`): reads `.xlsx` natively as JSON 2D arrays
+   - **Read tool**: for `.csv`/`.tsv` files, read directly as text
 
 2. **If no intent specified**: analyse the data structure and suggest 2-3 useful pivots based on the columns available. Present suggestions and let the user pick.
 

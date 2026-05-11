@@ -1,6 +1,6 @@
 {
   "name": "excel",
-  "description": "Excel analysis commands: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx with NBG-shaped patterns (EUR, fiscal year, Aptos styling).",
+  "description": "Excel analysis commands: summary, pivot, variance, deck handoff. Self-contained — reads xlsx/csv via openpyxl or Desktop Commander MCP. NBG-shaped patterns (EUR, fiscal year, Aptos styling).",
   "version": "1.0.0",
   "author": {
     "name": "weirdapps"

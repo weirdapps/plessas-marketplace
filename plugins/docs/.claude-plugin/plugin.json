@@ -1,6 +1,6 @@
 {
   "name": "docs",
-  "description": "Word document creation: generic docs, formal letters, internal memos. Wraps document-skills:docx with NBG formatting conventions.",
+  "description": "Word document creation: generic docs, formal letters, internal memos. Self-contained — uses python-docx for document generation. NBG formatting conventions.",
   "version": "1.0.0",
   "author": {
     "name": "weirdapps"

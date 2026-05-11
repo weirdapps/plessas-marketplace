@@ -1,8 +1,6 @@
 # docs v1.0
 
-Word document creation with NBG formatting baked in. Three command shapes: generic structured doc, formal business letter, internal memo. Wraps `document-skills:docx` (built into Claude Code) with NBG conventions (Aptos 11pt body, `#404040` text, `#007B85` headings (NBG Teal), page numbers, 2.54 cm margins).
-
-No external dependencies — `document-skills:docx` ships with Claude Code itself.
+Word document creation with NBG formatting baked in. Three command shapes: generic structured doc, formal business letter, internal memo. Self-contained — uses `python-docx` for document generation (auto-installed on first use if missing). NBG conventions (Aptos 11pt body, `#404040` text, `#007B85` headings (NBG Teal), page numbers, 2.54 cm margins).
 
 ## Commands
 
@@ -16,7 +14,7 @@ No external dependencies — `document-skills:docx` ships with Claude Code itsel
 
 Each command:
 
-1. Loads `document-skills:docx` to scaffold the document
+1. Creates the document via `python-docx` (`pip3 install python-docx` if missing)
 2. Asks clarifying questions if the topic is ambiguous (e.g. a memo without a clear ask)
 3. Drafts the content in the appropriate structure
 4. Applies NBG formatting:
@@ -61,6 +59,8 @@ No setup required beyond installing the plugin:
 ```
 /plugin install docs@plessas-marketplace
 ```
+
+Python package `python-docx` is auto-installed on first use if missing.
 
 ## Tips
 
