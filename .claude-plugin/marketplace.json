@@ -4,6 +4,9 @@
   "owner": {
     "name": "weirdapps"
   },
+  "metadata": {
+    "version": "2.1.0"
+  },
   "plugins": [
     {
       "name": "decks",
