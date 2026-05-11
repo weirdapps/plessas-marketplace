@@ -1,7 +1,7 @@
 ---
 description: "Variance analysis between two periods, columns, or sheets in an Excel workbook."
 argument-hint: "<file> [base] [target]"
-allowed-tools: Read, Write, Bash, Agent
+allowed-tools: Read, Write, Bash, Agent, Skill(document-skills:xlsx)
 ---
 
 # Excel Variance
@@ -10,10 +10,10 @@ Compare two data sets within an Excel workbook and produce a variance analysis.
 
 ## Workflow
 
-1. **Read the workbook** using one of these methods (try in order):
-   - **openpyxl/pandas via Python** (preferred): use `openpyxl` to read and `pandas` for variance computations — install with `pip3 install openpyxl pandas` if missing
-   - **Desktop Commander MCP** (`mcp__desktop-commander__read_file`): reads `.xlsx` natively as JSON 2D arrays
-   - **Read tool**: for `.csv`/`.tsv` files, read directly as text
+1. **Read the workbook** — try these methods in order:
+   1. **`document-skills:xlsx` skill** (preferred): invoke via `Skill(document-skills:xlsx)`. If the skill is available it handles reading, formatting, and writing xlsx files natively.
+   2. **Fallback — openpyxl/pandas via Python**: if the skill is not installed, use `openpyxl` to read and `pandas` for variance computations (install with `pip3 install openpyxl pandas` if missing).
+   3. **Read tool**: for `.csv`/`.tsv` files, read directly as text.
 
 2. **Identify comparison axes**: if base/target not specified, auto-detect:
    - Two sheets with similar structure → sheet-vs-sheet

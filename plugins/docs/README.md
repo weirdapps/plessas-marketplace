@@ -1,6 +1,6 @@
 # docs v1.0
 
-Word document creation with NBG formatting baked in. Three command shapes: generic structured doc, formal business letter, internal memo. Self-contained — uses `python-docx` for document generation (auto-installed on first use if missing). NBG conventions (Aptos 11pt body, `#404040` text, `#007B85` headings (NBG Teal), page numbers, 2.54 cm margins).
+Word document creation with NBG formatting baked in. Three command shapes: generic structured doc, formal business letter, internal memo. Uses `document-skills:docx` (Anthropic's docx skill) when available for best results. Falls back to `python-docx` (auto-installed on first use) if the skill is not installed. NBG conventions (Aptos 11pt body, `#404040` text, `#007B85` headings (NBG Teal), page numbers, 2.54 cm margins).
 
 ## Commands
 
@@ -14,7 +14,7 @@ Word document creation with NBG formatting baked in. Three command shapes: gener
 
 Each command:
 
-1. Creates the document via `python-docx` (`pip3 install python-docx` if missing)
+1. Creates the document via `document-skills:docx` (preferred) or `python-docx` fallback (auto-installed if missing)
 2. Asks clarifying questions if the topic is ambiguous (e.g. a memo without a clear ask)
 3. Drafts the content in the appropriate structure
 4. Applies NBG formatting:
@@ -60,7 +60,7 @@ No setup required beyond installing the plugin:
 /plugin install docs@plessas-marketplace
 ```
 
-Python package `python-docx` is auto-installed on first use if missing.
+For best results, install Anthropic's `document-skills` plugin (`/plugin install document-skills`). Without it, the commands fall back to `python-docx` (auto-installed on first use).
 
 ## Tips
 
