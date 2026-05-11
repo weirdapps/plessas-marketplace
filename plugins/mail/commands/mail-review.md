@@ -304,9 +304,25 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
    - **Windows**: `Get-Content file.html | Set-Clipboard` (PowerShell) or `clip < file.html` (plain HTML)
    - **Linux**: `xclip -selection clipboard -t text/html < file.html`
 
+   **macOS:**
+
    ```bash
-   # macOS example:
-   printf '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' | textutil -stdin -format html -convert rtf -stdout | pbcopy
+   printf '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' \
+     | textutil -stdin -format html -convert rtf -stdout | pbcopy
+   ```
+
+   **Windows (PowerShell):**
+
+   ```powershell
+   $html = '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>'
+   $html | Set-Clipboard -AsHtml
+   ```
+
+   **Linux (X11 with xclip):**
+
+   ```bash
+   printf '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' \
+     | xclip -selection clipboard -t text/html
    ```
 
    Use `<br>` for line breaks and `<br><br>` for paragraph spacing in the HTML.
