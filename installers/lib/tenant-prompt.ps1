@@ -9,8 +9,7 @@
 # the config file — no string-interpolation injection risk like the Bash sibling.
 
 function Get-TenantHost {
-    $homeDir    = if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }
-    $configDir  = Join-Path $homeDir '.outlook-cli'
+    $configDir  = Join-Path $HOME '.outlook-cli'
     $configFile = Join-Path $configDir 'config.json'
 
     # Priority 1: env var
@@ -57,10 +56,9 @@ function Get-TenantHost {
     $existing['sharepoint_host'] = $hostInput
 
     try {
-        $existing | ConvertTo-Json | Set-Content -Path $configFile -Encoding UTF8
+        $existing | ConvertTo-Json | Set-Content -Path $configFile -Encoding UTF8 -ErrorAction Stop
     } catch {
-        Write-Error "Could not persist tenant host to $configFile : $_"
-        throw
+        throw "Could not persist tenant host to $configFile : $_"
     }
 
     Write-Host "[OK]   Tenant host saved to $configFile" -ForegroundColor Green
