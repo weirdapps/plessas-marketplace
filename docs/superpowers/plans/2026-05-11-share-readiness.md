@@ -1146,7 +1146,7 @@ Expected: 5 new files staged under `plugins/mail-pro/`.
 - [ ] **Step 4: Validate the JSON.**
 
 ```bash
-python3 -c "import json; json.load(open('/Users/plessas/SourceCode/plessas-lab/.claude-plugin/marketplace.json')); print('OK')"
+python3 -c "import json; json.load(open(__import__('os').path.expanduser('~/SourceCode/plessas-lab/.claude-plugin/marketplace.json')); print('OK')"
 ```
 
 Expected: `OK`.
@@ -1189,7 +1189,7 @@ After deletion, ensure the `meetings` entry (which previously came after) still 
 - [ ] **Step 3: Validate JSON.**
 
 ```bash
-python3 -c "import json; m=json.load(open('/Users/plessas/SourceCode/plessas-marketplace/.claude-plugin/marketplace.json')); print('plugins:', [p['name'] for p in m['plugins']])"
+python3 -c "import json; m=json.load(open(__import__('os').path.expanduser('~/SourceCode/plessas-marketplace/.claude-plugin/marketplace.json')); print('plugins:', [p['name'] for p in m['plugins']])"
 ```
 
 Expected: `plugins: ['decks', 'mail', 'meetings', 'chat', 'excel', 'docs']` — note: 6 plugins, no mail-pro.
