@@ -4,6 +4,8 @@ argument-hint: "[inbox|archive|both] [--count N] [--unread]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
+> Path conventions: `<TEMP_DIR>` resolves to the OS temp directory (`$TMPDIR` or `/tmp` on macOS/Linux, `$env:TEMP` on Windows). Resolve before passing to tools.
+
 <objective>
 Read emails via the outlook-bridge MCP wrapper around `outlook-cli` and present a concise inbox briefing with summaries, action recommendations, and strategic insights. This command is read-only — it never drafts, replies, or modifies any email.
 
@@ -65,13 +67,13 @@ For emails with attachments (PPTX, PDF, DOCX, XLSX), use `markitdown` to extract
 
 ```
 Tool: mcp__outlook-bridge__outlook_download_attachments
-Args: { "id": "<Id>", "out": "/tmp/mail_att", "overwrite": true }
+Args: { "id": "<Id>", "out": "<TEMP_DIR>/mail_att", "overwrite": true }
 ```
 
 The tool returns the absolute paths of saved files. Then convert each saved attachment:
 
 ```bash
-markitdown "/tmp/mail_att/filename.pptx" | head -200
+markitdown "<TEMP_DIR>/mail_att/filename.pptx" | head -200
 ```
 
 Use the extracted text to include a one-line attachment summary in the briefing gist, e.g.:

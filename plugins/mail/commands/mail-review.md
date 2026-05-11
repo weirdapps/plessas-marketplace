@@ -4,6 +4,8 @@ argument-hint: "[inbox|archive|both] [--count N] [--briefing-only]"
 allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
 ---
 
+> Path conventions: `<TEMP_DIR>` resolves to the OS temp directory (`$TMPDIR` or `/tmp` on macOS/Linux, `$env:TEMP` on Windows). Resolve before passing to tools.
+
 <objective>
 Read emails via the outlook-bridge MCP wrapper around `outlook-cli`, provide a comprehensive briefing with insights, recommend actions, and draft replies matching the user's communication style (defined in `shared/style-guide.md`).
 
@@ -120,13 +122,13 @@ For emails with attachments (PPTX, PDF, DOCX, XLSX), use `markitdown` to extract
 
 ```
 Tool: mcp__outlook-bridge__outlook_download_attachments
-Args: { "id": "<Id>", "out": "/tmp/mail_att", "overwrite": true }
+Args: { "id": "<Id>", "out": "<TEMP_DIR>/mail_att", "overwrite": true }
 ```
 
 The tool returns the absolute paths of saved files. Then convert each saved attachment:
 
 ```bash
-markitdown "/tmp/mail_att/filename.pptx" | head -200
+markitdown "<TEMP_DIR>/mail_att/filename.pptx" | head -200
 ```
 
 Use the extracted text to include a one-line attachment summary in the briefing gist, e.g.:
@@ -134,7 +136,7 @@ Use the extracted text to include a one-line attachment summary in the briefing 
 - "ATTACHMENT: Q1 Cards Revenue Report — revenue up 12% YoY, 3 action items"
 - "ATTACHMENT: Project timeline (Excel) — 15 milestones, next deadline April 3"
 
-Only extract attachments for emails marked REPLY, URGENT, or DELEGATE — skip for MONITOR/SKIP to save time. Clean up temp files after extraction: `rm -rf /tmp/mail_att/*`
+Only extract attachments for emails marked REPLY, URGENT, or DELEGATE — skip for MONITOR/SKIP to save time. Clean up temp files after extraction: `find <TEMP_DIR>/mail_att -type f -delete` on macOS/Linux, `Remove-Item $env:TEMP\mail_att\* -Recurse -Force` on Windows.
 
 ### 3. Classify New vs Previously Seen
 
