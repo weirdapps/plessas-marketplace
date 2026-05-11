@@ -13,6 +13,14 @@ User request: $ARGUMENTS
 <process>
 ## McKinsey-Quality Orchestration Workflow
 
+### Setup: Ensure Persistence Directories Exist
+
+```bash
+mkdir -p ~/.claude/presentations/pending ~/.claude/presentations/reviewed
+```
+
+This is idempotent — does nothing if the directories already exist.
+
 ### 0. Continuous Learning (automatic)
 
 - Check `~/.claude/presentations/pending/` for drafts the user has modified since generation

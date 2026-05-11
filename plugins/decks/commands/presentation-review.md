@@ -13,6 +13,14 @@ User request: $ARGUMENTS
 <process>
 ## Presentation Review Workflow
 
+### Setup: Ensure Persistence Directories Exist
+
+```bash
+mkdir -p ~/.claude/presentations/pending ~/.claude/presentations/reviewed
+```
+
+This is idempotent — does nothing if the directories already exist.
+
 ### 1. Locate Draft Record
 
 - Check `~/.claude/presentations/pending/` for a draft record matching the filename
