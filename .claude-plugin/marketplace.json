@@ -4,6 +4,9 @@
   "owner": {
     "name": "weirdapps"
   },
+  "metadata": {
+    "version": "2.1.0"
+  },
   "plugins": [
     {
       "name": "decks",
@@ -18,13 +21,6 @@
       "category": "communications",
       "source": "./plugins/mail",
       "description": "Outlook mail with bundled outlook-cli MCP wrapper. Read, draft, triage, style-match, briefings, self-learning."
-    },
-    {
-      "name": "mail-pro",
-      "version": "1.0.0",
-      "category": "communications",
-      "source": "./plugins/mail-pro",
-      "description": "Optional companion to `mail` for users with the second-brain knowledge store. Adds /comm-report (relationship analytics) and /style-rebuild (corpus-driven style guide). Requires private second-brain repo access."
     },
     {
       "name": "meetings",

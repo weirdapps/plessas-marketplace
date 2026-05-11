@@ -1,5 +1,7 @@
 # Calendar Access Patterns
 
+> **Cross-platform note:** AppleScript fallback paths in this file (`tell application "Microsoft Outlook"`, `tell application "Mail"`, etc.) only run on macOS. On Windows or Linux, the agent should rely on `mcp__outlook-bridge__*` tools and skip the AppleScript blocks entirely. Each AppleScript block is prefixed with an explicit OSTYPE guard.
+
 Calendar access for meeting intelligence. The outlook-bridge MCP wrapper around `outlook-cli` is the primary method (Microsoft Graph, structured JSON). WorkIQ MCP is the fallback for natural-language queries that don't map cleanly to structured arguments. Outlook AppleScript is a last-resort emergency fallback.
 
 > **IMPORTANT**: macOS Calendar is NOT reliable — it is out of sync with M365. NEVER use macOS Calendar AppleScript.
@@ -91,7 +93,14 @@ Use Outlook AppleScript ONLY if both outlook-bridge and WorkIQ MCP are unavailab
 
 ### Reading Today's Calendar Events
 
-```applescript
+**macOS only — skip on Windows/Linux:**
+
+```bash
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  echo "Skipping AppleScript fallback — not on macOS." >&2
+  exit 0
+fi
+osascript <<'APPLESCRIPT'
 tell application "Microsoft Outlook"
     set today to current date
     set time of today to 0
@@ -126,6 +135,7 @@ tell application "Microsoft Outlook"
     end repeat
     return output
 end tell
+APPLESCRIPT
 ```
 
 ### Outlook Property Reference

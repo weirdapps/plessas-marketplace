@@ -6,6 +6,9 @@ function Write-Ok   { param($msg) Write-Host "[OK]   $msg" -ForegroundColor Gree
 function Write-Warn { param($msg) Write-Host "[WARN] $msg" -ForegroundColor Yellow }
 function Write-Fail { param($msg) Write-Host "[FAIL] $msg" -ForegroundColor Red }
 
+# Load tenant-prompt helper
+. "$PSScriptRoot\lib\tenant-prompt.ps1"
+
 Write-Host '========================================'
 Write-Host '  plessas-marketplace auth wizard'
 Write-Host '========================================'
@@ -22,7 +25,8 @@ if (Get-Command outlook-cli -ErrorAction SilentlyContinue) {
         Write-Ok 'outlook-cli already authenticated'
     } else {
         Write-Host 'Opening browser for Outlook sign-in...'
-        outlook-cli login --sharepoint-host groupnbg.sharepoint.com
+        $spHost = Get-TenantHost
+        outlook-cli login --sharepoint-host $spHost
         $checkResult = outlook-cli auth-check 2>&1 | Out-String
         if ($LASTEXITCODE -eq 0) { Write-Ok 'outlook-cli authenticated' }
         else { Write-Fail 'outlook-cli auth check failed after login' }

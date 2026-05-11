@@ -16,73 +16,33 @@ Cross-platform Claude Code plugins for productivity at a financial-services work
 | `excel` | Excel analysis: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx. |
 | `docs` | Word document creation: generic, formal letter, internal memo. Wraps document-skills:docx. |
 
-## Install (≈ 10 minutes)
+## Install
 
-Four steps. Do them in order.
+### Prerequisites (both OSes)
 
-### 1. Add the marketplace to Claude Code
+- **Claude Code** — install from <https://claude.ai/claude-code>
+- **Node.js 20+** — install from <https://nodejs.org/>
+- **Python 3.11+** — install from <https://www.python.org/downloads/>
+- **Git** — `git --version` should report v2.30+
+- **Chrome or Edge browser** — required for `outlook-cli` and `teams-cli` first-time auth (Playwright drives the browser session capture)
 
-Inside Claude Code:
-
-```
-/plugin marketplace add weirdapps/plessas-marketplace
-```
-
-This clones the marketplace into `~/.claude/plugins/marketplaces/plessas-marketplace`.
-
-### 2. Run the one-time setup script
-
-Open your terminal:
-
-**macOS / Linux:**
+### macOS / Linux
 
 ```bash
-bash ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh
+curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.sh | bash
+~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
+~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh
 ```
 
-**Windows (PowerShell, no admin needed):**
+### Windows (PowerShell)
 
 ```powershell
-& ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.ps1
+iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.ps1 | iex
+& "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace\installers\auth-wizard.ps1"
+& "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace\installers\status.ps1"
 ```
 
-This installs `outlook-cli` and `teams-cli`, builds the bundled MCP servers (Outlook + Teams bridges), and creates Python virtual environments for the `decks` plugin. Idempotent — safe to re-run.
-
-### 3. Install the plugins you want
-
-Inside Claude Code:
-
-```
-/plugin install mail@plessas-marketplace
-/plugin install meetings@plessas-marketplace
-/plugin install chat@plessas-marketplace
-/plugin install decks@plessas-marketplace
-/plugin install excel@plessas-marketplace
-/plugin install docs@plessas-marketplace
-```
-
-Skip any you don't need. `mail-pro` is optional — only install if you have access to the private `weirdapps/second-brain` repo.
-
-### 4. Authenticate Outlook + Teams
-
-```bash
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
-```
-
-(Windows: `auth-wizard.ps1`)
-
-The wizard opens your browser twice — once for Microsoft 365 / Outlook sign-in, once for Teams. It also captures your Outlook signature for use in `/send-mail`.
-
-**You're done.** Try `/inbox-briefing` to verify everything works.
-
-## Prerequisites
-
-- [Claude Code](https://claude.com/claude-code) installed
-- Node.js 20+
-- Git
-- Python 3.11+ (for `decks` plugin's PowerPoint tooling)
-
-The installer in step 2 checks these and provides download links if any are missing.
+> **First-run prompt:** the auth wizard will ask for your Microsoft 365 SharePoint host (e.g. `contoso.sharepoint.com`). The answer is saved to `~/.outlook-cli/config.json` and reused. Override with `PLESSAS_SHAREPOINT_HOST=...` env var if needed.
 
 ## Updating
 
@@ -92,25 +52,7 @@ Inside Claude Code:
 /plugin update plessas-marketplace
 ```
 
-Re-run `installers/install.sh` after major updates so the bundled MCPs and CLIs refresh too.
-
-## Advanced — One-line installer (CI / unattended deploys)
-
-For scripted installs (CI, IT-managed laptops), the setup script can be triggered directly without going through Claude Code's marketplace UI:
-
-**macOS / Linux:**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.sh | bash
-```
-
-**Windows (PowerShell):**
-
-```powershell
-iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.ps1 | iex
-```
-
-You'll still need to run `/plugin install <name>` inside Claude Code afterwards.
+Re-run `installers/install.sh` (or `.ps1` on Windows) after major updates so the bundled MCPs and CLIs refresh too.
 
 ## Documentation
 
@@ -118,9 +60,10 @@ You'll still need to run `/plugin install <name>` inside Claude Code afterwards.
 - [Workflow guides](docs/workflows/) — one per plugin
 - [Migration from `communications-marketplace`](docs/migration-from-communications-marketplace.md)
 
-## Brand specifics
+## Per-plugin notes
 
-This marketplace ships with NBG (National Bank of Greece) brand defaults baked in (Aptos 12pt, color `#404040`, NBG layouts in `decks`). NBG is a public listed bank — these are public brand assets. Future versions may parameterize brand specs for non-NBG users.
+- **`decks`** is NBG-branded. The brand-system docs (`plugins/decks/shared/brand-system/{colors,layouts,typography,charts}.md`), the storyline-architect agent persona, and the `NBG-Template-GR.pptx` template all assume NBG corporate identity. If you're not at NBG, the framework is still useful (storyline → storyboard → renderer → QA), but you'll want to swap the template, replace the color palette in `colors.md`, and edit the agent prompts to reference your brand. Most of the customization is a single search-and-replace of "NBG" with your brand name.
+- **`mail`, `meetings`, `chat`, `excel`, `docs`** are brand-agnostic.
 
 ## License
 

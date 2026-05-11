@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
 import type { Tool } from '../tool.js';
 import { getResolvedCli } from '../subprocess.js';
 import { checkAuth } from '../auth-guard.js';
@@ -11,6 +12,19 @@ const _require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ROOT = join(__dirname, '..', '..');
 const STATUS_FILE = join(SERVER_ROOT, '.last-startup.json');
+
+function suggestedTenantHost(): string {
+  const configPath = join(homedir(), '.outlook-cli', 'config.json');
+  try {
+    const cfg = JSON.parse(readFileSync(configPath, 'utf8'));
+    if (cfg.sharepoint_host && typeof cfg.sharepoint_host === 'string') {
+      return cfg.sharepoint_host;
+    }
+  } catch {
+    // File missing or unreadable — fall through to placeholder
+  }
+  return '<your-tenant>.sharepoint.com';
+}
 
 interface LastStartup {
   ts: string;
@@ -40,7 +54,7 @@ function buildSuggestion(opts: {
     return `outlook-tool not bundled in mcp-server/node_modules. The MCP is using a global outlook-cli on PATH. To get the bundled (more robust) install, run: cd ${SERVER_ROOT} && npm install`;
   }
   if (opts.authStatus === 'missing' || opts.authStatus === 'expired') {
-    return 'Auth missing/expired. Run: outlook-cli login --sharepoint-host groupnbg.sharepoint.com';
+    return `Auth missing/expired. Run: outlook-cli login --sharepoint-host ${suggestedTenantHost()}`;
   }
   return 'All systems green.';
 }

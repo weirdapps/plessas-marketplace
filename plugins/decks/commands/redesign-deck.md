@@ -4,6 +4,8 @@ argument-hint: "[path to PPTX or paste content]"
 allowed-tools: Agent, Read, Write, Bash, Skill(document-skills:pptx)
 ---
 
+> Path conventions: `<TEMP_DIR>` resolves to the OS temp directory (`$TMPDIR` or `/tmp` on macOS/Linux, `$env:TEMP` on Windows). Resolve before passing to tools.
+
 <objective>
 Analyze and redesign an existing presentation to meet NBG brand standards and executive-level quality.
 
@@ -16,7 +18,7 @@ User request: $ARGUMENTS
 1. **Extract Content with MarkItDown**
    - If the input is a file path (PPTX, PDF, DOCX), run `markitdown <filepath>` via Bash to convert it to structured Markdown
    - This preserves slide structure, tables, headings, and hierarchy as clean Markdown that is easy to analyze
-   - Save the extracted Markdown to a temp file for reference: `/tmp/deck_extracted.md`
+   - Save the extracted Markdown to a temp file for reference: `<TEMP_DIR>/deck_extracted.md`
    - Review the extracted content to identify key messages, slide count, and areas needing improvement
 
 2. **Evaluate Current State**

@@ -33,6 +33,8 @@ Reinstall from <https://claude.ai/claude-code>.
 
 The marketplace setup script clones and `npm link`s these CLIs. If they didn't land on PATH:
 
+**macOS / Linux:**
+
 ```bash
 # Re-run the setup script (idempotent)
 bash ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh
@@ -47,6 +49,21 @@ npm prefix -g
 # Add that bin/ subdir to your shell's PATH (zsh example)
 echo 'export PATH="$(npm prefix -g)/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
+```
+
+**Windows (PowerShell):**
+
+```powershell
+# Re-run the setup script (idempotent)
+& "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace\installers\install.ps1"
+```
+
+If `npm link` fails:
+
+```powershell
+$npmPrefix = npm prefix -g
+[Environment]::SetEnvironmentVariable('PATH', "$npmPrefix;$env:PATH", 'User')
+# Restart PowerShell
 ```
 
 If your IT policy actually blocks global npm linking, the bundled MCPs fall back to invoking the locally cloned binaries at `~/.claude/plugins/marketplaces/plessas-marketplace/installers/deps/{outlook-access,teams-access}/dist/cli.js`. No user action required for the plugins to work — but you won't have `outlook-cli` available as a standalone command in your shell.
@@ -94,10 +111,10 @@ Two possibilities:
 Your M365 token has expired or was never set. Run:
 
 ```bash
-outlook-cli login --sharepoint-host groupnbg.sharepoint.com
+outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com
 ```
 
-(Replace `groupnbg.sharepoint.com` with your tenant if you're not on NBG.) A browser window opens; sign in with your M365 credentials. Token persists for ~30 days; you'll be re-prompted automatically when it expires.
+A browser window opens; sign in with your M365 credentials. Token persists for ~30 days; you'll be re-prompted automatically when it expires. The auth wizard prompts for your tenant on first install; you can also find it in any SharePoint URL you own: `https://<this-part>.sharepoint.com/...`.
 
 ### Outlook: `Throttled (429)` errors during big inbox sweeps
 
@@ -113,8 +130,17 @@ Wait 60 seconds and retry. For very large operations, scope the sweep:
 
 Reset auth completely:
 
+**macOS / Linux:**
+
 ```bash
 rm -rf ~/.outlook-cli
+outlook-cli login --sharepoint-host <correct-host>.sharepoint.com
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Remove-Item -Recurse -Force $env:USERPROFILE\.outlook-cli
 outlook-cli login --sharepoint-host <correct-host>.sharepoint.com
 ```
 
@@ -161,8 +187,16 @@ Normal. The bundled MCP servers are doing `npm install` + `npm run build` for th
 
 If it hangs more than 2 minutes, kill it and run the install script manually so you can see what's failing:
 
+**macOS / Linux:**
+
 ```bash
 bash ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+& "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace\installers\install.ps1"
 ```
 
 ---
@@ -188,8 +222,17 @@ outlook-cli auth-check
 
 To switch identity, log out and back in with the right account:
 
+**macOS / Linux:**
+
 ```bash
 rm -rf ~/.outlook-cli
+outlook-cli login --sharepoint-host <correct-host>.sharepoint.com
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Remove-Item -Recurse -Force $env:USERPROFILE\.outlook-cli
 outlook-cli login --sharepoint-host <correct-host>.sharepoint.com
 ```
 
@@ -275,8 +318,16 @@ Then restart Claude Code. The native `/plugin update` mechanism is occasionally 
 
 Re-build the MCP servers:
 
+**macOS / Linux:**
+
 ```bash
 bash ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+& "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace\installers\install.ps1"
 ```
 
 This re-runs `npm install` + `npm run build` for both bundled MCPs.
@@ -298,6 +349,8 @@ This re-runs `npm install` + `npm run build` for both bundled MCPs.
 /plugin marketplace remove plessas-marketplace
 ```
 
+**macOS / Linux:**
+
 ```bash
 # In your terminal
 rm -rf ~/.claude/plugins/marketplaces/plessas-marketplace
@@ -305,7 +358,42 @@ rm -rf ~/.outlook-cli ~/.teams-cli
 npm uninstall -g outlook-cli teams-cli
 ```
 
-Then follow the [README install steps](../README.md#install--10-minutes) from scratch. The whole reinstall takes ~10 minutes.
+**Windows (PowerShell):**
+
+```powershell
+# In your terminal
+Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace"
+Remove-Item -Recurse -Force "$env:USERPROFILE\.outlook-cli", "$env:USERPROFILE\.teams-cli"
+npm uninstall -g outlook-cli teams-cli
+```
+
+Then follow the [README install steps](../README.md#install) from scratch. The whole reinstall takes ~10 minutes.
+
+---
+
+## Windows-specific gotchas
+
+### Long path names
+
+Windows defaults to a 260-char path limit. The marketplace install dir is short, but if you nest `npm install` inside `installers/deps/<repo>/node_modules/...`, you may hit the limit. Enable long path support:
+
+```powershell
+# As Administrator:
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+git config --system core.longpaths true
+```
+
+### Execution policy
+
+PowerShell may refuse to run `.ps1` scripts. Allow them for the current user:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Browser channel
+
+`outlook-cli`/`teams-cli` use Playwright's `channel: "chrome"`. If you have only Edge installed, set `PLAYWRIGHT_BROWSER_CHANNEL=msedge`.
 
 ---
 
@@ -317,5 +405,5 @@ Include:
 
 1. The exact command you ran
 2. The exact error message (copy-paste, don't paraphrase)
-3. The output of `~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh`
+3. The output of `~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh` (or `status.ps1` on Windows)
 4. Your OS (macOS 14, Windows 11, etc.) and Claude Code version (`claude --version`)

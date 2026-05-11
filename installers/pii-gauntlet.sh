@@ -158,8 +158,10 @@ check "Personal email" "dimitrios\.plessas@|plessasdimitrios@|plessas@nbg\.gr|pl
 check "Personal phone" "694[[:space:]]?9200878|6949200878"
 check "Personal address" "174[[:space:]]+Syggrou|Συγγρού[[:space:]]+174"
 
-# Greek tax IDs (9-digit standalone, with word boundaries)
-check "9-digit ID pattern" "[^0-9][0-9]{9}[^0-9]"
+# Greek tax IDs (9-digit standalone, with non-hex word boundaries).
+# Excludes 9-digit substrings inside git SHAs (40-char hex) by requiring
+# the surrounding chars are not hex digits.
+check "9-digit ID pattern" "[^0-9a-fA-F][0-9]{9}[^0-9a-fA-F]"
 
 # Peer names (NBG colleagues / direct reports / managers)
 check "Peer/colleague names" "Volioti|Bitrou|Sioutis|Theofilidi|Θεοφιλίδη|Χριστίνα|Lygeros|Oikonomou|Maraveas|Xona|Petropoulou|Laspas|Koutra|Giemelou"

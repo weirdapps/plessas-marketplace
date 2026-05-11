@@ -1,9 +1,12 @@
 {
   "name": "outlook-bridge-mcp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -11,11 +14,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "outlook-tool": "github:weirdapps/outlook-access"
+    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#a00446be79c56441db4e0e199c784786706d5bae"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "vitest": "^4.0.0",
-    "@types/node": "^25.6.2"
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.5",
+    "@types/node": "^22.0.0"
   }
 }

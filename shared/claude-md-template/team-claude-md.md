@@ -113,7 +113,7 @@ In Greek: use **"Εθνική Τράπεζα"** (NOT "Εθνική Τράπεζ�
 - **Mail send**: PRIMARY = `outlook-cli send-mail` (creates draft + activates Outlook desktop; `--send-now` to dispatch immediately). Also: `outlook-cli reply`, `reply-all`, `forward`. Signature from `~/.outlook-cli/signature.html` is auto-appended. CC-self is on by default.
 - **Teams reads**: PRIMARY = `mcp__teams-bridge__teams_*` tools (read chats, list channels, fetch messages). Auth via `teams-cli login`.
 - **Teams send**: `mcp__teams-bridge__teams_send_message` (chat sends only — channel sends require additional Graph scopes).
-- **outlook-cli auth**: If a tool returns `auth_required`, run `outlook-cli login --sharepoint-host groupnbg.sharepoint.com` (NOT `nbg.sharepoint.com` — the latter doesn't exist for this tenant).
+- **outlook-cli auth**: If a tool returns `auth_required`, run `outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com`. The auth wizard prompts for your tenant on first run and persists it to `~/.outlook-cli/config.json`.
 - **outlook-cli concurrency**: For batch get-mail bursts, cap at concurrency=2 to avoid M365 ApplicationThrottled (HTTP 429).
 - **WebSearch**: May fail on some models. Use `Agent` tool with `model: "sonnet"` as a fallback for web searches.
 - **LLM calls in code**: All LLM-invoking code MUST go through the local `claude` CLI via `subprocess.run(["claude", "--model", "sonnet", "--print"], input=prompt, ...)` — which routes via Vertex AI on NBG-managed machines (billed to NBG). NEVER add the `anthropic` Python SDK to dependencies, NEVER write `from anthropic import Anthropic`, NEVER `curl https://api.anthropic.com`. Default model: Sonnet (configurable). Mock `subprocess.run` in tests, not the SDK.

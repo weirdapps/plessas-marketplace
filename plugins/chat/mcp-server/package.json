@@ -1,21 +1,24 @@
 {
   "name": "teams-bridge-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "teams-cli": "github:weirdapps/teams-access"
+    "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#bc50e655a424677d169f11b6899d82f8b2e43182"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "vitest": "^4.0.0",
-    "@types/node": "^25.6.2"
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.5",
+    "@types/node": "^22.0.0"
   }
 }

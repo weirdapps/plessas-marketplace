@@ -2,6 +2,39 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-05-11
+
+### Added
+
+- `installers/lib/tenant-prompt.{sh,ps1}` — first-run prompt for M365 SharePoint host, persisted to `~/.outlook-cli/config.json`, env-overridable via `PLESSAS_SHAREPOINT_HOST`
+- Python venv install on Windows (`install.ps1` parity with `install.sh`)
+- Windows install code blocks + Chrome/Edge prereq + NBG-decks disclosure in README
+- PowerShell troubleshooting recipes + Windows-specific gotchas section in `docs/TROUBLESHOOTING.md`
+- `<TEMP_DIR>` placeholder convention for cross-platform temp paths
+- "Per-plugin notes" section in README disclosing NBG branding in decks plugin
+
+### Changed
+
+- `outlook-bridge` MCP: pinned `typescript ~5.9.3`, `@types/node ^22.0.0`, `vitest ^4.1.5`, added `engines.node >=20`
+- `teams-bridge` MCP: same dep pins + added `--passWithNoTests` to test script (no test files yet)
+- `outlook-cli` and `teams-cli` GitHub deps now pinned to specific commit SHAs via `git+https://x@github.com/...` workaround for npm/cli#2610 (lockfile would otherwise pin to `git+ssh://`, breaking teammates without SSH keys)
+- `auth-wizard.{sh,ps1}` no longer hardcode `groupnbg.sharepoint.com` — now prompt
+- `outlook-bridge` MCP `doctor` tool reads tenant from config instead of hardcoding
+- `mail/commands/mail-review.md` + `mail/agents/email-handler.md` clipboard recipes shown as per-OS code blocks
+- `meetings/agents/meeting-intelligence.md` + `calendar-access.md` AppleScript fallbacks now OSTYPE-guarded
+- `decks/commands/{create-presentation,presentation-review}.md` auto-create `~/.claude/presentations/{pending,reviewed}/` dirs
+
+### Removed
+
+- `mail-pro` plugin moved to `plessas-lab` (was maintainer-only — depended on private second-brain DB and hardcoded sender filter)
+
+### Fixed
+
+- `decks` plugin Python tools no longer fail on Windows (venv now built by installer)
+- Hardcoded `groupnbg.sharepoint.com` removed from 5 doc files (QUICKSTART.md, team-claude-md.md, TROUBLESHOOTING.md, FAQ.md, doctor.ts)
+- Tenant-prompt.sh persist block hardened against shell injection (uses sys.argv instead of string interpolation)
+- Tenant-prompt.ps1 persist failure now terminating (`-ErrorAction Stop`)
+
 ## [Unreleased]
 
 ### Fixed (team-rollout readiness pass — 2026-05-10)
