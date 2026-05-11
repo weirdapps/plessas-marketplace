@@ -1,6 +1,6 @@
 # docs v1.0
 
-Word document creation with NBG formatting baked in. Three command shapes: generic structured doc, formal business letter, internal memo. Wraps `document-skills:docx` (built into Claude Code) with NBG conventions (Aptos 11pt body, `#404040` text, `#003841` headings, page numbers, 2.54 cm margins).
+Word document creation with NBG formatting baked in. Three command shapes: generic structured doc, formal business letter, internal memo. Wraps `document-skills:docx` (built into Claude Code) with NBG conventions (Aptos 11pt body, `#404040` text, `#007B85` headings (NBG Teal), page numbers, 2.54 cm margins).
 
 No external dependencies — `document-skills:docx` ships with Claude Code itself.
 
@@ -21,7 +21,7 @@ Each command:
 3. Drafts the content in the appropriate structure
 4. Applies NBG formatting:
    - Font: Aptos 11pt body / Aptos 14pt headings
-   - Colour: `#404040` body text, `#003841` headings (NBG dark teal)
+   - Colour: `#404040` body text, `#007B85` headings (NBG Teal)
    - Margins: 2.54 cm all sides
    - Page numbers: bottom centre
 5. Writes the `.docx` to `~/Downloads/` with a `YYYYMMDDHHMM_<descriptive_name>.docx` filename (Athens timezone), per the global file-naming convention

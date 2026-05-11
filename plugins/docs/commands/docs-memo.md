@@ -24,7 +24,7 @@ Generate an internal memo in Word format (.docx).
 
 3. **Apply formatting**:
    - Font: Aptos 11pt body, Aptos 12pt bold for header labels
-   - Colour: `#404040` body, `#003841` header labels
+   - Colour: `#404040` body, `#007B85` header labels (NBG Teal)
    - Keep under 2 pages unless the content warrants more
 
 4. **Save** to `~/Downloads/` with `YYYYMMDDHHMM_memo_<subject_slug>.docx`.

@@ -20,7 +20,7 @@ Generate a structured Word document (.docx) from content provided by the user.
 
 3. **Apply NBG formatting**:
    - Font: Aptos 11pt body, Aptos 14pt headings
-   - Colour: `#404040` body text, `#003841` headings
+   - Colour: `#404040` body text, `#007B85` headings (NBG Teal)
    - Margins: 2.54cm all sides (Word default)
    - Page numbers: bottom centre
    - Language: match user's input language (Greek or English)

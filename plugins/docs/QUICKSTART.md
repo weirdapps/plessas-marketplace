@@ -4,7 +4,7 @@ A 5-minute path from zero to "my Word document is drafted, branded, and saved."
 
 ## What it does
 
-Creates Word documents (`.docx`) with NBG formatting baked in — Aptos 11pt body, `#404040` text, `#003841` headings (NBG dark teal), 2.54 cm margins, page numbers bottom centre. Three command shapes: a generic structured document (report / proposal / brief / notes), a formal business letter (letterhead, salutation, valediction, signature block), and an internal memo (TO / FROM / DATE / RE header). Greek and English are both supported — the language of your prompt drives the salutations and valedictions automatically (`Αξιότιμε…` / `Με εκτίμηση,` for Greek; `Dear…` / `Sincerely,` for English). Wraps `document-skills:docx`, which ships inside Claude Code itself. No external CLIs, no MCP servers, no API keys.
+Creates Word documents (`.docx`) with NBG formatting baked in — Aptos 11pt body, `#404040` text, `#007B85` headings (NBG Teal), 2.54 cm margins, page numbers bottom centre. Three command shapes: a generic structured document (report / proposal / brief / notes), a formal business letter (letterhead, salutation, valediction, signature block), and an internal memo (TO / FROM / DATE / RE header). Greek and English are both supported — the language of your prompt drives the salutations and valedictions automatically (`Αξιότιμε…` / `Με εκτίμηση,` for Greek; `Dear…` / `Sincerely,` for English). Wraps `document-skills:docx`, which ships inside Claude Code itself. No external CLIs, no MCP servers, no API keys.
 
 ## Prerequisites
 
