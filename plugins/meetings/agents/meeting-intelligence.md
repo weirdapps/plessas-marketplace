@@ -3,6 +3,8 @@ name: meeting-intelligence
 description: Meeting intelligence agent — calendar-aware briefings with attendee dossiers from knowledge store context (via MCP), and post-meeting debrief with decision capture
 ---
 
+> **Cross-platform note:** AppleScript fallback paths in this file (`tell application "Microsoft Outlook"`, `tell application "Mail"`, etc.) only run on macOS. On Windows or Linux, the agent should rely on `mcp__outlook-bridge__*` tools and skip the AppleScript blocks entirely. Each AppleScript block is prefixed with an explicit OSTYPE guard.
+
 # Meeting Intelligence Agent
 
 ## Role
@@ -58,7 +60,13 @@ Query: "Do I have any conflicts on April 27?"
 
 **EMERGENCY FALLBACK — Microsoft Outlook AppleScript** (macOS only; only if both MCPs are unavailable, or `--outlook` is passed):
 
+**macOS only — skip on Windows/Linux:**
+
 ```bash
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  echo "Skipping AppleScript fallback — not on macOS." >&2
+  exit 0
+fi
 osascript <<'APPLESCRIPT'
 tell application "Microsoft Outlook"
     set today to current date
@@ -150,7 +158,13 @@ For each meeting, check the inbox AND archive for related emails. The Archive ma
 
 **Check inbox for incoming related emails (macOS only — Apple Mail AppleScript; prefer outlook-bridge MCP tools instead):**
 
+**macOS only — skip on Windows/Linux:**
+
 ```bash
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  echo "Skipping AppleScript fallback — not on macOS." >&2
+  exit 0
+fi
 osascript <<'APPLESCRIPT'
 tell application "Mail"
     set msgs to messages 1 thru 20 of inbox
@@ -177,7 +191,13 @@ APPLESCRIPT
 
 **Check Archive for recent exchanges with attendees (macOS only — Apple Mail AppleScript; prefer outlook-bridge MCP tools instead, includes user's own sent mail):**
 
+**macOS only — skip on Windows/Linux:**
+
 ```bash
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  echo "Skipping AppleScript fallback — not on macOS." >&2
+  exit 0
+fi
 osascript <<'APPLESCRIPT'
 tell application "Mail"
     set archiveBox to mailbox "Archive" of account "Exchange"
