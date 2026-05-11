@@ -10,6 +10,9 @@ ok()   { printf "${GREEN}[OK]${NC}   %s\n" "$1"; }
 warn() { printf "${YELLOW}[WARN]${NC} %s\n" "$1"; }
 fail() { printf "${RED}[FAIL]${NC} %s\n" "$1"; }
 
+# Load tenant-prompt helper
+source "$(dirname "$0")/lib/tenant-prompt.sh"
+
 echo "========================================"
 echo "  plessas-marketplace auth wizard"
 echo "========================================"
@@ -25,7 +28,8 @@ if command -v outlook-cli >/dev/null 2>&1; then
     ok "outlook-cli already authenticated"
   else
     echo "Opening browser for Outlook sign-in..."
-    outlook-cli login --sharepoint-host groupnbg.sharepoint.com || warn "outlook-cli login failed or was cancelled"
+    sp_host=$(prompt_tenant) || fail "Could not resolve SharePoint host. Aborting."
+    outlook-cli login --sharepoint-host "$sp_host" || warn "outlook-cli login failed or was cancelled"
     if outlook-cli auth-check >/dev/null 2>&1; then
       ok "outlook-cli authenticated"
     else
