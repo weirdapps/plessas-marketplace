@@ -1,7 +1,7 @@
 ---
 description: "Analyse and summarise an Excel workbook — structure, KPIs, anomalies, data quality."
 argument-hint: "<file>"
-allowed-tools: Read, Bash, Skill(document-skills:xlsx)
+allowed-tools: Read, Bash, Agent
 ---
 
 # Excel Summary
@@ -10,7 +10,10 @@ Read an Excel workbook and produce a structured summary suitable for a busy exec
 
 ## Workflow
 
-1. **Invoke `document-skills:xlsx`** to read the file. Use the Skill tool to load the xlsx skill, then read the workbook.
+1. **Read the workbook** using one of these methods (try in order):
+   - **openpyxl via Python** (preferred): `python3 -c "import openpyxl; wb = openpyxl.load_workbook('<file>', data_only=True); ..."` — install with `pip3 install openpyxl` if missing
+   - **Desktop Commander MCP** (`mcp__desktop-commander__read_file`): reads `.xlsx` natively as JSON 2D arrays
+   - **Read tool**: for `.csv`/`.tsv` files, read directly as text
 
 2. **Analyse each sheet**:
    - Row/column count, headers, data types

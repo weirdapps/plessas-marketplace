@@ -2,7 +2,7 @@
 
 Excel analysis commands tuned for executive use. Summarise structure and KPIs, build pivots from a description, run period-over-period variance, and hand off insights to the `decks` plugin to produce a presentation.
 
-Wraps `document-skills:xlsx` (built into Claude Code) with NBG-shaped defaults (EUR currency, fiscal-year orientation, Aptos styling). No external CLIs to install.
+Self-contained — reads Excel files via `openpyxl` and analyses with `pandas` (auto-installed on first use if missing). NBG-shaped defaults (EUR currency, fiscal-year orientation, Aptos styling). No external CLIs or plugins to install.
 
 ## Commands
 
@@ -17,7 +17,7 @@ Wraps `document-skills:xlsx` (built into Claude Code) with NBG-shaped defaults (
 
 Each command:
 
-1. Loads `document-skills:xlsx` to read the workbook structurally (sheets, headers, types, formulas)
+1. Reads the workbook via `openpyxl` (sheets, headers, types, formulas) — if `openpyxl` is not installed, the command auto-installs it via `pip3 install openpyxl pandas`
 2. Runs the requested analysis (KPI extraction, pivot, variance, insight selection)
 3. Returns the result either as inline tables in the conversation, a written-out `.xlsx` file in `~/Downloads/` (with a `YYYYMMDDHHMM_*.xlsx` timestamp prefix per the global file-naming convention), or — for `/excel-to-deck` — a structured handoff to the `decks` plugin
 
@@ -31,7 +31,7 @@ No setup required beyond installing the plugin:
 /plugin install excel@plessas-marketplace
 ```
 
-`document-skills:xlsx` is bundled in Claude Code by default — it is not a separate install.
+Python packages `openpyxl` and `pandas` are auto-installed on first use if missing.
 
 ## Tips
 

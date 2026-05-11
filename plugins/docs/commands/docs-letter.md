@@ -1,7 +1,7 @@
 ---
 description: "Create a formal business letter in Word format."
 argument-hint: "<recipient> <subject>"
-allowed-tools: Read, Write, Bash, Skill(document-skills:docx)
+allowed-tools: Read, Write, Bash, Agent
 ---
 
 # Formal Letter
@@ -10,7 +10,9 @@ Generate a formal business letter in Word format (.docx).
 
 ## Workflow
 
-1. **Invoke `document-skills:docx`** for document creation.
+1. **Create the document** using `python-docx`:
+   - Install if missing: `pip3 install python-docx`
+   - Use `from docx import Document` to create the document programmatically
 
 2. **Letter structure**:
    - Sender block (top right): user fills in or uses signature from `~/.outlook-cli/signature.html`

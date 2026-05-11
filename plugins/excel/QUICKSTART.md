@@ -4,7 +4,7 @@ A 5-minute path from zero to "my Excel workbook is summarised, pivoted, variance
 
 ## What it does
 
-Reads any Excel file (`.xlsx`, `.xls`, `.xlsm`) and runs analysis tuned for executive use. Summarises structure and KPIs, builds pivot tables from a natural-language description, runs period-over-period variance with the periods auto-detected, and hands off the insights to the `decks` plugin to produce a NBG-branded presentation. NBG-shaped defaults throughout: EUR currency, fiscal-year orientation (January-December), Aptos styling on any generated output. No external CLIs to install — the plugin wraps `document-skills:xlsx`, which is built into Claude Code.
+Reads any Excel file (`.xlsx`, `.xls`, `.xlsm`) and runs analysis tuned for executive use. Summarises structure and KPIs, builds pivot tables from a natural-language description, runs period-over-period variance with the periods auto-detected, and hands off the insights to the `decks` plugin to produce a NBG-branded presentation. NBG-shaped defaults throughout: EUR currency, fiscal-year orientation (January-December), Aptos styling on any generated output. Self-contained — reads xlsx files via `openpyxl` and analyses with `pandas` (auto-installed on first use if missing).
 
 ## Prerequisites
 

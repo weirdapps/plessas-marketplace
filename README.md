@@ -13,8 +13,8 @@ Cross-platform Claude Code plugins for productivity at a financial-services work
 | `mail-pro` | Optional companion to `mail`. Adds `/comm-report` and `/style-rebuild`. Requires private `second-brain` repo access. |
 | `meetings` | Pre-meeting briefings with attendee dossiers; post-meeting decision capture. |
 | `chat` | Microsoft Teams interactive commands: inbox, reply, summarize, channel digest. Bundles teams-bridge MCP. |
-| `excel` | Excel analysis: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx. |
-| `docs` | Word document creation: generic, formal letter, internal memo. Wraps document-skills:docx. |
+| `excel` | Excel analysis: summary, pivot, variance, deck handoff. Self-contained (openpyxl/pandas). |
+| `docs` | Word document creation: generic, formal letter, internal memo. Self-contained (python-docx). |
 
 ## Install
 
@@ -60,10 +60,22 @@ Re-run `installers/install.sh` (or `.ps1` on Windows) after major updates so the
 - [Workflow guides](docs/workflows/) — one per plugin
 - [Migration from `communications-marketplace`](docs/migration-from-communications-marketplace.md)
 
+## Optional enhancements
+
+All six plugins work out-of-the-box after install. These optional components add richer context when configured:
+
+| Component | Enhances | What it adds | Without it |
+|---|---|---|---|
+| `second-brain` MCP | `mail`, `meetings` | Historical sender context, attendee dossiers with decisions/actions, topic intelligence | Briefings and meeting prep still work via outlook-bridge; dossiers show "No historical context" |
+| `WorkIQ` MCP | `meetings` | Natural-language calendar queries (e.g. "do I have conflicts?") | outlook-bridge handles all calendar reads; only free-form NL queries are lost |
+| Style guide (`/style-sync`) | `mail` | Personalized drafts matching your email voice per recipient | Drafts use professional defaults (BRIEF internal, FULL external) |
+
 ## Per-plugin notes
 
 - **`decks`** is NBG-branded. The brand-system docs (`plugins/decks/shared/brand-system/{colors,layouts,typography,charts}.md`), the storyline-architect agent persona, and the `NBG-Template-GR.pptx` template all assume NBG corporate identity. If you're not at NBG, the framework is still useful (storyline → storyboard → renderer → QA), but you'll want to swap the template, replace the color palette in `colors.md`, and edit the agent prompts to reference your brand. Most of the customization is a single search-and-replace of "NBG" with your brand name.
 - **`mail`, `meetings`, `chat`, `excel`, `docs`** are brand-agnostic.
+- **`excel`** uses `openpyxl` and `pandas` for xlsx analysis — auto-installed via `pip3 install openpyxl pandas` on first use if missing.
+- **`docs`** uses `python-docx` for Word generation — auto-installed via `pip3 install python-docx` on first use if missing.
 
 ## License
 
