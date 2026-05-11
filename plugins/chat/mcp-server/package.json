@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "teams-cli": "github:weirdapps/teams-access"
+    "teams-cli": "github:weirdapps/teams-access#bc50e655a424677d169f11b6899d82f8b2e43182"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
