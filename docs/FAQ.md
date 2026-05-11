@@ -106,14 +106,16 @@ For pure read-only operations (briefings, summaries), there's no risk — they d
 
 ## What if I want to use a different SharePoint tenant?
 
-By default the auth wizard targets `groupnbg.sharepoint.com` (NBG's M365 tenant). For other tenants, sign in manually:
+The auth wizard prompts for your M365 tenant SharePoint host on first run (e.g. `contoso.sharepoint.com`). Find it in any SharePoint URL you own: `https://<this-part>.sharepoint.com/...`. Your answer is persisted to `~/.outlook-cli/config.json` and reused on subsequent runs.
+
+To switch tenants later, re-run:
 
 ```bash
-outlook-cli login --sharepoint-host <yourtenant>.sharepoint.com
+outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com
 outlook-cli capture-signature   # optional, for /send-mail
 ```
 
-The bundled `outlook-bridge` MCP also has the host hardcoded in `plugins/mail/mcp-server/src/tools/doctor.ts:43` — if you want it to detect a different tenant, edit that file (line 43) before the MCP is built.
+Or set the `PLESSAS_SHAREPOINT_HOST` env var to override the persisted value.
 
 ## What if a Claude Code update breaks a plugin?
 

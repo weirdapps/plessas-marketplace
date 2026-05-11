@@ -35,10 +35,12 @@ One time, run the auth wizard from your terminal:
 
 A browser window opens for Microsoft 365 sign-in. Approve the requested permissions (Read / Send mail, calendar, contacts). The wizard captures your Outlook signature too.
 
-**Non-NBG tenants**: by default the wizard targets `groupnbg.sharepoint.com`. To target your own tenant, sign in manually with:
+> **Tenant host:** the auth wizard will prompt you for your M365 tenant SharePoint host on first run (e.g. `contoso.sharepoint.com`). Find it in any SharePoint URL you own: `https://<this-part>.sharepoint.com/...`. The answer is persisted to `~/.outlook-cli/config.json` and reused on subsequent runs. Override with the `PLESSAS_SHAREPOINT_HOST` env var if needed.
+
+If you need to sign in manually (e.g., to switch tenants), use:
 
 ```bash
-outlook-cli login --sharepoint-host <yourtenant>.sharepoint.com
+outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com
 outlook-cli capture-signature   # optional, for /send-mail
 ```
 
@@ -131,7 +133,7 @@ Pulls the thread, drafts the reply, opens Outlook with the draft pre-loaded for 
 
 | Symptom | Fix |
 |---|---|
-| `auth_required` error | Run `outlook-cli login --sharepoint-host groupnbg.sharepoint.com` |
+| `auth_required` error | Run `outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com` |
 | Briefing shows 0 emails | Check `outlook-cli auth-check`. If `expired`, re-run `outlook-cli login` |
 | Draft doesn't open in Outlook | Ensure Outlook desktop is installed and running |
 | `mcp__outlook-bridge__*` tools not available | Run `~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh` to (re)build the bundled MCP server |

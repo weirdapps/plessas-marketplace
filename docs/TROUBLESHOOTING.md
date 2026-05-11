@@ -94,10 +94,10 @@ Two possibilities:
 Your M365 token has expired or was never set. Run:
 
 ```bash
-outlook-cli login --sharepoint-host groupnbg.sharepoint.com
+outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com
 ```
 
-(Replace `groupnbg.sharepoint.com` with your tenant if you're not on NBG.) A browser window opens; sign in with your M365 credentials. Token persists for ~30 days; you'll be re-prompted automatically when it expires.
+A browser window opens; sign in with your M365 credentials. Token persists for ~30 days; you'll be re-prompted automatically when it expires. The auth wizard prompts for your tenant on first install; you can also find it in any SharePoint URL you own: `https://<this-part>.sharepoint.com/...`.
 
 ### Outlook: `Throttled (429)` errors during big inbox sweeps
 
