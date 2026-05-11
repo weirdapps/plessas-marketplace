@@ -79,6 +79,41 @@ if (Test-Path 'plugins\chat\mcp-server') {
     Write-Ok 'teams-bridge MCP built'
 }
 
+# --- Install Python deps for decks ---
+$pythonCmd = $null
+if (Get-Command python -ErrorAction SilentlyContinue) { $pythonCmd = 'python' }
+elseif (Get-Command python3 -ErrorAction SilentlyContinue) { $pythonCmd = 'python3' }
+
+if ($pythonCmd) {
+    $decksReq = Join-Path $InstallDir 'plugins\decks\tools\nbg-presentation\requirements.txt'
+    if (Test-Path $decksReq) {
+        Write-Host ''
+        Write-Host 'Installing Python dependencies for decks...'
+        $venvDir = Join-Path $InstallDir 'plugins\decks\tools\nbg-presentation\.venv'
+        if (-not (Test-Path $venvDir)) {
+            & $pythonCmd -m venv $venvDir
+        }
+        $pip = Join-Path $venvDir 'Scripts\pip.exe'
+        if (-not (Test-Path $pip)) { $pip = Join-Path $venvDir 'bin/pip' }  # WSL/Mac fallback
+        & $pip install -q -r $decksReq 2>&1 | Select-Object -Last 3
+        Write-Ok 'decks Python deps installed'
+    }
+
+    $mockupReq = Join-Path $InstallDir 'plugins\decks\bundled\creative\tools\device-mockup\requirements.txt'
+    if (Test-Path $mockupReq) {
+        $venvDir = Join-Path $InstallDir 'plugins\decks\bundled\creative\tools\device-mockup\.venv'
+        if (-not (Test-Path $venvDir)) {
+            & $pythonCmd -m venv $venvDir
+        }
+        $pip = Join-Path $venvDir 'Scripts\pip.exe'
+        if (-not (Test-Path $pip)) { $pip = Join-Path $venvDir 'bin/pip' }
+        & $pip install -q -r $mockupReq 2>&1 | Select-Object -Last 3
+        Write-Ok 'device-mockup Python deps installed'
+    }
+} else {
+    Write-Warn 'Python not found — skipping decks Python dep install. Install Python 3.11+ then re-run installer.'
+}
+
 # --- Install outlook-cli and teams-cli ---
 # Both CLIs live in their own repos (weirdapps/outlook-access, weirdapps/teams-access).
 # We clone them into installers\deps inside the marketplace, build, and `npm link`
