@@ -307,21 +307,21 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
    **macOS:**
 
    ```bash
-   printf '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' \
+   printf '<html><body style="font-family: &quot;Aptos Light&quot;, Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' \
      | textutil -stdin -format html -convert rtf -stdout | pbcopy
    ```
 
    **Windows (PowerShell):**
 
    ```powershell
-   $html = '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>'
+   $html = '<html><body style="font-family: &quot;Aptos Light&quot;, Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>'
    $html | Set-Clipboard -AsHtml
    ```
 
    **Linux (X11 with xclip):**
 
    ```bash
-   printf '<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' \
+   printf '<html><body style="font-family: &quot;Aptos Light&quot;, Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">Draft body here</body></html>' \
      | xclip -selection clipboard -t text/html
    ```
 

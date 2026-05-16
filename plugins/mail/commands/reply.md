@@ -37,14 +37,14 @@ If still ambiguous after natural-language matching, ask the user to disambiguate
 Prepare the user's NEW reply content as HTML:
 
 - Convert any markdown to HTML
-- Aptos 12pt #404040, no `<p>` tags, `<br>`/`<br><br>` for spacing
+- Aptos Light 12pt #404040, no `<p>` tags, `<br>`/`<br><br>` for spacing
 - Keep it brief and on-tone — match the user's style from `shared/style-guide.md`
 - The auto-quoted original AND the signature are appended automatically — do NOT include either in your HTML
 
 Example:
 
 ```html
-<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">
+<html><body style="font-family: &quot;Aptos Light&quot;, Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">
 Thanks for the update — confirming the timeline works on our end.<br><br>
 Will circulate the revised deck tomorrow morning.
 </body></html>

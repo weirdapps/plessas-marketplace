@@ -34,12 +34,12 @@ If the user hasn't provided required fields (To, Subject), ask before proceeding
 
 - Always send emails in **HTML format** for Outlook rendering
 - Convert any markdown content to proper HTML with inline CSS
-- Font: **Aptos**, size **12pt**, color **#404040** (Black Text 1 Lighter 25%)
+- Font: **Aptos Light**, size **12pt**, color **#404040** (Black Text 1 Lighter 25%)
 - **NO `<p>` tags** — use `<br>` for line breaks, `<br><br>` for paragraph spacing
 - Wrap content in a basic HTML structure:
 
 ```html
-<html><body style="font-family: Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">
+<html><body style="font-family: &quot;Aptos Light&quot;, Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">
 [content here]
 </body></html>
 ```

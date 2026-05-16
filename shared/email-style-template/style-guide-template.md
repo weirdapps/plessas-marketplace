@@ -84,7 +84,7 @@ Greek is the dominant language for internal NBG communication. Mixed Greek/Engli
 
 ## Body Format Rules
 
-- Aptos 12pt, colour `#404040`
+- Aptos Light 12pt, colour `#404040`
 - NO `<p>` tags — use `<br>` for line break, `<br><br>` for paragraph break
 - Bullet lists: `<ul><li>...</li></ul>` with inline styling for the list items
 - Tables: inline styled `<table>` with `border-collapse: collapse`, header row in bold

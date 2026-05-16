@@ -34,7 +34,7 @@ Optional: CC and BCC. CC-self is NOT auto-applied for forwards (the original mes
 
 If the user wants to add context to the forward ("FYI for the Q2 review"), prepare the HTML note:
 
-- Aptos 12pt #404040
+- Aptos Light 12pt #404040
 - Brief — usually 1-3 lines
 - Do NOT include the original (auto-quoted) or the signature (auto-appended)
 

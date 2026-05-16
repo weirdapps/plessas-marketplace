@@ -17,7 +17,7 @@
 - Always send in **HTML format** using the `--html` parameter for Outlook compatibility
 - Convert markdown to proper HTML with tables, styling, and formatting
 - Use inline CSS for consistent rendering across email clients
-- Font: **Aptos 12pt, color #404040**. NO `<p>` tags — use `<br>` for line breaks, `<br><br>` for paragraph spacing
+- Font: **Aptos Light 12pt, color #404040**. NO `<p>` tags — use `<br>` for line breaks, `<br><br>` for paragraph spacing
 - Subject: ALWAYS lowercase. Content starts lowercase unless FULL format (greeting like "Καλημέρα"/"Καλησπέρα")
 - Always CC yourself on outgoing mail
 
@@ -31,7 +31,7 @@ When putting content on the clipboard (`pbcopy`) that may be pasted into Outlook
 
 ### Pipeline (macOS)
 
-1. Build HTML with inline styling matching email standards: Aptos 12pt, color `#404040`. Use `<br>`/`<br><br>` for line breaks (NO `<p>` tags). `<b>`, `<i>`, `<hr>` convert cleanly.
+1. Build HTML with inline styling matching email standards: Aptos Light 12pt, color `#404040`. Use `<br>`/`<br><br>` for line breaks (NO `<p>` tags). `<b>`, `<i>`, `<hr>` convert cleanly.
 2. Convert HTML → RTF: `textutil -convert rtf input.html -output output.rtf`
 3. Place on clipboard as RTF class so Outlook recognises it as rich text:
    `osascript -e 'set the clipboard to (read POSIX file "/abs/path/output.rtf" as «class RTF »)'`
@@ -124,7 +124,7 @@ In Greek: use **"Εθνική Τράπεζα"** (NOT "Εθνική Τράπεζ�
 
 NBG brand specs (colours, fonts, logos, layout grids) live in this marketplace at `shared/brand-system/`. Plugins that need brand assets reference that directory. See `shared/brand-system/README.md` for the canonical spec.
 
-Default email/text colour: `#404040`. Default font: Aptos 12pt.
+Default email/text colour: `#404040`. Default font: Aptos Light 12pt (emails); Aptos for Word docs and presentations.
 
 ---
 
