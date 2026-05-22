@@ -18,7 +18,7 @@
     "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#bc50e655a424677d169f11b6899d82f8b2e43182"
   },
   "devDependencies": {
-    "typescript": "~5.9.3",
+    "typescript": "~6.0.3",
     "vitest": "^4.1.7",
     "@types/node": "^25.8.0"
   }
