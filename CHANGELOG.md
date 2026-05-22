@@ -37,6 +37,27 @@ All notable changes to `plessas-marketplace` are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (auth-setup slash commands — 2026-05-22)
+
+- **`plugins/mail/commands/auth-setup.md`** — new `/mail:auth-setup` slash command. Probes the outlook-bridge MCP, drives Microsoft 365 OAuth via the bundled `outlook-tool` CLI inside `mcp-server/node_modules/`, captures the email signature. Idempotent; skips already-completed steps. Supports `--force-reauth` and `--skip-signature` flags. Tenant host resolved via env → `~/.outlook-cli/config.json` → interactive prompt (mirrors the existing `tenant-prompt.sh` UX).
+- **`plugins/chat/commands/auth-setup.md`** — new `/chat:auth-setup` slash command. Same shape as mail; drives `teams-cli login`. No SharePoint host needed (Teams reuses the Outlook web session). Supports `--force-reauth`.
+
+### Changed (auth-setup slash commands — 2026-05-22)
+
+- **`README.md`** — install flow now leads with `/plugin install <name>@plessas-marketplace` + `/mail:auth-setup` / `/chat:auth-setup`. Legacy shell-based `auth-wizard.{sh,ps1}` path retained as deprecated fallback.
+- **`installers/install.sh`** — "Next steps" footer rewritten to recommend the slash-command path; legacy auth-wizard.sh + status.sh kept as alternatives.
+
+### Deferred (capture-only)
+
+The full cleanup that the new slash commands enable is **not** in this release. See [`docs/future-improvements.md`](docs/future-improvements.md) for the deferred scope:
+
+- Delete `installers/auth-wizard.{sh,ps1}` and `installers/lib/tenant-prompt.{sh,ps1}` (replaced by slash commands).
+- Trim `install_cli_from_repo` block from `installers/install.{sh,ps1}` — CLIs are already bundled via `git+https` npm deps, the global `npm link` step is redundant.
+- Sweep 8 doc files for stale `auth-wizard` references: `plugins/{chat,mail}/QUICKSTART.md`, `plugins/{chat}/README.md`, `plugins/meetings/commands/meeting-prep.md`, `docs/{day-one,FAQ,TROUBLESHOOTING,migration-from-communications-marketplace}.md`, `SECURITY.md`.
+- Windows-side parity: `auth-setup.ps1` equivalents (Claude Code slash commands are cross-platform; only `install.ps1` and the legacy shell wizards need updates).
+- **Approach B (architectural improvement)**: promote `login`/`auth-check` to native MCP tools (`outlook_login`, `teams_login`) so the slash command body becomes a single MCP call instead of a Bash shell-out to the bundled CLI. Cleaner abstraction, reusable from other agents.
+- Smoke test on a fresh environment — confirm doctor-as-bootstrap-probe trick triggers `run.sh` correctly on first call.
+
 ### Fixed (team-rollout readiness pass — 2026-05-10)
 
 - **`installers/pii-gauntlet.sh`**: 9-digit-ID regex was matching SHA fragments inside nested `package-lock.json` files (e.g. `plugins/mail/mcp-server/package-lock.json`), turning the GitHub Actions PII Check workflow red on `master`. Tightened the file exclusion to match common lockfiles (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `poetry.lock`, `Pipfile.lock`) at any depth. `./installers/pii-gauntlet.sh --mode=ci` now passes.
