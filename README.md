@@ -30,19 +30,30 @@ Cross-platform Claude Code plugins for productivity at a financial-services work
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.sh | bash
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
 iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.ps1 | iex
-& "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace\installers\auth-wizard.ps1"
-& "$env:USERPROFILE\.claude\plugins\marketplaces\plessas-marketplace\installers\status.ps1"
 ```
 
-> **First-run prompt:** the auth wizard will ask for your Microsoft 365 SharePoint host (e.g. `contoso.sharepoint.com`). The answer is saved to `~/.outlook-cli/config.json` and reused. Override with `PLESSAS_SHAREPOINT_HOST=...` env var if needed.
+Then open Claude Code and install + auth each plugin you want:
+
+```
+/plugin marketplace add weirdapps/plessas-marketplace
+/plugin install mail@plessas-marketplace
+/mail:auth-setup
+
+/plugin install chat@plessas-marketplace
+/chat:auth-setup
+```
+
+`decks`, `meetings`, `excel`, `docs` need no auth — just `/plugin install <name>@plessas-marketplace`.
+
+> **First-run prompt:** `/mail:auth-setup` asks for your Microsoft 365 SharePoint host (e.g. `contoso.sharepoint.com`). The answer is saved to `~/.outlook-cli/config.json` and reused. Override with `PLESSAS_SHAREPOINT_HOST=…` env var if needed. `/chat:auth-setup` needs no host — the Teams session is captured from the Outlook web login.
+>
+> **Legacy path (deprecated, still works):** the shell-based `installers/auth-wizard.{sh,ps1}` scripts handle the same auth flow outside Claude Code. They will be removed in a future release — prefer the slash commands.
 
 ## Updating
 
