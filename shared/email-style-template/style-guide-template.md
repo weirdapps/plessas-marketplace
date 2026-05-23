@@ -77,19 +77,37 @@ Greek is the dominant language for internal NBG communication. Mixed Greek/Engli
 
 ## Subject Line Rules
 
-- ALWAYS lowercase, except acronyms (NBG, KPI, ATM, IRIS) and proper nouns
+- ALWAYS lowercase by default — **EXCEPT acronyms/initialisms which stay ALL-CAPS** (each letter represents a word, not a word itself)
+- Greek acronyms: ΕΤΕ, ΔΤ, ΟΚ, ΦΥΙ, ΑΤΜ, ΑΑΔΕ, ΟΕΕ, ΔΟΥ
+- Latin acronyms: NBG, KPI, IRIS, EU, AI, NPE, BoD, ExCo, ESG, CRO, CFO, PSD3, MiCA, ATM
+- Mixed-case acronyms keep their canonical form: BoD, ExCo, eIDAS, iOS
+- Proper nouns (Δημήτρης, Christina, Outlook) are unaffected
 - 5-9 words ideal
 - Lead with the noun ("payment terminal rollout — phase 2") not the verb ("re: please review payment...")
 - Re: / FW: prefixes auto-added by Outlook; don't manually type them
 
 ## Body Format Rules
 
-- Aptos Light 12pt, colour `#404040`
+- **Font: Aptos Light 12pt, colour `#404040`** (not regular Aptos — Aptos Light reads slightly thinner/airier at the same point size). In HTML, write `font-family: &quot;Aptos Light&quot;, Aptos, sans-serif;` so it's shell-safe inside `printf` / PowerShell
+- **Text alignment: `text-align: justify`** on the body for professional appearance in Outlook
+- **Encoding: UTF-8 everywhere** — HTML files include `<meta charset="UTF-8">`. Never windows-1253 or ISO-8859-7 (those render as garbled text in modern apps and break Outlook paste)
 - NO `<p>` tags — use `<br>` for line break, `<br><br>` for paragraph break
 - Bullet lists: `<ul><li>...</li></ul>` with inline styling for the list items
 - Tables: inline styled `<table>` with `border-collapse: collapse`, header row in bold
 - Headings inside body: `<b>` (NOT `<h1>`/`<h2>` — they render with browser defaults)
 - Hyperlinks: `<a href="...">visible text</a>` — full URL never in body
+- **Signature exception**: Outlook signatures (`~/.outlook-cli/signature.html`) stay on regular Aptos for the wrapper and Aptos SemiBold for the name — body in Light reads airy, signature in regular weight acts as the "anchor"
+
+## Anti-Patterns (NEVER DO)
+
+These flag AI authorship and are unacceptable in NBG executive communication:
+
+- **Never use em-dashes (`—` or `--`)** — replace with comma, colon, semicolon, or full stop based on context. Same restraint for en-dashes used parenthetically; date ranges like `2024-2025` are fine
+- **Never invent NBG executive names** — if a name isn't already known, ASK rather than guess. Acceptable framings when unknown: `NBG [Division] leadership`, `the relevant [Division] head`, `the NBG [Division] team`
+- **Never use formal `Σας` address** for direct reports or inner-circle colleagues
+- **Never use standard ellipsis (`...`)** in Greek business email — convention is two dots (`..`)
+- **Never write lengthy paragraphs** for routine matters — keep BRIEF replies under ~20 words
+- **Never include the signature** in drafted reply text — Outlook appends it automatically
 
 ---
 
