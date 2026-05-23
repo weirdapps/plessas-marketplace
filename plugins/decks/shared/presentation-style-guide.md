@@ -1,4 +1,122 @@
-# Presentation Style Guide
+# NBG Presentation Style Guide
+
+This file has two parts:
+
+1. **Required NBG Brand Standards** — non-negotiable rules every NBG-branded deck must follow
+2. **Learned Preferences** — additional patterns inferred from `/presentation-review` cycles (lower-confidence, auto-updated)
+
+---
+
+# Part 1 — Required NBG Brand Standards
+
+These are hard rules enforced for every NBG deck. Brand-system files (`brand-system/colors.md`, `brand-system/layouts.md`, `brand-system/charts.md`, `brand-system/typography.md`) carry the detailed specs; this section codifies the must-follow rules.
+
+## 1. Primary brand color is NBG Teal `#007B85` — not Green
+
+In every NBG artifact (deck, doc, email, RTF, SVG, chart), use **`#007B85` (NBG Teal)** wherever previous guidance specified **`#006141` (NBG Green)**. Green is retired. The earlier `#003841` (Dark Teal) remains valid for accents like table footers/totals — only the green → teal swap is universal.
+
+After generating any NBG-branded artifact, scan output for `006141` or `0, 97, 65` — none should remain.
+
+## 2. PPTX brand rules — non-negotiable defaults
+
+1. **White backgrounds on ALL slides** — cover, dividers, content, back cover. Never dark teal or colored backgrounds.
+2. **No accent/separator lines under titles** — no thin teal lines, no decorative rules. Clean whitespace only.
+3. **Font sizes ≥14pt for body content** — body bullets ≥14pt, table cells ≥11pt minimum (prefer 12pt+). Vision/summary slides go large (16-18pt+).
+4. **Org charts go to υδνση level** — show the full hierarchy from Division → Sector → Υδνση, not just sectors.
+5. **Staffing tables by υδνση** — show departures AND hiring needs at the sub-division level.
+6. **Project tables need structure** — columns: `#`, Name, Description, Status, Deadline. Not just name + status dot.
+7. **Fill the slide** — content should use 60-85% of safe area. Half-empty slides waste attention. If there's space, increase font size.
+8. **Area-line charts for time-series** — never plain line charts. Use area chart with subtle fill (15% opacity), dot markers, no grid/axis lines, muted gray labels. Pair with KPI callout (large metric value + change delta) in the header.
+
+## 3. Section dividers — minimal, no decorations
+
+NBG section divider slides contain ONLY:
+- The large section number (e.g., `01` / `02` / `03`)
+- The section title text
+- Both vertically centered together as a single visual block, left-aligned
+- White background, NBG logo top-right (small)
+- **NO decorative line, rectangle, half-oval, or other brand shape on the right side**
+
+Brand discipline = restraint, not decoration. When invoking the graphics-renderer for an NBG deck, explicitly say "no decorative element on right side of dividers" and verify in the QA pass.
+
+## 4. Logo proportions — preserve native aspect ratio
+
+When inserting any logo (NBG, peer banks, partners) into a deck, ALWAYS preserve the source asset's native aspect ratio.
+
+- Read the actual PNG/SVG dimensions before placing
+- Set either height OR width and let the other auto-scale
+- For peer-comparison charts: pick a consistent height (e.g., 24-32 px) and let widths vary
+- Never set both dimensions independently
+- Especially important for peer comparisons: NBG's logo is oval; other Greek banks (Eurobank, Alpha, Piraeus) have rectangular logos with different aspect ratios. Forcing uniform square distorts identity
+
+## 5. Line charts — hollow circle markers
+
+All line charts in NBG presentations use hollow circle markers: white fill center with a colored outline ring whose stroke width matches the line itself (typically 3.5pt / 44450 EMU).
+
+- `marker.symbol = circle`, `marker.size = 6`
+- For python-pptx, set marker `spPr`: `<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>` for fill, `<a:ln w="44450"><a:solidFill><a:srgbClr val="{LINE_COLOR}"/></a:solidFill></a:ln>` for outline
+- Apply to ALL line chart series, including area-line charts (NPE convergence style)
+- Same line width (3.5pt) is standard for all series lines
+
+Hollow markers maintain distinction where lines converge or cross. Solid-fill markers merge visually at close proximity.
+
+## 6. PPTX media preservation — verify on every round-trip
+
+When a user manually edits a PPTX in PowerPoint and re-saves, embedded media files (logos, images) can be silently stripped, leaving empty placeholder shapes that render as blank rectangles.
+
+**Before any incremental render that opens a user-edited PPTX**, check media file count:
+```bash
+unzip -l <file> | grep "ppt/media/" | wc -l
+```
+
+If media count is 0 OR significantly lower than the previous version: **FLAG to the user immediately** and offer to restore media from a known-good earlier version.
+
+After saving any incremental render, verify media count is preserved. For round-trip workflows where the user will edit in PowerPoint and return, keep a reference master with full media as the restore source.
+
+## 7. No em-dashes
+
+Never use em-dashes (`—` or `--`) in slide text, titles, callouts, footnotes, or table cells. They read as AI-generated and signal Claude authorship — unacceptable in executive deliverables, especially decks shared internally at NBG and externally.
+
+Replace with: comma, colon (introducing a list/explanation), semicolon (joining two clauses), or full stop (when the second clause stands alone). Same restraint for en-dashes used parenthetically; date/number ranges with en-dash are fine (`2024-2025`).
+
+## 8. Never invent NBG names
+
+Do not guess or fabricate names of NBG executives, division heads, or organisational roles. If a name isn't known from your personal shared memory, email history, or current conversation, **ASK** — never guess.
+
+Acceptable framings when name is unknown: `NBG [Division] leadership`, `the relevant [Division] head`, `the NBG [Division] team`.
+
+## 9. No version suffixes in filenames
+
+Never append `_v1`, `_v2`, `_v1_0`, `_final`, `_revised`, `_draft` suffixes to filenames. The `YYYYMMDDHHMM_` timestamp prefix IS the version. Iterating on `202604271045_credit_expansion.pptx`? Save the next version as `202604271203_credit_expansion.pptx` — NOT `202604271045_credit_expansion_v2.pptx`.
+
+Applies to ALL file types: PPTX, PDF, SVG, HTML, RTF, PNG, JPG, CSV, MD, JSON.
+
+## 10. Logo language — Greek only
+
+Use `nbg-logo-gr.png` (Greek `ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ`), never the English fallback.
+
+## 11. Composition standards (programmatically enforced by nbg_validate.py)
+
+- **No tiny text**: body bullets ≥14pt, metric card labels ≥12pt, callout text ≥12pt. The 10pt floor is a minimum, not a target.
+- **Titles fit one line**: at 22pt Aptos in 12.59" width, ≤80 chars. Overflow to a second line looks amateurish.
+- **Breathing room below titles**: first body element at y≥1.3" (title bottom is at 0.9").
+- **Fill the slide**: use 60–85% of safe area.
+
+`nbg_validate.py` (17 checks as of 2026-04-04) catches these programmatically. The renderer should get them right on the first pass to avoid remediation loops.
+
+## 12. Presentation preparation workflow
+
+For executive-level decks, follow an outline-first collaborative approach:
+
+1. **Research phase**: query knowledge sources (second brain, email history, decision logs) for content
+2. **Outline phase**: present a detailed slide-by-slide outline with proposed action titles and bullet content. Note what data is available and what gaps remain.
+3. **Iterate**: review with stakeholder, add/remove slides, adjust emphasis, fill in missing numbers
+4. **Build**: only invoke `/create-presentation` after the outline is agreed
+5. **Brand compliance**: read ALL NBG brand system files before building
+
+---
+
+# Part 2 — Learned Preferences
 
 Learned preferences from comparing draft presentations to user-modified finals. Updated automatically by `/presentation-review`.
 

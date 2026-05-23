@@ -28,11 +28,11 @@
 |---------|------|------|-------|--------|
 | Title | Aptos | 48pt | #003841 | Regular |
 | Subtitle (NBG-template covers — `13_Cover` etc.) | Aptos | **36pt** | #007B85 | Regular |
-| Subtitle (Plessas DIY cover on Blank — pipe-separated units list) | Aptos | **24pt** | #007B85 | Regular |
+| Subtitle (clean DIY cover on Blank — pipe-separated units list) | Aptos | **24pt** | #007B85 | Regular |
 | Location | Aptos | 14pt | #003841 | Regular |
 | Date | Aptos | 14pt | #939793 | Regular |
 
-**Pipe-separated units list** (Plessas DIY cover signature, observed in `gm_retail_update`):
+**Pipe-separated units list** (clean DIY cover signature, observed in NBG executive reference decks):
 `Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls`
 The full unit list is the subtitle — NOT a generic "Cards and Digital Business" string.
 
@@ -63,7 +63,7 @@ The full unit list is the subtitle — NOT a generic "Cards and Digital Business
 | Bullet L3 | Aptos | 11pt | #202020 | Regular |
 | Footnotes | Aptos | 8pt | #939793 | Regular |
 
-### Metric Cards (KPIs) — Plessas signature pattern
+### Metric Cards (KPIs) — NBG executive signature pattern
 
 Used for "Key Figures" slides — 3-up cards (3.5" × 3.0", `#F5F8F6` fill). Observed 30+ times across reference decks.
 
@@ -72,13 +72,13 @@ Used for "Key Figures" slides — 3-up cards (3.5" × 3.0", `#F5F8F6` fill). Obs
 | KPI big number | Aptos | **50pt** | **#007B85** (NBG Teal) | **Bold** |
 | KPI caption | Aptos | **16pt** | **#5A5F5A** (Caption Gray) | Regular |
 
-Examples of KPI big-number text Plessas uses: `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`.
+Examples of KPI big-number text (typical NBG executive deck): `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`.
 
 Caption is the metric label — short, lowercase or sentence case, no period: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
 
-**Note**: earlier brand-system drafts used `#003841` for the KPI value; the actual Plessas pattern is `#007B85` (NBG Teal). Bold + Teal makes the big number pop without competing with the dark-teal title above.
+**Note**: earlier brand-system drafts used `#003841` for the KPI value; the actual NBG executive pattern is `#007B85` (NBG Teal). Bold + Teal makes the big number pop without competing with the dark-teal title above.
 
-### Page Header Components (Plessas signature)
+### Page Header Components (NBG executive signature)
 
 Used on Key Figures / Progress & Priorities slides.
 
@@ -88,7 +88,7 @@ Used on Key Figures / Progress & Priorities slides.
 | Section title (next to unit pill) | Aptos | **22pt** | `#003841` | Regular |
 | Owner subtitle ("Head: A. Smith") | Aptos | **14pt** | `#5A5F5A` | Regular |
 
-### Status Pills (Plessas signature)
+### Status Pills (NBG executive signature)
 
 Used on Progress & Priorities slides.
 
@@ -106,7 +106,7 @@ Used on Progress & Priorities slides.
 | Chart Title | Aptos | **12pt** | #202020 | Bold |
 | Chart Labels | Aptos | 10pt | #202020 | Regular |
 | Chart Values | Aptos | 10pt | #202020 | Bold |
-| Table Header (Plessas pattern) | Aptos | **10.5pt** | `#FFFFFF` on `#003841` fill | **Bold** |
+| Table Header (NBG executive pattern) | Aptos | **10.5pt** | `#FFFFFF` on `#003841` fill | **Bold** |
 | Table First Column (label) | Aptos | **12pt** | `#202020` | **Bold** |
 | Table Body Cell | Aptos | **10.5pt** | `#202020` | Regular |
 | Table Numeric Cell | Aptos | **12pt** | `#202020` | Regular |
@@ -114,7 +114,7 @@ Used on Progress & Priorities slides.
 | In-cell positive emphasis ("+1") | Aptos | 10.5pt | `#007B85` | Bold |
 | In-cell priority flag ("H2") | Aptos | 10.5pt | `#CC9900` | Bold |
 
-**Plessas table styling rules** (from real decks):
+**Executive table styling rules** (from reference NBG decks):
 
 - Zebra rows: alternate `#FFFFFF` and `#F5F8F6`
 - NO custom border overrides (default thin)

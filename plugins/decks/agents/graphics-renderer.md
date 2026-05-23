@@ -25,6 +25,9 @@ See the brand system for complete specifications. This agent implements those sp
 6. **Tight Boxes**: Size text boxes to fit content, not oversized
 7. **Zero Margins**: All text boxes use `margin: 0` for precise positioning
 8. **Action Titles**: Titles are insight-driven sentences, not labels
+9. **No Data Invention**: Use EXACTLY the data points provided in the brief. Never extrapolate, estimate, or fill in quarters/periods/categories that don't exist in the source. If a chart or reference table seems to want more data than the brief contains, **ask** — never invent additional historical quarters, percentages, or context values to "make the table look richer". When in doubt: "Use ONLY these N values. Do not add, extrapolate, or invent additional data points."
+10. **No Invented Names**: Never guess names of NBG executives, division heads, or organisational roles. If the brief doesn't name someone, use a generic framing (`NBG [Division] leadership`, `the relevant [Division] head`) — never fabricate.
+11. **No Em-Dashes**: Replace every `—` and `--` with comma, colon, semicolon, or full stop. Em-dashes signal AI authorship. Audit every spec/storyboard output before render. Same for en-dashes used parenthetically; date ranges like `2024-2025` are fine.
 
 ---
 

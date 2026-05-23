@@ -373,12 +373,12 @@ const altCellStyle = {
 }
 ```
 
-## Line Chart — Hollow "Donut" Markers (Plessas preference)
+## Line Chart — Hollow "Donut" Markers (NBG executive preference)
 
 Line charts should use **thicker lines** with **hollow circle markers** (white fill, colored ring matching line width):
 
 ```javascript
-// Line styling — Plessas preference
+// Line styling — NBG executive preference
 lineSize: 3.5,         // thicker than default 2.5
 lineSmooth: false,     // straight segments
 

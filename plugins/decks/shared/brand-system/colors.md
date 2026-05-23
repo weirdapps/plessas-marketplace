@@ -53,7 +53,7 @@
 | Aqua Light | `#3EDEF8` | 62, 222, 248 | Light accent |
 | Light Grey | `#BEC1BE` | 190, 193, 190 | Subtle elements |
 | Grey | `#595959` | 89, 89, 89 | Secondary text (TOC descriptions) |
-| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, table notes (Plessas signature — 43+ uses across 7 reference decks)** |
+| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, table notes (NBG executive signature — frequent across reference decks)** |
 | Pale Grey | `#F5F8F6` | 245, 248, 246 | Light backgrounds, KPI card fill |
 
 ## Status/Semantic Colors
@@ -67,9 +67,9 @@
 | Gold | `#D9A757` | 217, 167, 87 | Premium accent |
 | Blue | `#1E478E` | 30, 71, 142 | Information |
 
-### Plessas Practical Status Colors (DIY decks, status pills, "Delivered/Priorities" patterns)
+### Practical Status Colors (DIY decks, status pills, "Delivered/Priorities" patterns)
 
-These are the colors observed across Plessas's own 7 reference decks — used in status badges, "Delivered" rows, priority pills. Cleaner reading at small sizes than the chart-grade NBG palette above.
+These are the colors observed across reference NBG executive decks — used in status badges, "Delivered" rows, priority pills. Cleaner reading at small sizes than the chart-grade NBG palette above.
 
 | Status | Hex | Light variant | Usage |
 |--------|-----|---------------|-------|
@@ -225,7 +225,7 @@ const NBG_CHART_COLORS = [
 | Subtle elements | `#939793` (Medium Gray) |
 | **KPI card background** | `#F5F8F6` (Off-white) |
 | **KPI big number** | `#007B85` (NBG Teal) — **50pt Aptos BOLD** |
-| **KPI caption / owner subtitle** | `#5A5F5A` (Caption Gray) — Plessas signature |
+| **KPI caption / owner subtitle** | `#5A5F5A` (Caption Gray) — NBG executive signature |
 | **Unit pill (header chip)** | fill `#003841` (Dark Teal), text white |
 | TOC description | `#595959` (Gray) |
 | Page number | `#939793` (Medium Gray) |

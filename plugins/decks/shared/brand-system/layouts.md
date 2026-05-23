@@ -273,9 +273,9 @@ Light background card placed in the right margin of a chart slide for a key call
 | Value | Aptos Bold | **18pt** | `#007B85` | Center |
 | Label | Aptos | **9pt** | `#202020` | Center |
 
-### (B) Plessas KPI Card — 3-up "Key Figures" pattern (signature)
+### (B) Executive KPI Card — 3-up "Key Figures" pattern (signature)
 
-Used for "Key Figures" slides — observed 30+ times across reference decks (`gm_retail_update`, `business_priorities_*`). This is the **dominant** Plessas content pattern when the slide message is "here are the headline numbers for this unit."
+Used for "Key Figures" slides — observed 30+ times across NBG executive reference decks. This is the **dominant** content pattern when the slide message is "here are the headline numbers for this unit."
 
 **Slide composition** (3 cards, equal-width, centered):
 
@@ -300,9 +300,9 @@ Card 3: Rectangle at (8.81, 2.15, 3.5, 3.0)   fill = #F5F8F6, no border
 | Section title (next to pill) | (~1.92–2.82, 0.48, 5.0, 0.38) | Aptos | 22pt | `#003841` | Regular |
 | Owner subtitle ("Head: A. Smith") | (0.37, 1.05, 4.0, 0.3) | Aptos | 14pt | `#5A5F5A` | Regular |
 
-Big-number examples Plessas uses: `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`. Caption examples: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
+Big-number examples (typical NBG executive deck): `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`. Caption examples: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
 
-## Status Pills (Plessas signature — Progress & Priorities slides)
+## Status Pills (NBG executive signature — Progress & Priorities slides)
 
 Used to flag commitment status on right-half "Priorities" lists.
 
@@ -319,9 +319,9 @@ Used to flag commitment status on right-half "Priorities" lists.
 | Accent stripe | (0.37, ..., 0.05, 0.52) | `#008000` | — |
 | Row body | (0.42, ..., 5.45, 0.52) | `#E8F5E9` | Arial 15pt **Bold** `#008000` ("✓ <delivered item>") |
 
-## Plessas Cover (DIY on Blank Page) — signature
+## Clean Executive Cover (DIY on Blank Page) — signature
 
-When a Plessas-style cover is needed (clean, white, NO decorative shapes), build on the **Blank Page** layout (Master 9 in NBG-Template-GR.pptx — the only cover-grade layout with a fully white background):
+When a clean executive cover is needed (clean, white, NO decorative shapes), build on the **Blank Page** layout (Master 9 in NBG-Template-GR.pptx — the only cover-grade layout with a fully white background):
 
 | Element | Position | Font | Size | Color | Weight |
 |---|---|---|---|---|---|
@@ -335,9 +335,9 @@ When a Plessas-style cover is needed (clean, white, NO decorative shapes), build
 
 **Decoration policy**: white background, NO colored bars, NO decorative shapes. Decoration is purely typographic (size/weight/color contrast).
 
-> The bundled NBG-Template-GR.pptx ALSO ships master-layout covers (`13_Cover`, `14_Cover`, `24_Cover`) which carry pre-baked decorative bands. These work, but Plessas's own decks favour the DIY-on-Blank approach because it stays purely white. Use master-layout covers only when you specifically want the layout's pre-baked visual.
+> The bundled NBG-Template-GR.pptx ALSO ships master-layout covers (`13_Cover`, `14_Cover`, `24_Cover`) which carry pre-baked decorative bands. These work, but the NBG executive default favours the DIY-on-Blank approach because it stays purely white. Use master-layout covers only when you specifically want the layout's pre-baked visual.
 
-## Plessas Divider (DIY on Blank Page) — signature
+## Lean Divider (DIY on Blank Page) — signature
 
 The bundled `1_Divider` / `6_Divider` master layouts have **dark-teal background fills** that violate the "white backgrounds only" rule. For a white divider, build on **Blank Page**:
 
@@ -349,11 +349,11 @@ The bundled `1_Divider` / `6_Divider` master layouts have **dark-teal background
 
 White background. No description text. No page number on dividers.
 
-> Plessas often dispenses with section dividers entirely (5 of 7 reference decks have ZERO dividers). Use sparingly.
+> NBG executive decks often dispense with section dividers entirely (most reference decks have ZERO dividers). Use sparingly.
 
-## Progress & Priorities — 2-column split (Plessas signature)
+## Progress & Priorities — 2-column split (NBG executive signature)
 
-Used in `gm_retail_update` Progress & Priorities slides. Same page header as Key Figures (unit pill + title + owner subtitle).
+Used in Progress & Priorities slides. Same page header as Key Figures (unit pill + title + owner subtitle).
 
 ```
 LEFT half (Delivered):                   RIGHT half (Priorities):
@@ -366,9 +366,9 @@ LEFT half (Delivered):                   RIGHT half (Priorities):
 LEFT column x range: 0.37 → 5.87 (width 5.5)
 RIGHT column x range: 6.37 → 12.96 (width 6.59)
 
-## Table Styling (Plessas signature)
+## Table Styling (NBG executive signature)
 
-From `gm_retail_update` slide 4 (10×7 table at (0.37, 1.65, 12.41, 4.03)):
+From a reference deck slide 4 (10×7 table at (0.37, 1.65, 12.41, 4.03)):
 
 - **Header row**: fill `#003841`, **10.5pt Aptos Bold WHITE**
 - **Body rows alternate (zebra)**: `#FFFFFF` and `#F5F8F6`

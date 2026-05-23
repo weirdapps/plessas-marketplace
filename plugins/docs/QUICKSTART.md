@@ -35,8 +35,8 @@ Output (typical):
 ```
 Creating internal memo…
 
-TO:        Cards leadership team
-FROM:      D. Plessas, AGM Cards & Digital Business
+TO:        [Recipient team]
+FROM:      [Sender, Role]
 DATE:      10 May 2026
 RE:        Q1 Cards review — recommendations for Q2
 
