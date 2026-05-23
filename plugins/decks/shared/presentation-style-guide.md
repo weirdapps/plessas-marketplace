@@ -104,7 +104,27 @@ Use `nbg-logo-gr.png` (Greek `ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ`), never the English f
 
 `nbg_validate.py` (17 checks as of 2026-04-04) catches these programmatically. The renderer should get them right on the first pass to avoid remediation loops.
 
-## 12. Presentation preparation workflow
+## 12. Tight rounded-rect corners
+
+Rounded rectangle shapes in NBG presentations (cards, KPI boxes, callout containers) use **tight corner radius**, not the default large rounding.
+
+- `python-pptx`: `shape.adjustments[0] = 0.04` on every `MSO_SHAPE.ROUNDED_RECTANGLE`
+- `PptxGenJS`: `rectRadius: 0.04` (or equivalent)
+- **Exception**: bumper pills can stay slightly more rounded (~0.15) since they're small accent elements
+
+Default radius (~0.167) looks amateur and "bubbly." Tight corners give a more mature, design-professional appearance appropriate for executive decks.
+
+## 13. Cover slide titles on one line
+
+Cover slide titles and subtitles must each fit on **one line**. Never allow them to wrap to two lines when there is clearly enough horizontal space.
+
+- Use the full available width (up to 12.0" for titles) so even long titles stay on one line
+- If a title genuinely cannot fit in one line at 48pt across 12", **shorten the text** rather than wrap
+- The subtitle follows the same rule — single line
+
+A wrapped cover title looks unpolished and wastes the wide 13.33" slide. The cover is the first impression — it must look deliberate and clean, not like text overflow.
+
+## 14. Presentation preparation workflow
 
 For executive-level decks, follow an outline-first collaborative approach:
 
