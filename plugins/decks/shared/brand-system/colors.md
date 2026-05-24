@@ -1,6 +1,8 @@
 # NBG Complete Color Palette
 
-> **Note**: For digital product colors (apps, web), see [pillar-ds.md](pillar-ds.md) for the complete Pillar Design System palette.
+> **Note**: For digital product colors (apps, web), see [pillar-ds.md](pillar-ds.md) for the complete Pillar Design System palette (Tsopanakis — resynced 2026-05-24).
+>
+> **Scope of this file**: presentation-system colors only (PowerPoint/PDF decks). Body text stays `#202020` (between Pillar Black `#162020` and email body `#404040` — intentional difference, optimised for projection readability). Status reds: `#AA0028` is retained for **NBG corporate charts and segment coding** (Private banking signature); `#BE4B4B` from Pillar applies to **digital products** (alerts, error states in app UI).
 
 ## Theme Colors (NBG Colors 2)
 
@@ -117,30 +119,22 @@ Use these colors in order for chart data series:
 5. `#BEC1BE` - Light Gray
 6. `#00DFF8` - Bright Cyan
 
-## PFM Category Colors (from Pillar DS)
+## PFM Category Colors
 
-For category-based data visualization (e.g., spending categories, segments):
-
-| Category | Dark | Light | Usage |
-|----------|------|-------|-------|
-| Receipts | `#26A567` | `#BFECD0` | Income, deposits |
-| Savings | `#0091A0` | `#ACEDFF` | Savings, investments |
-| Entertainment | `#D456D0` | `#FFD1FD` | Leisure, subscriptions |
-| Holidays | `#007B85` | `#BFEEF6` | Travel, vacations |
-| Dining | `#D08239` | `#FFE0B2` | Restaurants, food |
-| Retail | `#8E6CD0` | `#E1D1FF` | Shopping, stores |
-| Transport | `#5D87DB` | `#C5D7FF` | Travel, commute |
-| Services | `#A36CB4` | `#EDD7F4` | Utilities, fees |
-| Super Market | `#FFC700` | `#FFF4C7` | Groceries |
-| Health | `#BE4B4B` | `#FFC5C6` | Medical, pharmacy |
-
-```javascript
-// PFM Category chart colors (dark variants)
-const PFM_CHART_COLORS = [
-  '26A567', '0091A0', 'D456D0', '007B85', 'D08239',
-  '8E6CD0', '5D87DB', 'A36CB4', 'FFC700', 'BE4B4B'
-];
-```
+> **Moved to `pillar-ds.md`** (resynced 2026-05-24 from Tsopanakis live repo).
+>
+> For category-based data visualisation (spending categories, PFM segments, budget breakdowns), use the **16-category palette** in [pillar-ds.md → PFM Category Colors](pillar-ds.md#pfm-category-colors-charts). The older 10-category set that previously lived here has been retired — it was outdated and did not match the live Pillar Figma source.
+>
+> Quick access for chart series (Main shades):
+>
+> ```javascript
+> // Pillar PFM Category chart colors — Main shades
+> const PFM_CHART_COLORS = [
+>   'B99C34', '44C7B3', '905567', '8D7349', '19B4E2', 'AC1D44',
+>   'A1AC20', '4B7398', '9D4F16', '547723', '2C76BD', 'D08239',
+>   '658A8D', '525CBE', '26A567', '8681B1'
+> ];
+> ```
 
 ## Background Guidelines
 

@@ -16,7 +16,10 @@ repos:
       - id: mixed-line-ending
         args: ['--fix=lf']
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        # 2000 KB accommodates official brand reference PDFs and high-res
+        # product screenshots in plugins/decks/assets/. Anything genuinely
+        # larger than this should be reviewed by hand before being added.
+        args: ['--maxkb=2000']
 
   # Ruff - replaces black, isort, flake8
   - repo: https://github.com/astral-sh/ruff-pre-commit

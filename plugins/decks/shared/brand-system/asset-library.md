@@ -111,7 +111,7 @@ Need an icon?
 ## Illustrations
 
 **Path:** `assets/illustrations/`
-**Total:** 21 PNG + 1 PDF
+**Total:** 21 PNG
 **Style:** Teal line-art on transparent background, glassmorphic panels
 
 ### Available Illustrations
