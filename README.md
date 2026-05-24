@@ -2,7 +2,7 @@
 
 Cross-platform Claude Code plugins for productivity at a financial-services workplace.
 
-> **Status:** v1.0.0 in active development. Public release imminent.
+> **Status:** v1.0.0 — stable. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace) (archived 2026-05-30). Migration guide: [docs/migration-from-communications-marketplace.md](docs/migration-from-communications-marketplace.md).
 
 ## What's inside
 

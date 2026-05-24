@@ -6,7 +6,7 @@ If you previously installed `communications-marketplace`, here's how to switch t
 
 You only need this guide if you previously installed [`weirdapps/communications-marketplace`](https://github.com/weirdapps/communications-marketplace) on your laptop. **Most NBG team members onboarding to plessas-marketplace are new users** — they should follow the [top-level README install steps](../README.md#install--10-minutes) instead.
 
-`communications-marketplace` is being **archived on 2026-06-08**. After that date the GitHub repo will be read-only.
+`communications-marketplace` is being **archived on 2026-05-30** (compressed from original 2026-06-08). After that date the GitHub repo will be read-only — existing installs keep working but receive no further updates.
 
 ## What changed
 
