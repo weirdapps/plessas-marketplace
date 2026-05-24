@@ -207,8 +207,67 @@ Need a presentation?
 - Adding bank logos to chart slides
 - Fine-grained control over positioning
 
+## python-pptx Placeholder Pitfalls
+
+### ⚠️ Setting `.top` on a placeholder can zero out its left/width
+
+When `python-pptx` sets `.top` on a placeholder shape, it creates an `<a:xfrm>` element in the slide XML. If the shape did **not** already have explicit `x` and `cx` values inherited at the slide level, python-pptx writes them as `0` — **overriding the layout's correct left/width with `left=0, width=0`**. Result: the text exists in the file but renders invisible (zero width, pushed to the left edge).
+
+**This affects any layout where you reposition placeholders programmatically** — divider subtitles are the canonical case (60pt titles wrap, you bump the subtitle down, subtitle disappears), but the same bug fires on any placeholder you `.top =` without first reading the layout-defined `x`/`cx`.
+
+**Fix**: use direct XML manipulation to set only `y`, while explicitly preserving the layout's `x` and `cx` values. Pattern (resynced 2026-05-24 from Tsopanakis's `pillar-presenter` skill — `github.com/thomastsop00/pillar-skills`):
+
+```python
+from pptx.util import Emu
+from lxml import etree
+
+A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+P_NS = 'http://schemas.openxmlformats.org/presentationml/2006/main'
+
+def reposition_placeholder_y(shape, new_top_emu, preserve_left_emu, preserve_width_emu, height_emu):
+    """
+    Set y position on a placeholder without zeroing its x/cx.
+
+    Use this INSTEAD OF `shape.top = value` whenever you reposition
+    a placeholder that inherits geometry from its layout. Reads
+    preserve_left_emu and preserve_width_emu from the LAYOUT'S
+    placeholder definition — never guess or pass zero.
+    """
+    spPr = shape._element.find(f'{{{P_NS}}}spPr')
+    if spPr is None:
+        spPr = etree.SubElement(shape._element, f'{{{P_NS}}}spPr')
+
+    xfrm = spPr.find(f'{{{A_NS}}}xfrm')
+    if xfrm is None:
+        xfrm = etree.SubElement(spPr, f'{{{A_NS}}}xfrm')
+
+    off = xfrm.find(f'{{{A_NS}}}off')
+    if off is None:
+        off = etree.SubElement(xfrm, f'{{{A_NS}}}off')
+    off.set('x', str(preserve_left_emu))   # preserve layout's left
+    off.set('y', str(int(new_top_emu)))    # the value you actually want to change
+
+    ext = xfrm.find(f'{{{A_NS}}}ext')
+    if ext is None:
+        ext = etree.SubElement(xfrm, f'{{{A_NS}}}ext')
+    ext.set('cx', str(preserve_width_emu))  # preserve layout's width
+    ext.set('cy', str(int(height_emu)))
+```
+
+**Retroactive repair**: if you receive a deck where placeholders are already broken (left=0, width=0), call the same function — it overwrites the bad `<a:xfrm>` with correct values.
+
+**Where this matters in NBG decks**:
+- Divider slides where the section title (60pt) wraps and shoves the subtitle off-canvas
+- Any custom layout where the title placeholder has `spAutoFit` and expands beyond its default height
+- Cover slides where you reposition the date/org line below a dynamically sized title
+
+**Detection**: after building the deck, run a sanity check that every populated text-frame placeholder has non-zero `left` and `width` (or equivalently, that `<a:xfrm>/<a:off>` and `<a:ext>` carry non-zero values whenever they exist).
+
+---
+
 ## References
 
 - See `charts.md` for PptxGenJS chart configuration
 - See `ooxml-charts.md` for OOXML chart specifications
 - See `tools/nbg-presentation/README.md` for tool documentation
+- Upstream credit for the placeholder XML fix: `pillar-presenter` skill at `github.com/thomastsop00/pillar-skills`

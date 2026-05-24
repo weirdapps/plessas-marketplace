@@ -31,13 +31,15 @@ After generating any NBG-branded artifact, scan output for `006141` or `0, 97, 6
 ## 3. Section dividers — minimal, no decorations
 
 NBG section divider slides contain ONLY:
-- The large section number (e.g., `01` / `02` / `03`)
-- The section title text
-- Both vertically centered together as a single visual block, left-aligned
-- White background, NBG logo top-right (small)
-- **NO decorative line, rectangle, half-oval, or other brand shape on the right side**
+- The large section number (e.g., `01` / `02` / `03`) — NBG Teal `#007B85`
+- The section title text — Dark Teal `#003841`
+- **Number and title sit on the SAME ROW (horizontal layout)** — number on the left starting at the gutter (x=0.374), title immediately to its right, both sharing the same baseline. **Never stack the title under the number.**
+- White background
+- **Large NBG logo bottom-left** (same position as the cover slide, `(0.374, 6.271)`, `2.191"×0.630"`) — NOT a small top-right logo
+- **NO decorative line, rectangle, half-oval, or other brand shape anywhere**
+- No page number on divider slides
 
-Brand discipline = restraint, not decoration. When invoking the graphics-renderer for an NBG deck, explicitly say "no decorative element on right side of dividers" and verify in the QA pass.
+Brand discipline = restraint, not decoration. When invoking the graphics-renderer for an NBG deck, explicitly say "horizontal number-and-title, large logo bottom-left, no decorative element" and verify in the QA pass.
 
 ## 4. Logo proportions — preserve native aspect ratio
 
@@ -133,6 +135,91 @@ For executive-level decks, follow an outline-first collaborative approach:
 3. **Iterate**: review with stakeholder, add/remove slides, adjust emphasis, fill in missing numbers
 4. **Build**: only invoke `/create-presentation` after the outline is agreed
 5. **Brand compliance**: read ALL NBG brand system files before building
+
+## 15. Titles ALWAYS left-aligned at x=0.374" (logo gutter)
+
+Every slide title — cover, contents, divider, content, back cover — must left-align at **x = 0.374 inches**, the same vertical line as the bottom-left NBG logo. This creates a single consistent left gutter across the whole deck that the eye locks onto.
+
+Do not start titles at `x=0.5`, `x=0.37`, or `x=1.86`. Do not center them. Do not right-align them. The only correct value is **0.374"**.
+
+Applies to:
+- Cover title and subtitle
+- Contents page title and the section list rows
+- Section divider number + section title (vertically centered as a single block, but **left-aligned at 0.374"**)
+- Content slide titles (action titles, page headers)
+- Back cover text if any
+
+Subtitles, eyebrows, footnotes, and the first body element on the slide follow the same x=0.374 gutter. The right edge of safe content is x=12.83 (giving a usable width of ~12.46").
+
+The NBG logo at `(0.374, 7.071)` is the anchor — every text block on the left of the slide must align with it. When in doubt, draw an imaginary vertical line up from the logo's left edge; titles touch it.
+
+## 16. Titles are NEVER bold — always Regular weight
+
+Slide titles use Aptos **Regular (400)**, never Bold (700). This applies to:
+- Cover titles (44–48pt Regular)
+- Contents page heading (24pt Regular)
+- Section divider numbers + section titles (Regular at any size — including 144pt section numbers)
+- Content slide titles / action titles (24pt Regular)
+- Back cover title if any
+
+Bold is reserved for elements that need to pop **within** the body, not for titles. The allowed bold elements are:
+- KPI big numbers (50pt Bold #007B85 — the canonical NBG executive pattern)
+- Table headers (12pt Bold)
+- Chart data labels above bars (12pt Bold #003841)
+- Chart titles (12pt Bold #202020)
+- Status pills text (white Bold on filled background)
+- Inline emphasis within paragraph text where genuinely needed
+
+When generating a deck programmatically: every call that creates a title-class textbox must pass `bold=False` (or omit the parameter — the default must remain Regular). Code-review checklist: grep the build script for `bold=True` and confirm none of the matches are on a title element. Add an assert in the renderer if the validator hasn't grown a "title bold" check yet.
+
+Regular weight at the large title sizes (24–48pt) reads as confident and modern; bold at the same sizes reads as shouting. The NBG executive aesthetic is restraint.
+
+## 17. Logo sizing — large on cover/dividers, small everywhere else
+
+Two logo positions exist; pick the right one based on slide type. **Never use the small logo on a cover or a divider.**
+
+| Slide type | Logo position | Size | EMU spec |
+|---|---|---|---|
+| Cover | bottom-left, LARGE | 2.191"×0.630" | `(0.374, 6.271)` |
+| Section divider | bottom-left, LARGE | 2.191"×0.630" | `(0.374, 6.271)` |
+| Contents | bottom-left, small | 0.822"×0.236" | `(0.374, 7.071)` |
+| Content slides | bottom-left, small | 0.822"×0.236" | `(0.374, 7.071)` |
+| Back cover | centred, oval emblem | 2.45"×1.54" | `(5.44, 2.98)` |
+
+The asymmetry is intentional: cover and dividers are statement slides where the brand mark should carry weight; content slides are working pages where the brand should anchor without competing with data. **There is no "small logo on a divider" or "large logo on a content slide" exception.**
+
+Use `nbg-logo-gr.png` (Greek wordmark) for the large variant — never the English fallback (Standard #10).
+
+## 18. Contents page — discreet, no page numbers, no separator lines
+
+The contents page is a quiet wayfinder, not a feature slide. Conventions:
+
+- **Header**: "Contents" at 24pt Regular `#003841`, x=0.374, y=0.40 (Standards #15 + #16 apply)
+- **Section rows**: a compact list, typically 3–7 items. Each row carries:
+  - Section number (e.g. `01`) at NBG Teal `#007B85`, Regular weight, 18–24pt — left-anchored at x=0.374
+  - Section title at Dark Teal `#003841`, Regular weight, 16–22pt — indented to align with the number's right edge
+  - Optional one-line teaser at Caption Gray `#5A5F5A`, Regular 12pt, on the same row or just below
+- **DO NOT include page references** (`p. 3`, `p. 5`, etc.). The contents page communicates the shape of the deck, not navigation hints.
+- **DO NOT add separator lines, rules, or boxes between rows**. Whitespace alone separates rows.
+- **DO NOT add bullets, dots, or arrows in front of numbers**. The number itself is the marker.
+- **Small NBG logo bottom-left** (per Standard #17), no page number on the contents page itself if the deck is short; otherwise it gets one like any content slide.
+
+The contents page is a moment of pause, not a heatmap. If it looks designed, it is over-designed.
+
+## 19. Back cover — white slide, centred oval emblem only
+
+Every NBG deck closes with a back cover. The pattern is fixed and minimal:
+
+- White background, full bleed
+- **Only one element**: the oval NBG emblem (`nbg-back-cover-logo.png`), centred at `(5.44, 2.98)`, sized `2.45"×1.54"`
+- **No text**: no "Thank you", no "Questions?", no closing tagline, no date, no department line
+- **No page number**
+- **No bottom-left logo** (the centred oval IS the logo for this slide)
+- **No decorative elements**
+
+The back cover is a clean exit. If a closing sentiment is needed, put it on the second-to-last content slide ("Next steps", "Decisions for ExCo") — never on the back cover.
+
+This is non-negotiable and applies even to short showcase/demo decks. A 3-slide deck still gets a back cover. A 30-slide deck gets the same back cover. There is exactly one shape per back cover, and it is the oval emblem.
 
 ---
 

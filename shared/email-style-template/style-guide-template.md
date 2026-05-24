@@ -78,7 +78,7 @@ Greek is the dominant language for internal NBG communication. Mixed Greek/Engli
 ## Subject Line Rules
 
 - ALWAYS lowercase by default — **EXCEPT acronyms/initialisms which stay ALL-CAPS** (each letter represents a word, not a word itself)
-- Greek acronyms: ΕΤΕ, ΔΤ, ΟΚ, ΦΥΙ, ΑΤΜ, ΑΑΔΕ, ΟΕΕ, ΔΟΥ
+- Greek acronyms: ΕΤΕ, ΔΤ, ΟΚ, ΦΥΙ, ΑΤΜ, ΟΕΕ, ΔΟΥ
 - Latin acronyms: NBG, KPI, IRIS, EU, AI, NPE, BoD, ExCo, ESG, CRO, CFO, PSD3, MiCA, ATM
 - Mixed-case acronyms keep their canonical form: BoD, ExCo, eIDAS, iOS
 - Proper nouns (Δημήτρης, Christina, Outlook) are unaffected

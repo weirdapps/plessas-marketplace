@@ -64,42 +64,43 @@
 
 ### PFM Category Colors (Charts)
 
-Use these for data visualization with category-based charts:
+Use these for data visualization with category-based charts. **Resynced 2026-05-24 from live Pillar repo** (github.com/thomastsop00/pillar-skills) — pairs each category with a `Main` + `Light` shade for chart legends, badges, and PFM segment visualisation:
 
-| Category | Dark | Light |
+| Category | Main | Light |
 |----------|------|-------|
-| Apodoxes (Receipts) | `#26A567` | `#BFECD0` |
-| Apotamiefsi (Savings) | `#0091A0` | `#ACEDFF` |
-| Diaskedasi (Entertainment) | `#D456D0` | `#FFD1FD` |
-| Diaforetika (Other) | `#6A6C6A` | `#E0E6E1` |
-| Diakopes (Holidays) | `#007B85` | `#BFEEF6` |
-| Eidiki Katigoria (Special) | `#1C1F24` | `#C8CDD4` |
-| Emvasma (Transfer) | `#03666F` | `#A7DADF` |
-| Emvolia (Fees) | `#B54747` | `#FFC5C6` |
-| Estiasi (Dining) | `#D08239` | `#FFE0B2` |
-| Ygeia (Health) | `#BE4B4B` | `#FFC5C6` |
-| Katastimata (Retail) | `#8E6CD0` | `#E1D1FF` |
-| Metafores (Transport) | `#5D87DB` | `#C5D7FF` |
-| Ola (All) | `#003841` | `#E6F5F6` |
-| Paidia (Children) | `#D08239` | `#FFE0B2` |
-| Super Market | `#FFC700` | `#FFF4C7` |
-| Ypiresies (Services) | `#A36CB4` | `#EDD7F4` |
+| Eating out | `#B99C34` | `#FFF3CC` |
+| Health | `#44C7B3` | `#DCFFF3` |
+| Transfers & Payments | `#905567` | `#EBD9E2` |
+| Vehicle & Transportation | `#8D7349` | `#F0DB9F` |
+| Groceries | `#19B4E2` | `#DDF3FD` |
+| Cash | `#AC1D44` | `#FAC4DC` |
+| Travel | `#A1AC20` | `#F8F8B2` |
+| Household | `#4B7398` | `#D8DFEB` |
+| Finance | `#9D4F16` | `#F0C6B4` |
+| Family | `#547723` | `#D9EDC7` |
+| General | `#2C76BD` | `#D9EAFF` |
+| Income | `#D08239` | `#FFE6D0` |
+| Education | `#658A8D` | `#CFE5E5` |
+| Shopping | `#525CBE` | `#DCDDFF` |
+| Entertainment | `#26A567` | `#E9FFEA` |
+| Bills & Taxes | `#8681B1` | `#D5D2E0` |
 
 ### Special Colors
 
 | Name | Hex | Usage |
 |------|-----|-------|
-| Go For More Pink | `#FF2D77` | Marketing campaigns |
-| Dark Mode BG | `#1C1F24` | Dark mode backgrounds |
-| Dark Mode Surface | `#2A2D32` | Dark mode cards |
+| Go For More Pink | `#FA8FE1` | Rewards/loyalty campaigns (resynced 2026-05-24 — was `#FF2D77`) |
+| Dark Mode BG | `#000000` | Dark mode backgrounds |
+| Dark Mode Surface | `#111717` | Dark mode cards |
+| Nav background (dark mode) | `#162020` @ 80% opacity | Dark mode nav bar |
 
 ### Competitor Bank Colors
 
-| Bank | Hex |
-|------|-----|
-| Eurobank | `#CA2029` |
-| Piraeus Bank | `#FDB913` |
-| Alpha Bank | `#02509C` |
+| Bank | Hex | Notes |
+|------|-----|-------|
+| Eurobank | `#DC2646` | Resynced 2026-05-24 (was `#CA2029`) |
+| Piraeus Bank | `#FFC02D` | Resynced 2026-05-24 (was `#FDB913`) |
+| Alpha Bank | `#0D488B` | Resynced 2026-05-24 (was `#02509C`) |
 
 ---
 
@@ -273,21 +274,32 @@ const PILLAR_DS = {
     orangeLightest: 'FFF8F1',
 
     // Special
-    goForMorePink: 'FF2D77',
+    goForMorePink: 'FA8FE1',
+
+    // Competitor banks (Greek market)
+    eurobank: 'DC2646',
+    piraeus: 'FFC02D',
+    alpha: '0D488B',
   },
 
-  // PFM Category chart colors (dark variants)
+  // PFM Category chart colors (Main shades — Pillar live as of 2026-05-24)
   chartCategoryColors: [
-    '26A567', // Receipts
-    '0091A0', // Savings
-    'D456D0', // Entertainment
-    '007B85', // Holidays
-    'D08239', // Dining
-    '8E6CD0', // Retail
-    '5D87DB', // Transport
-    'A36CB4', // Services
-    'FFC700', // Super Market
-    'BE4B4B', // Health
+    'B99C34', // Eating out
+    '44C7B3', // Health
+    '905567', // Transfers & Payments
+    '8D7349', // Vehicle & Transportation
+    '19B4E2', // Groceries
+    'AC1D44', // Cash
+    'A1AC20', // Travel
+    '4B7398', // Household
+    '9D4F16', // Finance
+    '547723', // Family
+    '2C76BD', // General
+    'D08239', // Income
+    '658A8D', // Education
+    '525CBE', // Shopping
+    '26A567', // Entertainment
+    '8681B1', // Bills & Taxes
   ],
 
   fonts: {
@@ -414,6 +426,29 @@ const PILLAR_DS = {
 
 ---
 
-**Version**: 1.0.0
-**Source**: NBG Pillar Figma Design System
-**Integrated**: 2026-02
+## Bundled Assets
+
+Pillar-sourced assets live alongside the rest of the decks asset library at `plugins/decks/assets/` (the canonical asset path used by `asset-library.md`):
+
+| Category | Path | Contents | Source |
+|----------|------|----------|--------|
+| Illustrations | `assets/illustrations/` | 21 teal line-art PNGs (Account, Application, Loan, Card, Gift, Growth, Transfer, IRIS, Teens card, Tasks, Investments, Insurance, Moneybox, Notification, Approval/Reject states) + `INDEX.md` | Pillar (pre-existing) |
+| Icons | `assets/icons/` | 338 PNG icons across 20 categories (basics, money, documents, devices, security, life-stages, etc.) + `INDEX.md` | Pillar (pre-existing) |
+| Logos | `assets/logos/` | NBG emblem, NBG wordmark, RMB/BMB/Next/Authenticator app icons, Go For More (10 total — includes 3 dark variants that pre-existed in the repo; new content uses light variants only per standard #2) | Pillar (pre-existing) |
+| Screenshots | `assets/screenshots/` | 117 actual product screenshots across 5 NBG digital channels: `retail-mobile/` (RMB), `business-mobile/` (BMB), `next-app/`, `retail-internet/` (RIB), `business-internet/` (BIB) | Pillar (added 2026-05-24) |
+| Brand guide PDF | `shared/brand-system/NBG_Brand_Guidelines.pdf` | Official NBG brand guidelines (1.3 MB, reference) | Pillar (added 2026-05-24) |
+
+**Usage rules** (apply to all Pillar assets):
+
+- All illustrations and icons assume **light backgrounds**. They will not read well on dark slides.
+- Greek wordmark preferred per standard #10: use `nbg-logo-gr.png` (already in `assets/`) over the English Pillar wordmark when language matters.
+- Dark logo variants exist in `assets/logos/` but should rarely be used given the white-backgrounds-only standard. Treat them as opt-in, not default.
+- Screenshots: use to anchor product/feature slides. Crop only with explicit reason (rounded corners on iOS/Android frames must be preserved for authenticity).
+- See each subfolder's `INDEX.md` for per-asset use cases and Python insertion helpers (aspect-ratio-preserving).
+
+---
+
+**Version**: 1.1.0
+**Source**: NBG Pillar Figma Design System → resynced from github.com/thomastsop00/pillar-skills on 2026-05-24
+**Integrated**: 2026-02 (initial), 2026-05-24 (resync + asset import)
+**Authority**: Pillar design system is the canonical NBG digital UI palette. For PowerPoint decks, presentation-system colours in `colors.md` remain authoritative — Pillar values apply to digital products and PFM data viz only.

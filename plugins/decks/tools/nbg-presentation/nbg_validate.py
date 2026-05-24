@@ -44,24 +44,38 @@ NBG_GUIDELINES: dict[str, Any] = {
     "colors": {
         # Primary colors (hex without #)
         "allowed": {
-            "003841": "Dark Teal",
-            "007B85": "NBG Teal",
+            "003841": "Dark Teal (Pillar Teal 08)",
+            "007B85": "NBG Teal (Pillar Teal 05)",
             "047A85": "Teal Variant",
             "00ADBF": "Cyan",
             "00DFF8": "Bright Cyan",
             "00DEF8": "Bright Cyan Alt",
             "000000": "Black",
+            "162020": "Pillar Black",
             "202020": "Dark Text",
             "212121": "Alt Black",
             "252D30": "Dark Charcoal",
             "939793": "Medium Gray",
             "595959": "Gray",
+            "5A5F5A": "Caption Gray",
+            "6A6C6A": "Pillar Grey 04",
+            "A2A6A6": "Pillar Grey 03",
             "BEC1BE": "Light Gray",
             "D9D9D9": "Neutral Gray",
+            "E0E6E1": "Pillar Grey 02",
             "F5F8F6": "Off White",
             "F5F9F6": "Off White Alt",
             "F6FAF8": "Off White Template",
+            "F8F9F9": "Pillar Grey 01",
             "FFFFFF": "White",
+            # Pillar Teal Scale (resynced 2026-05-24 from Tsopanakis pillar-skills)
+            "03666F": "Pillar Teal 07",
+            "087681": "Pillar Teal 06",
+            "1299A2": "Pillar Teal 04",
+            "13A4AD": "Pillar Teal 03",
+            "56B5BB": "Pillar Teal 02",
+            "E6F5F6": "Pillar Teal 01",
+            "F1F7F7": "Pillar Teal 00",
             # Status colors
             "CB0030": "Deep Red",
             "F60037": "Red",
@@ -70,22 +84,27 @@ NBG_GUIDELINES: dict[str, Any] = {
             "5D8D2F": "Green",
             "90DC48": "Bright Green",
             "73AF3C": "Success Green",
-            "AA0028": "Alert Red",
+            "AA0028": "Alert Red (NBG corporate)",
+            "BE4B4B": "Pillar Error Red",
+            "1D8151": "Pillar Success Green",
+            "D08239": "Pillar Warning Orange",
             # Segment colors
             "0D90FF": "Business Blue",
             "D9A757": "Premium Gold",
             "1E478E": "Info Blue",
             "59C3FF": "Followed Link",
-            # Competitor bank brand colors (mandatory for bank comparison charts)
-            "CA2029": "Eurobank Red",
-            "FDB913": "Piraeus Yellow",
-            "02509C": "Alpha Bank Blue",
+            # Competitor bank brand colors (Pillar resync 2026-05-24)
+            "DC2646": "Eurobank Red",
+            "FFC02D": "Piraeus Yellow",
+            "0D488B": "Alpha Bank Blue",
             # Chart colors
             "3EDEF8": "Aqua Light",
             "B5B7B5": "Chart Gray",
             "00E2FC": "Highlight Accent",
             "00A7BA": "Cyan Variant",
             "00A9BD": "Cyan Variant 2",
+            # Go For More
+            "FA8FE1": "Go For More Pink",
         },
         "primary": ["003841", "007B85", "00ADBF", "00DFF8"],
     },
@@ -1057,20 +1076,20 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
     When systemic Greek banks appear in charts/tables, they must use their
     official brand colors and logos (from assets/bank-logos/).
 
-    Brand colors:
+    Brand colors (resynced 2026-05-24 from Pillar repo):
       NBG:        007B85 (Teal)
-      Eurobank:   CA2029 (Red)
-      Piraeus:    FDB913 (Yellow)
-      Alpha Bank: 02509C (Blue)
+      Eurobank:   DC2646 (Red) — was CA2029
+      Piraeus:    FFC02D (Yellow) — was FDB913
+      Alpha Bank: 0D488B (Blue) — was 02509C
 
     Logo files:
       nbg.png, eurobank.png, piraeus-bank.png, alpha-bank.png
     """
     BANK_BRAND = {
         "NBG": {"color": "007B85", "logo": "nbg.png"},
-        "Eurobank": {"color": "CA2029", "logo": "eurobank.png"},
-        "Piraeus": {"color": "FDB913", "logo": "piraeus-bank.png"},
-        "Alpha": {"color": "02509C", "logo": "alpha-bank.png"},
+        "Eurobank": {"color": "DC2646", "logo": "eurobank.png"},
+        "Piraeus": {"color": "FFC02D", "logo": "piraeus-bank.png"},
+        "Alpha": {"color": "0D488B", "logo": "alpha-bank.png"},
     }
     # Aliases for matching
     BANK_ALIASES = {
@@ -1112,6 +1131,8 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
     violations = []
 
     # Check 1: Are the bank brand colors present in the PPTX?
+    # Look in slides AND in embedded charts — peer colors typically live in
+    # the chart XML when applied as per-data-point fills via <c:dPt>.
     all_colors = set()
     for slide_file in slides_dir.glob("slide*.xml"):
         tree = ET.parse(slide_file)
@@ -1120,6 +1141,15 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
             val = srgb.get("val", "").upper()
             if val:
                 all_colors.add(val)
+    charts_dir = unpacked_dir / "ppt" / "charts"
+    if charts_dir.exists():
+        for chart_file in charts_dir.glob("chart*.xml"):
+            tree = ET.parse(chart_file)
+            root = tree.getroot()
+            for srgb in root.findall(f".//{{{NAMESPACES['a']}}}srgbClr"):
+                val = srgb.get("val", "").upper()
+                if val:
+                    all_colors.add(val)
 
     for bank_key in banks_found:
         expected_color = BANK_BRAND[bank_key]["color"].upper()
