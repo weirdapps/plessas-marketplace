@@ -138,7 +138,7 @@ Pulls the thread, drafts the reply, opens Outlook with the draft pre-loaded for 
 | Draft doesn't open in Outlook | Ensure Outlook desktop is installed and running |
 | `mcp__outlook-bridge__*` tools not available | Run `~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh` to (re)build the bundled MCP server |
 | `Throttled (429)` errors during big sweeps | The MCP caps concurrency at 2. If you still hit this, wait 60s and retry |
-| Draft style feels off for a specific recipient | Run `/mail-review` 3-4 times — the self-learning loop calibrates per recipient automatically. For a manual rebuild, install `mail-pro` and run `/style-rebuild` (requires private second-brain repo) |
+| Draft style feels off for a specific recipient | Run `/mail-review` 3-4 times — the self-learning loop calibrates per recipient automatically. For a manual rebuild, install `mail-pro` from the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace and run `/style-rebuild` (requires private second-brain repo) |
 
 ## Where things live
 
@@ -152,5 +152,5 @@ Pulls the thread, drafts the reply, opens Outlook with the draft pre-loaded for 
 
 - Architecture and self-learning loop details: see [README.md](README.md)
 - Style guide structure: open `shared/style-guide-example.md`
-- Optional `mail-pro` add-on (corpus analytics, requires `second-brain`): see [`../mail-pro/README.md`](../mail-pro/README.md)
+- Optional `mail-pro` add-on (corpus analytics, requires `second-brain`): available in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace
 - All commands: type `/` in Claude Code, scroll to the `mail:` group

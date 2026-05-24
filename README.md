@@ -10,7 +10,6 @@ Cross-platform Claude Code plugins for productivity at a financial-services work
 |---|---|
 | `decks` | Branded presentations: storyline → storyboard → graphics → QA. Bundles icons, infographics, device mockups. |
 | `mail` | Outlook commands: triage, briefings, drafts, style-matching. Bundles outlook-cli MCP wrapper. |
-| `mail-pro` | Optional companion to `mail`. Adds `/comm-report` and `/style-rebuild`. Requires private `second-brain` repo access. |
 | `meetings` | Pre-meeting briefings with attendee dossiers; post-meeting decision capture. |
 | `chat` | Microsoft Teams interactive commands: inbox, reply, summarize, channel digest. Bundles teams-bridge MCP. |
 | `excel` | Excel analysis: summary, pivot, variance, deck handoff. Uses document-skills:xlsx with openpyxl/pandas fallback. |

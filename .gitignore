@@ -37,6 +37,11 @@ Thumbs.db
 # Schema templates may be committed if explicitly named *.schema.sql or *.schema.db
 !*.schema.db
 
+# User-generated style guide (written by /style-rebuild — contains PII: names,
+# emails, phone numbers, per-recipient profiles). The committed file is the
+# sanitised EXAMPLE: plugins/mail/shared/style-guide-example.md
+plugins/mail/shared/style-guide.md
+
 # Local plugin overrides
 .local.md
 *.local.md

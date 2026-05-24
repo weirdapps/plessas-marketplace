@@ -21,7 +21,7 @@ You only need this guide if you previously installed [`weirdapps/communications-
 | — | **chat** (NEW) | Interactive Teams commands |
 | — | **excel** (NEW) | Excel analysis |
 | — | **docs** (NEW) | Word document creation |
-| — | **mail-pro** (NEW) | Optional companion to `mail` for users with the private `second-brain` knowledge store. Hosts `/comm-report` and `/style-rebuild`. |
+| — | **mail-pro** (separate) | Optional companion to `mail`, available in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. Hosts `/comm-report` and `/style-rebuild`. Requires private `second-brain` repo. |
 
 ## Migration steps
 
@@ -63,8 +63,9 @@ Back inside Claude Code:
 /plugin install excel@plessas-marketplace
 /plugin install docs@plessas-marketplace
 
-# Optional — only if you have private weirdapps/second-brain access
-/plugin install mail-pro@plessas-marketplace
+# Optional — mail-pro lives in a separate marketplace (requires private weirdapps/second-brain access):
+# /plugin marketplace add weirdapps/plessas-lab
+# /plugin install mail-pro@plessas-lab
 ```
 
 ### Option B — One-line installer (for unattended migration)
@@ -142,7 +143,7 @@ iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/insta
 | `/comm-report` | `/comm-report` (moved to **mail-pro** plugin — requires private second-brain repo access) |
 | `/style-rebuild` | `/style-rebuild` (moved to **mail-pro** plugin — same reason) |
 
-All existing commands keep the same names. The two corpus-driven commands moved to a new `mail-pro` plugin so users without the private `second-brain` knowledge store still get a fully functional `mail` plugin.
+All existing commands keep the same names. The two corpus-driven commands moved to `mail-pro`, which lives in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. Users without the private `second-brain` knowledge store still get a fully functional `mail` plugin.
 
 ## teams-monitor — note carefully
 
@@ -167,7 +168,7 @@ rm ~/Library/LaunchAgents/com.weirdapps.teams-monitor.plist
 
 ## Verification — did the migration work?
 
-1. Inside Claude Code, type `/` and confirm you see commands prefixed with `mail:`, `meetings:`, `chat:`, `decks:`, `excel:`, `docs:` (and `mail-pro:` if you installed it)
+1. Inside Claude Code, type `/` and confirm you see commands prefixed with `mail:`, `meetings:`, `chat:`, `decks:`, `excel:`, `docs:`
 2. Run `~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh` — green checkmarks across the board
 3. Try `/inbox-briefing` — should produce a briefing within ~5 seconds of M365 latency
 4. Try `/meeting-prep` — if you've installed both `mail` and `meetings`, this should walk today's calendar
@@ -177,7 +178,7 @@ If any of the above fails, run the relevant doctor command first (`/mail-doctor`
 
 ## Background scripts
 
-The daily style-guide sync (invoked from `~/SourceCode/second-brain/scripts/launchd/wrappers/sb-daily-sync.sh` after the second-brain ingest) was ported from `communications-marketplace/scripts/style-sync.py` to `plessas-marketplace/plugins/mail-pro/scripts/style-sync.py` (moved out of `mail` into `mail-pro` on 2026-05-09 along with the other second-brain-dependent commands). The script writes to `plugins/mail/shared/style-guide.md` (gitignored — the user's real personal style guide). The launchd wrapper has been updated; no user action needed unless you wired up your own automation against the old path.
+The daily style-guide sync was ported from `communications-marketplace/scripts/style-sync.py` to the `mail-pro` plugin in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. The script writes to `plugins/mail/shared/style-guide.md` (gitignored — the user's real personal style guide). If you had a launchd wrapper pointing at the old path, update it to the `plessas-lab` location; no other action needed.
 
 ## Need help?
 

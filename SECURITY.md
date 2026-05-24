@@ -13,7 +13,7 @@ GitHub manages the disclosure flow privately — only the maintainers see the re
 
 In scope:
 
-- The marketplace plugins themselves (`decks`, `mail`, `mail-pro`, `meetings`, `chat`, `excel`, `docs`)
+- The marketplace plugins themselves (`decks`, `mail`, `meetings`, `chat`, `excel`, `docs`)
 - The bundled MCP servers (`outlook-bridge`, `teams-bridge`)
 - The installer scripts (`installers/install.{sh,ps1}`, `installers/auth-wizard.{sh,ps1}`, `installers/pii-gauntlet.sh`)
 

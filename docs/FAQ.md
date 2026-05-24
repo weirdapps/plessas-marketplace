@@ -30,7 +30,7 @@ No. Pick the ones you want. The dependency rules:
 - `decks` is standalone
 - `excel` is standalone
 - `docs` is standalone
-- `mail-pro` is OPTIONAL companion to `mail` — only install if you have access to the private `weirdapps/second-brain` repo (most team members will skip this)
+- `mail-pro` is an OPTIONAL companion to `mail`, available separately via the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace — only install if you have access to the private `weirdapps/second-brain` repo
 
 The most common starter set: `mail`, `meetings`, `chat`, `decks`. Add `excel` and `docs` when you find yourself wanting them.
 
@@ -125,19 +125,9 @@ In the meantime, the worst case is a single plugin's commands not working — th
 
 ## What's the difference between `mail` and `mail-pro`?
 
-| Feature | `mail` | `mail-pro` |
-|---|---|---|
-| Inbox briefings | ✅ | ✅ |
-| Triage and action recommendations | ✅ | ✅ |
-| Draft replies (style-matched) | ✅ | ✅ |
-| Self-learning loop | ✅ | ✅ |
-| `/send-mail`, `/reply`, `/forward`, `/triage-inbox` | ✅ | ✅ |
-| `/comm-report` (relationship analytics) | — | ✅ |
-| `/style-rebuild` (full corpus rebuild) | — | ✅ |
-| Requires private `second-brain` repo | — | ✅ |
-| Cron-driven `style-sync.py` daily updates | — | ✅ |
+`mail-pro` is an optional companion plugin available in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (not this one). It adds `/comm-report` (relationship analytics) and `/style-rebuild` (full corpus rebuild) on top of the `mail` plugin. Both require the private `weirdapps/second-brain` knowledge store.
 
-For most users, `mail` is enough. `mail-pro` is for power users who want deep analytics and can host the private `second-brain` knowledge store.
+For most users, `mail` is everything you need. Install `mail-pro` from `plessas-lab` only if you have `second-brain` access and want deep analytics.
 
 ## Why are some commands prefixed (e.g., `mail:inbox-briefing`) and others bare (e.g., `/inbox-briefing`)?
 
