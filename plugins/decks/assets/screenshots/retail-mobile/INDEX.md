@@ -40,7 +40,7 @@
 | `Virtual prepaid card - Card details EN.png` | Virtual prepaid card details | Virtual card management |
 | `Virtual prepaid card - Transactions EN.png` | Virtual prepaid card transactions | Transaction history, card spending |
 | `virtual prepaid - Success EN.png` | Virtual prepaid card created successfully | Card issuance success, onboarding |
-| `Dual.01 - Select dual card EN.png` | Dual card selection screen | Dual card product, combined debit+credit |
+| `Dual.01_-_Select_dual_card_EN.png` | Combined-product card selection screen | Combined-product card flow (debit+credit in one) |
 | `Add card to wallet success EN.png` | Card added to digital wallet success | Apple/Google Pay, wallet integration |
 | `Debit card - Transactions - EN.png` | Debit card transaction history | Debit card activity, spending overview |
 
