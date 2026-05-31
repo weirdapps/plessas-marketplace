@@ -25,7 +25,7 @@ If the tool is **not available** (no `mcp__outlook-bridge__*` tools listed in yo
 
 > The `meetings` plugin requires the `mail` plugin to be installed (it bundles the `outlook-bridge` MCP server). Install it with:
 > `/plugin install mail@plessas-marketplace`
-> Then run `~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh` and try `/meeting-prep` again.
+> Then run `/mail:auth-setup` and try `/meeting-prep` again.
 
 Do not attempt the AppleScript fallback unless the user explicitly passes `--outlook`. If the tool exists but returns `auth_required`, surface the `outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com` flow.
 
@@ -60,7 +60,7 @@ See `shared/calendar-access.md` for the full access-pattern matrix.
 For each unique attendee, query the knowledge store via MCP:
 
 ```
-Use `mcp__second_brain__person_context` with `name_or_email="<attendee_name>"`
+Use `mcp__second-brain__person_context` with `name_or_email="<attendee_name>"`
 ```
 
 ### 4. Cross-Reference Inbox and Archive

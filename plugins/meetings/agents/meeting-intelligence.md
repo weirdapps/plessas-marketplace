@@ -134,7 +134,7 @@ For each unique attendee across all meetings, gather context using the best avai
 
 **Primary — single call per attendee:**
 
-Use `mcp__second_brain__person_context` with `name_or_email="<attendee_name>"` — returns everything needed for a dossier in one call:
+Use `mcp__second-brain__person_context` with `name_or_email="<attendee_name>"` — returns everything needed for a dossier in one call:
 
 - Recent emails with summaries
 - Topics they're involved in
@@ -145,9 +145,9 @@ Use `mcp__second_brain__person_context` with `name_or_email="<attendee_name>"` �
 
 **Supplementary (if deeper context needed):**
 
-- `mcp__second_brain__query_actions` with `owner="<attendee_name>"`, `status="open"` — focused action item lookup
-- `mcp__second_brain__query_decisions` with `person="<attendee_name>"`, `days=90` — focused decision lookup
-- `mcp__second_brain__topic_context` with `topic="<meeting_topic>"` — topic-specific context
+- `mcp__second-brain__query_actions` with `owner="<attendee_name>"`, `status="open"` — focused action item lookup
+- `mcp__second-brain__query_decisions` with `person="<attendee_name>"`, `days=90` — focused decision lookup
+- `mcp__second-brain__topic_context` with `topic="<meeting_topic>"` — topic-specific context
 
 #### Option B: Outlook email search (fallback if no knowledge store)
 
@@ -378,8 +378,8 @@ If the `_shared/decision-tracker/` directory exists:
 
 See `shared/calendar-access.md` for detailed patterns covering:
 
-- WorkIQ MCP queries (primary — M365-synced, authoritative)
-- Outlook AppleScript fallback
+- outlook-bridge MCP queries (primary — M365-synced, authoritative)
+- WorkIQ MCP (secondary, natural-language fallback)
 - Date range queries
 - Attendee extraction edge cases
 

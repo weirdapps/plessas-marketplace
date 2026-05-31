@@ -27,7 +27,7 @@ If the file doesn't exist, create it with an empty array.
 
 ### 3. Query Knowledge Store Decisions (via MCP)
 
-Use `mcp__second_brain__query_decisions` with:
+Use `mcp__second-brain__query_decisions` with:
 
 - `days=7` (for week scope) or `days=1` (for today scope)
 - `topic="[topic]"` if a topic filter was specified
@@ -35,14 +35,14 @@ Use `mcp__second_brain__query_decisions` with:
 
 ### 4. Query Action Items (via MCP)
 
-Use `mcp__second_brain__query_actions` with:
+Use `mcp__second-brain__query_actions` with:
 
 - `status="open"` for pending items
 - `owner="[owner]"` if filtering by owner
 
 ### 5. Filter by Topic (if specified)
 
-Use `mcp__second_brain__query_decisions` with `topic="[topic]"`
+Use `mcp__second-brain__query_decisions` with `topic="[topic]"`
 
 ### 6. Cross-Reference Local and DB
 

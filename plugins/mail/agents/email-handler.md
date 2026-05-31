@@ -187,12 +187,12 @@ Load `~/.claude/drafts/inbox-state.json` and compare:
 
 For each email, query the knowledge store (via MCP) for historical context on the sender and topic:
 
-Use `mcp__second_brain__person_context` with `name_or_email="<sender_name>"` — returns email history, topics, sentiment, decisions, open actions, and communication pattern in a single call.
+Use `mcp__second-brain__person_context` with `name_or_email="<sender_name>"` — returns email history, topics, sentiment, decisions, open actions, and communication pattern in a single call.
 
 For additional context:
 
-- `mcp__second_brain__query_actions` with `owner="<sender_name>"`, `status="open"` — open action items
-- `mcp__second_brain__query_decisions` with `topic="<email_topic>"` — recent decisions on the topic
+- `mcp__second-brain__query_actions` with `owner="<sender_name>"`, `status="open"` — open action items
+- `mcp__second-brain__query_decisions` with `topic="<email_topic>"` — recent decisions on the topic
 
 Use the results to:
 
@@ -369,7 +369,7 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
 
 1. Display the draft text in the conversation
 2. **Copy to clipboard as rich text** (justified alignment preserved) — platform-aware:
-   - **macOS**: `printf '<html>…</html>' | textutil -stdin -format html -convert rtf -stdout | pbcopy`
+   - **macOS**: `printf '<html>…</html>' | textutil -stdin -format html -convert rtf -stdout | pbcopy` _(note: `textutil` may not preserve custom fonts such as Aptos; if you maintain a personal clipboard/RTF standard, follow that instead)_
    - **Windows**: `Get-Content file.html | Set-Clipboard` (PowerShell) or `clip < file.html` (plain HTML)
    - **Linux**: `xclip -selection clipboard -t text/html < file.html`
 
@@ -456,3 +456,11 @@ Before presenting a draft:
 - Don't draft in the wrong language for the recipient
 - Don't be polite where the user would be direct
 - Don't second-guess decisions — be decisive like the user
+
+<!-- safety-guardrails:v1 -->
+## Send-safety blacklist (irreversible)
+
+- NEVER dispatch (`--send-now`) without showing the draft and getting explicit confirmation. Default is draft-first.
+- Verify the recipient: primary and CC is `dimitrios.plessas@nbg.gr`; never send FROM the forwarding alias `plessas@nbg.gr`.
+- Do NOT add any [Claude] / AI tag to email (that is a Teams-only rule), and do NOT alter the user signature.
+- Never send on empty, placeholder, or errored content — if the body failed to generate, STOP and report.

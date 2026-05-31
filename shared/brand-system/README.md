@@ -182,3 +182,6 @@ const NBG = {
 
 **Version**: 3.4.0
 **Last Updated**: February 2026
+
+<!-- maint-note:brand-dup -->
+> **Maintenance note — duplicate tree:** Two copies of this NBG brand-system exist: `plessas-marketplace/shared/brand-system/` (marketplace-wide) and `plessas-marketplace/plugins/decks/shared/brand-system/` (bundled with the decks plugin). They have **drifted** (8 files differ; each tree also has unique files). When changing a brand spec, update BOTH — or designate one canonical and re-sync the other. Do NOT assume they are identical.
