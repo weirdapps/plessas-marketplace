@@ -81,7 +81,7 @@ Page numbers appear on **content slides only** (not cover, dividers, back cover)
 | Element | Font | Size | Position (x, y) |
 |---------|------|------|-----------------|
 | Title | Aptos | 48pt | 0.37", 1.39" |
-| Subtitle | Aptos | **36pt** | 0.37", 2.27" |
+| Subtitle | Aptos | **24pt** | 0.37", 2.27" |
 | Location | Aptos | 14pt | 0.37", 4.58" |
 | Date | Aptos | 14pt | 0.37", 4.97" |
 
@@ -264,7 +264,7 @@ Light background card placed in the right margin of a chart slide for a key call
 | Property | Value |
 |----------|-------|
 | Background | `#F5F8F6` |
-| Border | 1pt `#333333` |
+| Border | 1pt `#BEC1BE` |
 | Corner radius | 6.25% |
 | Size | 1.40" × 0.80" (typical) |
 

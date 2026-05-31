@@ -43,7 +43,7 @@ Run `nbg_validate.py` on the generated PPTX. This checks:
 | Safe zones | Content within 1.1"–6.85" vertically, 0.37"–12.96" horizontally |
 | Font sizes | All text meets minimum size thresholds (10pt floor, 8pt footnotes only) |
 | Content spacing | Adequate gap between title and first content element (≥0.15") |
-| Title length | All titles ≤80 chars for single-line fit at 22pt Aptos in 12.59" width |
+| Title length | All titles ≤80 chars for single-line fit at 24pt Aptos in 12.59" width |
 | Bank branding | Competitor bank charts use official brand colors and logos |
 
 ```bash

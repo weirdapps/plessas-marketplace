@@ -25,10 +25,13 @@
 | Priority | Chart Type | Use For |
 |----------|------------|---------|
 | 1 | **Doughnut** | Proportions, percentages (ALWAYS instead of pie) |
-| 2 | **Bar** | Comparisons, rankings, categories |
-| 3 | **Area-Line** | Trends, time series (PREFERRED over plain line — line with subtle fill, dot markers) |
-| 4 | **Waterfall** | Financial flows, breakdowns |
-| 5 | **Line** | Multiple overlapping series where area fill would be misleading |
+| 2 | **Column Clustered** | Comparisons, rankings, categories (vertical) |
+| 3 | **Bar Clustered** | Horizontal comparisons (same color as column — `#00ADBF`) |
+| 4 | **Stacked Column** | Composition over time (3-4 series max) |
+| 5 | **Line with markers** | Trends, time series (hollow "donut" markers) |
+| 6 | **Stacked Area** | Two overlapping trends (semi-transparent fills) |
+| 7 | **Waterfall** | Financial flows, bridges (faked via stacked column with invisible base) |
+| 8 | **Area-Line** | Single trend with subtle fill (PREFERRED over plain line for single series) |
 
 ## Color Sequence
 
@@ -369,3 +372,87 @@ const altCellStyle = {
   valign: 'middle',
 }
 ```
+
+## Line Chart — Hollow "Donut" Markers (NBG executive preference)
+
+Line charts should use **thicker lines** with **hollow circle markers** (white fill, colored ring matching line width):
+
+```javascript
+// Line styling — NBG executive preference
+lineSize: 3.5,         // thicker than default 2.5
+lineSmooth: false,     // straight segments
+
+// Hollow "donut" markers — colored ring, white center
+showMarker: true,
+markerStyle: 'circle',
+markerSize: 10,        // larger for visibility
+// Marker fill: WHITE (creates the hollow center)
+// Marker line: SAME COLOR as the series line, SAME WIDTH as the line (3.5pt)
+```
+
+In python-pptx:
+
+```python
+series.format.line.width = Pt(3.5)
+series.marker.style = 8  # circle
+series.marker.size = 10
+series.marker.format.fill.solid()
+series.marker.format.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)  # white center
+series.marker.format.line.color.rgb = series_color  # colored ring
+series.marker.format.line.width = Pt(3.5)  # match line width
+```
+
+## Stacked Area Chart (2+ series, semi-transparent)
+
+Use for showing composition trends over time. Both series should have **semi-transparent fills** (40% opacity) and matching line borders:
+
+```javascript
+// Series colors (in layer order, bottom to top)
+chartColors: ['00ADBF', 'BEC1BE'],
+chartColorsOpacity: 40,  // 40% opacity for softer, more professional look
+
+// Line borders matching each series
+lineSize: 2.5,
+```
+
+In python-pptx, apply alpha via XML manipulation on each series' solid fill:
+
+```python
+alpha_el = etree.SubElement(color_elem, qn("a:alpha"))
+alpha_el.set("val", "40000")  # 40% = softer than 25%, more readable than 60%
+```
+
+## Table — Number Alignment Rule
+
+**CRITICAL**: numeric columns (amounts, percentages, counts) must be **right-aligned**. Text columns remain left-aligned.
+
+```javascript
+// Header: right-align numeric column headers
+// Data: right-align numeric cells
+// Text columns (Unit, Priority, etc.): LEFT align always
+```
+
+In python-pptx:
+
+```python
+numeric_cols = {1, 2, 3, 4}  # indices of numeric columns
+for p in cell.text_frame.paragraphs:
+    if col_idx in numeric_cols:
+        p.alignment = PP_ALIGN.RIGHT
+```
+
+## Waterfall — Data Label Positioning
+
+Waterfall is faked via stacked column with invisible base. Data labels should appear **inside bars** (CENTER position) with **white text** on colored bars:
+
+```javascript
+// Data labels inside bars
+dataLabelPosition: 'center',
+dataLabelColor: 'FFFFFF',  // white text on colored bars
+dataLabelFontSize: 12,
+dataLabelFontBold: true,
+```
+
+For bars that start from the x-axis (opening/closing totals): labels appear at CENTER inside the tall bar. For floating bars (increases/decreases): labels appear centered within the floating segment.
+
+If a bar is too small for the label to fit, the label should have a white background halo for readability.

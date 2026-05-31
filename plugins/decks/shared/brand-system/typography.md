@@ -27,7 +27,7 @@
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | Title | Aptos | 48pt | #003841 | Regular |
-| Subtitle (NBG-template covers — `13_Cover` etc.) | Aptos | **36pt** | #007B85 | Regular |
+| Subtitle (NBG-template covers — `13_Cover` etc.) | Aptos | **24pt** | #007B85 | Regular |
 | Subtitle (clean DIY cover on Blank — pipe-separated units list) | Aptos | **24pt** | #007B85 | Regular |
 | Location | Aptos | 14pt | #003841 | Regular |
 | Date | Aptos | 14pt | #939793 | Regular |

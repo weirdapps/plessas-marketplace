@@ -4,6 +4,8 @@
 
 All agents and commands should reference these specifications. Do NOT create duplicate specifications elsewhere.
 
+> **Canonical / mirror:** the canonical copy lives at `plugins/decks/shared/brand-system/`. The marketplace-root `shared/brand-system/` is an **auto-synced mirror — do not hand-edit it.** Edit the canonical, then run `scripts/sync_brand_system.sh`. CI (`validate_consistency.py`) fails on any drift between the two.
+
 ## Quick Reference
 
 ### Slide Dimensions (CRITICAL)
@@ -81,7 +83,7 @@ aspect_ratio: 16:9
 | Element | Size | Color | Weight |
 |---------|------|-------|--------|
 | Cover title | 48pt | 003841 | Regular |
-| Cover subtitle | **36pt** | 007B85 | Regular |
+| Cover subtitle | **24pt** | 007B85 | Regular |
 | Divider number | 60pt | 007B85 | Regular |
 | Divider title | **48pt** | 003841 | Regular |
 | Contents header | **32pt** | 003841 | Bold |
@@ -137,15 +139,14 @@ See [asset-library.md](asset-library.md) for complete documentation and usage ru
 
 ## Logo Assets
 
-**IMPORTANT: ALWAYS use the Greek logo (`nbg-logo-gr.svg`) for ALL presentations, regardless of language.**
+**IMPORTANT: ALWAYS use the Greek logo (`nbg-logo-gr.png`) for ALL presentations, regardless of language.**
 
 | Asset | Path | Usage |
 |-------|------|-------|
-| **Greek Logo (DEFAULT)** | `assets/nbg-logo-gr.svg` | **ALL presentations** - this is the standard logo |
+| **Greek Logo (DEFAULT)** | `assets/nbg-logo-gr.png` | **ALL presentations** - this is the standard logo |
 | English Logo | `assets/nbg-logo.svg` | DO NOT USE - kept for legacy only |
-| PNG Fallback | `assets/nbg-logo-fallback.png` | Use when SVG rendering fails |
+| PNG Fallback | `assets/nbg-logo-fallback.png` | Secondary variant if the primary PNG is unavailable |
 | Back Cover Logo | `assets/nbg-back-cover-logo.png` | Centered on back cover |
-| Full Spec | `assets/NBG-PRESENTATION-SPEC.md` | Complete specification |
 
 ## PptxGenJS Constants
 

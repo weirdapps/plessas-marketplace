@@ -254,7 +254,7 @@ The user's most consistent change is increasing font sizes. The generated deck u
 | Footnotes | 8pt | **10.5-14pt** | +2.5-6 |
 | Bullet point text | 11pt | **14pt** | +3 |
 | Metric card values | 24pt | 24pt (kept) | 0 |
-| Cover subtitle | 36pt | **28pt** | -8 |
+| Cover subtitle | 36pt | **24pt** | -12 |
 
 ### Key Principle
 

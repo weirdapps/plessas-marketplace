@@ -49,7 +49,7 @@ Use for all content slides, charts, tables, infographics.
 
 ```javascript
 const LOGO_SMALL = {
-  path: 'assets/nbg-logo-gr.svg',
+  path: 'assets/nbg-logo-gr.png',
   x: 0.374,
   y: 7.071,
   w: 0.822,
@@ -64,7 +64,7 @@ Use for cover slides and section dividers only.
 
 ```javascript
 const LOGO_LARGE = {
-  path: 'assets/nbg-logo-gr.svg',
+  path: 'assets/nbg-logo-gr.png',
   x: 0.374,
   y: 6.271,
   w: 2.191,

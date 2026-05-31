@@ -157,7 +157,7 @@ Use these colors in order for chart data series:
 
 | Card Type | Background | Border |
 |-----------|------------|--------|
-| Metric card | `#F5F8F6` | 1pt `#333333` |
+| Metric card | `#F5F8F6` | 1pt `#BEC1BE` |
 | Info card | `#F5F8F6` | None |
 | Highlight card | `#CBFAFF` | None |
 

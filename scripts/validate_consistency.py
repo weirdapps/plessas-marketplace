@@ -153,6 +153,34 @@ def check_python_tools() -> None:
             error(f"{py_path.relative_to(ROOT)}: syntax error at line {e.lineno}")
 
 
+def check_brand_system_sync() -> None:
+    """No-drift guard: the marketplace-root brand-system mirror must equal the
+    canonical decks copy. Fix with scripts/sync_brand_system.sh --apply."""
+    heading("Brand-system tree sync (no-drift guard)")
+    canonical = PLUGINS_DIR / "decks" / "shared" / "brand-system"
+    mirror = ROOT / "shared" / "brand-system"
+    if not canonical.is_dir() or not mirror.is_dir():
+        warn("brand-system tree(s) missing; skipping sync check")
+        return
+    canon = {p.name: p.read_text() for p in canonical.glob("*.md")}
+    mir = {p.name: p.read_text() for p in mirror.glob("*.md")}
+    for name in sorted(set(canon) - set(mir)):
+        error(
+            f"brand-system: '{name}' in canonical (decks) but missing from mirror (shared/) — run scripts/sync_brand_system.sh"
+        )
+    for name in sorted(set(mir) - set(canon)):
+        error(
+            f"brand-system: '{name}' in mirror (shared/) but not in canonical (decks) — run scripts/sync_brand_system.sh"
+        )
+    for name in sorted(set(canon) & set(mir)):
+        if canon[name] != mir[name]:
+            error(
+                f"brand-system: '{name}' differs between canonical (decks) and mirror (shared/) — run scripts/sync_brand_system.sh --apply"
+            )
+        else:
+            ok(f"brand-system: {name} in sync")
+
+
 def main() -> None:
     print("\033[1m\nplessas-marketplace — Consistency Validator\033[0m")
     print("=" * 52)
@@ -161,6 +189,7 @@ def main() -> None:
     check_command_files()
     check_command_frontmatter_yaml()
     check_python_tools()
+    check_brand_system_sync()
 
     print("\n" + "=" * 52)
     if errors:

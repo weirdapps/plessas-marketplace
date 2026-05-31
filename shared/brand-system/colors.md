@@ -1,6 +1,8 @@
 # NBG Complete Color Palette
 
-> **Note**: For digital product colors (apps, web), see [pillar-ds.md](pillar-ds.md) for the complete Pillar Design System palette.
+> **Note**: For digital product colors (apps, web), see [pillar-ds.md](pillar-ds.md) for the complete Pillar Design System palette (Tsopanakis — resynced 2026-05-24).
+>
+> **Scope of this file**: presentation-system colors only (PowerPoint/PDF decks). Body text stays `#202020` (between Pillar Black `#162020` and email body `#404040` — intentional difference, optimised for projection readability). Status reds: `#AA0028` is retained for **NBG corporate charts and segment coding** (Private banking signature); `#BE4B4B` from Pillar applies to **digital products** (alerts, error states in app UI).
 
 ## Theme Colors (NBG Colors 2)
 
@@ -52,17 +54,32 @@
 | Black | `#212121` | 33, 33, 33 | Alternative text |
 | Aqua Light | `#3EDEF8` | 62, 222, 248 | Light accent |
 | Light Grey | `#BEC1BE` | 190, 193, 190 | Subtle elements |
-| Grey | `#595959` | 89, 89, 89 | Secondary text |
-| Pale Grey | `#F5F8F6` | 245, 248, 246 | Light backgrounds |
+| Grey | `#595959` | 89, 89, 89 | Secondary text (TOC descriptions) |
+| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, table notes (NBG executive signature — frequent across reference decks)** |
+| Pale Grey | `#F5F8F6` | 245, 248, 246 | Light backgrounds, KPI card fill |
 
 ## Status/Semantic Colors
 
+### Official NBG Corporate Palette (charts, brand graphics)
+
 | Status | Hex | RGB | Usage |
 |--------|-----|-----|-------|
-| Success | `#73AF3C` | 115, 175, 60 | Positive indicators |
-| Alert | `#AA0028` | 170, 0, 40 | Negative indicators |
+| Success | `#73AF3C` | 115, 175, 60 | Positive indicators (charts, official brand graphics) |
+| Alert | `#AA0028` | 170, 0, 40 | Negative indicators (charts, official brand graphics) |
 | Gold | `#D9A757` | 217, 167, 87 | Premium accent |
 | Blue | `#1E478E` | 30, 71, 142 | Information |
+
+### Practical Status Colors (DIY decks, status pills, "Delivered/Priorities" patterns)
+
+These are the colors observed across reference NBG executive decks — used in status badges, "Delivered" rows, priority pills. Cleaner reading at small sizes than the chart-grade NBG palette above.
+
+| Status | Hex | Light variant | Usage |
+|--------|-----|---------------|-------|
+| **OK / Delivered** | `#008000` | `#E8F5E9` | Status pill (text white on #008000), "Delivered" row accent stripe + pale fill |
+| **TBD / In progress** | `#CC9900` | `#FFFFCC` | Amber priority pill (text white on #CC9900) |
+| **Warning / Risk** | `#CC0000` | — | Severe priority indicator (text white) |
+
+**When to use which palette**: Charts and official brand graphics → corporate palette. Status pills and DIY KPI/Progress decks → practical palette.
 
 ## Status Colors (Tables & Charts Only)
 
@@ -102,30 +119,22 @@ Use these colors in order for chart data series:
 5. `#BEC1BE` - Light Gray
 6. `#00DFF8` - Bright Cyan
 
-## PFM Category Colors (from Pillar DS)
+## PFM Category Colors
 
-For category-based data visualization (e.g., spending categories, segments):
-
-| Category | Dark | Light | Usage |
-|----------|------|-------|-------|
-| Receipts | `#26A567` | `#BFECD0` | Income, deposits |
-| Savings | `#0091A0` | `#ACEDFF` | Savings, investments |
-| Entertainment | `#D456D0` | `#FFD1FD` | Leisure, subscriptions |
-| Holidays | `#007B85` | `#BFEEF6` | Travel, vacations |
-| Dining | `#D08239` | `#FFE0B2` | Restaurants, food |
-| Retail | `#8E6CD0` | `#E1D1FF` | Shopping, stores |
-| Transport | `#5D87DB` | `#C5D7FF` | Travel, commute |
-| Services | `#A36CB4` | `#EDD7F4` | Utilities, fees |
-| Super Market | `#FFC700` | `#FFF4C7` | Groceries |
-| Health | `#BE4B4B` | `#FFC5C6` | Medical, pharmacy |
-
-```javascript
-// PFM Category chart colors (dark variants)
-const PFM_CHART_COLORS = [
-  '26A567', '0091A0', 'D456D0', '007B85', 'D08239',
-  '8E6CD0', '5D87DB', 'A36CB4', 'FFC700', 'BE4B4B'
-];
-```
+> **Moved to `pillar-ds.md`** (resynced 2026-05-24 from Tsopanakis live repo).
+>
+> For category-based data visualisation (spending categories, PFM segments, budget breakdowns), use the **16-category palette** in [pillar-ds.md → PFM Category Colors](pillar-ds.md#pfm-category-colors-charts). The older 10-category set that previously lived here has been retired — it was outdated and did not match the live Pillar Figma source.
+>
+> Quick access for chart series (Main shades):
+>
+> ```javascript
+> // Pillar PFM Category chart colors — Main shades
+> const PFM_CHART_COLORS = [
+>   'B99C34', '44C7B3', '905567', '8D7349', '19B4E2', 'AC1D44',
+>   'A1AC20', '4B7398', '9D4F16', '547723', '2C76BD', 'D08239',
+>   '658A8D', '525CBE', '26A567', '8681B1'
+> ];
+> ```
 
 ## Background Guidelines
 
@@ -148,7 +157,7 @@ const PFM_CHART_COLORS = [
 
 | Card Type | Background | Border |
 |-----------|------------|--------|
-| Metric card | `#F5F8F6` | 1pt `#333333` |
+| Metric card | `#F5F8F6` | 1pt `#BEC1BE` |
 | Info card | `#F5F8F6` | None |
 | Highlight card | `#CBFAFF` | None |
 
@@ -203,17 +212,22 @@ const NBG_CHART_COLORS = [
 | Slide background | `#FFFFFF` (White) - **ALWAYS** |
 | Slide title | `#003841` (Dark Teal) |
 | Body text | `#202020` (Dark Text) |
-| Section numbers | `#007B85` (NBG Teal) |
+| Section numbers (divider) | `#007B85` (NBG Teal) |
 | Bullet points | `#00DFF8` (Bright Cyan) |
 | Primary accent | `#007B85` (NBG Teal) |
 | Bright accent | `#00DFF8` (Bright Cyan) |
 | Subtle elements | `#939793` (Medium Gray) |
-| **Card background** | `#F5F8F6` (Off-white) |
-| **Metric value** | `#007B85` (NBG Teal) |
-| **Metric label** | `#202020` (Dark Text) |
+| **KPI card background** | `#F5F8F6` (Off-white) |
+| **KPI big number** | `#007B85` (NBG Teal) — **50pt Aptos BOLD** |
+| **KPI caption / owner subtitle** | `#5A5F5A` (Caption Gray) — NBG executive signature |
+| **Unit pill (header chip)** | fill `#003841` (Dark Teal), text white |
 | TOC description | `#595959` (Gray) |
 | Page number | `#939793` (Medium Gray) |
 | Icons | `#003841` (Dark Teal) |
+| **Status — OK** | `#008000` fill, white text — DIY status pills |
+| **Status — TBD** | `#CC9900` fill, white text — DIY status pills |
+| **Status — Warn** | `#CC0000` fill, white text — DIY status pills |
+| **Delivered row stripe + pale fill** | accent `#008000` + body `#E8F5E9` |
 
 ---
 
