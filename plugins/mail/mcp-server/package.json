@@ -18,7 +18,7 @@
     "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#a00446be79c56441db4e0e199c784786706d5bae"
   },
   "devDependencies": {
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.2",
     "typescript": "~6.0.3",
     "vitest": "^4.1.8"
   }
