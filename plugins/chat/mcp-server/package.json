@@ -15,11 +15,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#bc50e655a424677d169f11b6899d82f8b2e43182"
+    "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#058bf0e5bcbd8e1c9cfe342fdb2808315bbd6045"
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
+    "@types/node": "~25.9.1",
     "typescript": "~6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "~4.1.7"
   }
 }

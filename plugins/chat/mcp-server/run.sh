@@ -50,9 +50,16 @@ NPM_BIN="$(dirname "$NODE_BIN")/npm"
 
 if [ ! -d "$DIR/node_modules" ]; then
   echo "teams-bridge: installing npm dependencies (first run, ~30-60s)..." >&2
-  if ! (cd "$DIR" && "$NPM_BIN" install --silent) >&2; then
-    write_status "fail" '"npm install failed — check network and ~/.npm logs"'
-    exit 1
+  if [ -f "$DIR/package-lock.json" ]; then
+    if ! (cd "$DIR" && "$NPM_BIN" ci --silent) >&2; then
+      write_status "fail" '"npm ci failed — check network and ~/.npm logs"'
+      exit 1
+    fi
+  else
+    if ! (cd "$DIR" && "$NPM_BIN" install --silent) >&2; then
+      write_status "fail" '"npm install failed — check network and ~/.npm logs"'
+      exit 1
+    fi
   fi
 fi
 

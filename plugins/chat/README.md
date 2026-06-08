@@ -28,6 +28,8 @@ The marketplace setup script (`installers/install.sh`) handles all dependencies:
 1. Clones and `npm link`s the `teams-cli` package (from `weirdapps/teams-access`)
 2. Builds the bundled `teams-bridge` MCP server
 
+> **Warning — npm name collision:** A *different* `teams-cli@1.1.0` exists on the npm registry. The bridge's `package.json` uses a `git+https://` URL pointing at `weirdapps/teams-access` — never switch it to a bare semver range or you'll pull a stranger's package.
+
 To authenticate Teams (one-time):
 
 ```bash
