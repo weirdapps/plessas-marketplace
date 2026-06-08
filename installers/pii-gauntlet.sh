@@ -47,9 +47,13 @@ INFO=0
 if [ "$MODE" = "ci" ]; then
   # Exclude self + auto-generated lockfiles at any depth (lockfiles contain SHAs / hashes that
   # collide with the 9-digit-ID regex but carry no PII risk).
+  # User-cleared public showcase assets (maintainer confirmed 2026-06-08): the
+  # decks screenshot library is public-safe, and its INDEX.md captions legitimately
+  # name NBG products (dual card, Skroutz, …). Exclude that subtree from scanning.
   TRACKED=$(git ls-files \
     | grep -v '^installers/pii-gauntlet.sh$' \
     | grep -vE '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Pipfile\.lock)$' \
+    | grep -vE '^plugins/decks/assets/screenshots/' \
     || true)
   TRACKED_TMP=$(mktemp)
   printf '%s\n' "$TRACKED" > "$TRACKED_TMP"
@@ -75,15 +79,19 @@ scan_doctor() {
     --exclude=PII-GAUNTLET.md \
     --exclude=package-lock.json \
     --binary-files=without-match \
-    "$pattern" . 2>/dev/null || true
+    "$pattern" . 2>/dev/null \
+    | grep -vE 'plugins/decks/assets/screenshots/' \
+    || true
 }
 
 scan_ci() {
   local pattern="$1"
-  # Search only git-tracked files. xargs grep with -l would short-circuit but
-  # we want line-level hits.
+  # Search only git-tracked files. NUL-delimit the list and use `xargs -0`
+  # (portable on BSD/macOS and GNU). The old `xargs -a FILE -d '\n'` form is
+  # GNU-only: on macOS it errors "invalid option -- a", gets swallowed by
+  # 2>/dev/null, and the gate silently PASSES while scanning nothing.
   if [ -s "$TRACKED_TMP" ]; then
-    xargs -a "$TRACKED_TMP" -d '\n' grep -nE --binary-files=without-match "$pattern" 2>/dev/null || true
+    tr '\n' '\0' < "$TRACKED_TMP" | xargs -0 grep -nE --binary-files=without-match "$pattern" 2>/dev/null || true
   fi
 }
 

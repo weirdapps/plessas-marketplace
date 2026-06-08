@@ -461,6 +461,6 @@ Before presenting a draft:
 ## Send-safety blacklist (irreversible)
 
 - NEVER dispatch (`--send-now`) without showing the draft and getting explicit confirmation. Default is draft-first.
-- Verify the recipient: primary and CC is `dimitrios.plessas@nbg.gr`; never send FROM the forwarding alias `plessas@nbg.gr`.
+- Verify the recipient: primary and CC must be your own configured primary address; never send FROM a forwarding alias.
 - Do NOT add any [Claude] / AI tag to email (that is a Teams-only rule), and do NOT alter the user signature.
 - Never send on empty, placeholder, or errored content — if the body failed to generate, STOP and report.
