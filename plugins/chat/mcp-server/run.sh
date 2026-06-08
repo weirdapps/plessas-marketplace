@@ -49,6 +49,7 @@ NODE_BIN="$(find_node)" || {
 NPM_BIN="$(dirname "$NODE_BIN")/npm"
 
 if [ ! -d "$DIR/node_modules" ]; then
+  export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
   echo "teams-bridge: installing npm dependencies (first run, ~30-60s)..." >&2
   if [ -f "$DIR/package-lock.json" ]; then
     if ! (cd "$DIR" && "$NPM_BIN" ci --silent) >&2; then

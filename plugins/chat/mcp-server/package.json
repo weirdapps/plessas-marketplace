@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#058bf0e5bcbd8e1c9cfe342fdb2808315bbd6045"
+    "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#95abd5164bc5d37a7ef785078f9b2d8d4cd141dc"
   },
   "devDependencies": {
     "@types/node": "~25.9.1",

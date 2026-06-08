@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#7fa13f842400c559b5676d192e066aefe34fa937"
+    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#c278600ccc54253c83fa8e353b5009081e05e1a0"
   },
   "devDependencies": {
     "@types/node": "~25.9.1",
