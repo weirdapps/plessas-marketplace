@@ -1,29 +1,35 @@
 # plessas-marketplace
 
-Cross-platform Claude Code plugins for productivity at a financial-services workplace.
+[![Validate Plugins](https://github.com/weirdapps/plessas-marketplace/actions/workflows/validate-plugins.yml/badge.svg)](https://github.com/weirdapps/plessas-marketplace/actions/workflows/validate-plugins.yml)
+[![SonarCloud Analysis](https://github.com/weirdapps/plessas-marketplace/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/weirdapps/plessas-marketplace/actions/workflows/sonarcloud.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=weirdapps_plessas-marketplace&metric=alert_status)](https://sonarcloud.io/project/overview?id=weirdapps_plessas-marketplace)
+[![PII Check](https://github.com/weirdapps/plessas-marketplace/actions/workflows/pii-check.yml/badge.svg)](https://github.com/weirdapps/plessas-marketplace/actions/workflows/pii-check.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Six Claude Code plugins for productivity at a financial-services workplace. Each plugin is a self-contained unit with commands, agents, and the MCP wiring it depends on — install only what you need.
 
 > **Status:** v1.0.0 — stable. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace) (archived 2026-05-30). Migration guide: [docs/migration-from-communications-marketplace.md](docs/migration-from-communications-marketplace.md).
 
-## What's inside
+## Plugins
 
-| Plugin | What it does |
-|---|---|
-| `decks` | Branded presentations: storyline → storyboard → graphics → QA. Bundles icons, infographics, device mockups. |
-| `mail` | Outlook commands: triage, briefings, drafts, style-matching. Bundles outlook-cli MCP wrapper. |
-| `meetings` | Pre-meeting briefings with attendee dossiers; post-meeting decision capture. |
-| `chat` | Microsoft Teams interactive commands: inbox, reply, summarize, channel digest. Bundles teams-bridge MCP. |
-| `excel` | Excel analysis: summary, pivot, variance, deck handoff. Uses document-skills:xlsx with openpyxl/pandas fallback. |
-| `docs` | Word document creation: generic, formal letter, internal memo. Uses document-skills:docx with python-docx fallback. |
+| Plugin | Key commands | What it does |
+|--------|-------------|-------------|
+| [`decks`](plugins/decks/) | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/presentation-review` | Multi-agent presentation pipeline: storyline → storyboard → pixel-perfect graphics → QA. NBG-branded out of the box; swap the template and color palette for any brand. |
+| [`mail`](plugins/mail/) | `/inbox-briefing`, `/mail-review`, `/send-mail`, `/triage-inbox`, `/reply` | Outlook command center: triage inbox, draft style-matched replies, send HTML email. Bundles the `outlook-bridge` MCP for M365 access. |
+| [`meetings`](plugins/meetings/) | `/meeting-prep`, `/meeting-debrief` | Pre-meeting briefings with attendee dossiers from email history; post-meeting decision and action-item capture. |
+| [`chat`](plugins/chat/) | `/chat-inbox`, `/chat-reply`, `/chat-summarize`, `/chat-channel-digest` | Microsoft Teams interactive commands: read and reply across chats and channels. Bundles the `teams-bridge` MCP. |
+| [`excel`](plugins/excel/) | `/excel-summary`, `/excel-pivot`, `/excel-variance`, `/excel-to-deck` | Excel analysis with narrative summaries, pivot views, variance commentary, and one-click deck handoff. |
+| [`docs`](plugins/docs/) | `/docs-create`, `/docs-letter`, `/docs-memo` | Word document creation: generic documents, formal letters, and internal memos with consistent formatting. |
 
 ## Install
 
-### Prerequisites (both OSes)
+### Prerequisites
 
-- **Claude Code** — install from <https://claude.ai/claude-code>
-- **Node.js 20+** — install from <https://nodejs.org/>
-- **Python 3.11+** — install from <https://www.python.org/downloads/>
-- **Git** — `git --version` should report v2.30+
-- **Chrome or Edge browser** — required for `outlook-cli` and `teams-cli` first-time auth (Playwright drives the browser session capture)
+- **Claude Code** — [claude.ai/claude-code](https://claude.ai/claude-code)
+- **Node.js 20+** — [nodejs.org](https://nodejs.org/)
+- **Python 3.11+** — [python.org](https://www.python.org/downloads/)
+- **Git 2.30+** — `git --version` to confirm
+- **Chrome or Edge** — required for `outlook-cli` and `teams-cli` first-time browser session capture
 
 ### macOS / Linux
 
@@ -37,10 +43,15 @@ curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/maste
 iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.ps1 | iex
 ```
 
-Then open Claude Code and install + auth each plugin you want:
+### First-time setup inside Claude Code
 
-```
+```text
 /plugin marketplace add weirdapps/plessas-marketplace
+```
+
+Then install and authenticate each plugin you want:
+
+```text
 /plugin install mail@plessas-marketplace
 /mail:auth-setup
 
@@ -48,43 +59,41 @@ Then open Claude Code and install + auth each plugin you want:
 /chat:auth-setup
 ```
 
-`decks`, `meetings`, `excel`, `docs` need no auth — just `/plugin install <name>@plessas-marketplace`.
+`decks`, `meetings`, `excel`, and `docs` need no auth — just `/plugin install <name>@plessas-marketplace`.
 
-> **First-run prompt:** `/mail:auth-setup` asks for your Microsoft 365 SharePoint host (e.g. `contoso.sharepoint.com`). The answer is saved to `~/.outlook-cli/config.json` and reused. Override with `PLESSAS_SHAREPOINT_HOST=…` env var if needed. `/chat:auth-setup` needs no host — the Teams session is captured from the Outlook web login.
+> **Auth prompts:** `/mail:auth-setup` asks for your Microsoft 365 SharePoint host (e.g. `contoso.sharepoint.com`). The answer is saved to `~/.outlook-cli/config.json` and reused on subsequent runs. Override with `PLESSAS_SHAREPOINT_HOST=…` if needed. `/chat:auth-setup` captures a Teams session from your Outlook web login — no host input required.
 >
-> **Legacy path (deprecated, still works):** the shell-based `installers/auth-wizard.{sh,ps1}` scripts handle the same auth flow outside Claude Code. They will be removed in a future release — prefer the slash commands.
+> **Legacy path (deprecated):** `installers/auth-wizard.{sh,ps1}` covers the same auth flow outside Claude Code. It still works but will be removed in a future release — prefer the slash commands.
 
 ## Updating
 
-Inside Claude Code:
-
-```
+```text
 /plugin update plessas-marketplace
 ```
 
-Re-run `installers/install.sh` (or `.ps1` on Windows) after major updates so the bundled MCPs and CLIs refresh too.
+After major updates, re-run `installers/install.sh` (or `.ps1`) so the bundled MCPs and CLIs refresh.
+
+## Optional enhancements
+
+All six plugins work out of the box after install. These optional components add richer context when configured:
+
+| Component | Enhances | What it adds | Without it |
+|-----------|----------|--------------|------------|
+| `second-brain` MCP | `mail`, `meetings` | Historical sender context, attendee dossiers with decisions and action items, topic intelligence | Briefings and meeting prep still work via `outlook-bridge`; dossiers show "No historical context" |
+| `WorkIQ` MCP | `meetings` | Natural-language calendar queries (e.g. "do I have conflicts?") | `outlook-bridge` handles all calendar reads; only free-form NL queries are lost |
+| Style guide (`/mail:style-sync`) | `mail` | Personalized drafts that match your email voice per recipient | Drafts use professional defaults (BRIEF internal, FULL external) |
+
+## Notes
+
+- **`decks`** ships with NBG corporate branding (template, color palette, agent prompts). The pipeline itself — storyline → storyboard → renderer → QA — is brand-agnostic. To adapt: swap `NBG-Template-GR.pptx`, update `plugins/decks/shared/brand-system/colors.md`, and do a project-wide rename of "NBG" to your brand.
+- **`mail`, `meetings`, `chat`, `excel`, `docs`** are fully brand-agnostic.
+- **`excel`** and **`docs`** use the `document-skills` plugin (`document-skills:xlsx` / `document-skills:docx`) when installed. Without it they fall back to `openpyxl`/`pandas` and `python-docx` (auto-installed on first use). For best results: `/plugin install document-skills`.
 
 ## Documentation
 
 - [Day-one walkthrough](docs/day-one.md)
-- [Workflow guides](docs/workflows/) — one per plugin
+- [Per-plugin workflow guides](docs/workflows/)
 - [Migration from `communications-marketplace`](docs/migration-from-communications-marketplace.md)
-
-## Optional enhancements
-
-All six plugins work out-of-the-box after install. These optional components add richer context when configured:
-
-| Component | Enhances | What it adds | Without it |
-|---|---|---|---|
-| `second-brain` MCP | `mail`, `meetings` | Historical sender context, attendee dossiers with decisions/actions, topic intelligence | Briefings and meeting prep still work via outlook-bridge; dossiers show "No historical context" |
-| `WorkIQ` MCP | `meetings` | Natural-language calendar queries (e.g. "do I have conflicts?") | outlook-bridge handles all calendar reads; only free-form NL queries are lost |
-| Style guide (`/style-sync`) | `mail` | Personalized drafts matching your email voice per recipient | Drafts use professional defaults (BRIEF internal, FULL external) |
-
-## Per-plugin notes
-
-- **`decks`** is NBG-branded. The brand-system docs (`plugins/decks/shared/brand-system/{colors,layouts,typography,charts}.md`), the storyline-architect agent persona, and the `NBG-Template-GR.pptx` template all assume NBG corporate identity. If you're not at NBG, the framework is still useful (storyline → storyboard → renderer → QA), but you'll want to swap the template, replace the color palette in `colors.md`, and edit the agent prompts to reference your brand. Most of the customization is a single search-and-replace of "NBG" with your brand name.
-- **`mail`, `meetings`, `chat`, `excel`, `docs`** are brand-agnostic.
-- **`excel`** and **`docs`** use Anthropic's `document-skills` plugin (`document-skills:xlsx` / `document-skills:docx`) when installed. Without it, they fall back to `openpyxl`/`pandas` and `python-docx` respectively (auto-installed on first use). For best results: `/plugin install document-skills`.
 
 ## License
 
@@ -92,4 +101,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## Support
 
-Issues: [github.com/weirdapps/plessas-marketplace/issues](https://github.com/weirdapps/plessas-marketplace/issues)
+[github.com/weirdapps/plessas-marketplace/issues](https://github.com/weirdapps/plessas-marketplace/issues)
