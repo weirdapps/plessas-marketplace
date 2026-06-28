@@ -5,4 +5,4 @@
 Pillow>=12.2.0
 
 # Flood-fill masking for screen-area detection
-numpy>=2.4.6
+numpy>=2.5.0
