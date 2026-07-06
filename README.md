@@ -15,7 +15,7 @@ A Claude Code plugin marketplace built around the desk work of an executive at N
 
 Everything except the `decks` brand assets is domain-neutral. If you work at a different firm, install the plugins you need, point them at your M365 tenant, and (for `decks`) swap the template and colour palette.
 
-Owner: [Dimitrios Plessas](https://weirdapps.github.io/resume/). License: MIT.
+Owner: [weirdapps](https://weirdapps.github.io/resume/). License: MIT.
 
 > **v2.1.0**. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace), archived 2026-05-30. Migration notes: [`docs/migration-from-communications-marketplace.md`](docs/migration-from-communications-marketplace.md).
 
@@ -202,7 +202,7 @@ bash installers/pii-gauntlet.sh --mode=doctor
 |----------|---------|----------|
 | `validate-plugins.yml` | push / PR to master | `marketplace.json` is valid JSON, every plugin has `plugin.json` and a README, every command file has YAML frontmatter, `scripts/validate_consistency.py` passes |
 | `pii-check.yml` | push / PR | No personal data in git-tracked files (runs `installers/pii-gauntlet.sh --mode=ci`) |
-| `rename-guard.yml` | push / PR | No stale slash-command names, every command declares `allowed-tools`, no deprecated tool aliases (`Task` -> `Agent`), no old `nbg-brand-system` paths |
+| `rename-guard.yml` | push / PR | No stale slash-command names, every command declares `allowed-tools`, no deprecated tool aliases, and no references to the pre-rename shared brand-system path |
 | `sonarcloud.yml` | push / PR | Static analysis and quality gate (public projects only) |
 | `codeql.yml` | push / PR / weekly Mon 06:00 UTC | Security scanning for Python and TypeScript / JavaScript |
 | `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch and minor updates (grouped or ungrouped); majors always require manual review |
