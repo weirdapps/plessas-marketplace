@@ -1,0 +1,19 @@
+<svg width="183" height="94" viewBox="0 0 183 94" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="0.5" y="0.5" width="182" height="93" rx="4.5" stroke="#9747FF" stroke-dasharray="10 5"/>
+<circle cx="22" cy="29" r="10" fill="#A2A6A6"/>
+<path d="M27.3334 25L20 33L16.6667 29.3636" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="22" cy="67" r="8" fill="#A2A6A6"/>
+<path d="M26 64L20.5 70L18 67.2727" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="57" cy="29" r="10" fill="#677474"/>
+<circle cx="57" cy="67" r="8" fill="#677474"/>
+<circle cx="91" cy="29" r="10" fill="#162020"/>
+<path d="M95 25L87 33" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M87 25L95 33" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="91" cy="67" r="8" fill="#162020"/>
+<path d="M94 64L88 70" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M88 64L94 70" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="125" cy="29" r="9.16667" stroke="#677474" stroke-width="1.66667"/>
+<circle cx="125" cy="67" r="7.25" stroke="#677474" stroke-width="1.5"/>
+<circle cx="160" cy="29" r="9.16667" stroke="#D2D3D3" stroke-width="1.66667"/>
+<circle cx="160" cy="67" r="7.25" stroke="#D2D3D3" stroke-width="1.5"/>
+</svg>

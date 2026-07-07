@@ -204,7 +204,8 @@ Available slide types (see `assets/slide-catalog.yaml`):
 |-------|-----|-------|
 | Dark Teal | #003841 | Titles, headings |
 | NBG Teal | #007B85 | Primary brand |
-| Bright Cyan | #00DFF8 | Accents, bullets |
+| Bright Cyan | #00DFF8 | Accents |
+| Cyan | #00ADBF | Charts, bullets |
 | Dark Text | #202020 | Body text |
 | White | #FFFFFF | Background |
 
@@ -229,5 +230,5 @@ Available slide types (see `assets/slide-catalog.yaml`):
 - **Never include "Thank You" slides**
 - Always end with plain back cover with logo
 - Section numbers: "01", "02" format in NBG Teal
-- Bullets use Bright Cyan
+- Bullets use Cyan #00ADBF
 - All text boxes: margin = 0

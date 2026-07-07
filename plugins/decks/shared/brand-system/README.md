@@ -23,8 +23,8 @@ aspect_ratio: 16:9
 |------|-----|-------|
 | Dark Teal | `003841` | Titles, icons, headings |
 | NBG Teal | `007B85` | Brand accent, section numbers, callout boxes |
-| Cyan | `00ADBF` | Primary chart color |
-| Bright Cyan | `00DFF8` | Bullets ONLY - **TOO BRIGHT for backgrounds** |
+| Cyan | `00ADBF` | Primary chart color, bullets |
+| Bright Cyan | `00DFF8` | Feature accent - **TOO BRIGHT for backgrounds** |
 | Dark Text | `202020` | Body text |
 | White | `FFFFFF` | **ALWAYS** for slide backgrounds |
 | Off-white | `F5F8F6` | Light backgrounds for cards, metric boxes |
