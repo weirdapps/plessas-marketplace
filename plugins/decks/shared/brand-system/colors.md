@@ -21,8 +21,8 @@
 |--------|-----|-----|-------|
 | Accent 1 (Dark Teal) | `#003841` | 0, 56, 65 | Primary titles, headings |
 | Accent 2 (NBG Teal) | `#007B85` | 0, 123, 133 | Section numbers, highlights |
-| Accent 3 (Cyan) | `#00ADBF` | 0, 173, 191 | Secondary accents |
-| Accent 4 (Bright Cyan) | `#00DFF8` | 0, 223, 248 | Feature accent, bullets |
+| Accent 3 (Cyan) | `#00ADBF` | 0, 173, 191 | Secondary accents, bullets |
+| Accent 4 (Bright Cyan) | `#00DFF8` | 0, 223, 248 | Feature accent |
 | Accent 5 (Light Gray) | `#BEC1BE` | 190, 193, 190 | Subtle elements |
 | Accent 6 (Medium Gray) | `#939793` | 147, 151, 147 | Secondary text |
 
@@ -213,7 +213,7 @@ const NBG_CHART_COLORS = [
 | Slide title | `#003841` (Dark Teal) |
 | Body text | `#202020` (Dark Text) |
 | Section numbers (divider) | `#007B85` (NBG Teal) |
-| Bullet points | `#00DFF8` (Bright Cyan) |
+| Bullet points | `#00ADBF` (Cyan) |
 | Primary accent | `#007B85` (NBG Teal) |
 | Bright accent | `#00DFF8` (Bright Cyan) |
 | Subtle elements | `#939793` (Medium Gray) |

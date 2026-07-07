@@ -60,7 +60,7 @@ if _HAS_PPTX:
     # Colors (RGBColor objects)
     C_DARK_TEAL = RGBColor(0x00, 0x38, 0x41)  # Titles, icons
     C_TEAL = RGBColor(0x00, 0x7B, 0x85)  # Brand accent, section numbers
-    C_BRIGHT_CYAN = RGBColor(0x00, 0xDF, 0xF8)  # Bullets ONLY
+    C_BRIGHT_CYAN = RGBColor(0x00, 0xDF, 0xF8)  # Bright Cyan (feature accent)
     C_DARK_TEXT = RGBColor(0x20, 0x20, 0x20)  # Body text
     C_MEDIUM_GRAY = RGBColor(0x93, 0x97, 0x93)  # Page numbers, dates
     C_WHITE = RGBColor(0xFF, 0xFF, 0xFF)  # Backgrounds
@@ -244,7 +244,7 @@ def _add_bullets(slide, x, y, w, h, points, *, font_size=14):
         p.font.name = FONT
         p.alignment = PP_ALIGN.LEFT
 
-        # NBG bullet styling via OOXML: • in Arial, Bright Cyan #00DFF8
+        # NBG bullet styling via OOXML: • in Arial, Cyan #00ADBF
         pPr = p._p.get_or_add_pPr()
         pPr.set("lvl", "0")
 
@@ -253,7 +253,7 @@ def _add_bullets(slide, x, y, w, h, points, *, font_size=14):
 
         buClr = SubElement(pPr, qn("a:buClr"))
         srgbClr = SubElement(buClr, qn("a:srgbClr"))
-        srgbClr.set("val", "00DFF8")
+        srgbClr.set("val", "00ADBF")
 
         buChar = SubElement(pPr, qn("a:buChar"))
         buChar.set("char", "\u2022")
@@ -912,9 +912,7 @@ def build_presentation(outline_path, output_path):
         template = outline.get("template", "GR")
         print("\n[McKinsey Quality] Using Pyramid Principle structure")
         if presentation.get("main_recommendation"):
-            print(
-                f"  Main recommendation: {presentation['main_recommendation'][:60]}..."
-            )
+            print(f"  Main recommendation: {presentation['main_recommendation'][:60]}...")
     else:
         template = outline.get("template", "GR")
         slides = outline.get("slides", [])
@@ -947,9 +945,7 @@ def build_presentation(outline_path, output_path):
 
         elif category == "divider":
             create_divider_slide(prs, content)
-            print(
-                f"  [divider] {content.get('number', '')} {content.get('title', '')[:50]}"
-            )
+            print(f"  [divider] {content.get('number', '')} {content.get('title', '')[:50]}")
 
         elif category == "contents":
             page_number += 1
@@ -959,9 +955,7 @@ def build_presentation(outline_path, output_path):
 
         elif category == "chart":
             page_number += 1
-            chart_subtype = (
-                raw_type.replace("_chart", "") if "_chart" in raw_type else "bar"
-            )
+            chart_subtype = raw_type.replace("_chart", "") if "_chart" in raw_type else "bar"
             create_chart_slide(prs, content, page_number, chart_type=chart_subtype)
             print(f"  [chart:{chart_subtype}] {content.get('title', '')[:50]}")
 

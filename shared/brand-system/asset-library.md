@@ -10,9 +10,11 @@ Comprehensive library of NBG brand assets for presentations.
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Icons | 338 | Brand icons in 20 categories |
-| Illustrations | 21 | Digital app illustrations |
-| Logos | 10 | App icons and wordmarks |
+| Icons (PNG, legacy mono) | 338 | Brand icons in 20 categories |
+| Duotone icons (SVG) | 19 files | Official duotone style: library + functional + 17 themed sets |
+| Illustrations | 21 PNG + 9 SVG splash | Digital app illustrations + splash set |
+| Logos | 10 PNG + 3 SVG | App icons and wordmarks + vector NBG/App/Go4more |
+| Backgrounds | 4 | Brand gradient/pattern backgrounds (SVG) |
 | Screenshots | 117 | Product UI screenshots |
 
 ---
@@ -108,6 +110,26 @@ Need an icon?
 
 ---
 
+## Duotone Icons (SVG) — official style
+
+**Path:** `assets/icons-duotone/`
+
+The official NBG icon style is **duotone**: stroke-based teal outlines with accent details (`#087681` primary + `#13A4AD` accent). Prefer these for digital and product-styled slides and any new icon work.
+
+| Asset | What it is |
+|-------|-----------|
+| `icons-duotone-library.svg` | Full duotone reference sheet (~116 icons x 3 sizes) |
+| `icons-functional-library.svg` | Mono functional UI icon set (`#162020`, 1.5 stroke) |
+| `sets/*.svg` | 17 themed sets: currency, device, social, QR, PFM, card and transaction states, progress, table statuses, bank and browser logos, product |
+
+**Rules:** duotone SVGs are already brand-colored, do NOT recolor to a single tint. To generate a new duotone icon, use `/create-icon` or the `icon-designer` agent (spec in `icons.md`). The legacy PNG set under `assets/icons/` stays available (solid mono), but duotone is the current standard.
+
+## Backgrounds
+
+**Path:** `assets/backgrounds/` (4 files: `bg-default`, `bg-colours`, `bg-web` SVG + `bg-dm-colours` PNG). Use behind hero or section visuals, never behind body text.
+
+---
+
 ## Illustrations
 
 **Path:** `assets/illustrations/`
@@ -148,6 +170,8 @@ Need an icon?
 4. **One per slide** — never combine multiple illustrations
 5. **Use with image-left/right layouts** — as visual anchor with text
 6. **Don't mix with screenshots** — different visual purposes
+
+A 9-piece SVG **splash** set (investments, insurance, loan, p2p, moneybox, cyber protection, remote service, maintenance) lives in `assets/illustrations/splash/` for Internet Banking promo styling.
 
 See `assets/illustrations/INDEX.md` for complete reference.
 
