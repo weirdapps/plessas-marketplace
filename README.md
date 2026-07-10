@@ -175,7 +175,6 @@ All six plugins work standalone. These optional pieces add richer context when p
 | Component | Enhances | What it adds | Without it |
 |-----------|----------|--------------|------------|
 | `second-brain` MCP | `mail`, `meetings` | Historical sender context, attendee dossiers with prior decisions and open actions | Briefings still work via `outlook-bridge`; dossiers say "no historical context" |
-| `WorkIQ` MCP | `meetings` | Natural-language calendar queries ("do I have any conflicts?") | `outlook-bridge` covers all structured calendar reads; only free-form NL queries are lost |
 | `document-skills` plugin | `excel`, `docs` | Higher-fidelity xlsx / docx generation | Falls back to `openpyxl` / `pandas` and `python-docx` (auto-installed on first use) |
 | `/mail:style-sync` | `mail` | Personalised drafts that match your voice per recipient | Drafts use professional defaults (brief for internal, full for external) |
 

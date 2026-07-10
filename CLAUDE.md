@@ -76,7 +76,7 @@ Five GitHub Actions workflows (`.github/workflows/`):
   committed under `mcp-server/dist/`.
 - `meetings` requires `mail` to be installed (shares its `outlook-bridge` MCP for calendar).
 - Optional enrichment: `second-brain` MCP (richer attendee dossiers), `document-skills` plugin
-  (better xlsx/docx output), `WorkIQ` MCP (NL calendar queries).
+  (better xlsx/docx output).
 - Python tooling: ruff + mypy via `pyproject.toml` (no package install — tooling-only config).
 
 ## Brand Notes

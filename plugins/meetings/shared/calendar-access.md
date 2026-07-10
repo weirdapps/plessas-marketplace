@@ -2,7 +2,7 @@
 
 > **Cross-platform note:** AppleScript fallback paths in this file (`tell application "Microsoft Outlook"`, `tell application "Mail"`, etc.) only run on macOS. On Windows or Linux, the agent should rely on `mcp__outlook-bridge__*` tools and skip the AppleScript blocks entirely. Each AppleScript block is prefixed with an explicit OSTYPE guard.
 
-Calendar access for meeting intelligence. The outlook-bridge MCP wrapper around `outlook-cli` is the primary method (Microsoft Graph, structured JSON). WorkIQ MCP is the fallback for natural-language queries that don't map cleanly to structured arguments. Outlook AppleScript is a last-resort emergency fallback.
+Calendar access for meeting intelligence. The outlook-bridge MCP wrapper around `outlook-cli` is the primary method (Microsoft Graph, structured JSON). Outlook AppleScript is a last-resort emergency fallback.
 
 > **IMPORTANT**: macOS Calendar is NOT reliable — it is out of sync with M365. NEVER use macOS Calendar AppleScript.
 
@@ -42,54 +42,9 @@ Args: { "id": "AAMkAGI..." }
 
 If a call returns `{error: "auth_required"}`, run `outlook-cli login` via Bash with user approval and retry.
 
-## FALLBACK: WorkIQ MCP for natural-language queries
-
-For free-form queries that don't map to structured arguments (e.g. "any conflicts with my 2pm?", "who haven't I met with this month?", "find me a 30-minute slot tomorrow afternoon"), use `mcp__workiq__ask_work_iq`.
-
-### Reading Today's Events
-
-```
-Tool: mcp__workiq__ask_work_iq
-Query: "What meetings do I have today?"
-```
-
-### Reading Events for a Specific Date
-
-```
-Tool: mcp__workiq__ask_work_iq
-Query: "What's on my calendar for March 28?"
-```
-
-### Reading Events for a Date Range
-
-```
-Tool: mcp__workiq__ask_work_iq
-Query: "What meetings do I have from Monday March 23 to Friday March 27?"
-```
-
-### Getting Attendee Details
-
-```
-Tool: mcp__workiq__ask_work_iq
-Query: "Who is attending my 2pm meeting today?"
-```
-
-### Checking for Conflicts
-
-```
-Tool: mcp__workiq__ask_work_iq
-Query: "Do I have any back-to-back meetings today?"
-```
-
-**When to use WorkIQ instead of outlook-bridge:**
-
-- The query is genuinely natural-language and doesn't map to a date range + attendee filter
-- You need cross-app reasoning (calendar + Teams + chat) that outlook-cli can't see
-- outlook-bridge is unavailable (MCP server down, `outlook-cli` not authenticated)
-
 ## EMERGENCY FALLBACK: Microsoft Outlook AppleScript (macOS only)
 
-Use Outlook AppleScript ONLY if both outlook-bridge and WorkIQ MCP are unavailable.
+Use Outlook AppleScript ONLY if the outlook-bridge MCP is unavailable.
 
 ### Reading Today's Calendar Events
 
@@ -158,8 +113,7 @@ Outlook handles recurring events differently. The `every calendar event` query m
 | Scenario | Method |
 |----------|--------|
 | Default — structured "what's on my calendar" / range / event detail | outlook-bridge MCP (`outlook_list_calendar`, `outlook_get_event`) |
-| Free-form natural-language ("any conflicts with my 2pm?") | WorkIQ MCP (`mcp__workiq__ask_work_iq`) |
-| Both MCPs unavailable | Outlook AppleScript |
+| outlook-bridge unavailable | Outlook AppleScript |
 | User passes `--outlook` flag | Outlook AppleScript |
 
-**Default strategy**: Use outlook-bridge MCP as the primary calendar source. It's M365-backed via Microsoft Graph and returns structured JSON. Fall back to WorkIQ for natural-language queries, and to Outlook AppleScript only if both MCPs are unavailable.
+**Default strategy**: Use outlook-bridge MCP as the primary calendar source. It's M365-backed via Microsoft Graph and returns structured JSON. Fall back to Outlook AppleScript only if the MCP is unavailable.

@@ -45,7 +45,7 @@ Tool: mcp__outlook-bridge__outlook_get_event
 Args: { "id": "<event Id>" }
 ```
 
-Fall back to WorkIQ MCP (`mcp__workiq__ask_work_iq`) for free-form natural-language queries, and to Outlook AppleScript only if both MCPs are unavailable.
+Fall back to Outlook AppleScript only if the outlook-bridge MCP is unavailable.
 See `shared/calendar-access.md` for access patterns.
 
 ### 3. Capture Debrief

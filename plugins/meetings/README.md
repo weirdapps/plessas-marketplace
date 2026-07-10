@@ -15,7 +15,7 @@ Meeting intelligence for `plessas-marketplace`. Reads your calendar, builds per-
 
 ### Meeting Prep (`/meeting-prep`)
 
-1. Reads today's calendar events via outlook-bridge MCP (primary, M365-synced via `outlook-cli`), with WorkIQ MCP as fallback for natural-language queries
+1. Reads today's calendar events via outlook-bridge MCP (primary, M365-synced via `outlook-cli`)
 2. Extracts attendees from each meeting
 3. Queries the knowledge store via MCP tools for each attendee:
    - Recent email exchanges and sentiment
@@ -46,7 +46,6 @@ Meeting intelligence for `plessas-marketplace`. Reads your calendar, builds per-
 ## Calendar Support
 
 - **outlook-bridge MCP** (`mcp__outlook-bridge__outlook_list_calendar` / `outlook_get_event`) — primary. Cross-platform via `outlook-cli`, structured JSON.
-- **WorkIQ MCP** (`mcp__workiq__ask_work_iq`) — fallback for natural-language queries that don't map cleanly to structured arguments. Optional.
 - **Outlook AppleScript** — emergency last-resort fallback on macOS only. Documented in `shared/calendar-access.md` but not invoked by default.
 - macOS Calendar is NEVER used (out of sync with M365)
 - See `shared/calendar-access.md` for the full access pattern

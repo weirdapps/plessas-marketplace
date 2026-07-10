@@ -51,7 +51,7 @@ Tool: mcp__outlook-bridge__outlook_get_event
 Args: { "id": "<event Id>" }
 ```
 
-Fall back to WorkIQ MCP (`mcp__workiq__ask_work_iq`) for free-form natural-language queries (e.g. conflicts), and to Outlook AppleScript only if both MCPs are unavailable or `--outlook` is passed.
+Fall back to Outlook AppleScript only if the outlook-bridge MCP is unavailable or `--outlook` is passed.
 Extract: summary, start/end time, location, attendees, notes.
 See `shared/calendar-access.md` for the full access-pattern matrix.
 
@@ -97,7 +97,7 @@ Display the full briefing in the conversation.
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `--date` | No | today | Date to prep for (YYYY-MM-DD) |
-| `--outlook` | No | false | Force Outlook AppleScript path (macOS only; emergency fallback — bypasses outlook-bridge and WorkIQ MCPs) |
+| `--outlook` | No | false | Force Outlook AppleScript path (macOS only; emergency fallback — bypasses the outlook-bridge MCP) |
 | `--no-inbox` | No | false | Skip inbox cross-referencing |
 
 ## Output
