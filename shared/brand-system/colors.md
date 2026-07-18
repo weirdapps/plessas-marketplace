@@ -46,6 +46,8 @@
 | `#F5F9F6` | Light Background | Slide backgrounds |
 | `#252D30` | Dark Charcoal | Dark backgrounds |
 | `#0A091B` | Near-black | Dark slides |
+| `#E6F5F6` | Pale Teal Tint | Callout / takeaway strip fill |
+| `#FBF3E4` | Cream Tint | Recommended-option card fill (paired with gold border) |
 
 ## Secondary Colors (Charts & Diagrams)
 
@@ -54,9 +56,21 @@
 | Black | `#212121` | 33, 33, 33 | Alternative text |
 | Aqua Light | `#3EDEF8` | 62, 222, 248 | Light accent |
 | Light Grey | `#BEC1BE` | 190, 193, 190 | Subtle elements |
-| Grey | `#595959` | 89, 89, 89 | Secondary text (TOC descriptions) |
-| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, table notes (NBG executive signature — frequent across reference decks)** |
+| Grey | `#595959` | 89, 89, 89 | Legacy TOC descriptions — prefer `#5A5F5A` |
+| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, TOC teasers, table notes (canonical secondary grey — NBG executive signature)** |
 | Pale Grey | `#F5F8F6` | 245, 248, 246 | Light backgrounds, KPI card fill |
+
+### Grey hierarchy (avoid drift — one grey per role)
+
+Three greys, three jobs. Do NOT introduce others (`#666666`, `#595959` as body/caption, `#5B5B69`, etc. — all seen drifting across reference decks):
+
+| Grey | Role |
+|------|------|
+| `#5A5F5A` | Captions, subtitles, owner lines, TOC teasers, table notes — the secondary-text grey |
+| `#939793` | Page numbers, process-flow arrows, subtle UI marks, "partner/them" ownership coding |
+| `#BEC1BE` | Dividers, card borders, hairlines |
+
+Body text is `#202020` (never a grey). Retire `#595959` / `#666666` as body or caption greys.
 
 ## Status/Semantic Colors
 
@@ -80,6 +94,12 @@ These are the colors observed across reference NBG executive decks — used in s
 | **Warning / Risk** | `#CC0000` | — | Severe priority indicator (text white) |
 
 **When to use which palette**: Charts and official brand graphics → corporate palette. Status pills and DIY KPI/Progress decks → practical palette.
+
+### Recommended-option highlight (comparison slides) — gold, one convention
+
+When one option among several is THE recommendation, mark it in **gold `#D9A757`** (Premium accent): a 1.5pt gold border, optional `#FBF3E4` cream fill, and a small gold "RECOMMENDED" tab/pill (white ALL-CAPS text).
+
+**Use gold, not green.** Green (`#008000` / `#73AF3C`) is already the Delivered / OK / Success color, so a green "recommended" badge collides with status coding on any slide that carries both. Gold is otherwise reserved for premium/selected and stays unambiguous. Pick ONE convention per deck and keep it; do not mix a green "recommended" pill with the gold treatment. Component geometry: see `layouts.md → Recommended-Option Highlight`.
 
 ## Status Colors (Tables & Charts Only)
 
@@ -160,6 +180,10 @@ Use these colors in order for chart data series:
 | Metric card | `#F5F8F6` | 1pt `#BEC1BE` |
 | Info card | `#F5F8F6` | None |
 | Highlight card | `#CBFAFF` | None |
+| Callout / takeaway strip | `#E6F5F6` | None |
+| Recommended-option card | `#FBF3E4` | 1.5pt `#D9A757` (gold) |
+
+**Tint hierarchy**: `#F5F8F6` = default card; `#E6F5F6` = soft pale-teal takeaway/callout strip (the bottom "bottom line" bar); `#CBFAFF` = stronger cyan highlight card; `#FBF3E4` + gold border = the recommended option (see Recommended-option highlight below). Pick `#E6F5F6` for takeaway strips consistently — do not drift to `#EAF4F5` or other one-off tints.
 
 ### Dark Theme (DO NOT USE)
 

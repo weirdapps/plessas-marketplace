@@ -116,7 +116,7 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 | "Contents" Header | Aptos Bold | **32pt** | #003841 | 0.37", 0.36" |
 | Section Number | Aptos Bold | **18pt** | #007B85 | 0.37", y (see below) |
 | Section Title | Aptos Bold | **16pt** | #003841 | 1.10", y |
-| Description | Aptos | **12pt** | #595959 | 1.10", y + 0.35" |
+| Description | Aptos | **12pt** | #5A5F5A | 1.10", y + 0.35" |
 
 ### Spacing
 
@@ -319,6 +319,18 @@ Used to flag commitment status on right-half "Priorities" lists.
 | Accent stripe | (0.37, ..., 0.05, 0.52) | `#008000` | — |
 | Row body | (0.42, ..., 5.45, 0.52) | `#E8F5E9` | Arial 15pt **Bold** `#008000` ("✓ <delivered item>") |
 
+## Recommended-Option Highlight (comparison slides)
+
+When one option among several is the recommendation, mark it with the **gold** treatment — never green (green is reserved for Delivered/OK status; see `colors.md → Recommended-option highlight`).
+
+| Element | Spec |
+|---|---|
+| Card border | 1.5pt `#D9A757` (gold) around the recommended card only |
+| Card fill | `#FBF3E4` (cream) — optional, for extra pull |
+| "RECOMMENDED" tab | small rounded pill/tab, fill `#D9A757`, white ALL-CAPS Aptos ~10pt Bold, notched at the card's top edge |
+
+One convention per deck: pick the gold treatment and keep it consistent. Do not also place a green "recommended" pill elsewhere in the same deck. The non-recommended options stay in the default `#F5F8F6` card with no border.
+
 ## Clean Executive Cover (DIY on Blank Page) — signature
 
 When a clean executive cover is needed (clean, white, NO decorative shapes), build on the **Blank Page** layout (Master 9 in NBG-Template-GR.pptx — the only cover-grade layout with a fully white background):
@@ -417,26 +429,16 @@ From a reference deck slide 4 (10×7 table at (0.37, 1.65, 12.41, 4.03)):
 | Ellipse | Icons, bullets |
 | Line | Dividers, timelines |
 
-## Communication Use Case Guide
+## Element Sequences (starting points — NOT separate formats)
 
-### Executive Summaries
+There is ONE NBG deck format (see `presentation-style-guide.md` Standard #20). The rows below are **common element sequences**, not deck-type templates: every deck uses the same chassis (cover, logo, page numbers, palette, cards) and simply selects the elements its message needs. Start from the closest sequence, then add or drop elements by what each slide must say — never invent a new format per topic.
 
-Cover -> Key Metrics -> Charts -> Back Cover
+| Communication need | Common element sequence (adapt freely) |
+|---|---|
+| Executive summary | Cover → Key metrics → Charts → Back Cover |
+| Project update | Cover → Contents → Timeline → Status → Next steps → Back Cover |
+| Data presentation | Cover → Contents → Charts (bar, line, doughnut) → Tables → Key takeaways → Back Cover |
+| Strategy | Cover → (Dividers) → Infographics → Process flows → Timeline → Back Cover |
+| Financial report | Cover → Contents → KPI metrics → Charts → Tables → Disclaimers → Back Cover |
 
-### Project Updates
-
-Cover -> Contents -> Timeline -> Status -> Next Steps -> Back Cover
-
-### Data Presentations
-
-Cover -> Contents -> Charts (bar, line, doughnut) -> Tables -> Key Takeaways -> Back Cover
-
-**Note**: Never use pie charts - always use doughnut.
-
-### Strategy Decks
-
-Cover -> Dividers -> Infographics -> Process Flows -> Timeline -> Back Cover
-
-### Financial Reports
-
-Cover -> Contents -> KPI Metrics -> Charts -> Tables -> Disclaimers -> Back Cover
+**Note**: Never use pie charts, always use doughnut. Dividers are optional (most NBG decks use none).

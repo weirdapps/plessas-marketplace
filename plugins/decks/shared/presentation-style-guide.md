@@ -221,6 +221,29 @@ The back cover is a clean exit. If a closing sentiment is needed, put it on the 
 
 This is non-negotiable and applies even to short showcase/demo decks. A 3-slide deck still gets a back cover. A 30-slide deck gets the same back cover. There is exactly one shape per back cover, and it is the oval emblem.
 
+## 20. ONE format, elements chosen by message — never a per-use-case format
+
+There is a single NBG deck format. Do NOT build a different format for a different use case — there is no "business-case format", no "CEO-deck format", no "strategy-deck format". Every deck, whatever its purpose, uses the SAME chassis:
+
+- 13.33"×7.5" canvas, white background, 0.374" left gutter (Standard #15)
+- Aptos throughout; titles Regular weight (Standard #16)
+- Section pill / eyebrow, action title, subtitle
+- Bottom-left Greek logo + page number (Standards #10, #17)
+- `#F5F8F6` cards with tight corners (Standard #12), NBG palette (`brand-system/colors.md`)
+
+What changes between decks is which **elements** you place on that chassis, chosen by what each slide needs to SAY — not by a deck-type template:
+
+| The slide needs to say... | Element to use |
+|---|---|
+| a journey / who-owns-what | process flow (icon tiles + arrows + ownership legend) |
+| here are the alternatives | parallel comparison cards/slides (identical layout, only labels/colour-coding change) |
+| here are the headline numbers | KPI / stat tiles |
+| this is the pick | recommended-option highlight (see `brand-system/layouts.md`) |
+| these are the risks | warning flags (orange square + ALL-CAPS label) |
+| the bottom line | takeaway strip |
+
+Assemble elements freely — one deck can mix stat tiles, option cards, and a takeaway strip if the argument needs all three. The format holds the deck together; the elements carry the message.
+
 ---
 
 # Part 2 — Learned Preferences
