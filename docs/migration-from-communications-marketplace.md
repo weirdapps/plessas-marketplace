@@ -21,7 +21,7 @@ You only need this guide if you previously installed [`weirdapps/communications-
 | — | **chat** (NEW) | Interactive Teams commands |
 | — | **excel** (NEW) | Excel analysis |
 | — | **docs** (NEW) | Word document creation |
-| — | **mail-pro** (separate) | Optional companion to `mail`, available in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. Hosts `/comm-report` and `/style-rebuild`. Requires private `second-brain` repo. |
+| — | **mail-pro** (separate) | Optional companion to `mail`, available in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. Hosts `/comm-report` and `/style-rebuild`. Requires `second-brain` knowledge store. |
 
 ## Migration steps
 
@@ -63,7 +63,7 @@ Back inside Claude Code:
 /plugin install excel@plessas-marketplace
 /plugin install docs@plessas-marketplace
 
-# Optional — mail-pro lives in a separate marketplace (requires private weirdapps/second-brain access):
+# Optional — mail-pro lives in a separate marketplace (requires a populated weirdapps/plessas-second-brain knowledge store):
 # /plugin marketplace add weirdapps/plessas-lab
 # /plugin install mail-pro@plessas-lab
 ```
@@ -140,7 +140,7 @@ iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/insta
 | — | `/docs-create` (NEW) |
 | — | `/docs-letter` (NEW) |
 | — | `/docs-memo` (NEW) |
-| `/comm-report` | `/comm-report` (moved to **mail-pro** plugin — requires private second-brain repo access) |
+| `/comm-report` | `/comm-report` (moved to **mail-pro** plugin — requires second-brain knowledge store) |
 | `/style-rebuild` | `/style-rebuild` (moved to **mail-pro** plugin — same reason) |
 
 All existing commands keep the same names. The two corpus-driven commands moved to `mail-pro`, which lives in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. Users without the private `second-brain` knowledge store still get a fully functional `mail` plugin.

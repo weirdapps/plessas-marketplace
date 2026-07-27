@@ -208,7 +208,7 @@ INSIGHTS
 
 ### 6b. (OPTIONAL) Enrich drafts with knowledge-store context
 
-> **Only run this step if `mcp__second-brain__*` tools are available in your environment.** The `second-brain` MCP server is available via the optional `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (requires the private `weirdapps/second-brain` repo). If you don't see `mcp__second-brain__*` tools listed, **skip this entire section** — the `mail` plugin is fully functional without it, drafts will just lean on the email thread itself + the style guide.
+> **Only run this step if `mcp__second-brain__*` tools are available in your environment.** The `second-brain` MCP server is available via the optional `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (requires the `weirdapps/plessas-second-brain` knowledge store). If you don't see `mcp__second-brain__*` tools listed, **skip this entire section** — the `mail` plugin is fully functional without it, drafts will just lean on the email thread itself + the style guide.
 
 If `second-brain` is available, query it to enrich draft context. The style guide tells you HOW to write; second-brain tells you WHAT to say.
 

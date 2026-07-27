@@ -240,7 +240,7 @@ outlook-cli login --sharepoint-host <correct-host>.sharepoint.com
 
 The self-learning loop calibrates per recipient automatically. Run `/mail-review` 3-4 times — each time it ingests recent sent items and updates the recipient profile. After ~10 sends to that recipient, the style should match.
 
-For an immediate manual rebuild, install `mail-pro` from the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (requires private `second-brain` repo) and run `/style-rebuild`.
+For an immediate manual rebuild, install `mail-pro` from the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (requires `second-brain` knowledge store) and run `/style-rebuild`.
 
 ### meetings: "outlook-bridge MCP not available"
 
@@ -256,7 +256,7 @@ Outlook desktop must be syncing M365 calendars (not local-only). Open Outlook �
 
 ### meetings: attendee dossiers are empty
 
-Optional `second-brain` MCP isn't installed. Briefings still work (calendar + inbox cross-ref) — just without the historical dossiers. Install `mail-pro` from the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace to add dossiers from your email corpus (requires private `second-brain` repo access).
+Optional `second-brain` MCP isn't installed. Briefings still work (calendar + inbox cross-ref) — just without the historical dossiers. Install `mail-pro` from the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace to add dossiers from your email corpus (requires `second-brain` knowledge store).
 
 ### chat: channel sends don't work
 

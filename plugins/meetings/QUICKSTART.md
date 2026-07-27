@@ -120,7 +120,7 @@ DAY SUMMARY
 |---|---|
 | Plugin says `outlook-bridge` MCP not available | Install the `mail` plugin: `/plugin install mail@plessas-marketplace` |
 | Calendar shows wrong meetings or is empty | Outlook desktop must be syncing M365 (not local-only calendars). Check Outlook → Account settings. Then `outlook-cli auth-check` |
-| Attendee dossiers are empty | Optional `second-brain` MCP isn't installed. Briefings still work; install `mail-pro` from the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace to add dossiers from your email corpus (requires private second-brain repo access) |
+| Attendee dossiers are empty | Optional `second-brain` MCP isn't installed. Briefings still work; install `mail-pro` from the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace to add dossiers from your email corpus (requires second-brain knowledge store) |
 | AppleScript fallback not engaging | macOS-only. Pass `--outlook` to force the AppleScript path (emergency last-resort, bypasses MCPs) |
 
 ## Where things live

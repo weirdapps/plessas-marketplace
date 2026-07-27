@@ -30,7 +30,7 @@ No. Pick the ones you want. The dependency rules:
 - `decks` is standalone
 - `excel` is standalone
 - `docs` is standalone
-- `mail-pro` is an OPTIONAL companion to `mail`, available separately via the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace — only install if you have access to the private `weirdapps/second-brain` repo
+- `mail-pro` is an OPTIONAL companion to `mail`, available separately via the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace — only install if you have access to the `weirdapps/plessas-second-brain` knowledge store
 
 The most common starter set: `mail`, `meetings`, `chat`, `decks`. Add `excel` and `docs` when you find yourself wanting them.
 
@@ -125,7 +125,7 @@ In the meantime, the worst case is a single plugin's commands not working — th
 
 ## What's the difference between `mail` and `mail-pro`?
 
-`mail-pro` is an optional companion plugin available in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (not this one). It adds `/comm-report` (relationship analytics) and `/style-rebuild` (full corpus rebuild) on top of the `mail` plugin. Both require the private `weirdapps/second-brain` knowledge store.
+`mail-pro` is an optional companion plugin available in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (not this one). It adds `/comm-report` (relationship analytics) and `/style-rebuild` (full corpus rebuild) on top of the `mail` plugin. Both require the private `weirdapps/plessas-second-brain` knowledge store.
 
 For most users, `mail` is everything you need. Install `mail-pro` from `plessas-lab` only if you have `second-brain` access and want deep analytics.
 

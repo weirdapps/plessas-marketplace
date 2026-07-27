@@ -9,6 +9,6 @@ Install it from there:
 /plugin install mail-pro@plessas-lab
 ```
 
-Requires the private [`second-brain`](https://github.com/weirdapps/second-brain) knowledge store. If you don't have access, skip it — the base [`mail`](mail.md) plugin works without it.
+Requires the private [`second-brain`](https://github.com/weirdapps/plessas-second-brain) knowledge store. If you don't have access, skip it — the base [`mail`](mail.md) plugin works without it.
 
 See the [`plessas-lab` README](https://github.com/weirdapps/plessas-lab) for full documentation.
