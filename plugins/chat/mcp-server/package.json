@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#95abd5164bc5d37a7ef785078f9b2d8d4cd141dc"
   },
   "devDependencies": {
