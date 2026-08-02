@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#c278600ccc54253c83fa8e353b5009081e05e1a0"
   },
   "devDependencies": {
