@@ -27,6 +27,7 @@ Branded presentation system. Multi-agent pipeline producing board-ready PPTX wit
 | `/create-presentation` | Create new branded presentation from content |
 | `/redesign-deck` | Redesign existing presentation to brand standards |
 | `/polish-slides` | Quick formatting polish |
+| `/presentation-review` | Compare a finalised presentation against its draft to learn style preferences |
 | `/create-infographic` | Generate data visualisation (bundled creative agent) |
 | `/create-icon` | Create SVG icon (bundled creative agent) |
 | `/create-mockup` | Create device mockup from screenshot (bundled creative agent) |

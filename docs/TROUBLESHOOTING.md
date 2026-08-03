@@ -66,7 +66,7 @@ $npmPrefix = npm prefix -g
 # Restart PowerShell
 ```
 
-If your IT policy actually blocks global npm linking, the bundled MCPs fall back to invoking the locally cloned binaries at `~/.claude/plugins/marketplaces/plessas-marketplace/installers/deps/{outlook-access,teams-access}/dist/cli.js`. No user action required for the plugins to work — but you won't have `outlook-cli` available as a standalone command in your shell.
+If your IT policy actually blocks global npm linking, the plugins still work. Each bridge carries its CLI as a pinned `git+https` dependency and invokes it directly out of its own `node_modules` (`plugins/{mail,chat}/mcp-server/node_modules/{outlook-tool,teams-cli}/dist/cli.js`); the global link is only a convenience. No user action required for the plugins to work, but you won't have `outlook-cli` available as a standalone command in your shell.
 
 ### `Node.js: v18.x.x found, need v20+`
 
@@ -148,10 +148,9 @@ outlook-cli login --sharepoint-host <correct-host>.sharepoint.com
 
 ```bash
 teams-cli auth-check        # confirms current state
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
 ```
 
-The auth wizard re-runs the Playwright browser sign-in for Teams. Browser window opens — sign in with your M365 account, approve the requested permissions, browser closes automatically.
+Then, inside Claude Code, run `/chat:auth-setup --force-reauth`. It re-runs the Playwright browser sign-in for Teams. A browser window opens: sign in with your M365 account, approve the requested permissions, browser closes automatically. (`installers/auth-wizard.sh` is the deprecated terminal equivalent.)
 
 ### Teams: silent renew fails / browser doesn't open
 

@@ -28,8 +28,7 @@ installers/                    # install.sh / install.ps1 + pii-gauntlet.sh
 scripts/                       # sync_brand_system.sh, validate_consistency.py
 shared/                        # Cross-plugin shared assets (brand-system, email-style-template)
 .claude-plugin/marketplace.json  # Top-level manifest listing all plugins
-
-```text
+```
 
 ## Adding a New Plugin
 
@@ -44,36 +43,49 @@ shared/                        # Cross-plugin shared assets (brand-system, email
 
 ## Testing
 
-No automated Python test suite in this repo. Validation is CI-only:
+**No test suite runs in CI.** Every workflow is a structural or security guard, not a test run.
+What exists, and what actually executes:
 
 - `scripts/validate_consistency.py --verbose` — consistency checks across manifests and commands.
-- CI runs `ruff` and `mypy` for any Python code (config in `pyproject.toml`).
-- PII scan: `bash installers/pii-gauntlet.sh --mode=ci` before any PR.
+  Runs in `validate-plugins.yml`.
+- PII scan: `bash installers/pii-gauntlet.sh --mode=ci`. Runs in `pii-check.yml`.
+- `plugins/mail/mcp-server/tests/`: vitest, 4 files / 29 tests. Real coverage, but NOT wired
+  into any workflow. Run it by hand after touching `outlook-bridge`: `npm test` in that directory.
+- `plugins/chat/mcp-server/`: **no tests at all.** Its `npm test` uses `--passWithNoTests`, so it
+  exits 0 while verifying nothing. Any `teams-bridge` change is unverified; test manually.
+- `plugins/decks/tools/nbg-presentation/test_nbg_build.py` and
+  `plugins/decks/bundled/creative/tools/device-mockup/test_iphone_mockup.py` exist but never run:
+  `sonarcloud.yml` gates `pytest` on a `tests/`, `test/`, or `__tests__` directory at the repo
+  root, and there is none.
+- `ruff` and `mypy` are configured in `pyproject.toml` but no workflow invokes them. Run them
+  locally if you touch Python.
 
 Run locally before pushing:
 
 ```bash
 bash installers/pii-gauntlet.sh --mode=doctor
 python3 scripts/validate_consistency.py --verbose
-
+(cd plugins/mail/mcp-server && npm test)   # only if you touched outlook-bridge
 ```
 
 ## CI
 
-Five GitHub Actions workflows (`.github/workflows/`):
+Six GitHub Actions workflows (`.github/workflows/`):
 
 | Workflow | Trigger | What it checks |
 |----------|---------|----------------|
 | `validate-plugins.yml` | push/PR to master | `marketplace.json` JSON validity, all `plugin.json` files have required fields, all READMEs present, all command files have frontmatter, consistency script |
 | `pii-check.yml` | push/PR | Personal data leakage scan |
 | `rename-guard.yml` | push/PR | Stale command names, missing `allowed-tools`, deprecated tool names |
-| `sonarcloud.yml` | push/PR | Static analysis / quality gate |
-| `codeql.yml` | push/PR | Security scanning |
+| `sonarcloud.yml` | push/PR | Static analysis / quality gate (skipped if the repo is private or `SONAR_TOKEN` is unset) |
+| `codeql.yml` | push/PR/weekly | Security scanning (Python and JavaScript/TypeScript) |
+| `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch/minor, never majors. Thin caller: the logic lives in `weirdapps/shared-workflows/.github/workflows/dependabot-auto-merge.yml@main`, so edit it there, not here |
 
 ## Key Dependencies
 
-- `mail` and `chat` bundle their own MCP servers (Node.js 20+, TypeScript); built artifacts are
-  committed under `mcp-server/dist/`.
+- `mail` and `chat` bundle their own MCP servers (Node.js 20+, TypeScript). `mcp-server/dist/` is
+  gitignored, NOT committed: `installers/install.sh` builds it, and `run.sh` rebuilds on first MCP
+  call if `dist/server.js` is missing. Never commit `dist/`.
 - `meetings` requires `mail` to be installed (shares its `outlook-bridge` MCP for calendar).
 - Optional enrichment: `second-brain` MCP (richer attendee dossiers), `document-skills` plugin
   (better xlsx/docx output).

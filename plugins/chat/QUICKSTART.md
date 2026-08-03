@@ -24,13 +24,15 @@ That's it. No further configuration files to edit.
 
 ## Authenticate
 
-One time, run the auth wizard from your terminal:
+One time, inside Claude Code:
 
-```bash
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
+```text
+/chat:auth-setup
 ```
 
-A Playwright-controlled browser window opens for Microsoft 365 sign-in. Approve the requested permissions. The wizard captures your Teams session token and stores it locally.
+A Playwright-controlled browser window opens for Microsoft 365 sign-in. Approve the requested permissions. The session token is captured and stored locally. Add `--force-reauth` to redo it later.
+
+(The terminal script `installers/auth-wizard.sh` still does the same job, but it is deprecated.)
 
 To verify auth at any time: `teams-cli auth-check`.
 
@@ -120,10 +122,10 @@ Bonus commands: `/chat-channel-digest <channel>` (executive summary of a project
 
 | Symptom | Fix |
 |---|---|
-| `auth_required` error | Re-run the auth wizard, or `teams-cli login` |
+| `auth_required` error | Run `/chat:auth-setup --force-reauth`, or `teams-cli login` |
 | Cold-start delay (30-60s) on first command after install | Normal — the MCP server runs `npm install` + `npm run build` the first time. Subsequent calls are instant |
 | "Channel sends not supported" | Microsoft Graph send scope is missing for channels in the underlying API. Send works for chats (1:1, group); channel **reads** work fine |
-| `teams-cli` not on PATH | Some corporate-locked laptops disallow `npm link` to global. The MCP `run.sh` falls back to invoking the locally cloned binary at `installers/deps/teams-access/dist/cli.js`. No action needed |
+| `teams-cli` not on PATH | Some corporate-locked laptops disallow `npm link` to global. Harmless: `teams-cli` is also a pinned dependency of the bridge, so the server resolves it from `plugins/chat/mcp-server/node_modules/teams-cli/dist/cli.js`. No action needed |
 
 If anything else looks off, run `/chat-doctor` — it surfaces the exact problem (missing CLI, expired session, network issue) and tells you the one command to fix it.
 
@@ -131,7 +133,7 @@ If anything else looks off, run `/chat-doctor` — it surfaces the exact problem
 
 - **Auth / session token**: `~/.teams-cli/` (not inside the marketplace dir)
 - **MCP server**: bundled at `plugins/chat/mcp-server/`, built on first run
-- **`teams-cli` binary**: linked via `npm link` after marketplace setup; fallback path `installers/deps/teams-access/dist/cli.js`
+- **`teams-cli` binary**: bundled as a pinned `git+https` dependency at `plugins/chat/mcp-server/node_modules/teams-cli/dist/cli.js`, which is what the bridge actually invokes. `installers/install.sh` additionally `npm link`s a clone in `installers/deps/teams-access/` so `teams-cli` works as a standalone shell command
 
 ## Want more?
 

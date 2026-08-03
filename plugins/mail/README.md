@@ -17,14 +17,23 @@ Email command center — inbox briefings, action recommendations, style-matched 
 |---------|-------------|
 | `/inbox-briefing` | Quick inbox scan — summaries, action flags, insights (read-only, no drafting) |
 | `/mail-review` | Full inbox briefing + action flags + draft replies |
+| `/triage-inbox` | Triage unread mail: rule-match, LLM-classify, batch-move with a safety contract and undo |
 | `/draft-review` | Deep learning pass — compare drafts to actual responses |
+| `/reply` | Reply (or reply-all) to an email with auto-quote + signature, draft-first |
+| `/forward` | Forward an email to new recipient(s), draft-first by default |
 | `/send-mail` | Send an email via Outlook (HTML, attachments, auto-CC self) |
-| `/comm-report` | Strategic communication health report with relationship heatmap and delegation effectiveness |
+| `/archive-thread` | Move a conversation thread to `Inbox/Archive-<current-year>`, creating the folder if needed |
+| `/folder-tree` | Display the Outlook folder hierarchy with message counts as a Unicode tree |
 | `/decisions` | Surface recent decisions, track delegations, and check decision consistency |
-| `/style-rebuild` | Full corpus analysis of sent emails to generate statistically-grounded style guide |
 | `/style-rollback` | Restore a previous version of the style guide from backups |
 | `/style-stats` | Accuracy trends, top corrections, and recipient profile accuracy |
 | `/style-sync` | Periodic deep sync — update style guide from new sent emails since last sync |
+| `/mail-doctor` | Diagnose `outlook-bridge` MCP: Node binary, CLI install mode, auth status, last startup |
+| `/auth-setup` | One-time M365 OAuth bootstrap + signature capture |
+
+`/comm-report` and `/style-rebuild` are **not** in this plugin. They moved to the optional
+`mail-pro` plugin in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab)
+marketplace, because they require the private `weirdapps/plessas-second-brain` knowledge store.
 
 ## How It Works
 
@@ -64,9 +73,9 @@ No manual `/draft-review` needed — learning runs automatically at the start of
 
 Requires:
 
-- The `outlook-bridge` plugin installed and built (handled by the marketplace installer)
-- `outlook-cli` installed and authenticated (`outlook-cli login`) — see https://github.com/weirdapps/outlook-access
-- Optional: `second-brain` MCP server for `/comm-report` and `/style-rebuild` (these commands query a SQLite knowledge store; without it they are unavailable)
+- The bundled `outlook-bridge` MCP server built (`installers/install.sh` does this; otherwise `run.sh` builds it on the first MCP call)
+- `outlook-cli` authenticated: run `/auth-setup`, or `outlook-cli login` directly; see https://github.com/weirdapps/outlook-access
+- Optional: `second-brain` MCP server, which enriches drafts and briefings with historical sender context. Without it every command here still works, just with less context
 
 Works on macOS, Linux, WSL2, and Windows wherever `outlook-cli` runs. There is no AppleScript dependency.
 
@@ -89,4 +98,8 @@ The shipped reference style guide (NBG context) is characterized by:
 - **Greek internal**: Greek for NBG colleagues, English for internationals
 - **Self-improving**: Automatically updated based on draft-vs-actual comparisons
 
-**To generate your own style guide**: run `/style-rebuild` after `outlook-cli` is authenticated. The command requires a SQLite corpus from the `second-brain` MCP server — without it, the command instructs you how to set it up.
+**To generate your own style guide**, in order of least to most setup:
+
+1. Just use `/mail-review`. The first run creates `shared/style-guide.md` from the template, and the self-learning loop refines it per recipient on every subsequent run. No extra dependency.
+2. `/style-sync` for a batch update from sent mail. With no prior sync state it processes your whole history. It prefers the `second-brain` knowledge store and falls back to your Archive mailbox via `outlook-bridge` (Sent Items is deliberately never read).
+3. `/style-rebuild`, a full statistical rebuild, is **not in this plugin**. It lives in the optional `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace and requires the private `second-brain` knowledge store.
