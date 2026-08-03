@@ -39,7 +39,7 @@ The most common starter set: `mail`, `meetings`, `chat`, `decks`. Add `excel` an
 About 10 minutes if everything goes smoothly:
 
 - 2 min — `/plugin marketplace add` + `installers/install.sh` clones repos and builds MCPs
-- 3 min — `auth-wizard.sh` browser sign-ins (M365, then Teams)
+- 3 min of browser sign-ins: `/mail:auth-setup` (M365), then `/chat:auth-setup` (Teams)
 - 1 min — `/plugin install <name>` for each plugin
 - 4 min — running your first command and reading the briefing
 

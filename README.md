@@ -123,7 +123,8 @@ plugins/
     agents/                          # email-handler, triage-engine
     mcp-server/                      # outlook-bridge MCP (TypeScript, Node 20+)
       src/tools/                     # 16 MCP tools (see below)
-      dist/                          # built JS committed for zero-build install
+      tests/                         # vitest suite (4 files)
+      dist/                          # built JS, gitignored (produced by run.sh / install.sh)
       run.sh                         # entrypoint invoked by Claude Code
   meetings/
     commands/                        # /meeting-prep, /meeting-debrief
@@ -133,7 +134,8 @@ plugins/
     commands/                        # 6 slash commands (see table)
     mcp-server/                      # teams-bridge MCP (TypeScript, Node 20+)
       src/tools/                     # 11 MCP tools (see below)
-      dist/                          # built JS committed
+                                     # no tests/ directory (known gap)
+      dist/                          # built JS, gitignored (produced by run.sh / install.sh)
       run.sh
   excel/  commands/                  # 4 slash commands; no MCP, no agents
   docs/   commands/                  # 3 slash commands; no MCP, no agents
@@ -166,7 +168,7 @@ Backed by [`outlook-tool`](https://github.com/weirdapps/outlook-access), pinned 
 
 Backed by [`teams-cli`](https://github.com/weirdapps/teams-access), pinned to commit `95abd5164bc5d37a7ef785078f9b2d8d4cd141dc`.
 
-Both servers commit their `dist/` output, so first-run does not require a build step. If `npm install` inside the server directory does need to run, it happens on the first MCP call via `run.sh`.
+Neither server commits its `dist/` output (`dist/` is gitignored). `installers/install.sh` builds both up front; if you skip the installer, `run.sh` runs `npm ci` and `npm run build` on the first MCP call, which adds 30-60 seconds once.
 
 ### Optional enhancements
 
@@ -193,7 +195,17 @@ python3 scripts/validate_consistency.py --verbose
 
 # Scan for personal data before pushing:
 bash installers/pii-gauntlet.sh --mode=doctor
+
+# outlook-bridge MCP unit tests (vitest, 4 files / 29 tests):
+cd plugins/mail/mcp-server && npm test
 ```
+
+Test coverage is partial and no workflow runs any test suite:
+
+- `plugins/mail/mcp-server/tests/` is the only real test suite. It is not wired into CI.
+- `plugins/chat/mcp-server/` has **no tests at all**; its `npm test` script passes vacuously via `--passWithNoTests`. Changes to `teams-bridge` are unverified by automation.
+- The two Python test files under `plugins/decks/tools/` never execute in CI: `sonarcloud.yml` only runs `pytest` when a `tests/`, `test/`, or `__tests__` directory exists at the repository root, and none does.
+- `ruff` and `mypy` are configured in `pyproject.toml` but no workflow invokes them.
 
 ### CI (`.github/workflows/`)
 
@@ -204,7 +216,7 @@ bash installers/pii-gauntlet.sh --mode=doctor
 | `rename-guard.yml` | push / PR | No stale slash-command names, every command declares `allowed-tools`, no deprecated tool aliases, and no references to the pre-rename shared brand-system path |
 | `sonarcloud.yml` | push / PR | Static analysis and quality gate (public projects only) |
 | `codeql.yml` | push / PR / weekly Mon 06:00 UTC | Security scanning for Python and TypeScript / JavaScript |
-| `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch and minor updates (grouped or ungrouped); majors always require manual review |
+| `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch and minor updates (grouped or ungrouped); majors always require manual review. A thin caller: the logic lives in the shared reusable workflow `weirdapps/shared-workflows/.github/workflows/dependabot-auto-merge.yml@main` |
 
 ### Adding a new plugin
 

@@ -45,12 +45,12 @@ Then in your terminal:
 # 3. Run the setup script (idempotent; respects existing outlook-cli / teams-cli installs)
 bash ~/.claude/plugins/marketplaces/plessas-marketplace/installers/install.sh
 
-# 4. Re-run the auth wizard (re-uses existing auth if still valid)
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
-
-# 5. Verify everything works
+# 4. Verify everything works
 ~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh
 ```
+
+Then, inside Claude Code, run `/mail:auth-setup` (and `/chat:auth-setup` if you installed `chat`).
+Both re-use existing auth if it is still valid.
 
 Back inside Claude Code:
 
@@ -79,14 +79,11 @@ Back inside Claude Code:
 # 2. Run the one-liner
 curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.sh | bash
 
-# 3. Auth wizard
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
-
-# 4. Status check
+# 3. Status check
 ~/.claude/plugins/marketplaces/plessas-marketplace/installers/status.sh
 
-# 5. Inside Claude Code, install the plugins you want
-# (same as Option A step 6)
+# 4. Inside Claude Code, install the plugins you want
+# (same as Option A step 6), then run /mail:auth-setup and /chat:auth-setup
 ```
 
 **Windows (PowerShell):**
@@ -98,11 +95,10 @@ curl -fsSL https://raw.githubusercontent.com/weirdapps/plessas-marketplace/maste
 # 2. Run the one-liner
 iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/installers/install.ps1 | iex
 
-# 3. Auth wizard
-~\.claude\plugins\marketplaces\plessas-marketplace\installers\auth-wizard.ps1
-
-# 4. Status check
+# 3. Status check
 ~\.claude\plugins\marketplaces\plessas-marketplace\installers\status.ps1
+
+# 4. Inside Claude Code: /mail:auth-setup (and /chat:auth-setup)
 ```
 
 ## What carries over automatically
@@ -113,7 +109,7 @@ iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/insta
 
 ## What you may need to redo
 
-- **Personal email style guide**: if you customised `email-handler/shared/style-guide.md`, that's specific to the old plugin. After installing the new marketplace, run `/style-rebuild` to regenerate from your sent mail corpus.
+- **Personal email style guide**: if you customised `email-handler/shared/style-guide.md`, that's specific to the old plugin. After installing the new marketplace, run `/style-sync` to regenerate from your sent mail corpus. (`/style-rebuild` now lives in the `mail-pro` plugin in `plessas-lab` and needs the private `second-brain` knowledge store.)
 - **Recipient profiles**: the `recipient-profiles.db` was user-generated. It rebuilds organically from your `/reply` usage. No action needed unless you want to accelerate it.
 - **Triage rules**: if you customised triage rules in the old email-handler, copy them to `plugins/mail/shared/triage-rules-starter.yaml` in the new marketplace.
 

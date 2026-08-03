@@ -72,14 +72,12 @@ Edit `~/.claude/CLAUDE.md` and replace the `<< REPLACE >>` sections with your ow
 
 ## 4. When something goes wrong
 
-- **Auth expired?** Run the auth wizard again:
-  - macOS: `~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh`
-  - Windows: `~\.claude\plugins\marketplaces\plessas-marketplace\installers\auth-wizard.ps1`
+- **Auth expired?** Re-run the auth bootstrap inside Claude Code: `/mail:auth-setup` for Outlook, `/chat:auth-setup` for Teams. Both take `--force-reauth`. (The terminal scripts `installers/auth-wizard.sh` / `.ps1` still work but are deprecated.)
 - **Plugin not loading?** Run the status script (step 1 above) and share the output.
 - **Need help?** Open an issue at [github.com/weirdapps/plessas-marketplace/issues](https://github.com/weirdapps/plessas-marketplace/issues)
 
 ## 5. What's next
 
-- **Email style learning**: after using `/reply` for a week, run `/style-rebuild` to generate a personalised style guide from your sent mail
+- **Email style learning**: the guide calibrates itself as you use `/mail-review`. After a week, run `/style-sync` for a batch update from your sent mail. (`/style-rebuild` is not in this marketplace; it ships with the optional `mail-pro` plugin in [`plessas-lab`](https://github.com/weirdapps/plessas-lab).)
 - **Pivot and variance**: try `/excel-pivot` and `/excel-variance` on a financial report
 - **Teams digest**: try `/chat-channel-digest` on a busy channel to catch up

@@ -11,6 +11,7 @@ Microsoft Teams interactive commands. Inbox briefings, draft replies, thread sum
 | `/chat-summarize` | Summarise a single Teams chat or thread — decisions, action items, key points |
 | `/chat-channel-digest` | Executive summary of a Teams channel — recent activity across threads |
 | `/chat-doctor` | Diagnose `teams-bridge` MCP — Node binary, CLI install mode, auth status, last startup, suggested next step |
+| `/auth-setup` | One-time Teams auth bootstrap (`--force-reauth` to redo it) |
 
 ## How it works
 
@@ -30,13 +31,15 @@ The marketplace setup script (`installers/install.sh`) handles all dependencies:
 
 > **Warning — npm name collision:** A *different* `teams-cli@1.1.0` exists on the npm registry. The bridge's `package.json` uses a `git+https://` URL pointing at `weirdapps/teams-access` — never switch it to a bare semver range or you'll pull a stranger's package.
 
-To authenticate Teams (one-time):
+To authenticate Teams (one-time), inside Claude Code:
 
-```bash
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
+```text
+/chat:auth-setup
 ```
 
 This opens a Playwright-controlled browser window, signs you in via your Microsoft 365 account, and persists the session token. Run `teams-cli auth-check` to verify.
+
+`installers/auth-wizard.sh` does the same thing from a terminal, but it is the deprecated path. Prefer the slash command.
 
 ## Cold-start delay
 
@@ -46,7 +49,7 @@ The first time you run a `/chat-*` command after install (or after a long idle p
 
 If a command returns an auth error, run `/chat-doctor` first — it surfaces the exact problem (missing CLI, expired session, network issue) and tells you the one command to fix it.
 
-If `teams-cli` is not on PATH after install (some corporate-locked laptops disallow `npm link` to the global prefix), the run script falls back to invoking the locally cloned binary at `installers/deps/teams-access/dist/cli.js`. No user action required.
+If `teams-cli` is not on PATH after install (some corporate-locked laptops disallow `npm link` to the global prefix), the plugin still works. `teams-cli` is also a pinned `git+https` dependency of the bridge itself, so the server resolves `teams-cli/dist/cli.js` out of `plugins/chat/mcp-server/node_modules/` and only falls back to a bare `teams-cli` PATH lookup if that resolution fails. No user action required. What you lose is `teams-cli` as a standalone command in your own shell.
 
 ## License
 

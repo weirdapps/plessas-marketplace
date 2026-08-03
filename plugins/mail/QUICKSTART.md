@@ -27,15 +27,17 @@ That's it. No further configuration files to edit.
 
 ## Authenticate
 
-One time, run the auth wizard from your terminal:
+One time, inside Claude Code:
 
-```bash
-~/.claude/plugins/marketplaces/plessas-marketplace/installers/auth-wizard.sh
+```text
+/mail:auth-setup
 ```
 
-A browser window opens for Microsoft 365 sign-in. Approve the requested permissions (Read / Send mail, calendar, contacts). The wizard captures your Outlook signature too.
+A browser window opens for Microsoft 365 sign-in. Approve the requested permissions (Read / Send mail, calendar, contacts). Your Outlook signature is captured too. The command is idempotent, so re-run it any time; flags are `--force-reauth` and `--skip-signature`.
 
-> **Tenant host:** the auth wizard will prompt you for your M365 tenant SharePoint host on first run (e.g. `contoso.sharepoint.com`). Find it in any SharePoint URL you own: `https://<this-part>.sharepoint.com/...`. The answer is persisted to `~/.outlook-cli/config.json` and reused on subsequent runs. Override with the `PLESSAS_SHAREPOINT_HOST` env var if needed.
+> **Tenant host:** on first run you are prompted for your M365 tenant SharePoint host (e.g. `contoso.sharepoint.com`). Find it in any SharePoint URL you own: `https://<this-part>.sharepoint.com/...`. The answer is persisted to `~/.outlook-cli/config.json` and reused on subsequent runs. Override with the `PLESSAS_SHAREPOINT_HOST` env var if needed.
+
+(The terminal script `installers/auth-wizard.sh` still does the same job, but it is deprecated.)
 
 If you need to sign in manually (e.g., to switch tenants), use:
 
