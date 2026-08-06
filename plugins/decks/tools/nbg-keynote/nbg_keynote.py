@@ -509,7 +509,16 @@ def render_hero_stat(c, s, ctx, on_image):
     # A stat can sit on the open side of a photograph rather than the gutter.
     right = s.get("align", "left") == "right"
     x = int(s.get("x", 1150 if right else M))
-    maxw_cap, maxw_sup = (1250, 1250) if right else (2100, 1950)
+    # Narrow the text column over a photograph: a 'left' scrim has faded by ~x1840,
+    # so a full-width line runs out of its own background and onto the image.
+    if right:
+        maxw_cap, maxw_sup = 1250, 1250
+    elif on_image:
+        maxw_cap, maxw_sup = 1700, 1750
+    else:
+        maxw_cap, maxw_sup = 2100, 1950
+    maxw_cap = int(s.get("maxw", maxw_cap))
+    maxw_sup = int(s.get("maxw", maxw_sup))
     vsize = s.get("size", 400 if on_image else 440)
     vy = s.get("y", 250 if on_image else 300)
     vcolor = _color(s, "color", INK)

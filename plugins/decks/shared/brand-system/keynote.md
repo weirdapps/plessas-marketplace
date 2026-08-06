@@ -89,6 +89,20 @@ Every scrim also lays a bottom band so the footer reads, and a vignette.
 Cyan against a red number is two loud colours fighting for the same eye, so a `negative` hero stat
 takes a white caption.
 
+### Text column widths
+
+Narrower over a photograph than over the gradient. A `left` scrim has faded by roughly x=1840, so a
+full-width line runs out of its own background and onto the image — legible by the contrast guard's
+measure, because the box as a whole is still dark, but visibly wrong at the end of the line.
+
+| Block | On gradient | On a photograph | `align: right` |
+|---|---|---|---|
+| Hero-stat caption | 2100 | 1700 | 1250 |
+| Hero-stat support | 1950 | 1750 | 1250 |
+| Statement | 2260 | 1500 | — |
+
+Override per slide with `maxw` when a particular photograph needs it.
+
 ## Archetypes
 
 | Type | Says | Anchors |
