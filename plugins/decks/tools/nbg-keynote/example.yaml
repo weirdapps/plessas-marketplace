@@ -1,0 +1,120 @@
+# NBG Keynote — worked example showing every archetype and every option.
+# Replace the placeholder text; supply your own photographs. See ../../shared/brand-system/keynote.md
+#
+#   python3 nbg_keynote.py example.yaml --validate
+
+meta:
+  title: Talk title
+  language: en                       # 'el' switches kickers to Greek all-caps (drops the tonos)
+  assets: ~/Downloads/my_talk_assets # base directory for relative image paths
+  output: ~/Downloads/202601011200_my_talk   # stem; .pptx and .pdf are written alongside
+  # logo: /path/to/nbg-logo-gr.png   # defaults to the plugin's Greek wordmark
+
+theme:
+  seed: 7                            # grain seed; same seed renders byte-identical
+
+slides:
+  # ---------------------------------------------------------------- cover
+  - type: cover
+    image: cover.jpg
+    scrim: left                      # left | right | upperleft | bottom | full
+    title: The headline of the talk
+    subtitle: The subordinate clause that says what it is actually about
+    speaker:
+      name: Speaker Name
+      role: Role, National Bank of Greece
+    venue: "Conference  ·  City  ·  1-2 January 2027"
+    notes: Opening line. Who you are and why the audience should care.
+
+  # ------------------------------------------------------- one sentence
+  - type: statement
+    kicker: The consensus
+    text: One sentence, large enough to be read from the back of the room.
+    coda: The turn you are about to make.        # optional, small, accent
+    notes: What you say over this slide.
+
+  # -------------------------------------------- one sentence, over photo
+  - type: statement
+    kicker: The complication
+    image: complication.jpg
+    scrim: left
+    text: The received wisdom, stated plainly.
+    emphasis: And the fact that undermines it.   # optional, same size, accent
+    notes: What you say over this slide.
+
+  # ------------------------------------------------- one number, gradient
+  - type: hero-stat
+    kicker: The evidence
+    value: 68m
+    caption: what that number counts, in one line
+    support: The second-order detail that stops the number being a boast.
+    source: "Source: publication, year."
+    notes: What you say over this slide.
+
+  # ------------------------- one number, over photo, on the open side
+  - type: hero-stat
+    kicker: "Move 2  ·  Second move"
+    image: detail.jpg
+    scrim: right
+    align: right                     # puts the block on the un-scrimmed side
+    value: 3.3m
+    color: ink                       # ink | accent | negative | #RRGGBB
+    caption: what that number counts
+    support: The supporting sentence.
+    source: National Bank of Greece, 2027.
+    notes: What you say over this slide.
+
+  # ------------------------------------------------ two numbers in tension
+  - type: duo-stat
+    kicker: The moat
+    title: The action title that states the message
+    size: 300                        # 260 when the values are four characters wide
+    left:  {value: 19%, caption: "what the first number counts"}
+    right: {value: 5%,  caption: "what the second number counts"}
+    source: "Sources: publication, year."
+    notes: What you say over this slide.
+
+  # ---------------------------------------- a comparison (max 2 per deck)
+  - type: bars
+    kicker: The retreat
+    title: The action title that states the message
+    cats: [Austria, Italy, Spain, Cyprus, Greece, Germany, Netherlands]   # max 7
+    vals: [56, 49, 45, 43, 42, 30, 17]
+    highlight: 4                     # 0-based; renders in accent
+    unit: "%"
+    axis_label: What is being measured, and in what unit
+    source: "Source: publication, year."
+    notes: What you say over this slide.
+
+  # ------------------------------------------------------- three things
+  - type: points
+    kicker: The public good
+    title: The action title that states the message
+    points:
+      - First thing, one line.
+      - Second thing, one line.
+      - Third thing, one line.
+    takeaway: The sentence the audience should leave with.   # optional, accent
+    source: "Sources: publication, year."
+    notes: What you say over this slide.
+
+  # ---------------------------------------------------------- the turn
+  - type: divider
+    kicker: The playbook
+    image: divider.jpg
+    scrim: right
+    align: right                     # right (default) puts the title on the open side
+    title: "From here to there: three moves"
+    notes: So how do you do it? Three moves.
+
+  # ------------------------------------------------------------ the close
+  - type: closing
+    kicker: The talk title again
+    image: closing.jpg
+    scrim: upperleft
+    text: The two sentences you want repeated in the corridor afterwards.
+    coda: The compressed version of the same thing.
+    notes: Thank you.
+
+  # ---------------------------------------------------------- back cover
+  - type: back

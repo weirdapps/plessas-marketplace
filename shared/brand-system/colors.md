@@ -285,3 +285,31 @@ Cover layouts may have overlapping graphic elements. Rules:
 | Light (white, off-white) | Dark Teal `#003841` |
 | Dark (teal, dark teal) | White `#FFFFFF` |
 | Accent (for callouts) | NBG Teal `#007B85` |
+
+---
+
+## Dark-Mode Tokens — Keynote Mode ONLY
+
+These apply **only** to the dark full-bleed keynote format (Standard #21, spec in
+[keynote.md](keynote.md)). They are not available to normal decks, documents, emails or charts.
+Every token maps to a light-mode colour above — do not introduce new ones.
+
+| Token | Hex | Maps from | Usage |
+|-------|-----|-----------|-------|
+| `ink` | `#FFFFFF` | `#003841` | Primary text, hero numbers |
+| `ink-2` | `#DFE6E6` | `#202020` | Body and support text |
+| `ink-3` | `#96A6A8` | `#5A5F5A` | Source notes, metadata |
+| `accent` | `#00DFF8` | `#007B85` | Kicker, emphasis line, highlighted stat or bar |
+| `accent-bar` | `#00BED2` | `#00ADBF` | Default bar fill |
+| `accent-mute` | `#008292` | `#BEC1BE` | Non-highlighted bars |
+| `ground-top` | `#00161B` | `#FFFFFF` | Gradient top, scrim base |
+| `ground-bot` | `#003841` | `#F5F8F6` | Gradient bottom (the brand Dark Teal) |
+| `negative` | `#FF5263` | `#AA0028` | Negative statistic — `AA0028` is unreadable on dark |
+| `rule` | `#788C8E` | `#BEC1BE` | Chart baseline |
+
+**Bright Cyan `#00DFF8` is still banned as a background.** In keynote mode it is only ever text or a
+mark sitting on dark ground, which is the one place it works.
+
+Contrast in keynote mode is **measured, not assumed**: the compositor samples the 90th-percentile
+luminance under each text box and deepens a feathered scrim until WCAG clears (4.5:1 under 48px,
+3:1 at or above). The light-mode rule of thumb (R+G+B > 400) does not apply over photography.

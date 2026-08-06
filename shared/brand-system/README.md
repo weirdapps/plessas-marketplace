@@ -57,10 +57,10 @@ aspect_ratio: 16:9
 | Rule | Enforcement |
 |------|-------------|
 | **BUILD FROM SCRATCH** | **Never use NBG template files** (`Presentation()` not `Presentation(template)`). Templates carry phantom "Placeholder text" artifacts. See `generation-methods.md`. |
-| **White backgrounds ONLY** | Never use dark themes, dark dividers, or colored cover backgrounds |
+| **White backgrounds ONLY** | Never use dark themes, dark dividers, or colored cover backgrounds. **One exception: keynote mode** — see [keynote.md](keynote.md) and Standard #21 |
 | **ALWAYS use Greek logo** | Use `nbg-logo-gr.png` for ALL presentations — NEVER use the English logo |
 | **NO Bright Cyan backgrounds** | `00DFF8` is TOO BRIGHT for box/card backgrounds — use `F5F8F6` (off-white) instead |
-| **NO dark bg + light text** | Fails accessibility. Use light backgrounds (#F5F8F6, #FFFFFF) with dark text (#003841, #202020) |
+| **NO dark bg + light text** | Fails accessibility. Use light backgrounds (#F5F8F6, #FFFFFF) with dark text (#003841, #202020). **Keynote mode inverts this** under a measured WCAG guard — see [keynote.md](keynote.md) |
 | **NO pie charts** | Always use doughnut instead |
 | **NO "Thank You" slides** | Use plain back cover with centered logo |
 | **Title weight** | Aptos Regular (NOT SemiBold) |
@@ -125,6 +125,7 @@ Use in order for data series:
 | [pillar-ds.md](pillar-ds.md) | **NBG Pillar Design System** - Digital product tokens |
 | [asset-library.md](asset-library.md) | **Asset Library** - Icons, illustrations, screenshots |
 | [generation-methods.md](generation-methods.md) | **Generation Methods** - PptxGenJS vs OOXML decision guide |
+| [keynote.md](keynote.md) | **Keynote Mode** - dark full-bleed format for stage talks (Standard #21, the ONLY exception to the rules above) |
 
 ## Asset Library (NEW)
 

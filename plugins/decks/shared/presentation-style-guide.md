@@ -244,6 +244,25 @@ What changes between decks is which **elements** you place on that chassis, chos
 
 Assemble elements freely — one deck can mix stat tiles, option cards, and a takeaway strip if the argument needs all three. The format holds the deck together; the elements carry the message.
 
+**Exactly one exception exists — Standard #21, keynote mode — and the list is closed.** Do not read #21 as permission to add a third.
+
+## 21. Keynote mode — the one exception, and it is fenced
+
+A keynote is a talk given from a stage, not a deck. For that case only, NBG has a second, **dark full-bleed** format: cinematic photography, teal scrims, a huge type scale, no page numbers. It deliberately breaks four rules in `brand-system/README.md` — white backgrounds only, no dark bg with light text, no shadows, content titles at 24pt.
+
+Full spec: **`brand-system/keynote.md`**. Generator: `tools/nbg-keynote/nbg_keynote.py`.
+
+**Entry criteria — all four must hold. If any fails, use the light format:**
+
+1. Audience is **external or bank-wide** (conference, town hall, industry panel) — not a committee, board or ExCo working session.
+2. **Delivered live from a stage by a speaker** — not read alone, not circulated as a document.
+3. **Projected large, in a darkened room.**
+4. The slides are the **backdrop, not the record** — the argument lives in the speaker notes.
+
+Never for ExCo, board, credit committee, or any deck someone else will edit: keynote slides are flattened images and can only be regenerated from their YAML, never edited in PowerPoint.
+
+**What keynote mode does NOT change**: Greek wordmark always (#10), Aptos always, the teal family, left-gutter alignment, action titles, no em-dashes (#7), no invented NBG names (#8), no version suffixes (#9). It is the same brand inverted, not a second identity.
+
 ---
 
 # Part 2 — Learned Preferences
