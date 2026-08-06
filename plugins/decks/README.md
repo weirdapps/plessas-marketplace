@@ -25,6 +25,7 @@ Branded presentation system. Multi-agent pipeline producing board-ready PPTX wit
 | Command | Description |
 |---------|-------------|
 | `/create-presentation` | Create new branded presentation from content |
+| `/create-keynote` | Build a dark full-bleed keynote for a stage talk (Standard #21 — external or bank-wide audience only) |
 | `/redesign-deck` | Redesign existing presentation to brand standards |
 | `/polish-slides` | Quick formatting polish |
 | `/presentation-review` | Compare a finalised presentation against its draft to learn style preferences |
@@ -46,6 +47,7 @@ decks/
 │   └── presentation-qa.md
 ├── commands/                              # Slash commands
 │   ├── create-presentation.md
+│   ├── create-keynote.md
 │   ├── redesign-deck.md
 │   ├── polish-slides.md
 │   └── presentation-review.md
@@ -65,7 +67,8 @@ decks/
 │   └── presentation-style-guide.md        # Optional user-customisable style preferences
 ├── assets/                                # Brand assets (logos, icons, templates, mockups)
 ├── examples/                              # Sample YAML storylines
-└── tools/nbg-presentation/                # Python build/validation tools
+├── tools/nbg-presentation/                # Python build/validation tools (light mode)
+└── tools/nbg-keynote/                     # Keynote compositor (dark mode, Standard #21)
 ```
 
 ## Brand Quick Reference

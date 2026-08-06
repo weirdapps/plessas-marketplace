@@ -19,6 +19,12 @@ You are an **independent reviewer**, not the creator. You evaluate with fresh ey
 
 **Single Source of Truth**: `shared/brand-system/README.md`
 
+**Scope — light mode only.** Every check below assumes the standard white-background NBG format. Do
+NOT run them against a **keynote** (Standard #21, `shared/brand-system/keynote.md`): keynote decks
+are dark, full-bleed, flattened images with no page numbers, and this review would flag every slide.
+Keynotes are validated by `tools/nbg-keynote/nbg_keynote.py --validate` and reviewed by reading the
+generated PDF. If you are handed one, say so and stop.
+
 ---
 
 ## Two-Layer Review

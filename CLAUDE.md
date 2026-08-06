@@ -8,7 +8,7 @@ archived `communications-marketplace` (2026-05-30).
 
 | Plugin | Commands | Purpose |
 |--------|----------|---------|
-| `decks` | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/presentation-review` | Multi-agent PPTX pipeline: storyline-architect → storyboard-designer → graphics-renderer → presentation-qa. NBG-branded; brand assets in `shared/brand-system/`. |
+| `decks` | `/create-presentation`, `/create-keynote`, `/redesign-deck`, `/polish-slides`, `/presentation-review` | Multi-agent PPTX pipeline: storyline-architect → storyboard-designer → graphics-renderer → presentation-qa. NBG-branded; brand assets in `shared/brand-system/`. `/create-keynote` is the one dark full-bleed exception (Standard #21) — a separate Pillow compositor in `tools/nbg-keynote/`, for stage talks only. |
 | `mail` | `/inbox-briefing`, `/mail-review`, `/send-mail`, `/triage-inbox`, `/reply`, `/draft-review`, `/archive-thread`, `/decisions`, `/forward`, `/folder-tree`, `/mail-doctor`, `/style-rollback`, `/style-stats`, `/style-sync`, `/auth-setup` | Outlook command center. Bundles `outlook-bridge` MCP (Node.js server in `mcp-server/`). Two agents: `email-handler` and `triage-engine`. |
 | `meetings` | `/meeting-prep`, `/meeting-debrief` | Calendar-aware briefings with attendee dossiers; post-meeting decision and action capture. Depends on `mail` plugin's bundled MCP for calendar access. Agent: `meeting-intelligence`. |
 | `chat` | `/chat-inbox`, `/chat-reply`, `/chat-summarize`, `/chat-channel-digest`, `/chat-doctor`, `/auth-setup` | Microsoft Teams reader and reply. Bundles `teams-bridge` MCP (Node.js server in `mcp-server/`). |
@@ -53,10 +53,12 @@ What exists, and what actually executes:
   into any workflow. Run it by hand after touching `outlook-bridge`: `npm test` in that directory.
 - `plugins/chat/mcp-server/`: **no tests at all.** Its `npm test` uses `--passWithNoTests`, so it
   exits 0 while verifying nothing. Any `teams-bridge` change is unverified; test manually.
-- `plugins/decks/tools/nbg-presentation/test_nbg_build.py` and
-  `plugins/decks/bundled/creative/tools/device-mockup/test_iphone_mockup.py` exist but never run:
-  `sonarcloud.yml` gates `pytest` on a `tests/`, `test/`, or `__tests__` directory at the repo
-  root, and there is none.
+- `plugins/decks/tools/nbg-presentation/test_nbg_build.py`,
+  `plugins/decks/tools/nbg-keynote/test_nbg_keynote.py` (33 tests, real coverage of the keynote
+  compositor) and `plugins/decks/bundled/creative/tools/device-mockup/test_iphone_mockup.py` exist
+  but never run: `sonarcloud.yml` gates `pytest` on a `tests/`, `test/`, or `__tests__` directory at
+  the repo root, and there is none. Run the keynote suite by hand after touching `nbg_keynote.py`:
+  `(cd plugins/decks/tools/nbg-keynote && python3 -m pytest test_nbg_keynote.py -q)`.
 - `ruff` and `mypy` are configured in `pyproject.toml` but no workflow invokes them. Run them
   locally if you touch Python.
 

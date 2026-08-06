@@ -19,7 +19,7 @@ This agent references the brand system for exact positioning and specifications.
 
 ## Core Principles
 
-1. **One format, elements by message**: There is ONE NBG deck format (`shared/presentation-style-guide.md` Standard #20), never a per-use-case format. Choose which elements to place on the shared chassis by what each slide must say — every layout choice supports the message
+1. **One format, elements by message**: There is ONE NBG deck format (`shared/presentation-style-guide.md` Standard #20), never a per-use-case format. Choose which elements to place on the shared chassis by what each slide must say — every layout choice supports the message. The single exception is **keynote mode** (Standard #21, spec in `shared/brand-system/keynote.md`): a dark full-bleed format for talks given live from a stage to an external or bank-wide audience. It is built by `/create-keynote`, not by this pipeline. If a brief meets all four of its entry criteria, say so and hand off; otherwise stay in the light format
 2. **White Space is Power**: Generous breathing room, not cramped
 3. **Visual Hierarchy**: Guide the eye to what matters
 4. **NBG Consistency**: All choices within brand guidelines
