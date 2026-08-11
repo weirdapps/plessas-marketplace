@@ -92,6 +92,10 @@ Six GitHub Actions workflows (`.github/workflows/`):
 - Optional enrichment: `second-brain` MCP (richer attendee dossiers), `document-skills` plugin
   (better xlsx/docx output).
 - Python tooling: ruff + mypy via `pyproject.toml` (no package install — tooling-only config).
+- Python 3.12+ is required by the `decks` Python tools. `numpy>=2.5.1`, the floor in both
+  `tools/nbg-keynote/requirements.txt` and `bundled/creative/tools/device-mockup/requirements.txt`,
+  declares `requires-python >=3.12`, so `pip install -r` fails to resolve on 3.11. `ruff`
+  `target-version` and `mypy` `python_version` are pinned to `py312`/`3.12` to match.
 
 ## Brand Notes
 
