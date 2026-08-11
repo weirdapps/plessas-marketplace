@@ -1,10 +1,15 @@
 # Tooling-only config — no [project] or [build-system] section.
 # Provides consistent lint/type-check settings for Python code
 # scattered across plugins (decks/, scripts/, etc.).
+#
+# Python floor is 3.12, set by the dependency floors the tools declare:
+# numpy >= 2.5.1 (nbg-keynote, device-mockup) is itself `requires-python >=3.12`.
+# Keep target-version and python_version in step with that floor: mypy pinned to
+# 3.11 cannot even parse numpy 2.5's stubs, which use PEP 695 `type` statements.
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -28,7 +33,7 @@ ignore = [
 "**/test_*.py" = ["B", "E"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false  # Start permissive, tighten later
