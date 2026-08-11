@@ -1,5 +1,5 @@
 # NBG Keynote compositor
 Pillow>=10.0.0
 numpy>=1.24.0
-python-pptx>=0.6.21
+python-pptx>=1.0.2
 PyYAML>=6.0.3
