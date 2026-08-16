@@ -12,8 +12,10 @@ Route by what the user is trying to achieve, not by the words they used.
 | see what came in and what is unread | `/chat:chat-inbox` |
 | catch up on one conversation | `/chat:chat-summarize` |
 | catch up on a channel over a period | `/chat:chat-channel-digest` |
-| answer someone | `/chat:chat-reply` |
+| answer someone, with request and target conversation both unambiguous | `/chat:chat-reply` |
 | fix Teams access or authentication | `/chat:chat-doctor`, `/chat:auth-setup` |
+
+If either the request or the target conversation is ambiguous, see the no-match section below.
 
 ## When nothing fits
 
