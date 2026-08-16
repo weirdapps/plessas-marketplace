@@ -95,13 +95,28 @@ scan_ci() {
   fi
 }
 
+# Drop hits whose PATH is a historical record rather than live configuration.
+# Path-scoped only. Never extend this to filter on matched content: that would
+# hide live hits and turn a working guardrail into a false green.
+apply_exclusion() {
+  local hits="$1"
+  local exclude="$2"
+  if [ -z "$exclude" ] || [ -z "$hits" ]; then
+    printf '%s' "$hits"
+    return
+  fi
+  printf '%s\n' "$hits" | grep -vE "$exclude" || true
+}
+
 check() {
   local label="$1"
   local pattern="$2"
+  local exclude="${3:-}"
   local hits
 
   if [ "$MODE" = "ci" ]; then
     hits=$(scan_ci "$pattern")
+    hits=$(apply_exclusion "$hits" "$exclude")
     if [ -n "$hits" ]; then
       echo "FAIL [$label]:"
       echo "$hits" | head -20
@@ -115,6 +130,7 @@ check() {
 
   # Doctor mode — separate tracked from gitignored.
   hits=$(scan_doctor "$pattern")
+  hits=$(apply_exclusion "$hits" "$exclude")
   if [ -z "$hits" ]; then
     echo "OK   [$label]"
     return
@@ -186,8 +202,18 @@ check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMe
 # Tax authority refs
 check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"
 
-# Personal source paths (specific to user's machine)
-check "User-specific paths" "/Users/plessas|/SourceCode/claude-config|claude-config/shared-memory"
+# Personal source paths. Broadened 2026-08-16: the old pattern named one repo
+# (/SourceCode/claude-config) and so let ~/SourceCode/teams-access/... ship
+# green in plugins/chat/commands/chat-reply.md.
+#
+# Design records under docs/superpowers/ are excluded BY PATH. They quote the
+# offending paths in order to document them, which is the opposite of leaking
+# them. Live configuration never lives there: it lives in plugins/, installers/
+# and scripts/, none of which is excluded. The script already excludes itself
+# at line 54, so the pattern below does not match its own definition.
+check "User-specific paths" \
+  "/Users/[a-z]|~/SourceCode|\\\$HOME/SourceCode|claude-config/shared-memory" \
+  "^(\./)?(docs/superpowers/|CHANGELOG\.md)"
 
 # Cleanup
 [ "$MODE" = "ci" ] && rm -f "$TRACKED_TMP"

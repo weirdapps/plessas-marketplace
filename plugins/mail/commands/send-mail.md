@@ -92,7 +92,7 @@ After execution, the tool returns JSON like:
   "id": "AAMk...",
   "webLink": "https://outlook.office365.com/owa/...",
   "to": ["recipient@example.com"],
-  "cc": ["your.email@nbg.gr"],
+  "cc": ["your.email@example.com"],
   "subject": "Email subject"
 }
 ```

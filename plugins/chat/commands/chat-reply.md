@@ -22,13 +22,13 @@ Draft and optionally send a reply to a Microsoft Teams chat.
    - Keep it concise — Teams messages are shorter than emails
    - Reference specific points from recent messages if relevant
 
-5. **Show the draft** inline for transparency, then auto-send via `node ~/SourceCode/teams-access/dist/cli.js send-message --chat <id> --html "<p>...</p>"`. The `[Claude]` prefix is MANDATORY — every message must start with `[Claude]` so recipients know they're reading the agent, not Plessas.
+5. **Show the draft** inline for transparency, then send it via `mcp__teams-bridge__teams_send_message`. Every message MUST start with the `[Claude]` prefix so recipients know they are reading the agent and not the account owner typing personally.
 
-6. **Before sending**: verify the `--chat <id>` resolves to the intended, known recipient. If the target chat is ambiguous or unfamiliar, fall back to draft-and-confirm.
+6. **Before sending**: verify the target chat resolves to the intended, known recipient. If the target chat is ambiguous or unfamiliar, fall back to draft-and-confirm.
 
 ## Important
 
-- Auto-send by default (per CLAUDE.md override). Draft-and-confirm only when the target chat is ambiguous.
+- Auto-send is the default for this plugin. Draft-and-confirm only when the target chat is ambiguous or unfamiliar. If you would rather approve every message, say so at the start of the session and this command will draft instead.
 - The `[Claude]` prefix is required on ALL Teams messages — no exceptions.
 - Channel sends are not supported (Graph scope limitation). Only chat replies work.
 - Keep replies shorter than emails — Teams is a messaging medium, not email.

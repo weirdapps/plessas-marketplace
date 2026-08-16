@@ -22,6 +22,14 @@ The plugin ships with a Node-based MCP server (`mcp-server/` — built on first 
 
 Send paths are draft-first by design — `/chat-reply` shows the proposed message for your approval before invoking `teams_send_message`.
 
+### Send behaviour
+
+`/chat-reply` auto-sends by default. This is deliberate as of 2026-08-16 and
+supersedes the earlier draft-and-approve default. Every message carries a
+`[Claude]` prefix so recipients know they are reading an agent, and the command
+falls back to draft-and-confirm when the target chat is ambiguous or unfamiliar.
+To approve every message instead, say so at the start of the session.
+
 ## Setup
 
 The marketplace setup script (`installers/install.sh`) handles all dependencies:
