@@ -38,15 +38,50 @@ Rejected: one marketplace-wide router skill. Breaks the repository's stated
 "each plugin is self-contained" principle. Someone installing only `excel`
 would carry a skill referencing five plugins they do not have.
 
-### D2: Descriptions carry Greek and English trigger phrases
+### D2: Descriptions describe an intent space, not a phrase list
 
-Users write in both. Semantic matching on an English-only description does
-reach Greek input, but weakly on domain nouns (κατάστημα, παρουσίαση,
-σύσκεψη). Explicit Greek phrases close that gap.
+The governing constraint, stated by the owner: we cannot predict what a user
+will ask or how they will phrase it. A description built as an enumeration of
+trigger phrases is wrong by construction, because whatever is enumerated, the
+next colleague phrases it differently.
 
-The repository stays domain-neutral in every other respect. Greek trigger
-phrases are user-language, not organisation-specific content, so they do not
-compromise the MIT/public posture.
+So each description states three things and relies on the model to generalise
+from them:
+
+1. **The domain**, as a bounded intent space. Not "runs /inbox-briefing" but
+   "anything to do with the user's Outlook mailbox: reading it, deciding what
+   matters in it, and composing what goes out of it."
+2. **A handful of diverse exemplars**, explicitly labelled as illustrative and
+   non-exhaustive, chosen to span the range of the space rather than to cover
+   it. Their job is calibration, so the model can tell where the edges are.
+   Three to five per language is enough; more implies a lookup table and
+   invites the model to treat unlisted phrasings as out of scope.
+3. **The negative boundary**, naming the sibling skill that owns adjacent
+   ground.
+
+Greek and English both appear. Semantic matching on an English-only
+description does reach Greek input, but weakly on domain nouns (παρουσίαση,
+σύσκεψη, φύλλο). A few Greek exemplars anchor those nouns; they are not
+attempting coverage.
+
+The repository stays domain-neutral in every other respect. Greek exemplars are
+user-language, not organisation-specific content, so they do not compromise the
+MIT/public posture.
+
+### D2a: The skill body carries the routing intelligence
+
+Following from D2: if the description gets the model into the right plugin,
+the body is what gets it to the right command. The body is written as intent
+mapping, not keyword matching. Each entry states what the user is trying to
+achieve and which command serves it, so an unanticipated phrasing still lands
+by meaning.
+
+Each body ends with an explicit no-match rule: when a request is inside the
+plugin's domain but no command clearly serves it, the skill states what the
+plugin can do and asks, rather than guessing into the nearest command. This
+matters most in `chat`, where `chat-reply` auto-sends (D4). Guessing is the
+one failure mode an open-ended trigger surface makes more likely, so it is
+handled explicitly rather than left to chance.
 
 ### D3: All 35 commands are reachable, with today's behaviour unchanged
 
@@ -107,59 +142,79 @@ pattern, with an explicit path exclusion for `docs/superpowers/plans/` and
 This is a genuine broadening of coverage. It is not, and must not become, a
 narrowing of what the check reports.
 
-### D7: Greek trigger phrases are authored by the owner, enforced by CI
+### D7: All six skills are authored complete; no owner input is a merge gate
 
-The six files ship with English trigger phrases complete and a marked slot for
-Greek phrases. The owner fills all six with real phrasings before merge.
+Superseded an earlier draft of this decision that asked the owner to supply
+real Greek phrasings before merge. That ask only made sense while the
+descriptions were phrase lists whose coverage had to be right. Under D2 the
+exemplars are calibration samples, so authoring them is a writing task, not a
+knowledge-elicitation task, and it is done here.
 
-This is not a placeholder in the spec sense: it is a gated step with a named
-owner and a mechanical enforcement. The CI check in `validate-plugins.yml`
-requires at least one Greek-script trigger phrase per description, so the
-branch cannot go green until the slots are filled.
-
-Rationale: the owner knows how colleagues actually phrase requests. A guess
-produces trigger phrases that read like a manual and match nothing.
+The owner reviews the result like any other change. Nothing in the branch
+waits on owner-supplied content.
 
 ## Description anatomy
 
-Fixed four-part shape, 700 to 900 characters. For contrast, the plugin estate's
-current skill descriptions run 108 to 572 characters with a median near 195,
-and the reference skills that trigger reliably in practice run 895 to 952.
+Three parts, in this order, 600 to 900 characters. For contrast, the plugin
+estate's current skill descriptions run 108 to 572 characters with a median
+near 195, and the reference skills that trigger reliably in practice run 895
+to 952.
 
-1. The plugin's domain in one clause
-2. Concrete English trigger phrases in quotes
-3. Concrete Greek trigger phrases in quotes
-4. An explicit negative boundary naming the sibling skills
+1. **Domain**, stated as an intent space wide enough to absorb phrasings
+   nobody anticipated
+2. **Exemplars**, three to five per language, prefixed with wording that marks
+   them as samples rather than a list ("for example", not "triggers on")
+3. **Negative boundary**, naming the sibling skill that owns adjacent ground
 
 Worked example, `plugins/mail/skills/outlook-mail/SKILL.md`:
 
-> Outlook email workflows: inbox briefings, triage, drafting replies and
-> forwards, sending mail, and email-style learning. Use when the user asks
-> about their inbox, unread mail, what needs answering, or wants to write,
-> reply to, or forward an email. Triggers on English phrasing like "what's in
-> my inbox", "brief me on my email", "reply to that", "draft an email to",
-> "clean up my inbox", and on Greek phrasing like «τι έχω στο inbox», «τα μέιλ
-> μου», «απάντησε στο μέιλ», «στείλε ένα μέιλ», «ποια μέιλ θέλουν απάντηση»,
-> «καθάρισε το inbox». Do NOT use for Microsoft Teams messages or chats (use
-> teams-chat), for meeting preparation or debriefs (use meeting-workflows), or
-> for reading spreadsheets or Word documents.
+> Anything to do with the user's Outlook mailbox: reading it, deciding what in
+> it matters, and composing what goes out of it. Covers inbox briefings and
+> triage, finding and summarising messages or threads, drafting replies and
+> forwards, sending new mail, and learning the user's writing style. Use this
+> whenever a request concerns email, however it is phrased, for example "what
+> needs my attention today", "anything urgent from the auditors", "answer
+> Maria", "put together a note to the team", or in Greek «τι τρέχει στο μέιλ
+> μου», «ποιος περιμένει απάντηση», «γράψε στον Κώστα», «βγάλε μου μια
+> σύνοψη από τα χθεσινά». These are samples, not an exhaustive list: judge by
+> meaning. Do NOT use for Microsoft Teams messages or chats (use teams-chat),
+> for meeting preparation or debriefs (use meeting-workflows), or for reading
+> spreadsheets or Word documents.
 
-Part 4 is the piece absent from every skill in the owner's estate today, and
+Two things this example is doing deliberately. The exemplars are phrased the
+way a colleague actually speaks, including obliquely ("anything urgent from
+the auditors" never says the word email). And the explicit "judge by meaning"
+instruction tells the model not to read the samples as a whitelist, which is
+the failure mode of a phrase list.
+
+Part 3 is the piece absent from every skill in the owner's estate today, and
 the reason a broadly-worded skill can capture a sibling plugin's work.
 
-## Boundary table
+## Tie-break policy
 
-The four phrasings that will collide, and how they resolve:
+Per D2 the skills are open-ended, so collisions are resolved by a rule, not by
+a lookup of known-colliding phrases. The rule: **route on the object, not the
+verb.** Verbs are shared across the whole estate; the object of the request is
+what identifies the domain.
 
-| Phrasing | Resolves to | Discriminator |
-|---|---|---|
-| «σύνοψη», «περίληψη», "summary" | varies | a file or xlsx goes to `spreadsheets`; Teams or a conversation goes to `teams-chat`; inbox or mail goes to `outlook-mail` |
-| «στείλε», «απάντησε», "send", "reply" | varies | mail or Outlook goes to `outlook-mail`; Teams, chat or μήνυμα goes to `teams-chat` |
-| «φτιάξε» plus an object | varies | presentation, slides or deck goes to `presentations`; document, letter or memo goes to `word-documents` |
-| «σύσκεψη», "meeting" | `meeting-workflows` | unless the request is about email concerning the meeting, which goes to `outlook-mail` |
+| Verb, in either language | Object that decides |
+|---|---|
+| summarise, σύνοψη, περίληψη | a file or spreadsheet goes to `spreadsheets`; a chat or Teams thread goes to `teams-chat`; a mailbox or thread goes to `outlook-mail`; a meeting that already happened goes to `meeting-workflows` |
+| send, reply, στείλε, απάντησε | mail, Outlook, a person's address goes to `outlook-mail`; Teams, chat, μήνυμα goes to `teams-chat` |
+| make, build, φτιάξε | presentation, slides, deck goes to `presentations`; document, letter, memo, Word goes to `word-documents` |
+| prepare, brief, ετοίμασε | an upcoming meeting goes to `meeting-workflows`; anything else follows its own object |
+
+Two standing exceptions where the object rule would split work that belongs
+together:
 
 `excel-to-deck` stays in `spreadsheets` because that is where the command
 lives, so "κάνε το excel παρουσίαση" is not torn between two skills.
+
+`meeting-workflows` yields to `outlook-mail` when the object is an email that
+merely concerns a meeting, because the work is mail work.
+
+When the object is genuinely absent or unclear, the no-match rule in D2a
+applies: the skill asks rather than guessing.
 
 ## Files
 
@@ -193,23 +248,39 @@ README.md                              document natural-language triggering
 
 ## Verification
 
-**CI, mechanical.** `validate-plugins.yml` gains a skill validation step: every
-`SKILL.md` has `name` and `description` frontmatter; every description is at
-least 400 characters; every description contains at least one Greek-script
-trigger phrase and one quoted English phrase. This is a cheap guard against
-regressing to the 130-character descriptions that do not fire.
+**CI, mechanical.** `validate-plugins.yml` gains a skill validation step:
+every `SKILL.md` has `name` and `description` frontmatter; every description
+is at least 400 characters, contains Greek-script text, and contains a
+negative boundary clause. Deliberately three weak structural floors, not a
+quality gate. They exist to stop a future edit regressing to a 130-character
+description that never fires. They must not grow into rules about which
+phrases a description contains, which would reintroduce the enumeration
+D2 rejects.
 
 **CI, portability.** The broadened `pii-gauntlet.sh` runs on the branch and
 must pass, proving the `chat-reply` fix is complete and that no other
 `~/SourceCode/` path is live.
 
-**Documentation.** `docs/skill-triggers.md` tabulates each skill, the phrasings
-it claims, and its negative boundaries. This doubles as the page handed to a
-colleague.
+**Documentation.** `docs/skill-triggers.md` states each skill's domain, its
+negative boundaries, and the tie-break policy. It does not list accepted
+phrasings, which would teach colleagues to speak in commands again and would
+defeat the point. It doubles as the page handed to a colleague.
 
-**Manual smoke test.** In a clean session: one Greek phrasing per plugin, plus
-the four ambiguous phrasings from the boundary table. Ten cases, each asserting
-which skill fires. Recorded in `docs/skill-triggers.md`.
+**Manual smoke test, held-out by construction.** The test only proves anything
+if the phrasings are ones the descriptions never saw. Sixteen cases in a clean
+session, none of them reusing an exemplar from any description:
+
+- Six oblique requests, one per plugin, that never name the plugin's object
+  directly (for example "τι πήγε στραβά χθες με τους ελεγκτές" for `mail`)
+- Four verb-collision cases drawn from the tie-break policy, one per verb row
+- Four requests inside a plugin's domain that no command serves, asserting the
+  D2a no-match rule asks instead of guessing
+- Two out-of-domain requests, asserting no skill fires at all
+
+Each case records the phrasing, the skill that fired, and whether that was
+correct. Any miss is a description defect, fixed by widening the domain
+statement or sharpening a boundary, never by adding the missed phrase as an
+exemplar. Adding the phrase would pass the test and leave the real gap open.
 
 ## Out of scope
 
