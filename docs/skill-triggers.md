@@ -57,7 +57,17 @@ so a future change can be re-tested against the same bar.
 Cases 1-10 and 15-16 use Shape A: six descriptions are presented and the probe
 must name the right skill or NONE. Cases 11-14 use Shape B: one skill's full
 SKILL.md is presented and the probe must output ASK rather than running the
-nearest command.
+nearest command. Case 17 is a Shape B positive control: both preconditions for
+`chat-reply` are satisfied, so the skill must fire it rather than ask.
+
+The harness lives at `scripts/skill-trigger-probe.sh`. It requires only the
+`claude` CLI on PATH; no personal config is sourced. Re-run it after any
+description change to confirm the baseline still holds.
+
+Limitation: the harness isolates the six descriptions from competing marketplace
+skills and from conversation context. This makes it a clean measurement of the
+descriptions and an optimistic one for a busy real session. Run a real-session
+spot check of three or four cases after any description change.
 
 | # | Phrasing | Expected | Actual | Pass |
 |---|---|---|---|---|
@@ -77,3 +87,4 @@ nearest command.
 | 14 | «κλείσε μου ραντεβού με τον Νίκο» (Shape B: meeting-workflows) | ASK | ASK | yes |
 | 15 | "what is the weather in Athens" | NONE | NONE | yes |
 | 16 | «τι λέει το χαρτοφυλάκιό μου σήμερα;» | NONE | NONE | yes |
+| 17 | «απάντησε στον Νίκο στη συνομιλία μας για το migration ότι το είδα» (Shape B: teams-chat, positive control) | chat-reply | chat-reply | yes |
