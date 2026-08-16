@@ -791,30 +791,74 @@ again, which is the problem this work exists to remove."
 - Consumes: all six skills and the documentation, Tasks 2 to 8.
 - Produces: a recorded pass or fail for each of sixteen cases.
 
-The test only proves something if none of these phrasings appears in any
-description. Before running, confirm that:
+**What "held out" means here.** A domain noun may appear in a case; that is
+what the model keys on and avoiding it would make the test meaningless. What
+must NOT appear is a phrasing lifted from a description. The bar is mechanical:
+no case may share a contiguous run of three or more words with any description.
+
+- [ ] **Step 0: Prove the cases are held out before running any of them**
 
 ```bash
-for p in "auditors" "board on Thursday" "running late" "Q3 short" "letterhead" "seeing tomorrow"; do
-  echo "== $p"; grep -rl "$p" plugins/*/skills/*/SKILL.md 2>/dev/null || echo "   held out, good"
-done
+python3 - <<'PY'
+import re, glob, unicodedata
+
+CASES = [
+ "ο Παπαδόπουλος μου είχε στείλει κάτι την Τρίτη και δεν το βρίσκω πουθενά",
+ "the migration thread exploded overnight, where did it land",
+ "the steering committee gave me a forty minute slot and I have nothing to put on screen",
+ "τα νούμερα του Ιουνίου δεν βγαίνουν με τον προϋπολογισμό, δες τα",
+ "the committee needs this circulated internally as a formal record",
+ "σε μισή ώρα μπαίνω με τη Nova και δεν θυμάμαι πού είχαμε μείνει",
+]
+
+def words(s):
+    s = unicodedata.normalize("NFKD", s.lower())
+    return re.findall(r"\w+", s, re.UNICODE)
+
+descs = []
+for f in glob.glob("plugins/*/skills/*/SKILL.md"):
+    t = open(f, encoding="utf-8").read()
+    m = re.search(r"^description: (.+)$", t, re.M)
+    if m:
+        descs.append((f, words(m.group(1))))
+
+def runs(w, n):
+    return {tuple(w[i:i+n]) for i in range(len(w)-n+1)}
+
+bad = 0
+for i, case in enumerate(CASES, 1):
+    cw = words(case)
+    worst = 0; where = ""
+    for f, dw in descs:
+        for n in range(min(len(cw), 8), 2, -1):
+            if runs(cw, n) & runs(dw, n):
+                if n > worst: worst, where = n, f
+                break
+    if worst >= 3:
+        print(f"FAIL case {i}: shares a {worst}-word run with {where}")
+        bad = 1
+    else:
+        print(f"ok   case {i}: longest shared run < 3 words")
+raise SystemExit(bad)
+PY
 ```
 
-Any phrase found in a description must be replaced with a fresh one before
-testing. A test using a phrase the description already contains proves nothing.
+Expected: six `ok` lines, exit 0. On any `FAIL`, rewrite that case with a fresh
+phrasing and re-run. Do NOT weaken the threshold, and do NOT edit the
+description to make the case pass: the description is the thing under test.
 
 - [ ] **Step 1: Run the six oblique cases**
 
-In a clean Claude Code session with all six plugins installed, one at a time. None names its domain noun.
+In a clean Claude Code session with all six plugins installed, one at a time. None names its domain noun directly.
 
 | # | Phrasing | Must route to |
 |---|---|---|
-| 1 | «ποιος περιμένει κάτι από μένα εδώ και μέρες;» | `outlook-mail` |
-| 2 | «έλειπα δύο μέρες, τι μου ξέφυγε από την ομάδα;» | `teams-chat` |
-| 3 | "I am in front of the board on Thursday and have nothing" | `presentations` |
-| 4 | «γιατί βγήκαμε εκτός στο τρίμηνο;» | `spreadsheets` |
-| 5 | "this needs to go out on letterhead to the supervisor" | `word-documents` |
-| 6 | «με ποιον τα λέω αύριο και τι να ξέρω;» | `meeting-workflows` |
+| 1 | «ο Παπαδόπουλος μου είχε στείλει κάτι την Τρίτη και δεν το βρίσκω πουθενά» | `outlook-mail` |
+| 2 | "the migration thread exploded overnight, where did it land?" | `teams-chat` |
+| 3 | "the steering committee gave me a forty minute slot and I have nothing to put on screen" | `presentations` |
+| 4 | «τα νούμερα του Ιουνίου δεν βγαίνουν με τον προϋπολογισμό, δες τα» | `spreadsheets` |
+| 5 | "the committee needs this circulated internally as a formal record" | `word-documents` |
+| 6 | «σε μισή ώρα μπαίνω με τη Nova και δεν θυμάμαι πού είχαμε μείνει» | `meeting-workflows` |
 
 - [ ] **Step 2: Run the four verb-collision cases**
 
