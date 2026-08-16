@@ -79,6 +79,42 @@ jobs:
           done
           [ $errors -eq 0 ] && echo "All command files have frontmatter" || exit 1
 
+      - name: Validate skill frontmatter
+        run: |
+          errors=0
+          for skill_file in plugins/*/skills/*/SKILL.md; do
+            [ -f "$skill_file" ] || continue
+            if ! head -1 "$skill_file" | grep -q "^---$"; then
+              echo "$skill_file: missing frontmatter"
+              errors=$((errors + 1))
+              continue
+            fi
+            awk_prog='/^---$/{n++; next} n==1 && /^description:/{sub(/^description:[ ]*/,""); print; exit}'
+            desc=$(awk "$awk_prog" "$skill_file")
+            if [ -z "$desc" ]; then
+              echo "$skill_file: missing description"
+              errors=$((errors + 1))
+              continue
+            fi
+            # Three weak structural floors. They exist to stop a future edit
+            # regressing to a short description that never fires. Do NOT grow
+            # them into rules about which phrases a description contains:
+            # enumerating phrases is the failure mode this design rejects.
+            if [ "${#desc}" -lt 400 ]; then
+              echo "$skill_file: description is ${#desc} chars, minimum 400"
+              errors=$((errors + 1))
+            fi
+            if ! printf '%s' "$desc" | grep -qE '[α-ωΑ-Ω]'; then
+              echo "$skill_file: description has no Greek-script text"
+              errors=$((errors + 1))
+            fi
+            if ! printf '%s' "$desc" | grep -q 'Do NOT use'; then
+              echo "$skill_file: description has no negative boundary"
+              errors=$((errors + 1))
+            fi
+          done
+          [ $errors -eq 0 ] && echo "All skill files validated" || exit 1
+
       - name: Consistency checks
         run: python3 scripts/validate_consistency.py --verbose
 
