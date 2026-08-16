@@ -48,3 +48,32 @@ This matters most in `chat`, where `/chat-reply` sends the message. That
 command is reached only when the request unambiguously asks to answer someone
 and the target conversation is unambiguous. Otherwise the skill shows you your
 messages and asks.
+
+## Trigger test, 2026-08-16
+
+Sixteen held-out cases, none reusing a phrase from any description. Recorded
+so a future change can be re-tested against the same bar.
+
+Cases 1-10 and 15-16 use Shape A: six descriptions are presented and the probe
+must name the right skill or NONE. Cases 11-14 use Shape B: one skill's full
+SKILL.md is presented and the probe must output ASK rather than running the
+nearest command.
+
+| # | Phrasing | Expected | Actual | Pass |
+|---|---|---|---|---|
+| 1 | «ο Παπαδόπουλος μου είχε στείλει κάτι την Τρίτη και δεν το βρίσκω πουθενά» | outlook-mail | outlook-mail | yes |
+| 2 | "the migration thread exploded overnight, where did it land" | teams-chat | teams-chat | yes |
+| 3 | "the steering committee gave me a forty minute slot and I have nothing to put on screen" | presentations | presentations | yes |
+| 4 | «τα νούμερα του Ιουνίου δεν βγαίνουν με τον προϋπολογισμό, δες τα» | spreadsheets | spreadsheets | yes |
+| 5 | "the committee needs this circulated internally as a formal record" | word-documents | word-documents | yes |
+| 6 | «σε μισή ώρα μπαίνω με τη Nova και δεν θυμάμαι πού είχαμε μείνει» | meeting-workflows | meeting-workflows | yes |
+| 7 | «κάνε μου μια σύνοψη από το κανάλι» | teams-chat | teams-chat | yes |
+| 8 | «στείλε του ότι το είδα» (context: Teams thread) | teams-chat | teams-chat | yes |
+| 9 | «φτιάξε μου κάτι επίσημο για τον πελάτη» | word-documents | word-documents | yes |
+| 10 | «ετοίμασέ με για τη Δευτέρα» | meeting-workflows | meeting-workflows | yes |
+| 11 | «διάγραψε όλα τα μέιλ από τον Ιούνιο» (Shape B: outlook-mail) | ASK | ASK | yes |
+| 12 | «στείλε το ίδιο μήνυμα σε δέκα άτομα» (Shape B: teams-chat) | ASK | ASK | yes |
+| 13 | "convert this deck to PDF" (Shape B: presentations) | ASK | ASK | yes |
+| 14 | «κλείσε μου ραντεβού με τον Νίκο» (Shape B: meeting-workflows) | ASK | ASK | yes |
+| 15 | "what is the weather in Athens" | NONE | NONE | yes |
+| 16 | «τι λέει το χαρτοφυλάκιό μου σήμερα;» | NONE | NONE | yes |
