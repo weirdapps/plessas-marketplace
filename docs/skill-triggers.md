@@ -35,8 +35,8 @@ Two standing exceptions, where the object rule would split work that belongs
 together:
 
 - `excel-to-deck` stays with `spreadsheets`, because the work starts from data.
-- `meeting-workflows` yields to `outlook-mail` when the object is an email that
-  merely concerns a meeting, because the work is mail work.
+- `meeting-workflows` yields to `outlook-mail` when the object is sending the
+  follow-up email itself, because the work is mail work.
 
 ## When a skill is unsure
 

@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, mcp__teams-bridge__teams_auth_check, mcp__team
 
 # Teams Chat Reply
 
-Draft and optionally send a reply to a Microsoft Teams chat.
+Draft and auto-send a reply to a Microsoft Teams chat. Every message carries a `[Claude]` prefix; falls back to draft-and-confirm when the target chat is ambiguous.
 
 ## Workflow
 

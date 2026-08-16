@@ -96,10 +96,10 @@ A custom CI gate (`pii-gauntlet.sh` + GitHub Actions workflow) runs on every pus
 
 ## Is there a "training mode" or "dry run"?
 
-For risky operations, yes:
+For most operations that change state, yes:
 
 - `/send-mail` and `/reply` are draft-first by default — they create a draft in Outlook desktop and activate the window for your final review and click-Send
-- `/chat-reply` shows the draft in the conversation for your approval before invoking the `teams_send_message` MCP tool
+- `/chat-reply` shows the draft inline for transparency and then sends automatically. Every message carries a `[Claude]` prefix so recipients know it came from an agent. When the target chat is ambiguous or unfamiliar, the command falls back to draft-and-confirm instead.
 - `/triage-inbox` (advanced) supports `--dry-run` to preview moves without executing
 
 For pure read-only operations (briefings, summaries), there's no risk — they don't modify anything.

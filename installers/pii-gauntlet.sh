@@ -202,18 +202,19 @@ check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMe
 # Tax authority refs
 check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"
 
-# Personal source paths. Broadened 2026-08-16: the old pattern named one repo
-# (/SourceCode/claude-config) and so let ~/SourceCode/teams-access/... ship
-# green in plugins/chat/commands/chat-reply.md.
-#
-# Design records under docs/superpowers/ are excluded BY PATH. They quote the
-# offending paths in order to document them, which is the opposite of leaking
-# them. Live configuration never lives there: it lives in plugins/, installers/
-# and scripts/, none of which is excluded. The script already excludes itself
-# at line 54, so the pattern below does not match its own definition.
-check "User-specific paths" \
-  "/Users/[a-z]|~/SourceCode|\\\$HOME/SourceCode|claude-config/shared-memory" \
-  "^(\./)?(docs/superpowers/|CHANGELOG\.md)"
+# Source-tree paths: references to the maintainer's local SourceCode tree or
+# shared-memory config directory. Design records under docs/superpowers/ are
+# excluded BY PATH -- they quote these patterns to document them, not to leak
+# them. Live configuration lives in plugins/, installers/, and scripts/, none
+# of which is excluded. CHANGELOG.md is NOT excluded here.
+check "Source tree paths" \
+  "~/SourceCode|\\\$HOME/SourceCode|claude-config/shared-memory" \
+  "^(\./)?(docs/superpowers/)"
+
+# Absolute user home paths. No path exclusions -- historical records must not
+# embed a specific maintainer username either.
+check "Absolute user paths" \
+  "/Users/[a-z]"
 
 # Cleanup
 [ "$MODE" = "ci" ] && rm -f "$TRACKED_TMP"

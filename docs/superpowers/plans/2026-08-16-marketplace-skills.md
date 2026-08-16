@@ -45,7 +45,7 @@
 In `installers/pii-gauntlet.sh`, replace line 190:
 
 ```bash
-check "User-specific paths" "/Users/plessas|/SourceCode/claude-config|claude-config/shared-memory"
+check "User-specific paths" "/Users/<maintainer>|/SourceCode/claude-config|claude-config/shared-memory"
 ```
 
 with:

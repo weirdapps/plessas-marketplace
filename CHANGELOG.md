@@ -87,7 +87,7 @@ The full cleanup that the new slash commands enable is **not** in this release. 
 
 - `chat/commands/chat-reply.md` sends through the bundled `teams-bridge` MCP instead of an absolute path to a local checkout, which never resolved on any machine but the maintainer's
 - `chat-reply` auto-send is now the documented public default. This supersedes the draft-and-approve default recorded in `docs/superpowers/plans/2026-05-11-share-readiness.md`, which should be read as historical from this date.
-- `installers/pii-gauntlet.sh` user-path check broadened from one named repo to any `~/SourceCode` or `/Users/<name>` path, with historical records excluded by path
+- `installers/pii-gauntlet.sh` user-path check split into two: one for local source-tree paths (with design-record path exclusion) and one for absolute maintainer home paths (no exclusions)
 - `mail/commands/send-mail.md` CC example uses a neutral domain
 - `decks` plugin: vendored brand directory renamed `shared/nbg-brand-system/` → `shared/brand-system/`. All 10 internal references updated.
 - `decks` plugin: documentation updated to flat-agent layout (`agents/<name>.md` not `agents/<name>/AGENT.md`).

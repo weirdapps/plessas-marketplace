@@ -21,6 +21,8 @@
 #
 # Usage: bash scripts/skill-trigger-probe.sh [--verbose]
 
+set -u
+
 VERBOSE=0
 [[ "${1:-}" == "--verbose" ]] && VERBOSE=1
 
@@ -96,7 +98,10 @@ Which skill handles this? Reply with only the skill name or NONE."
   full_prompt=$(printf '%s\n\n%s' "$SHAPE_A_SYSTEM" "$user_msg")
 
   local raw actual
-  raw=$(printf '%s' "$full_prompt" | claude --print --model sonnet 2>&1) || true
+  if ! raw=$(printf '%s' "$full_prompt" | claude --print --model sonnet 2>&1); then
+    printf "ERROR: 'claude' CLI failed on case %d. Is it on PATH and authenticated? Aborting.\n" "$num" >&2
+    exit 3
+  fi
   actual=$(parse_output "$raw")
 
   local verdict="FAIL"
@@ -128,7 +133,10 @@ run_shape_b() {
     "$skill_content" "$phrasing")
 
   local raw actual
-  raw=$(printf '%s' "$prompt" | claude --print --model sonnet 2>&1) || true
+  if ! raw=$(printf '%s' "$prompt" | claude --print --model sonnet 2>&1); then
+    printf "ERROR: 'claude' CLI failed on case %d. Is it on PATH and authenticated? Aborting.\n" "$num" >&2
+    exit 3
+  fi
   actual=$(parse_output "$raw")
 
   local verdict="FAIL"

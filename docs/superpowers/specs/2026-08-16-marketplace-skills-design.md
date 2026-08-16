@@ -128,16 +128,22 @@ maintainer nothing.
 
 The `teams-bridge` `ENOENT` failure is a real bug and is out of scope here.
 
-### D6: The PII gauntlet path check is broadened
+### D6: The PII gauntlet path check is broadened and split
 
-`installers/pii-gauntlet.sh:190` checks for
-`/Users/plessas|/SourceCode/claude-config|claude-config/shared-memory`. The
-string `~/SourceCode/teams-access/dist/cli.js` matches none of them, which is
-why the regression shipped green.
+The original single check named one specific repo path, which is why
+`~/SourceCode/teams-access/dist/cli.js` shipped green.
 
-The check is broadened to a general `~/SourceCode/` and `$HOME/SourceCode`
-pattern, with an explicit path exclusion for `docs/superpowers/plans/` and
-`CHANGELOG.md`, which are historical records rather than live configuration.
+The fix is implemented as two separate checks. The first covers local source-tree
+paths (`~/SourceCode`, `$HOME/SourceCode`, `claude-config/shared-memory`) and
+applies a path exclusion for all of `docs/superpowers/`, which quotes these
+patterns in order to document them. The second covers absolute maintainer home
+paths and carries no exclusion at all. `CHANGELOG.md` is excluded from neither.
+
+The reason for splitting rather than broadening the single check: a combined
+check with a path exclusion would silently disable the home-path half inside
+every excluded path. This branch's own two spec and plan documents immediately
+fell into that hole when a trial combined check was run against them, confirming
+that the exclusion must not cover both pattern families.
 
 This is a genuine broadening of coverage. It is not, and must not become, a
 narrowing of what the check reports.
