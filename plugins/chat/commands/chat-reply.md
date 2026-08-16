@@ -1,5 +1,5 @@
 ---
-description: "Draft a reply to a Microsoft Teams chat message. Shows draft for user approval before sending."
+description: "Draft and auto-send a reply to a Microsoft Teams chat message. Prefixes [Claude]; falls back to draft-and-confirm when the target chat is ambiguous."
 argument-hint: "[chat_id]"
 allowed-tools: Read, Write, Bash, mcp__teams-bridge__teams_auth_check, mcp__teams-bridge__teams_list_chats, mcp__teams-bridge__teams_list_messages, mcp__teams-bridge__teams_resolve_mri, mcp__teams-bridge__teams_send_message
 ---
