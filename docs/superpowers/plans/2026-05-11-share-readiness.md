@@ -12,6 +12,7 @@
 
 - The NBG-branded `decks` plugin stays NBG-branded. The 22 "Plessas signature / Plessas KPI Card" references in `plugins/decks/shared/brand-system/{colors,layouts,typography,charts}.md` are intentional — this is the maintainer's NBG brand system. The marketplace README will disclose this honestly (Task 5.4) but the brand-system docs themselves do not change.
 - The `chat` plugin's `chat-reply.md` keeps its conservative "NEVER auto-send" default. This conflicts with the maintainer's personal `~/.claude/CLAUDE.md` Teams rule, but the marketplace default is the safer one for shared use; the maintainer overrides locally. No change.
+  **Superseded 2026-08-16:** auto-send is now the public default; see `plugins/chat/README.md`.
 - "Plessas pushes updates" / "Plessas's name" attributions in `docs/FAQ.md`. This is the maintainer's marketplace; the attribution is accurate. No change.
 - `plessas-trading` work — handled in a separate plan.
 

@@ -152,6 +152,18 @@ shared/                              # cross-plugin templates (email-style, bran
 .github/workflows/                   # validate-plugins, pii-check, rename-guard, sonarcloud, codeql, dependabot-auto-merge
 ```
 
+### Natural-language triggering
+
+Every plugin ships one skill, so you do not have to know a command name. Ask
+for what you want, in Greek or English, and the request routes to the right
+workflow: "what needs my attention today", «τι έγινε στα Teams όσο έλειπα»,
+"I need something for the board on Thursday".
+
+Commands still work and are still the precise way to invoke a specific
+workflow. The skills are an additional entry point, not a replacement.
+
+Domains, boundaries, and how overlaps resolve: [`docs/skill-triggers.md`](docs/skill-triggers.md).
+
 ### Bundled MCP servers
 
 Two of the plugins ship their own MCP server as a TypeScript project under `plugins/<name>/mcp-server/`. Both wrap external CLIs that are pulled in as npm dependencies (`git+https`, pinned to specific commit SHAs so the lockfile stays reproducible).

@@ -4,7 +4,7 @@ A 5-minute path from zero to "my Teams chats are summarised and my replies are d
 
 ## What it does
 
-Bridges Microsoft Teams to Claude Code. Reads your chats and channels via Microsoft Graph and the chatsvc API, drafts replies that match the tone of the existing thread (Greek or English, auto-detected), summarises long threads to the decisions and action items that matter, and produces executive digests of busy project channels. Send paths are draft-first by design — every message that lands in someone's Teams is your finger on Send.
+Bridges Microsoft Teams to Claude Code. Reads your chats and channels via Microsoft Graph and the chatsvc API, drafts replies that match the tone of the existing thread (Greek or English, auto-detected), summarises long threads to the decisions and action items that matter, and produces executive digests of busy project channels. Send paths go through `teams_send_message`. `/chat-reply` auto-sends by default, with a `[Claude]` prefix on every message, and falls back to draft-and-confirm when the target chat is ambiguous.
 
 ## Prerequisites
 

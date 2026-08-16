@@ -95,13 +95,28 @@ scan_ci() {
   fi
 }
 
+# Drop hits whose PATH is a historical record rather than live configuration.
+# Path-scoped only. Never extend this to filter on matched content: that would
+# hide live hits and turn a working guardrail into a false green.
+apply_exclusion() {
+  local hits="$1"
+  local exclude="$2"
+  if [ -z "$exclude" ] || [ -z "$hits" ]; then
+    printf '%s' "$hits"
+    return
+  fi
+  printf '%s\n' "$hits" | grep -vE "$exclude" || true
+}
+
 check() {
   local label="$1"
   local pattern="$2"
+  local exclude="${3:-}"
   local hits
 
   if [ "$MODE" = "ci" ]; then
     hits=$(scan_ci "$pattern")
+    hits=$(apply_exclusion "$hits" "$exclude")
     if [ -n "$hits" ]; then
       echo "FAIL [$label]:"
       echo "$hits" | head -20
@@ -115,6 +130,7 @@ check() {
 
   # Doctor mode — separate tracked from gitignored.
   hits=$(scan_doctor "$pattern")
+  hits=$(apply_exclusion "$hits" "$exclude")
   if [ -z "$hits" ]; then
     echo "OK   [$label]"
     return
@@ -186,8 +202,19 @@ check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMe
 # Tax authority refs
 check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"
 
-# Personal source paths (specific to user's machine)
-check "User-specific paths" "/Users/plessas|/SourceCode/claude-config|claude-config/shared-memory"
+# Source-tree paths: references to the maintainer's local SourceCode tree or
+# shared-memory config directory. Design records under docs/superpowers/ are
+# excluded BY PATH -- they quote these patterns to document them, not to leak
+# them. Live configuration lives in plugins/, installers/, and scripts/, none
+# of which is excluded. CHANGELOG.md is NOT excluded here.
+check "Source tree paths" \
+  "~/SourceCode|\\\$HOME/SourceCode|claude-config/shared-memory" \
+  "^(\./)?(docs/superpowers/)"
+
+# Absolute user home paths. No path exclusions -- historical records must not
+# embed a specific maintainer username either.
+check "Absolute user paths" \
+  "/Users/[a-z]"
 
 # Cleanup
 [ "$MODE" = "ci" ] && rm -f "$TRACKED_TMP"

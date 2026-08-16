@@ -3,7 +3,7 @@ import { runTeamsCli } from '../subprocess.js';
 
 export const sendMessageTool: Tool = {
   name: 'teams_send_message',
-  description: 'Send a message to a chat (Graph). Channel sends are NOT supported (scope missing). Draft-only by design — confirm before sending.',
+  description: 'Send a message to a Teams chat via Graph. Channel sends are not supported (scope missing).',
   inputSchema: {
     type: 'object',
     properties: {

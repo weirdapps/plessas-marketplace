@@ -7,7 +7,7 @@ Microsoft Teams interactive commands. Inbox briefings, draft replies, thread sum
 | Command | Description |
 |---------|-------------|
 | `/chat-inbox` | Summarise unread Teams chats — recent activity, urgency assessment, action items |
-| `/chat-reply` | Draft a reply to a Teams chat. Shows draft for approval before sending |
+| `/chat-reply` | Draft and auto-send a reply to a Teams chat. Prefixes `[Claude]`; falls back to draft-and-confirm when the target chat is ambiguous |
 | `/chat-summarize` | Summarise a single Teams chat or thread — decisions, action items, key points |
 | `/chat-channel-digest` | Executive summary of a Teams channel — recent activity across threads |
 | `/chat-doctor` | Diagnose `teams-bridge` MCP — Node binary, CLI install mode, auth status, last startup, suggested next step |
@@ -20,7 +20,15 @@ The plugin ships with a Node-based MCP server (`mcp-server/` — built on first 
 - **Read paths** (`teams_list_chats`, `teams_list_messages`, `teams_resolve_mri`) read from Microsoft Graph + the chatsvc API
 - **Write paths** (`teams_send_message`) post via Graph (chats only — channel sends are not yet supported by the underlying API scope)
 
-Send paths are draft-first by design — `/chat-reply` shows the proposed message for your approval before invoking `teams_send_message`.
+Send paths go through `teams_send_message`. `/chat-reply` auto-sends by default; see `### Send behaviour` below for details.
+
+### Send behaviour
+
+`/chat-reply` auto-sends by default. This is deliberate as of 2026-08-16 and
+supersedes the earlier draft-and-approve default. Every message carries a
+`[Claude]` prefix so recipients know they are reading an agent, and the command
+falls back to draft-and-confirm when the target chat is ambiguous or unfamiliar.
+To approve every message instead, say so at the start of the session.
 
 ## Setup
 
