@@ -53,15 +53,25 @@ with:
 ```bash
 # Personal source paths. Broadened 2026-08-16: the old pattern named one repo
 # (/SourceCode/claude-config) and so let ~/SourceCode/teams-access/... ship
-# green in plugins/chat/commands/chat-reply.md. Historical records are excluded
-# by path, not by weakening the pattern.
+# green in plugins/chat/commands/chat-reply.md.
+#
+# Design records under docs/superpowers/ are excluded BY PATH. They quote the
+# offending paths in order to document them, which is the opposite of leaking
+# them. Live configuration never lives there: it lives in plugins/, installers/
+# and scripts/, none of which is excluded. The script already excludes itself
+# at line 54, so the pattern below does not match its own definition.
 check "User-specific paths" \
   "/Users/[a-z]|~/SourceCode|\\\$HOME/SourceCode|claude-config/shared-memory" \
-  "^(\./)?(docs/superpowers/plans/|CHANGELOG\.md)"
+  "^(\./)?(docs/superpowers/|CHANGELOG\.md)"
 ```
 
 The `(\./)?` is load-bearing. CI mode emits hits as `path:line:content`, doctor
 mode emits them as `./path:content`. One regex has to tolerate both.
+
+The exclusion covers all of `docs/superpowers/`, not just `plans/`. The spec at
+`docs/superpowers/specs/2026-08-16-marketplace-skills-design.md` quotes the same
+paths five times while documenting this very defect; excluding only `plans/`
+leaves Step 6 permanently red.
 
 - [ ] **Step 2: Teach `check()` the exclusion argument, in BOTH modes**
 
@@ -121,8 +131,17 @@ Expected: the same file listed under the tracked heading, and NOT
 appears, `(\./)?` is missing from the exclusion regex or `apply_exclusion` was
 not wired into the doctor branch.
 
-If either mode passes, the pattern is not matching at all. Check that
-`~/SourceCode` is not being shell-expanded inside the double quotes.
+In both modes, `chat-reply.md:25` must be the ONLY hit. If either the spec or a
+plan under `docs/superpowers/` also appears, the exclusion is scoped to `plans/`
+instead of the whole `docs/superpowers/` tree.
+
+If either mode passes with no hits at all, the pattern is not matching. Check
+that `~/SourceCode` is not being shell-expanded inside the double quotes.
+
+Note on the starting state: the gauntlet is ALREADY red on this branch before
+you begin, because the plan and spec commits quote the old check line and the
+offending path while documenting them. That is the defect this step fixes, not
+something you introduced. Green is expected only from Step 6 onward.
 
 - [ ] **Step 4: Fix `chat-reply.md`**
 
@@ -171,8 +190,17 @@ acceptable; they are local-only by definition.
 
 - [ ] **Step 7: Prove the exclusion is path-scoped, not content-scoped**
 
-Run: `grep -c '~/SourceCode' docs/superpowers/plans/2026-05-11-share-readiness.md`
-Expected: a non-zero count, confirming the historical record still contains the strings and is being skipped by path rather than by the strings having been removed or the pattern weakened.
+```bash
+grep -c '~/SourceCode' docs/superpowers/plans/2026-05-11-share-readiness.md
+grep -c '~/SourceCode' docs/superpowers/specs/2026-08-16-marketplace-skills-design.md
+git ls-files -z | xargs -0 grep -lE "/Users/[a-z]|~/SourceCode" 2>/dev/null
+```
+
+Expected: both counts non-zero, and the file list containing only paths under
+`docs/superpowers/` plus `installers/pii-gauntlet.sh` itself. This confirms the
+strings are still present and are being skipped by path, not removed and not
+hidden by a weakened pattern. If `plugins/` appears in that list, Step 4 is
+incomplete.
 
 - [ ] **Step 8: Record the decision so it does not get reverted**
 
