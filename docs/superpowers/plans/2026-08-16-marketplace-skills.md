@@ -875,9 +875,51 @@ Expected: six `ok` lines, exit 0. On any `FAIL`, rewrite that case with a fresh
 phrasing and re-run. Do NOT weaken the threshold, and do NOT edit the
 description to make the case pass: the description is the thing under test.
 
-- [ ] **Step 1: Run the six oblique cases**
+## Method: a scripted probe, not a live session
 
-In a clean Claude Code session with all six plugins installed, one at a time. None names its domain noun directly.
+Revised 2026-08-16, before Task 9 ran. The original method said "in a clean
+Claude Code session with all six plugins installed". That is not executable:
+
+- The installed marketplace is a separate clone under
+  `~/.claude/plugins/marketplaces/`, not this worktree, and it contains no
+  skills. The new skills are live nowhere.
+- Making them live would mean repointing the maintainer's live plugin
+  configuration at an unmerged branch, so their own working sessions would
+  start triggering skills that are still under review. That is a side effect
+  outside this worktree and is not ours to take.
+- Testing after merge is circular: this test is what gates the merge.
+
+Instead, drive the local `claude` CLI headlessly, once per case. This measures
+the real artifact, because skill selection IS a model reading descriptions and
+choosing. Verified working: source `~/.config/nbg-vertex/env`, export
+`ANTHROPIC_MODEL` and `CLOUD_ML_REGION` from it, then
+`claude --print --model sonnet`. Strip the leading terminal escape sequence
+from the output before parsing.
+
+Two probe shapes:
+
+**Shape A** (cases 1 to 10, 15, 16): build the prompt from the six
+descriptions extracted live from the `SKILL.md` files, present the user's
+phrasing, and ask which single skill should handle it or `NONE`. Answer must
+be a bare skill name or `NONE`.
+
+**Shape B** (cases 11 to 14): these test behaviour inside a skill, not which
+skill fires. Supply the full text of the named skill's `SKILL.md`, present the
+phrasing, and ask which command it would run or whether it would ask the user
+first. Answer must be a bare command name or `ASK`.
+
+Each case runs in its own CLI invocation so no case can see another's answer.
+
+Honest limitation, to be recorded with the results: in a real session other
+installed marketplaces' skills also compete for the same request, and the model
+sees the whole conversation rather than one phrasing. This harness isolates the
+descriptions, which makes it a clean measurement of the descriptions and an
+optimistic one for a busy session. Recommend a real-session spot check of three
+or four cases after merge.
+
+- [ ] **Step 1: Run the six oblique cases (Shape A)**
+
+None names its domain noun directly.
 
 | # | Phrasing | Must route to |
 |---|---|---|
@@ -888,7 +930,7 @@ In a clean Claude Code session with all six plugins installed, one at a time. No
 | 5 | "the committee needs this circulated internally as a formal record" | `word-documents` |
 | 6 | «σε μισή ώρα μπαίνω με τη Nova και δεν θυμάμαι πού είχαμε μείνει» | `meeting-workflows` |
 
-- [ ] **Step 2: Run the four verb-collision cases**
+- [ ] **Step 2: Run the four verb-collision cases (Shape A)**
 
 One per row of the tie-break policy. Each uses a shared verb, so only the object can decide.
 
@@ -899,7 +941,7 @@ One per row of the tie-break policy. Each uses a shared verb, so only the object
 | 9 | «φτιάξε μου κάτι επίσημο για τον πελάτη» | `word-documents` | a formal written document |
 | 10 | «ετοίμασέ με για τη Δευτέρα» | `meeting-workflows` | an upcoming meeting |
 
-- [ ] **Step 3: Run the four no-match cases**
+- [ ] **Step 3: Run the four no-match cases (Shape B)**
 
 Each is inside a plugin's domain but served by no command. The skill must say what it can do and ask, not run the nearest command.
 
@@ -912,7 +954,7 @@ Each is inside a plugin's domain but served by no command. The skill must say wh
 
 Case 12 is the most important in the plan. `/chat-reply` sends.
 
-- [ ] **Step 4: Run the two out-of-domain cases**
+- [ ] **Step 4: Run the two out-of-domain cases (Shape A)**
 
 | # | Phrasing | Expected |
 |---|---|---|
