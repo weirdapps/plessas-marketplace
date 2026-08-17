@@ -104,7 +104,14 @@ jobs:
               echo "$skill_file: description is ${#desc} chars, minimum 400"
               errors=$((errors + 1))
             fi
-            if ! printf '%s' "$desc" | grep -qE '[α-ωΑ-Ω]'; then
+            # NOT `grep -E '[<alpha>-<omega>]'`. That is a RANGE over multibyte
+            # characters: BSD grep resolves it, GNU grep does not. It passed on
+            # macOS all through development and then reported "no Greek-script
+            # text" for all six skills on the very first ubuntu run. Match the
+            # Greek Unicode blocks by codepoint instead, in python3, which
+            # behaves identically on both.
+            if ! printf '%s' "$desc" | python3 -c \
+              'import re,sys; sys.exit(0 if re.search(r"[\u0370-\u03ff\u1f00-\u1fff]", sys.stdin.read()) else 1)'; then
               echo "$skill_file: description has no Greek-script text"
               errors=$((errors + 1))
             fi
