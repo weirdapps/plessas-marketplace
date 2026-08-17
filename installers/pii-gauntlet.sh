@@ -203,12 +203,18 @@ check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMe
 check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"
 
 # Source-tree paths: references to the maintainer's local SourceCode tree or
-# shared-memory config directory. Design records under docs/superpowers/ are
+# the claude-config store. Design records under docs/superpowers/ are
 # excluded BY PATH -- they quote these patterns to document them, not to leak
 # them. Live configuration lives in plugins/, installers/, and scripts/, none
 # of which is excluded. CHANGELOG.md is NOT excluded here.
+#
+# /SourceCode/claude-config is carried over from the pre-2026-08-16 single
+# check. Keep it: without it a bare "/SourceCode/claude-config/private/..."
+# (no leading ~, no $HOME, no /Users/<name>, not the shared-memory subpath)
+# matches none of the other alternatives, and claude-config/private is the
+# most sensitive tier there is.
 check "Source tree paths" \
-  "~/SourceCode|\\\$HOME/SourceCode|claude-config/shared-memory" \
+  "~/SourceCode|\\\$HOME/SourceCode|/SourceCode/claude-config|claude-config/shared-memory" \
   "^(\./)?(docs/superpowers/)"
 
 # Absolute user home paths. No path exclusions -- historical records must not
