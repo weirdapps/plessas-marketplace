@@ -45,14 +45,14 @@
 In `installers/pii-gauntlet.sh`, replace line 190:
 
 ```bash
-check "User-specific paths" "/Users/<maintainer>|/SourceCode/claude-config|claude-config/shared-memory"
+check "User-specific paths" "/Users/<maintainer>|/SourceCode/<config-repo>|<config-repo>/shared-memory"
 ```
 
 with:
 
 ```bash
 # Personal source paths. Broadened 2026-08-16: the old pattern named one repo
-# (/SourceCode/claude-config) and so let ~/SourceCode/teams-access/... ship
+# (/SourceCode/<config-repo>) and so let teams-access/... ship
 # green in plugins/chat/commands/chat-reply.md.
 #
 # Design records under docs/superpowers/ are excluded BY PATH. They quote the
@@ -61,7 +61,7 @@ with:
 # and scripts/, none of which is excluded. The script already excludes itself
 # at line 54, so the pattern below does not match its own definition.
 check "User-specific paths" \
-  "/Users/[a-z]|~/SourceCode|\\\$HOME/SourceCode|claude-config/shared-memory" \
+  "/Users/[a-z]|~/SourceCode|\\\$HOME/SourceCode|<config-repo>/shared-memory" \
   "^(\./)?(docs/superpowers/|CHANGELOG\.md)"
 ```
 

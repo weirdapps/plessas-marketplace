@@ -131,13 +131,29 @@ The `teams-bridge` `ENOENT` failure is a real bug and is out of scope here.
 ### D6: The PII gauntlet path check is broadened and split
 
 The original single check named one specific repo path, which is why
-`~/SourceCode/teams-access/dist/cli.js` shipped green.
+`teams-access/dist/cli.js` shipped green.
 
-The fix is implemented as two separate checks. The first covers local source-tree
-paths (`~/SourceCode`, `$HOME/SourceCode`, `claude-config/shared-memory`) and
-applies a path exclusion for all of `docs/superpowers/`, which quotes these
-patterns in order to document them. The second covers absolute maintainer home
-paths and carries no exclusion at all. `CHANGELOG.md` is excluded from neither.
+The fix is implemented as three separate checks.
+
+The first names the private repos explicitly and carries **no exclusion at all**.
+A private checkout's on-disk location is a leak wherever it appears, including in
+a historical record, so the documenting-not-leaking argument does not reach it.
+
+The second covers generic local source-tree paths (`~/SourceCode`,
+`$HOME/SourceCode`) and applies a path exclusion for all of `docs/superpowers/`,
+which quotes those patterns in order to document them. That exclusion is a
+carve-out for **public**-repo command examples only; the check above is what
+covers the excluded directory for anything private.
+
+The third covers absolute maintainer home paths and carries no exclusion.
+`CHANGELOG.md` is excluded from none of them.
+
+Revised 2026-08-17. The two-check version shipped with a stated justification
+that the absolute-home-paths check still covered the excluded directory. It did
+not: that pattern returns zero hits under `docs/superpowers/`, so the exclusion
+was uncovered for a day. Splitting the private-repo names into their own
+unexcluded check is what actually closes it, and it keeps `apply_exclusion`
+path-scoped, which its own contract requires.
 
 The reason for splitting rather than broadening the single check: a combined
 check with a path exclusion would silently disable the home-path half inside

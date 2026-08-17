@@ -202,19 +202,33 @@ check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMe
 # Tax authority refs
 check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"
 
-# Source-tree paths: references to the maintainer's local SourceCode tree or
-# the claude-config store. Design records under docs/superpowers/ are
-# excluded BY PATH -- they quote these patterns to document them, not to leak
-# them. Live configuration lives in plugins/, installers/, and scripts/, none
-# of which is excluded. CHANGELOG.md is NOT excluded here.
+# Private-repo tree paths. NO path exclusion, deliberately.
 #
-# /SourceCode/claude-config is carried over from the pre-2026-08-16 single
-# check. Keep it: without it a bare "/SourceCode/claude-config/private/..."
-# (no leading ~, no $HOME, no /Users/<name>, not the shared-memory subpath)
-# matches none of the other alternatives, and claude-config/private is the
-# most sensitive tier there is.
+# The generic check below tolerates docs/superpowers/ because those records
+# quote PUBLIC-repo command examples in order to document them. That argument
+# does NOT extend to a private repo: naming where a private checkout lives on
+# disk is a leak wherever it appears, historical record or not. Splitting this
+# into its own check is what lets the generic one keep its path exclusion
+# without opening a hole, and it respects apply_exclusion's path-scoped-only
+# contract (a content filter on the generic check would have been the
+# forbidden thing).
+check "Private repo tree paths" \
+  "(~|\\\$HOME)/SourceCode/(claude-config|second-brain|plessas-second-brain|teams-access|outlook-access|sharepoint-access|plessas-trading-stack|plessas-guild|sw-utils|whatsapp-mcp|yahoo-access|sch-mail|telegram-bot|atm-recon|remotion-private|etoro-statarb)|/SourceCode/claude-config|claude-config/shared-memory"
+
+# Source-tree paths: references to the maintainer's local SourceCode tree.
+# Design records under docs/superpowers/ are excluded BY PATH -- they quote
+# these patterns to document them, not to leak them. Live configuration lives
+# in plugins/, installers/, and scripts/, none of which is excluded.
+# CHANGELOG.md is NOT excluded here.
+#
+# What this exclusion is and is not: it is a carve-out for PUBLIC-repo command
+# examples only. It is NOT justified by "the Absolute user paths check below
+# still sees those files" -- that claim was made when this exclusion was added
+# and it is false, because `grep -rnE '/Users/[a-z]' docs/superpowers/` returns
+# nothing. The real cover for the excluded directory is the private-repo check
+# immediately above, which has no exclusion at all.
 check "Source tree paths" \
-  "~/SourceCode|\\\$HOME/SourceCode|/SourceCode/claude-config|claude-config/shared-memory" \
+  "~/SourceCode|\\\$HOME/SourceCode" \
   "^(\./)?(docs/superpowers/)"
 
 # Absolute user home paths. No path exclusions -- historical records must not

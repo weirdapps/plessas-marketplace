@@ -1059,7 +1059,7 @@ git commit -m "fix(decks): auto-create ~/.claude/presentations/{pending,reviewed
 `mail-pro` has two structural maintainer-only properties:
 
 1. `plugins/mail-pro/scripts/style-sync.py:42` hardcodes `SENDER_FILTER = "%plessas%"`.
-2. Six `.md` files under `plugins/mail-pro/` reference `~/SourceCode/second-brain/data/brain.db` — a private repo.
+2. Six `.md` files under `plugins/mail-pro/` reference `second-brain/data/brain.db` — a private repo.
 
 Per maintainer decision, mail-pro stays as-is (do not parameterize) but moves to `plessas-lab` (the maintainer's personal/lab marketplace, currently not shared but potentially shareable later). This phase mirrors a `git mv plugin → other repo` workflow without losing history.
 
@@ -1121,7 +1121,7 @@ Expected: 5 new files staged under `plugins/mail-pro/`.
     {
       "name": "mail-pro",
       "source": "./plugins/mail-pro",
-      "description": "Maintainer-only companion to a `mail` plugin. Adds /comm-report (relationship analytics) and /style-rebuild (corpus-driven style guide). Requires the maintainer's private second-brain SQLite DB at ~/SourceCode/second-brain/data/brain.db. Not portable.",
+      "description": "Maintainer-only companion to a `mail` plugin. Adds /comm-report (relationship analytics) and /style-rebuild (corpus-driven style guide). Requires the maintainer's private second-brain SQLite DB at second-brain/data/brain.db. Not portable.",
       "version": "1.0.0",
       "author": {
         "name": "weirdapps"
@@ -1246,7 +1246,7 @@ that constraint is acceptable."
 - [ ] **Step 1: Open the README** and add a top callout explaining the marketplace move:
 
 ```markdown
-> **Maintainer-only.** This plugin requires the maintainer's private `second-brain` SQLite database at `~/SourceCode/second-brain/data/brain.db` and hardcodes `SENDER_FILTER = "%plessas%"` in `scripts/style-sync.py`. It's installed from the `plessas-lab` marketplace because it's not portable as-is. If you're not the maintainer, the `mail` plugin in `plessas-marketplace` covers the cross-platform use cases.
+> **Maintainer-only.** This plugin requires the maintainer's private `second-brain` SQLite database at `second-brain/data/brain.db` and hardcodes `SENDER_FILTER = "%plessas%"` in `scripts/style-sync.py`. It's installed from the `plessas-lab` marketplace because it's not portable as-is. If you're not the maintainer, the `mail` plugin in `plessas-marketplace` covers the cross-platform use cases.
 ```
 
 - [ ] **Step 2: Update any internal references** that pointed at the marketplace's `~/SourceCode/plessas-marketplace/...` path. For mail-pro, these are mostly in `commands/comm-report.md` and `commands/style-rebuild.md` — verify none reference `plessas-marketplace` explicitly:
