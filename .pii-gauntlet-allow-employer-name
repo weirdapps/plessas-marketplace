@@ -1,0 +1,4 @@
+This marketplace is written for colleagues at the employer and says so in its
+README; the decks plugin is brand-specific by design. The employer-name check
+is therefore opted out here. Every other check, including the mail domain,
+tenant host and the private name denylist, still runs.

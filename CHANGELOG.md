@@ -18,7 +18,7 @@ All notable changes to `plessas-marketplace` are documented here. Format follows
 - `outlook-bridge` MCP: pinned `typescript ~5.9.3`, `@types/node ^22.0.0`, `vitest ^4.1.5`, added `engines.node >=20`
 - `teams-bridge` MCP: same dep pins + added `--passWithNoTests` to test script (no test files yet)
 - `outlook-cli` and `teams-cli` GitHub deps now pinned to specific commit SHAs via `git+https://x@github.com/...` workaround for npm/cli#2610 (lockfile would otherwise pin to `git+ssh://`, breaking teammates without SSH keys)
-- `auth-wizard.{sh,ps1}` no longer hardcode `groupnbg.sharepoint.com` — now prompt
+- `auth-wizard.{sh,ps1}` no longer hardcode `<your-tenant>.sharepoint.com` — now prompt
 - `outlook-bridge` MCP `doctor` tool reads tenant from config instead of hardcoding
 - `mail/commands/mail-review.md` + `mail/agents/email-handler.md` clipboard recipes shown as per-OS code blocks
 - `meetings/agents/meeting-intelligence.md` + `calendar-access.md` AppleScript fallbacks now OSTYPE-guarded
@@ -31,7 +31,7 @@ All notable changes to `plessas-marketplace` are documented here. Format follows
 ### Fixed
 
 - `decks` plugin Python tools no longer fail on Windows (venv now built by installer)
-- Hardcoded `groupnbg.sharepoint.com` removed from 5 doc files (QUICKSTART.md, team-claude-md.md, TROUBLESHOOTING.md, FAQ.md, doctor.ts)
+- Hardcoded `<your-tenant>.sharepoint.com` removed from 5 doc files (QUICKSTART.md, team-claude-md.md, TROUBLESHOOTING.md, FAQ.md, doctor.ts)
 - Tenant-prompt.sh persist block hardened against shell injection (uses sys.argv instead of string interpolation)
 - Tenant-prompt.ps1 persist failure now terminating (`-ErrorAction Stop`)
 

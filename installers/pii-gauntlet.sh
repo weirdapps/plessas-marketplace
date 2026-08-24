@@ -168,78 +168,92 @@ check() {
 }
 
 # ---------------------------------------------------------------------------
-# Patterns (shared between modes)
 # ---------------------------------------------------------------------------
-
-# Personal name (full forms — single-word "plessas" is the brand name, OK)
-check "Full personal name (EN)" "Dimitris[[:space:]]+Plessas|Dimitrios[[:space:]]+Plessas"
-check "Full personal name (GR)" "Δημήτριος[[:space:]]+Πλέσσας|ΠΛΕΣΣΑΣ[[:space:]]+ΔΗΜΗΤΡΙΟΣ"
-
-# Personal emails
-check "Personal email" "dimitrios\.plessas@|plessasdimitrios@|plessas@nbg\.gr|plessas@gmail|plessas@yahoo"
-
-# Personal phone / address
-check "Personal phone" "694[[:space:]]?9200878|6949200878"
-check "Personal address" "174[[:space:]]+Syggrou|Συγγρού[[:space:]]+174"
-
-# Greek tax IDs (9-digit standalone, with non-hex word boundaries).
-# Excludes 9-digit substrings inside git SHAs (40-char hex) by requiring
-# the surrounding chars are not hex digits.
-check "9-digit ID pattern" "[^0-9a-fA-F][0-9]{9}[^0-9a-fA-F]"
-
-# Peer names (NBG colleagues / direct reports / managers)
-check "Peer/colleague names" "Volioti|Bitrou|Sioutis|Theofilidi|Θεοφιλίδη|Χριστίνα|Lygeros|Oikonomou|Maraveas|Xona|Petropoulou|Laspas|Koutra|Giemelou"
-
-# Family names
-check "Family names" "Kitrilaki|Κιτριλάκη"
-
-# NBG-internal project names (case-insensitive but anchored)
-check "Internal projects" "Διπλή κάρτα|\bdual[- ]card\b|IRIS[[:space:]]+pilot|ECB[[:space:]]+Digital[[:space:]]+Euro[[:space:]]+CfEI"
-
-# External partners discussed in NBG-internal context
-check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMellon\b|\b11FS\b|\bNCR\b"
-
-# Tax authority refs
-check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"
-
-# Private-repo tree paths. NO path exclusion, deliberately.
+# Generic organisation tells (safe to keep in a public repo)
+# ---------------------------------------------------------------------------
 #
-# The generic check below tolerates docs/superpowers/ because those records
-# quote PUBLIC-repo command examples in order to document them. That argument
-# does NOT extend to a private repo: naming where a private checkout lives on
-# disk is a leak wherever it appears, historical record or not. Splitting this
-# into its own check is what lets the generic one keep its path exclusion
-# without opening a hole, and it respects apply_exclusion's path-scoped-only
-# contract (a content filter on the generic check would have been the
-# forbidden thing).
-check "Private repo tree paths" \
-  "(~|\\\$HOME)/SourceCode/(claude-config|second-brain|plessas-second-brain|teams-access|outlook-access|sharepoint-access|plessas-trading-stack|plessas-guild|sw-utils|whatsapp-mcp|yahoo-access|sch-mail|telegram-bot|atm-recon|remotion-private|etoro-statarb)|/SourceCode/claude-config|claude-config/shared-memory"
+# These are patterns, not names, so publishing them discloses nothing. They are
+# also the checks that were missing entirely: the four exposures found in the
+# 2026-08-24 audit all passed the gauntlet green, because nothing here looked
+# for the employer's name, its mail domain, or a tenant hostname.
 
-# Source-tree paths: references to the maintainer's local SourceCode tree.
-# Design records under docs/superpowers/ are excluded BY PATH -- they quote
-# these patterns to document them, not to leak them. Live configuration lives
-# in plugins/, installers/, and scripts/, none of which is excluded.
-# CHANGELOG.md is NOT excluded here.
+# Placeholders are the whole point of a good example, so they must not trip the
+# check that exists to catch the real thing. Without these excludes the gauntlet
+# flags `contoso.sharepoint.com` (the correct placeholder) and its own CHANGELOG
+# entries describing the removal of the real host. A check that fires on
+# deliberate, already-disclosed content teaches you to ignore it, which is how
+# the four real exposures sat unnoticed next to a green gauntlet.
+# Doc placeholders. Extend this when a new invented example host trips the check:
+# being asked once "is this a real tenant?" is the check doing its job, and is a
+# far better failure mode than the silence it replaces.
+PLACEHOLDER='contoso|example|sample|template|your[-_.]?tenant|your-tenant|<[^>]+>|firstname\.lastname|your\.email|recipient\.name|user@|name@|(test|overridden|envvar|dummy|placeholder|foo|bar)\.sharepoint'
+
+# Some repos name the employer on purpose: a marketplace written for colleagues
+# says so in its README by design. Those opt out with a repo-root marker rather
+# than carrying a permanent red light.
+if [ ! -f ".pii-gauntlet-allow-employer-name" ]; then
+  check "Employer name" 'NBG|ΕΤΕ|Εθνική Τράπεζα|National Bank of Greece' "$PLACEHOLDER"
+else
+  echo "OK   [Employer name] (opted out via .pii-gauntlet-allow-employer-name)"
+fi
+
+check "Employer mail domain" '[A-Za-z0-9._%+-]+@nbg\.gr' "$PLACEHOLDER"
+check "SharePoint tenant"    '[a-z0-9-]+\.sharepoint\.com' "$PLACEHOLDER"
+check "Azure AD tenant GUID" '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+  '00000003-0000-0000-c000-000000000000|0000000[0-9]-0000-0ff1-ce00-000000000000|00000000-0000-0000-0000-000000000000'
+
+# ---------------------------------------------------------------------------
+# Name-based checks, loaded from a private denylist
+# ---------------------------------------------------------------------------
 #
-# What this exclusion is and is not: it is a carve-out for PUBLIC-repo command
-# examples only. It is NOT justified by "the Absolute user paths check below
-# still sees those files" -- that claim was made when this exclusion was added
-# and it is false, because `grep -rnE '/Users/[a-z]' docs/superpowers/` returns
-# nothing. The real cover for the excluded directory is the private-repo check
-# immediately above, which has no exclusion at all.
-check "Source tree paths" \
-  "~/SourceCode|\\\$HOME/SourceCode" \
-  "^(\./)?(docs/superpowers/)"
+# The literal terms used to live in this file. That made the guard the
+# disclosure: this script is anonymously readable, and it enumerated colleague
+# names, a family name, a personal mobile and address, personal emails,
+# unreleased internal project names, the partner list and every private repo
+# path, complete with comment headers explaining which was which.
+#
+# They now live outside every public repo. Nothing here reveals what is checked.
 
-# Absolute user home paths. No path exclusions -- historical records must not
-# embed a specific maintainer username either.
-check "Absolute user paths" \
-  "/Users/[a-z]"
+PII_DENYLIST="${PII_DENYLIST:-$HOME/.claude/private/pii-denylist.conf}"
 
-# Cleanup
-[ "$MODE" = "ci" ] && rm -f "$TRACKED_TMP"
+if [ -r "$PII_DENYLIST" ]; then
+  # Tab-delimited: the patterns are full of regex alternation pipes, so "|"
+  # cannot be the field separator.
+  loaded=0
+  while IFS=$'\t' read -r label pattern exclude; do
+    case "$label" in ''|\#*) continue ;; esac
+    [ -z "$pattern" ] && continue
+    check "$label" "$pattern" "$exclude"
+    loaded=$((loaded + 1))
+  done < "$PII_DENYLIST"
+  echo "     ($loaded name-based checks loaded from the private denylist)"
+else
+  # Absence is handled differently by mode, on purpose.
+  #
+  # In CI on a public repo the denylist legitimately does not exist and never
+  # will, so failing here would just paint six repos red forever. Say plainly
+  # that the name checks did not run, and let the generic ones stand.
+  #
+  # Locally the file should always be there. Its absence is a real
+  # misconfiguration, and a guard that cannot evaluate its condition must
+  # refuse rather than pass. That distinction is the whole point: the previous
+  # version of this script reported OK on every check while, on macOS, scanning
+  # exactly zero files.
+  if [ "$MODE" = "ci" ]; then
+    echo "SKIP [name-based checks]: no denylist at $PII_DENYLIST"
+    echo "     Generic org-tell checks above still ran. Name, family, partner and"
+    echo "     private-path checks did NOT. This is expected in public CI."
+  else
+    echo "FAIL [name-based checks]: no denylist at $PII_DENYLIST"
+    echo "     Locally this file must exist. Without it the name, family, partner"
+    echo "     and private-path checks are silently absent, which is exactly the"
+    echo "     false green this rewrite removes."
+    echo "     Fix: ensure ~/.claude/private -> claude-config/private is linked,"
+    echo "     or set PII_DENYLIST to the file."
+    FAIL=1
+  fi
+fi
 
-echo
 if [ $FAIL -eq 0 ]; then
   if [ "$MODE" = "doctor" ] && [ $INFO -ne 0 ]; then
     echo "=== GAUNTLET PASS (with INFO on gitignored files — local-only, not in git) ==="

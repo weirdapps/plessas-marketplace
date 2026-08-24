@@ -4,7 +4,7 @@
 
 **Goal:** Make `plessas-marketplace` installable by a Mac or Windows teammate from a fresh clone — `install.{sh,ps1}` succeeds, `auth-wizard.{sh,ps1}` does not pin them to the maintainer's M365 tenant, and no plugin silently fails because of a hardcoded `~/SourceCode/...` path or a private-repo dependency.
 
-**Architecture:** Six sequential phases. (1) Unblock the install pipeline — pin npm deps to the versions actually tested, add the missing Python venv install on Windows. (2) Parameterize the M365 tenant — replace the hardcoded `groupnbg.sharepoint.com` with a first-run prompt persisted to `~/.outlook-cli/config.json`. (3) Close cross-platform gaps in plugin docs — `/tmp/` paths, mac-only example blocks, AppleScript fallbacks. (4) Move `mail-pro` out of this marketplace into `plessas-lab` (it depends on the private `second-brain` repo and is structurally maintainer-only). (5) Documentation — Windows install code blocks in README, PowerShell troubleshooting recipes, honest disclosure that `decks` is NBG-branded by design. (6) Verification — PII gauntlet, plugin validator, fresh install on both OSes.
+**Architecture:** Six sequential phases. (1) Unblock the install pipeline — pin npm deps to the versions actually tested, add the missing Python venv install on Windows. (2) Parameterize the M365 tenant — replace the hardcoded `<your-tenant>.sharepoint.com` with a first-run prompt persisted to `~/.outlook-cli/config.json`. (3) Close cross-platform gaps in plugin docs — `/tmp/` paths, mac-only example blocks, AppleScript fallbacks. (4) Move `mail-pro` out of this marketplace into `plessas-lab` (it depends on the private `second-brain` repo and is structurally maintainer-only). (5) Documentation — Windows install code blocks in README, PowerShell troubleshooting recipes, honest disclosure that `decks` is NBG-branded by design. (6) Verification — PII gauntlet, plugin validator, fresh install on both OSes.
 
 **Tech Stack:** Bash 4+ and PowerShell 5.1+ installers; TypeScript 5.9 + Node 20 LTS for the bundled MCP servers; Python 3.11+ for the `decks` Python tools; Playwright via `outlook-cli` and `teams-cli`; `python-pptx` for slides.
 
@@ -31,10 +31,10 @@
 - `plugins/mail/mcp-server/package.json` — pin TS / @types/node / vitest, add engines.node
 - `plugins/chat/mcp-server/package.json` — same
 - `installers/install.ps1` — add Python venv install block matching install.sh:78-97
-- `installers/auth-wizard.sh` — call tenant-prompt.sh, drop hardcoded `groupnbg.sharepoint.com`
+- `installers/auth-wizard.sh` — call tenant-prompt.sh, drop hardcoded `<your-tenant>.sharepoint.com`
 - `installers/auth-wizard.ps1` — same with tenant-prompt.ps1
 - `plugins/mail/mcp-server/src/tools/doctor.ts` — read tenant from config, not hardcoded
-- `plugins/mail/QUICKSTART.md` — replace `groupnbg.sharepoint.com` with `<your-tenant>.sharepoint.com`
+- `plugins/mail/QUICKSTART.md` — replace `<your-tenant>.sharepoint.com` with `<your-tenant>.sharepoint.com`
 - `shared/claude-md-template/team-claude-md.md` — same replacement
 - `plugins/mail/commands/mail-review.md` — split mac-only clipboard example into three OS variants
 - `plugins/mail/agents/email-handler.md` — same split
@@ -396,7 +396,7 @@ git commit -m "fix(mcp): pin outlook-cli and teams-cli to specific commit SHAs f
 
 ## Phase 2 — Parameterize the M365 tenant
 
-`installers/auth-wizard.sh:28` and `installers/auth-wizard.ps1:25` both hardcode `outlook-cli login --sharepoint-host groupnbg.sharepoint.com`. The bundled outlook-bridge MCP also references this hostname in `plugins/mail/mcp-server/src/tools/doctor.ts:43` (the doctor's "fix it" hint). A teammate from any other org cannot authenticate without manually editing these files. Replace with a first-run prompt; persist the answer to `~/.outlook-cli/config.json`; re-use on subsequent runs.
+`installers/auth-wizard.sh:28` and `installers/auth-wizard.ps1:25` both hardcode `outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com`. The bundled outlook-bridge MCP also references this hostname in `plugins/mail/mcp-server/src/tools/doctor.ts:43` (the doctor's "fix it" hint). A teammate from any other org cannot authenticate without manually editing these files. Replace with a first-run prompt; persist the answer to `~/.outlook-cli/config.json`; re-use on subsequent runs.
 
 ### Task 2.1: Create shared tenant-prompt helper (Bash)
 
@@ -651,7 +651,7 @@ source "$(dirname "$0")/lib/tenant-prompt.sh"
 - [ ] **Step 2: Replace the hardcoded `--sharepoint-host` line.** Currently line 28:
 
 ```bash
-outlook-cli login --sharepoint-host groupnbg.sharepoint.com || warn "outlook-cli login failed or was cancelled"
+outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com || warn "outlook-cli login failed or was cancelled"
 ```
 
 Change to:
@@ -681,13 +681,13 @@ unset PLESSAS_SHAREPOINT_HOST
 # (login itself will fail unless you actually have a tenant — that's fine for this test)
 ```
 
-Expected: prompt for "Tenant SharePoint host:" appears before the browser opens; no `groupnbg.sharepoint.com` mentioned anywhere in output.
+Expected: prompt for "Tenant SharePoint host:" appears before the browser opens; no `<your-tenant>.sharepoint.com` mentioned anywhere in output.
 
 - [ ] **Step 4: Commit.**
 
 ```bash
 git add installers/auth-wizard.sh
-git commit -m "feat(auth-wizard): prompt for tenant host instead of hardcoding groupnbg"
+git commit -m "feat(auth-wizard): prompt for tenant host instead of hardcoding <your-tenant>"
 ```
 
 ### Task 2.4: Wire tenant prompt into auth-wizard.ps1
@@ -706,7 +706,7 @@ git commit -m "feat(auth-wizard): prompt for tenant host instead of hardcoding g
 - [ ] **Step 2: Replace the hardcoded `--sharepoint-host` line.** Currently line 25:
 
 ```powershell
-outlook-cli login --sharepoint-host groupnbg.sharepoint.com
+outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com
 ```
 
 Change to:
@@ -730,12 +730,12 @@ Expected: same prompt flow as Task 2.3.
 
 ```bash
 git add installers/auth-wizard.ps1
-git commit -m "feat(auth-wizard.ps1): prompt for tenant host instead of hardcoding groupnbg"
+git commit -m "feat(auth-wizard.ps1): prompt for tenant host instead of hardcoding <your-tenant>"
 ```
 
 ### Task 2.5: Replace hardcoded sharepoint-host in MCP doctor.ts
 
-**Why:** The bundled `outlook-bridge` MCP includes a `doctor` tool that reports auth status. Its error message hardcodes `groupnbg.sharepoint.com` in the suggested fix, leaking the maintainer's tenant in every teammate's MCP output.
+**Why:** The bundled `outlook-bridge` MCP includes a `doctor` tool that reports auth status. Its error message hardcodes `<your-tenant>.sharepoint.com` in the suggested fix, leaking the maintainer's tenant in every teammate's MCP output.
 
 **Files:**
 
@@ -745,7 +745,7 @@ git commit -m "feat(auth-wizard.ps1): prompt for tenant host instead of hardcodi
 - [ ] **Step 1: Read the current file** to find the exact string.
 
 ```bash
-grep -n "groupnbg" ~/SourceCode/plessas-marketplace/plugins/mail/mcp-server/src/tools/doctor.ts
+grep -n "<your-tenant>" ~/SourceCode/plessas-marketplace/plugins/mail/mcp-server/src/tools/doctor.ts
 ```
 
 Expected: line 43 contains the hardcoded string.
@@ -767,7 +767,7 @@ function suggestedTenantHost(): string {
 }
 ```
 
-Then replace the literal `groupnbg.sharepoint.com` in the error message at line 43 with `${suggestedTenantHost()}` (template literal interpolation).
+Then replace the literal `<your-tenant>.sharepoint.com` in the error message at line 43 with `${suggestedTenantHost()}` (template literal interpolation).
 
 - [ ] **Step 3: Rebuild + test.**
 
@@ -788,7 +788,7 @@ git commit -m "fix(mail-mcp): read tenant host from config in doctor message"
 
 ### Task 2.6: Replace hardcoded sharepoint-host in plugin docs
 
-**Why:** Three doc files mention `groupnbg.sharepoint.com` literally:
+**Why:** Three doc files mention `<your-tenant>.sharepoint.com` literally:
 
 - `plugins/mail/QUICKSTART.md` — lines 38 and 134
 - `shared/claude-md-template/team-claude-md.md` — line 116
@@ -802,21 +802,21 @@ git commit -m "fix(mail-mcp): read tenant host from config in doctor message"
 - [ ] **Step 1: Find the exact occurrences.**
 
 ```bash
-grep -rn "groupnbg.sharepoint.com" ~/SourceCode/plessas-marketplace/plugins/mail/QUICKSTART.md ~/SourceCode/plessas-marketplace/shared/claude-md-template/
+grep -rn "<your-tenant>.sharepoint.com" ~/SourceCode/plessas-marketplace/plugins/mail/QUICKSTART.md ~/SourceCode/plessas-marketplace/shared/claude-md-template/
 ```
 
-- [ ] **Step 2: Edit `plugins/mail/QUICKSTART.md`** — replace each `groupnbg.sharepoint.com` with `<your-tenant>.sharepoint.com` and add this paragraph above the first occurrence:
+- [ ] **Step 2: Edit `plugins/mail/QUICKSTART.md`** — replace each `<your-tenant>.sharepoint.com` with `<your-tenant>.sharepoint.com` and add this paragraph above the first occurrence:
 
 ```markdown
 > **Tenant host:** the auth wizard will prompt you for your M365 tenant SharePoint host on first run (e.g. `contoso.sharepoint.com`). Find it in any SharePoint URL you own: `https://<this-part>.sharepoint.com/...`. The answer is persisted to `~/.outlook-cli/config.json` and reused on subsequent runs.
 ```
 
-- [ ] **Step 3: Edit `shared/claude-md-template/team-claude-md.md`** — replace the `groupnbg.sharepoint.com` reference at line 116 with `<your-tenant>.sharepoint.com` and add a note that the auth wizard handles this.
+- [ ] **Step 3: Edit `shared/claude-md-template/team-claude-md.md`** — replace the `<your-tenant>.sharepoint.com` reference at line 116 with `<your-tenant>.sharepoint.com` and add a note that the auth wizard handles this.
 
 - [ ] **Step 4: Verify zero remaining hits.**
 
 ```bash
-grep -rn "groupnbg" ~/SourceCode/plessas-marketplace --include="*.md" --include="*.sh" --include="*.ps1" --include="*.ts"
+grep -rn "<your-tenant>" ~/SourceCode/plessas-marketplace --include="*.md" --include="*.sh" --include="*.ps1" --include="*.ts"
 ```
 
 Expected: zero results (or only matches inside `.git/`, `node_modules/`, which we filter).
@@ -825,7 +825,7 @@ Expected: zero results (or only matches inside `.git/`, `node_modules/`, which w
 
 ```bash
 git add plugins/mail/QUICKSTART.md shared/claude-md-template/team-claude-md.md
-git commit -m "docs: replace hardcoded groupnbg with placeholder + auth-wizard note"
+git commit -m "docs: replace hardcoded <your-tenant> with placeholder + auth-wizard note"
 ```
 
 ---
@@ -1439,7 +1439,7 @@ git commit -m "docs(README): disclose NBG branding in decks plugin upfront"
 - `outlook-bridge` MCP: pinned `typescript ~5.9`, `@types/node ^22`, `vitest ^3`, added `engines.node >=20`
 - `teams-bridge` MCP: same dep pins
 - `outlook-cli` and `teams-cli` GitHub deps now pinned to specific commit SHAs (no more drift on every install)
-- `auth-wizard.{sh,ps1}` no longer hardcode `groupnbg.sharepoint.com` — now prompt
+- `auth-wizard.{sh,ps1}` no longer hardcode `<your-tenant>.sharepoint.com` — now prompt
 - `outlook-bridge` MCP `doctor` tool reads tenant from config instead of hardcoding
 - `mail/commands/mail-review.md` + `mail/agents/email-handler.md` clipboard recipes shown as per-OS code blocks
 - `meetings/agents/meeting-intelligence.md` AppleScript fallbacks now OSTYPE-guarded
@@ -1489,10 +1489,10 @@ bash installers/pii-gauntlet.sh --mode=ci 2>&1 | tail -20
 
 Expected: exit code 0, output contains no `[FAIL]` lines.
 
-- [ ] **Step 2: If new failures appear** (e.g., `groupnbg` reference still in some doc we missed), grep for the failing pattern and fix:
+- [ ] **Step 2: If new failures appear** (e.g., `<your-tenant>` reference still in some doc we missed), grep for the failing pattern and fix:
 
 ```bash
-grep -rln "groupnbg" --include="*.md" --include="*.sh" --include="*.ps1" --include="*.ts"
+grep -rln "<your-tenant>" --include="*.md" --include="*.sh" --include="*.ps1" --include="*.ts"
 ```
 
 - [ ] **Step 3: Re-run gauntlet** until clean.
@@ -1549,7 +1549,7 @@ Expected: ends with `Installation complete!`, no `[FAIL]` lines.
 # Then Ctrl+C the browser launch
 ```
 
-Expected: prompt appears, no reference to `groupnbg`.
+Expected: prompt appears, no reference to `<your-tenant>`.
 
 - [ ] **Step 4: Run status.**
 
@@ -1590,7 +1590,7 @@ pwsh ~/SourceCode/plessas-marketplace/installers/auth-wizard.ps1
 # At prompt, type: test.sharepoint.com
 ```
 
-Expected: prompt, no reference to `groupnbg`.
+Expected: prompt, no reference to `<your-tenant>`.
 
 - [ ] **Step 3: Verify Python venv exists.**
 
