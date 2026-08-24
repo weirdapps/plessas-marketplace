@@ -50,8 +50,14 @@ if [ "$MODE" = "ci" ]; then
   # User-cleared public showcase assets (maintainer confirmed 2026-06-08): the
   # decks screenshot library is public-safe, and its INDEX.md captions legitimately
   # name NBG products (dual card, Skroutz, …). Exclude that subtree from scanning.
+  # This script's path relative to the repo root. Derived, not hardcoded: the
+  # same file lives in installers/ in some repos and scripts/ in others, and
+  # six hand-maintained copies is what let them drift apart in the first place.
+  SELF_REL=$(git ls-files --full-name -- "$0" 2>/dev/null | head -1)
+  [ -z "$SELF_REL" ] && SELF_REL="installers/pii-gauntlet.sh"
   TRACKED=$(git ls-files \
-    | grep -v '^installers/pii-gauntlet.sh$' \
+    | grep -v "^$SELF_REL$" \
+    | grep -vE '(^|/)LICENSE(\.md|\.txt)?$' \
     | grep -vE '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Pipfile\.lock)$' \
     | grep -vE '^plugins/decks/assets/screenshots/' \
     || true)
@@ -76,6 +82,7 @@ scan_doctor() {
     --exclude-dir=.remember \
     --exclude-dir=installers/deps \
     --exclude=pii-gauntlet.sh \
+    --exclude=LICENSE \
     --exclude=PII-GAUNTLET.md \
     --exclude=package-lock.json \
     --binary-files=without-match \
@@ -105,7 +112,9 @@ apply_exclusion() {
     printf '%s' "$hits"
     return
   fi
-  printf '%s\n' "$hits" | grep -vE "$exclude" || true
+  # Copyright attribution names the author on purpose and is required by the
+  # licence. Flagging it is noise, and noise is how a real hit gets ignored.
+  printf '%s\n' "$hits" | grep -vE "$exclude" | grep -viE '\(c\)[[:space:]]*[0-9]{4}|copyright' || true
 }
 
 check() {
@@ -186,21 +195,26 @@ check() {
 # Doc placeholders. Extend this when a new invented example host trips the check:
 # being asked once "is this a real tenant?" is the check doing its job, and is a
 # far better failure mode than the silence it replaces.
-PLACEHOLDER='contoso|example|sample|template|your[-_.]?tenant|your-tenant|<[^>]+>|firstname\.lastname|your\.email|recipient\.name|user@|name@|(test|overridden|envvar|dummy|placeholder|foo|bar)\.sharepoint'
+PLACEHOLDER='contoso|example|sample|template|your[-_.]?tenant|your-tenant|<[^>]+>|firstname\.lastname|your\.email|recipient\.name|user@|name@|(test|overridden|envvar|dummy|placeholder|foo|bar|[a-z])(-my)?\.sharepoint'
 
 # Some repos name the employer on purpose: a marketplace written for colleagues
 # says so in its README by design. Those opt out with a repo-root marker rather
 # than carrying a permanent red light.
 if [ ! -f ".pii-gauntlet-allow-employer-name" ]; then
-  check "Employer name" 'NBG|ΕΤΕ|Εθνική Τράπεζα|National Bank of Greece' "$PLACEHOLDER"
+  check "Employer name" '(^|[^A-Za-z0-9])(NBG|ΕΤΕ)([^A-Za-z0-9]|$)|Εθνική Τράπεζα|National Bank of Greece' "$PLACEHOLDER"
 else
   echo "OK   [Employer name] (opted out via .pii-gauntlet-allow-employer-name)"
 fi
 
 check "Employer mail domain" '[A-Za-z0-9._%+-]+@nbg\.gr' "$PLACEHOLDER"
 check "SharePoint tenant"    '[a-z0-9-]+\.sharepoint\.com' "$PLACEHOLDER"
-check "Azure AD tenant GUID" '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-  '00000003-0000-0000-c000-000000000000|0000000[0-9]-0000-0ff1-ce00-000000000000|00000000-0000-0000-0000-000000000000'
+# A bare UUID is not a finding: fixtures, generated filenames and message ids
+# are full of them, and flagging all of them is how a check earns the right to
+# be ignored. What matters is a GUID sitting where a TENANT id sits, so key on
+# the surrounding context rather than on the shape alone.
+check "Azure AD tenant id" \
+  '(tenant[_-]?id|tenantId|\"tid\"|authority|login\.microsoftonline\.com/|realm)[^0-9a-f]{0,24}[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+  '00000000-0000-0000-0000-000000000000|11111111-2222-3333-4444-555555555555|00000000-|11111111-|22222222-|33333333-|44444444-|55555555-|66666666-|77777777-|88888888-|99999999-|aaaaaaaa-|bbbbbbbb-|cccccccc-|dddddddd-|eeeeeeee-|ffffffff-|/common|/organizations|/consumers'
 
 # ---------------------------------------------------------------------------
 # Name-based checks, loaded from a private denylist
