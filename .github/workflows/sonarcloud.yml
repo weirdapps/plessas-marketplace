@@ -39,20 +39,30 @@ jobs:
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt || true; fi
           pip install pytest pytest-cov
 
+      # Looked for tests/ at the repository root only. Every test in this repo
+      # lives under plugins/, so has_tests was always false and the step below
+      # never ran: 45 tests, including the outbound-mail and auth-guard ones,
+      # had never gated a merge. Search where they actually are.
       - name: Check for tests
         id: check-tests
         run: |
-          if [ -d tests ] || [ -d test ] || [ -d __tests__ ]; then
+          COUNT=$(find . -type d \( -name tests -o -name test -o -name __tests__ \) \
+                    -not -path "*/node_modules/*" -not -path "./.git/*" | wc -l | tr -d ' ')
+          if [ "$COUNT" -gt 0 ]; then
             echo "has_tests=true" >> $GITHUB_OUTPUT
+            echo "::notice::found $COUNT test director(ies)"
           else
             echo "has_tests=false" >> $GITHUB_OUTPUT
-            echo "::notice::No tests directory found — SonarCloud will scan without coverage"
+            echo "::notice::no test directories found — SonarCloud will scan without coverage"
           fi
 
+      # A failing test now fails the job. This step previously carried
+      # continue-on-error AND `|| true` AND an if-guard that was never true, so
+      # it could not go red under any circumstance. Three independent mufflers on
+      # a check whose only purpose is to make noise.
       - name: Run tests with coverage
         if: steps.check-tests.outputs.has_tests == 'true'
-        continue-on-error: true
-        run: pytest --cov=. --cov-report=xml --cov-report=term-missing || true
+        run: pytest plugins --cov=plugins --cov-report=xml --cov-report=term-missing
 
       - name: Check for SonarCloud token
         id: check-sonar
