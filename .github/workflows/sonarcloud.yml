@@ -23,7 +23,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
-          python-version: '3.11'
+          # 3.12, matching the floor pyproject.toml states and ruff's
+          # target-version. On 3.11 numpy >= 2.5.1 has no installable
+          # distribution, so nbg-keynote's suite died at collection with
+          # ModuleNotFoundError and took SonarCloud red on master.
+          python-version: '3.12'
 
       - name: Install dependencies
         continue-on-error: true
