@@ -96,20 +96,46 @@ _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 _font_warned: set[str] = set()
 
 
+def _find_font_file(name: str) -> Path | None:
+    """Locate a font file, checking one level of subdirectories as well.
+
+    The macOS dirs hold their fonts flat, so a direct hit is tried first and
+    Aptos still wins there. Linux does not: Debian and Ubuntu file fonts by
+    family, so the DejaVu fallback this module already declares lives at
+    /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf, one level below the
+    directory listed above. A flat lookup could therefore never reach it, and
+    the declared fallback was unreachable on exactly the platform that needs
+    it: CI had no Aptos, no Calibri and no way to find DejaVu, so it raised
+    SystemExit instead of degrading.
+    """
+    for d in FONT_DIRS:
+        p = d / name
+        if p.exists():
+            return p
+    for d in FONT_DIRS:
+        if not d.is_dir():
+            continue
+        for sub in sorted(d.iterdir()):
+            if sub.is_dir():
+                p = sub / name
+                if p.exists():
+                    return p
+    return None
+
+
 def font(kind: str, size: int) -> ImageFont.FreeTypeFont:
     key = (kind, size)
     if key in _font_cache:
         return _font_cache[key]
     for i, name in enumerate(FONT_FILES[kind]):
-        for d in FONT_DIRS:
-            p = d / name
-            if p.exists():
-                if i > 0 and kind not in _font_warned:
-                    _font_warned.add(kind)
-                    warn(f"Aptos '{kind}' weight missing, falling back to {name}")
-                f = ImageFont.truetype(str(p), size)
-                _font_cache[key] = f
-                return f
+        p = _find_font_file(name)
+        if p is not None:
+            if i > 0 and kind not in _font_warned:
+                _font_warned.add(kind)
+                warn(f"Aptos '{kind}' weight missing, falling back to {name}")
+            f = ImageFont.truetype(str(p), size)
+            _font_cache[key] = f
+            return f
     raise SystemExit(
         f"No usable font for weight '{kind}'. Install Aptos "
         f"(https://learn.microsoft.com/typography) or Calibri."
