@@ -36,6 +36,13 @@ jobs:
               || true
           fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+          # Install every plugin's own requirements. Widening test discovery to
+          # plugins/ pulled in the nbg-keynote suite, which needs numpy, PIL and
+          # yaml; the root install knows nothing about them. Without this the
+          # broadened discovery just trades a silent skip for a collection error,
+          # which is not an improvement.
+          find plugins -name requirements.txt -not -path "*/node_modules/*" \
+            -exec pip install -r {} \; 2>/dev/null || true
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt || true; fi
           pip install pytest pytest-cov
 
