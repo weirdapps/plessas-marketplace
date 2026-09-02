@@ -119,30 +119,45 @@ scan_ci() {
   fi
 }
 
-# Drop hits whose PATH is a historical record rather than live configuration.
-# Path-scoped only. Never extend this to filter on matched content: that would
-# hide live hits and turn a working guardrail into a false green.
+# Drop hits that are documentation rather than live configuration.
+#
+# Two kinds of exclusion, and they are NOT interchangeable:
+#   $2 content: matched anywhere on the grep line. Keep it narrow, because a
+#      broad content exclusion is indistinguishable from switching the check off.
+#   $3 path: matched against the `path:` prefix only. A path-shaped pattern let
+#      loose on the whole line also matches CONTENT, which is how `<[^>]+>`
+#      silently excluded every line carrying an HTML tag. A line like
+#      `<td>firstname.surname@<employer-domain></td>` passed the mail-domain
+#      check because of the `<td>`, not because of anything about the address.
 apply_exclusion() {
   local hits="$1"
   local exclude="$2"
-  if [ -z "$exclude" ] || [ -z "$hits" ]; then
+  local exclude_path="${3:-}"
+  if [ -z "$hits" ] || { [ -z "$exclude" ] && [ -z "$exclude_path" ]; }; then
     printf '%s' "$hits"
     return
   fi
+  if [ -n "$exclude_path" ]; then
+    hits=$(printf '%s\n' "$hits" | grep -vE "^[^:]*($exclude_path)" || true)
+  fi
+  if [ -n "$exclude" ]; then
+    hits=$(printf '%s\n' "$hits" | grep -vE "$exclude" || true)
+  fi
   # Copyright attribution names the author on purpose and is required by the
   # licence. Flagging it is noise, and noise is how a real hit gets ignored.
-  printf '%s\n' "$hits" | grep -vE "$exclude" | grep -viE '\(c\)[[:space:]]*[0-9]{4}|copyright' || true
+  printf '%s\n' "$hits" | grep -viE '\(c\)[[:space:]]*[0-9]{4}|copyright' || true
 }
 
 check() {
   local label="$1"
   local pattern="$2"
   local exclude="${3:-}"
+  local exclude_path="${4:-}"
   local hits
 
   if [ "$MODE" = "ci" ]; then
     hits=$(scan_ci "$pattern")
-    hits=$(apply_exclusion "$hits" "$exclude")
+    hits=$(apply_exclusion "$hits" "$exclude" "$exclude_path")
     if [ -n "$hits" ]; then
       echo "FAIL [$label]:"
       echo "$hits" | head -20
@@ -156,7 +171,7 @@ check() {
 
   # Doctor mode — separate tracked from gitignored.
   hits=$(scan_doctor "$pattern")
-  hits=$(apply_exclusion "$hits" "$exclude")
+  hits=$(apply_exclusion "$hits" "$exclude" "$exclude_path")
   if [ -z "$hits" ]; then
     echo "OK   [$label]"
     return
@@ -212,19 +227,31 @@ check() {
 # Doc placeholders. Extend this when a new invented example host trips the check:
 # being asked once "is this a real tenant?" is the check doing its job, and is a
 # far better failure mode than the silence it replaces.
-PLACEHOLDER='contoso|example|sample|template|your[-_.]?tenant|your-tenant|<[^>]+>|firstname\.lastname|your\.email|recipient\.name|user@|name@|(test|overridden|envvar|dummy|placeholder|foo|bar|[a-z])(-my)?\.sharepoint'
+#
+# Split by shape, because apply_exclusion tests the two halves differently. The
+# path half names directories that are documentation by construction; it used to
+# sit in the same string as the content half, where `template` matched the word
+# anywhere on a line and `<[^>]+>` matched any HTML tag at all.
+PLACEHOLDER_PATH='example|sample|template'
+PLACEHOLDER='contoso|firstname\.lastname|your\.email|recipient\.name'
+# Invented tenant hosts used by the install docs and their manual test steps.
+# The list used to end in a bare `[a-z]`, which as the exclusion for
+# `[a-z0-9-]+\.sharepoint\.com` matched the single character before `.sharepoint`
+# in EVERY real hostname: the tenant check could not fire at all. Name the
+# fixture hosts explicitly instead.
+PLACEHOLDER_TENANT="$PLACEHOLDER|your[-_.]?tenant|your-tenant|(test|overridden|envvar|dummy|placeholder|foo|bar|a|b|x|y|z)(-my)?\.sharepoint"
 
 # Some repos name the employer on purpose: a marketplace written for colleagues
 # says so in its README by design. Those opt out with a repo-root marker rather
 # than carrying a permanent red light.
 if [ ! -f ".pii-gauntlet-allow-employer-name" ]; then
-  check "Employer name" '(^|[^A-Za-z0-9])(NBG|ΕΤΕ)([^A-Za-z0-9]|$)|Εθνική Τράπεζα|National Bank of Greece' "$PLACEHOLDER"
+  check "Employer name" '(^|[^A-Za-z0-9])(NBG|ΕΤΕ)([^A-Za-z0-9]|$)|Εθνική Τράπεζα|National Bank of Greece' "$PLACEHOLDER" "$PLACEHOLDER_PATH"
 else
   echo "OK   [Employer name] (opted out via .pii-gauntlet-allow-employer-name)"
 fi
 
-check "Employer mail domain" '[A-Za-z0-9._%+-]+@nbg\.gr' "$PLACEHOLDER"
-check "SharePoint tenant"    '[a-z0-9-]+\.sharepoint\.com' "$PLACEHOLDER"
+check "Employer mail domain" '[A-Za-z0-9._%+-]+@nbg\.gr' "$PLACEHOLDER" "$PLACEHOLDER_PATH"
+check "SharePoint tenant"    '[a-z0-9-]+\.sharepoint\.com' "$PLACEHOLDER_TENANT" "$PLACEHOLDER_PATH"
 # A bare UUID is not a finding: fixtures, generated filenames and message ids
 # are full of them, and flagging all of them is how a check earns the right to
 # be ignored. What matters is a GUID sitting where a TENANT id sits, so key on
