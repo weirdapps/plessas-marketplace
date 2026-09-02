@@ -43,8 +43,11 @@ shared/                        # Cross-plugin shared assets (brand-system, email
 
 ## Testing
 
-**No test suite runs in CI.** Every workflow is a structural or security guard, not a test run.
-What exists, and what actually executes:
+**One test suite runs in CI:** `sonarcloud.yml` runs `pytest plugins --cov=plugins` as a blocking
+step, so a failing Python test fails the build. It is not gated on `SONAR_TOKEN` (only the scan
+steps are), but the whole job is skipped while the repo is private. The vitest suite is still NOT
+gated: no workflow runs `npm test`. Everything else is a structural or security guard, not a test
+run. What exists, and what actually executes:
 
 - `scripts/validate_consistency.py --verbose` — consistency checks across manifests and commands.
   Runs in `validate-plugins.yml`.
@@ -55,9 +58,11 @@ What exists, and what actually executes:
   exits 0 while verifying nothing. Any `teams-bridge` change is unverified; test manually.
 - `plugins/decks/tools/nbg-presentation/test_nbg_build.py`,
   `plugins/decks/tools/nbg-keynote/test_nbg_keynote.py` (33 tests, real coverage of the keynote
-  compositor) and `plugins/decks/bundled/creative/tools/device-mockup/test_iphone_mockup.py` exist
-  but never run: `sonarcloud.yml` gates `pytest` on a `tests/`, `test/`, or `__tests__` directory at
-  the repo root, and there is none. Run the keynote suite by hand after touching `nbg_keynote.py`:
+  compositor) and `plugins/decks/bundled/creative/tools/device-mockup/test_iphone_mockup.py` all
+  run in CI under `pytest plugins`. `sonarcloud.yml` gates that run on a `tests/`, `test/`, or
+  `__tests__` directory found anywhere outside `node_modules`; `plugins/mail/mcp-server/tests` is
+  currently the only match, so the vitest directory is what switches the Python run on. Run the
+  keynote suite by hand after touching `nbg_keynote.py`:
   `(cd plugins/decks/tools/nbg-keynote && python3 -m pytest test_nbg_keynote.py -q)`.
 - `ruff` and `mypy` are configured in `pyproject.toml` but no workflow invokes them. Run them
   locally if you touch Python.
