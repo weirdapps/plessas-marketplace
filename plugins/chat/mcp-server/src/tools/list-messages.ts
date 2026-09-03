@@ -16,12 +16,16 @@ export const listMessagesTool: Tool = {
     additionalProperties: false,
   },
   handler: async (args) => {
+    // Flag names must match teams-access/src/cli.ts:133-136 exactly: --chat,
+    // --team, --channel, --page-size. These were --chat-id / --team-id /
+    // --channel-id / --top / --since, none of which commander accepts (there is
+    // no allowUnknownOption), so every call failed on argument parsing.
+    // --since has no CLI equivalent at all and is dropped rather than faked.
     const cliArgs = ['list-messages'];
-    if (args.chat_id) cliArgs.push('--chat-id', args.chat_id);
-    if (args.team_id) cliArgs.push('--team-id', args.team_id);
-    if (args.channel_id) cliArgs.push('--channel-id', args.channel_id);
-    if (args.top) cliArgs.push('--top', String(args.top));
-    if (args.since) cliArgs.push('--since', args.since);
+    if (args.chat_id) cliArgs.push('--chat', args.chat_id);
+    if (args.team_id) cliArgs.push('--team', args.team_id);
+    if (args.channel_id) cliArgs.push('--channel', args.channel_id);
+    if (args.top) cliArgs.push('--page-size', String(args.top));
     return runTeamsCli(cliArgs);
   },
 };

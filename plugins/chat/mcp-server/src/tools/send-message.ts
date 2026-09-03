@@ -14,7 +14,17 @@ export const sendMessageTool: Tool = {
     additionalProperties: false,
   },
   handler: async (args) => {
-    const cliArgs = ['send-message', '--chat-id', args.chat_id, '--body', args.body];
-    return runTeamsCli(cliArgs);
+    // Flag names must match teams-access/src/cli.ts:177-181 exactly: --chat,
+    // --text, --html. This sent --chat-id and --body, which commander rejects
+    // (no allowUnknownOption), so every send through the MCP bridge failed on
+    // argument parsing before auth was even consulted. That made it look like
+    // another symptom of the 2026-09-02 token outage rather than a separate bug.
+    //
+    // Route to --html when the body already looks like markup, otherwise --text,
+    // so a plain string is not silently rendered as HTML and a crafted <p> block
+    // is not escaped. House style for Teams is HTML.
+    const body = String(args.body ?? '');
+    const bodyFlag = /<[a-z][\s\S]*>/i.test(body) ? '--html' : '--text';
+    return runTeamsCli(['send-message', '--chat', args.chat_id, bodyFlag, body]);
   },
 };

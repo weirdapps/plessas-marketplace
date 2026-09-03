@@ -13,7 +13,8 @@ export const listChatsTool: Tool = {
   },
   handler: async (args) => {
     const cliArgs = ['list-chats'];
-    if (args.top) cliArgs.push('--top', String(args.top));
+    // teams-access/src/cli.ts defines --limit for list-chats, not --top.
+    if (args.top) cliArgs.push('--limit', String(args.top));
     return runTeamsCli(cliArgs);
   },
 };
