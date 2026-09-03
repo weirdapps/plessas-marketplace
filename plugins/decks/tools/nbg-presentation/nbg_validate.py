@@ -666,6 +666,28 @@ def check_back_cover(unpacked_dir: Path) -> ValidationResult:
         )
 
 
+def _is_footer_logo(x: int, y: int, cx: int, cy: int) -> bool:
+    """True if a picture is one of the two NBG footer logo placements.
+
+    Geometry mirrors LOGO_SMALL and LOGO_LARGE in nbg_build.py. Matched on all
+    four values rather than size alone, so a genuine content image that happens
+    to be logo-sized is still flagged when it runs into the footer.
+    """
+    EMU = 914400
+    TOL = int(0.05 * EMU)
+    placements = (
+        (0.374, 7.071, 0.822, 0.236),  # LOGO_SMALL: content slides
+        (0.374, 6.271, 2.191, 0.630),  # LOGO_LARGE: cover and divider slides
+    )
+    return any(
+        abs(x - int(px * EMU)) <= TOL
+        and abs(y - int(py * EMU)) <= TOL
+        and abs(cx - int(pw * EMU)) <= TOL
+        and abs(cy - int(ph * EMU)) <= TOL
+        for px, py, pw, ph in placements
+    )
+
+
 def check_content_safe_zones(unpacked_dir: Path) -> ValidationResult:
     """Check that content elements respect NBG safe zones.
 
@@ -757,12 +779,21 @@ def check_content_safe_zones(unpacked_dir: Path) -> ValidationResult:
             if off is None or ext is None:
                 continue
 
+            x = int(off.get("x", 0))
             y = int(off.get("y", 0))
+            cx = int(ext.get("cx", 0))
             cy = int(ext.get("cy", 0))
             bottom_edge = y + cy
 
-            # Skip small images (logos)
-            if cy < int(0.5 * EMU_PER_INCH):
+            # The footer zone is where the logo BELONGS (see this function's
+            # docstring), so a logo sitting in it is not a violation. The old
+            # test for that was `cy < 0.5"`, a size heuristic tuned on the small
+            # 0.236" logo that never saw the large one: at 2.191 x 0.630 from
+            # y=6.271 its bottom edge lands at 6.90", so every divider slide
+            # reported a 0.05" overflow and all three shipped examples failed
+            # this check. Match the two footer logo footprints by geometry
+            # instead, which cannot drift with the artwork's aspect ratio.
+            if _is_footer_logo(x, y, cx, cy):
                 continue
 
             if bottom_edge > FOOTER_Y_MIN + TOLERANCE:

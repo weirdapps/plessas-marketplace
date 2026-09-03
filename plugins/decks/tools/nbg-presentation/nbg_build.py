@@ -978,7 +978,12 @@ def build_presentation(outline_path, output_path):
     # Support both McKinsey and simple formats
     if "presentation" in outline:
         presentation = outline["presentation"]
-        slides = presentation.get("slides", [])
+        # `presentation` may carry the slides itself, or it may carry only the
+        # framing metadata (title / audience / purpose / main_recommendation)
+        # with `slides` left at the top level. All three shipped examples are
+        # the second shape, so reading `presentation.slides` alone raised
+        # "No slides defined in outline" on every one of them.
+        slides = presentation.get("slides") or outline.get("slides", [])
         template = outline.get("template", "GR")
         print("\n[McKinsey Quality] Using Pyramid Principle structure")
         if presentation.get("main_recommendation"):
