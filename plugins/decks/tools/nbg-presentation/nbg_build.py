@@ -274,6 +274,38 @@ CHART_COLORS = ["00ADBF", "003841", "007B85", "939793", "BEC1BE", "00DFF8"]
 C_LIGHT_GRAY_HEX = "BEC1BE"
 
 
+def _is_doughnut(chart):
+    """Doughnut charts have no category or value axis, and no gap_width."""
+    return chart.chart_type in (XL_CHART_TYPE.DOUGHNUT, XL_CHART_TYPE.PIE)
+
+
+def _relative_luminance(color_hex):
+    """WCAG relative luminance of an RRGGBB string."""
+    channels = []
+    for i in (0, 2, 4):
+        v = int(color_hex[i : i + 2], 16) / 255
+        channels.append(v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4)
+    r, g, b = channels
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _label_text_color(color_hex):
+    """Pick white or dark body text for a label sitting on a colored fill.
+
+    colors.md offers an R+G+B > 400 rule of thumb, which misreads the cyan
+    #00ADBF used for chart series: dark text clears 6:1 on it where white
+    manages only 2.7:1. Measure the contrast and take the better of the two.
+    """
+    fill = _relative_luminance(color_hex)
+    dark = _relative_luminance("202020")
+
+    def ratio(a, b):
+        hi, lo = max(a, b), min(a, b)
+        return (hi + 0.05) / (lo + 0.05)
+
+    return C_WHITE if ratio(fill, 1.0) > ratio(fill, dark) else C_DARK_TEXT
+
+
 def _style_chart(chart):
     """Apply NBG brand styling to a chart: no title, hidden value axis,
     no gridlines, no plot border, data labels on bars, Aptos throughout."""
@@ -283,21 +315,22 @@ def _style_chart(chart):
     # No legend by default (single-series); caller enables if multi-series
     chart.has_legend = False
 
-    # Category axis: visible, Aptos 12pt, light gray line (per charts.md)
-    cat_ax = chart.category_axis
-    cat_ax.tick_labels.font.size = Pt(12)
-    cat_ax.tick_labels.font.name = FONT
-    cat_ax.tick_labels.font.color.rgb = C_DARK_TEXT
-    cat_ax.has_major_gridlines = False
-    cat_ax.has_minor_gridlines = False
-    cat_ax.format.line.fill.solid()
-    cat_ax.format.line.fill.fore_color.rgb = RGBColor.from_string(C_LIGHT_GRAY_HEX)
+    if not _is_doughnut(chart):
+        # Category axis: visible, Aptos 12pt, light gray line (per charts.md)
+        cat_ax = chart.category_axis
+        cat_ax.tick_labels.font.size = Pt(12)
+        cat_ax.tick_labels.font.name = FONT
+        cat_ax.tick_labels.font.color.rgb = C_DARK_TEXT
+        cat_ax.has_major_gridlines = False
+        cat_ax.has_minor_gridlines = False
+        cat_ax.format.line.fill.solid()
+        cat_ax.format.line.fill.fore_color.rgb = RGBColor.from_string(C_LIGHT_GRAY_HEX)
 
-    # Value axis: HIDDEN (per brand spec: valAxisHidden: true)
-    val_ax = chart.value_axis
-    val_ax.visible = False
-    val_ax.has_major_gridlines = False
-    val_ax.has_minor_gridlines = False
+        # Value axis: HIDDEN (per brand spec: valAxisHidden: true)
+        val_ax = chart.value_axis
+        val_ax.visible = False
+        val_ax.has_major_gridlines = False
+        val_ax.has_minor_gridlines = False
 
     # Plot area: no border, no fill
     plot = chart.plots[0]
@@ -311,11 +344,26 @@ def _style_chart(chart):
     data_labels.show_category_name = False
     data_labels.show_series_name = False
 
-    # Color each series with NBG palette
-    for i, series in enumerate(plot.series):
-        color_hex = CHART_COLORS[i % len(CHART_COLORS)]
-        series.format.fill.solid()
-        series.format.fill.fore_color.rgb = RGBColor.from_string(color_hex)
+    if _is_doughnut(chart):
+        # A doughnut carries one series; the NBG sequence colors its points.
+        for i, point in enumerate(plot.series[0].points):
+            color_hex = CHART_COLORS[i % len(CHART_COLORS)]
+            point.format.fill.solid()
+            point.format.fill.fore_color.rgb = RGBColor.from_string(color_hex)
+
+            # Labels sit on the slice, so each takes whichever of white or
+            # dark body text actually contrasts with that slice.
+            label_font = point.data_label.font
+            label_font.size = Pt(11)
+            label_font.name = FONT
+            label_font.bold = True
+            label_font.color.rgb = _label_text_color(color_hex)
+    else:
+        # Color each series with NBG palette
+        for i, series in enumerate(plot.series):
+            color_hex = CHART_COLORS[i % len(CHART_COLORS)]
+            series.format.fill.solid()
+            series.format.fill.fore_color.rgb = RGBColor.from_string(color_hex)
 
 
 def create_chart_slide(prs, content, page_number, chart_type="bar"):
@@ -383,11 +431,17 @@ def create_chart_slide(prs, content, page_number, chart_type="bar"):
     chart = chart_frame.chart
     _style_chart(chart)
 
-    # Bar gap (per brand: barGapWidthPct: 35)
-    chart.plots[0].gap_width = 35
+    if _is_doughnut(chart):
+        # A doughnut has no bar gap, and its legend is what names the slices.
+        wants_legend = True
+    else:
+        # Bar gap (per brand: barGapWidthPct: 35)
+        chart.plots[0].gap_width = 35
 
-    # Enable legend only for multi-series charts
-    if len(series_list) > 1:
+        # Enable legend only for multi-series charts
+        wants_legend = len(series_list) > 1
+
+    if wants_legend:
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
@@ -509,16 +563,32 @@ def create_waterfall_slide(prs, content, page_number):
     dec_series.format.fill.fore_color.rgb = RGBColor.from_string("AA0028")
     dec_series.format.line.fill.background()
 
-    # Data labels: show values on Increase and Decrease series
-    for s in [inc_series, dec_series]:
+    # Data labels: show values on Increase and Decrease series. Each label sits
+    # inside its bar, so it takes whichever text color contrasts with that fill.
+    for s, vals, fill_hex in (
+        (inc_series, increase, "00ADBF"),
+        (dec_series, decrease, "AA0028"),
+    ):
         s.has_data_labels = True
         s.data_labels.font.size = Pt(10)
         s.data_labels.font.name = FONT
         s.data_labels.font.bold = True
-        s.data_labels.font.color.rgb = C_DARK_TEXT
+        s.data_labels.font.color.rgb = _label_text_color(fill_hex)
         s.data_labels.show_value = True
         s.data_labels.show_category_name = False
         s.data_labels.show_series_name = False
+
+        # Every category carries a point in both series, so the empty one
+        # would print a stray "0" next to each bar. Delete those labels:
+        # blanking the text is not enough, since showVal still wins.
+        for point, val in zip(s.points, vals, strict=True):
+            if val != 0:
+                continue
+            dLbl = point.data_label._get_or_add_dLbl()
+            for child in list(dLbl):
+                if child.tag != qn("c:idx"):
+                    dLbl.remove(child)
+            SubElement(dLbl, qn("c:delete")).set("val", "1")
 
     # Category axis: visible, Aptos, light gray line, no tick marks
     cat_ax = chart.category_axis

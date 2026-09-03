@@ -130,9 +130,7 @@ NAMESPACES = {
 
 
 class ValidationResult:
-    def __init__(
-        self, name: str, passed: bool, message: str, details: list[str] | None = None
-    ):
+    def __init__(self, name: str, passed: bool, message: str, details: list[str] | None = None):
         self.name = name
         self.passed = passed
         self.message = message
@@ -221,9 +219,7 @@ def check_colors(unpacked_dir: Path) -> ValidationResult:
     valid = colors & allowed
 
     if not invalid:
-        return ValidationResult(
-            "Colors", True, f"All {len(valid)} colors within NBG palette"
-        )
+        return ValidationResult("Colors", True, f"All {len(valid)} colors within NBG palette")
     else:
         details = [f"#{c} (not in NBG palette)" for c in sorted(invalid)]
         return ValidationResult(
@@ -310,9 +306,7 @@ def check_logo_present(unpacked_dir: Path) -> ValidationResult:
             f"{len(images)} media file(s) found (verify NBG logo manually)",
         )
     else:
-        return ValidationResult(
-            "Logo", False, "No media files or logo references found"
-        )
+        return ValidationResult("Logo", False, "No media files or logo references found")
 
 
 def check_slide_count(unpacked_dir: Path) -> ValidationResult:
@@ -325,9 +319,7 @@ def check_slide_count(unpacked_dir: Path) -> ValidationResult:
     slide_count = len(list(slides_dir.glob("slide*.xml")))
 
     if slide_count > 0:
-        return ValidationResult(
-            "Slides", True, f"{slide_count} slide(s) in presentation"
-        )
+        return ValidationResult("Slides", True, f"{slide_count} slide(s) in presentation")
     else:
         return ValidationResult("Slides", False, "No slides found")
 
@@ -379,9 +371,7 @@ def check_element_boundaries(unpacked_dir: Path) -> ValidationResult:
                     )
 
     if not out_of_bounds:
-        return ValidationResult(
-            "Boundaries", True, "All elements within slide boundaries"
-        )
+        return ValidationResult("Boundaries", True, "All elements within slide boundaries")
     else:
         return ValidationResult(
             "Boundaries",
@@ -509,9 +499,7 @@ def check_pie_charts(unpacked_dir: Path) -> ValidationResult:
             ".//{http://schemas.openxmlformats.org/drawingml/2006/chart}pieChart"
         )
         if pie_elems:
-            pie_charts_found.append(
-                f"{chart_name}: pieChart found (use doughnutChart instead)"
-            )
+            pie_charts_found.append(f"{chart_name}: pieChart found (use doughnutChart instead)")
 
         # Count doughnut charts (good)
         doughnut_elems = root.findall(
@@ -573,9 +561,7 @@ def check_thank_you_slides(unpacked_dir: Path) -> ValidationResult:
                 break
 
     if not found_issues:
-        return ValidationResult(
-            "Thank You Check", True, 'No "Thank You" slides found (correct)'
-        )
+        return ValidationResult("Thank You Check", True, 'No "Thank You" slides found (correct)')
     else:
         return ValidationResult(
             "Thank You Check",
@@ -620,9 +606,7 @@ def check_text_margins(unpacked_dir: Path) -> ValidationResult:
 
             # If any margin is > 50000 EMU (~0.05 inch), flag it
             if lIns > 50000 or rIns > 50000:
-                non_zero_margins.append(
-                    f"Slide {slide_num}: text box has non-zero margins"
-                )
+                non_zero_margins.append(f"Slide {slide_num}: text box has non-zero margins")
                 break
 
     total_slides = len(list(slides_dir.glob("slide*.xml")))
@@ -653,9 +637,7 @@ def check_back_cover(unpacked_dir: Path) -> ValidationResult:
         return ValidationResult("Back Cover", False, "No slides folder found")
 
     # Sort numerically, not alphabetically (slide10.xml > slide2.xml)
-    slide_files = sorted(
-        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
-    )
+    slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
     if not slide_files:
         return ValidationResult("Back Cover", False, "No slides found")
 
@@ -669,9 +651,7 @@ def check_back_cover(unpacked_dir: Path) -> ValidationResult:
 
     # Back cover should have minimal or no text (just logo)
     if len(text_content) < 50 and "thank you" not in text_content:
-        return ValidationResult(
-            "Back Cover", True, "Last slide appears to be a plain back cover"
-        )
+        return ValidationResult("Back Cover", True, "Last slide appears to be a plain back cover")
     elif "thank you" in text_content:
         return ValidationResult(
             "Back Cover",
@@ -720,9 +700,7 @@ def check_content_safe_zones(unpacked_dir: Path) -> ValidationResult:
     total_slides = 0
 
     # Count total slides to identify cover (first) and back cover (last)
-    all_slide_files = sorted(
-        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
-    )
+    all_slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
     total_slide_count = len(all_slide_files)
 
     for slide_file in all_slide_files:
@@ -899,6 +877,10 @@ def check_content_spacing(unpacked_dir: Path) -> ValidationResult:
 
     Title is at y=0.5", h=0.4" → bottom edge = 0.9"
     First content should start at y ≥ 1.05" (minimum 0.15" gap from title bottom)
+
+    A bumper pill (1.3" x 0.3" at y=0.35") shifts the title down to y=0.75", so
+    on those slides the title bottom is 1.15" and content starts at 1.3". The
+    pill sits above the title and is never itself the first content.
     """
     slides_dir = unpacked_dir / "ppt" / "slides"
     if not slides_dir.exists():
@@ -906,16 +888,14 @@ def check_content_spacing(unpacked_dir: Path) -> ValidationResult:
 
     EMU_PER_INCH = 914400
 
-    # Title bottom edge at ~0.9" = 822960 EMU
-    TITLE_BOTTOM = int(0.9 * EMU_PER_INCH)
+    TITLE_HEIGHT = int(0.4 * EMU_PER_INCH)
     # Minimum gap = 0.15" = 137160 EMU
     MIN_GAP = int(0.15 * EMU_PER_INCH)
-    # So first content should start at 0.9" + 0.15" = 1.05" = 960120 EMU
-    MIN_CONTENT_Y = TITLE_BOTTOM + MIN_GAP
+    TOLERANCE = int(0.1 * EMU_PER_INCH)
+    BUMPER_Y = int(0.35 * EMU_PER_INCH)
+    BUMPER_CY = int(0.3 * EMU_PER_INCH)
 
-    all_slide_files = sorted(
-        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
-    )
+    all_slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
     total_slide_count = len(all_slide_files)
 
     violations = []
@@ -930,9 +910,7 @@ def check_content_spacing(unpacked_dir: Path) -> ValidationResult:
         tree = ET.parse(slide_file)
         root = tree.getroot()
 
-        # Find all content element Y positions (skip title itself and logo/page number)
-        content_tops = []
-
+        boxes = []
         for sp in root.findall(f".//{{{NAMESPACES['p']}}}sp"):
             xfrm = sp.find(f".//{{{NAMESPACES['a']}}}xfrm")
             if xfrm is None:
@@ -943,11 +921,27 @@ def check_content_spacing(unpacked_dir: Path) -> ValidationResult:
             if off is None or ext is None:
                 continue
 
-            y = int(off.get("y", 0))
-            cy = int(ext.get("cy", 0))
+            boxes.append((int(off.get("y", 0)), int(ext.get("cy", 0))))
 
-            # Skip the title itself (y around 0.5" = 457200 EMU)
-            if abs(y - int(0.5 * EMU_PER_INCH)) < int(0.1 * EMU_PER_INCH):
+        def _is_bumper(y, cy):
+            return abs(y - BUMPER_Y) < TOLERANCE and abs(cy - BUMPER_CY) < TOLERANCE
+
+        # A bumper pill shifts the whole header block down by 0.25".
+        has_bumper = any(_is_bumper(y, cy) for y, cy in boxes)
+        title_y = int((0.75 if has_bumper else 0.5) * EMU_PER_INCH)
+        title_bottom = title_y + TITLE_HEIGHT
+        min_content_y = title_bottom + MIN_GAP
+
+        # Find all content element Y positions (skip title itself and logo/page number)
+        content_tops = []
+
+        for y, cy in boxes:
+            # Skip the bumper pill: it sits above the title, not below it
+            if has_bumper and _is_bumper(y, cy):
+                continue
+
+            # Skip the title itself
+            if abs(y - title_y) < TOLERANCE:
                 continue
 
             # Skip very small elements (logos, page numbers)
@@ -962,9 +956,9 @@ def check_content_spacing(unpacked_dir: Path) -> ValidationResult:
 
         if content_tops:
             first_content_y = min(content_tops)
-            gap_inches = (first_content_y - TITLE_BOTTOM) / EMU_PER_INCH
+            gap_inches = (first_content_y - title_bottom) / EMU_PER_INCH
 
-            if first_content_y < MIN_CONTENT_Y:
+            if first_content_y < min_content_y:
                 violations.append(
                     f'Slide {slide_num_int}: first content at {first_content_y / EMU_PER_INCH:.2f}" '
                     f'(only {gap_inches:.2f}" gap from title bottom, need ≥0.15")'
@@ -998,9 +992,7 @@ def check_title_overflow(unpacked_dir: Path) -> ValidationResult:
 
     MAX_TITLE_CHARS = 80  # Safe single-line limit at 22-24pt Aptos in 12.59" width
 
-    all_slide_files = sorted(
-        slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name))
-    )
+    all_slide_files = sorted(slides_dir.glob("slide*.xml"), key=lambda x: int(_slide_num(x.name)))
     total_slide_count = len(all_slide_files)
 
     violations = []
@@ -1169,9 +1161,7 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
     for bank_key in banks_found:
         expected_logo = BANK_BRAND[bank_key]["logo"].lower()
         # Check if any media file contains the bank logo name pattern
-        logo_found = any(
-            expected_logo.replace(".png", "") in fname for fname in media_files
-        )
+        logo_found = any(expected_logo.replace(".png", "") in fname for fname in media_files)
         # PptxGenJS embeds base64 images as imageN.png — check slide rels
         # for image count as a heuristic (logos add extra images)
         if not logo_found:
