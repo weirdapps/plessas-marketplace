@@ -1,7 +1,7 @@
 ---
-description: "Diagnose the teams-bridge MCP — node, CLI install mode, auth, last startup, and what to fix"
+description: "Diagnose the teams-bridge MCP: node, CLI install mode, auth, last startup, and what to fix"
 argument-hint: ""
-allowed-tools: mcp__teams-bridge__teams_doctor
+allowed-tools: mcp__plugin_chat_teams-bridge__teams_doctor
 ---
 
 # /chat-doctor
@@ -10,11 +10,11 @@ Run a self-diagnostic on the teams-bridge MCP server. Use this whenever the chat
 
 ## Implementation
 
-1. Call `mcp__teams-bridge__teams_doctor` with no arguments.
+1. Call `mcp__plugin_chat_teams-bridge__teams_doctor` with no arguments.
 2. Render the result as a compact one-screen report:
 
 ```
-teams-bridge MCP — Doctor
+teams-bridge MCP: Doctor
 
   MCP server   : <name> v<version>
   Node binary  : <path>  (<version>)
@@ -33,7 +33,7 @@ teams-bridge MCP — Doctor
 
 ## Notes
 
-- Read-only diagnostic — no side effects.
+- Read-only diagnostic, no side effects.
 - This is the FIRST command to try when chat commands fail. It tells you exactly what's wrong without needing to dig through MCP logs.
-- "CLI mode = bundled" means the plugin's `mcp-server/node_modules/teams-cli/` is being used (preferred — survives PATH stripping). "CLI mode = path" means the MCP server is calling `teams-cli` via shell PATH (legacy fallback).
-- Does NOT affect `chat-watch` (the long-running monitor). chat-watch uses the global `teams-cli` install at `~/.local/share/fnm/aliases/default/bin/teams-cli` — independent of this MCP server.
+- "CLI mode = bundled" means the plugin's `mcp-server/node_modules/teams-cli/` is being used (preferred, survives PATH stripping). "CLI mode = path" means the MCP server is calling `teams-cli` via shell PATH (legacy fallback).
+- Does NOT affect `chat-watch` (the long-running monitor). chat-watch uses whichever global `teams-cli` is first on your PATH; run `command -v teams-cli` to see which one. That install is independent of this MCP server.

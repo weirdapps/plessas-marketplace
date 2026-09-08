@@ -1,15 +1,15 @@
 ---
 description: "Review inbox with briefing, insights, action recommendations, and draft replies"
 argument-hint: "[inbox|archive|both] [--count N] [--briefing-only]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outlook-bridge__*, mcp__second-brain__*
 ---
 
 > Path conventions: `<TEMP_DIR>` resolves to the OS temp directory (`$TMPDIR` or `/tmp` on macOS/Linux, `$env:TEMP` on Windows). Resolve before passing to tools.
 
 <objective>
-Read emails via the outlook-bridge MCP wrapper around `outlook-cli`, provide a comprehensive briefing with insights, recommend actions, and draft replies matching the user's communication style (defined in `shared/style-guide.md`).
+Read emails via the outlook-bridge MCP wrapper around `outlook-cli`, provide a comprehensive briefing with insights, recommend actions, and draft replies matching the user's communication style (defined in `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`).
 
-**Architecture**: outlook-bridge MCP for reading AND sending (Microsoft Graph via `outlook-cli`). New mail goes through `/send-mail` (creates a draft via `mcp__outlook-bridge__outlook_send_mail`). Replies are drafted as text in the conversation — user pastes manually into Outlook Reply so they retain final review and signature/threading control.
+**Architecture**: outlook-bridge MCP for reading AND sending (Microsoft Graph via `outlook-cli`). New mail goes through `/send-mail` (creates a draft via `mcp__plugin_mail_outlook-bridge__outlook_send_mail`). Replies are drafted as text in the conversation; the user pastes manually into Outlook Reply so they retain final review and signature/threading control.
 
 User request: $ARGUMENTS
 </objective>
@@ -17,208 +17,49 @@ User request: $ARGUMENTS
 <process>
 ## Workflow
 
-### 0. Learn from Previous Drafts (AUTOMATIC — runs silently every time)
+### 0. Learn from Previous Drafts (AUTOMATIC, runs silently every time)
 
-**First run**: If `~/.claude/drafts/` directory structure doesn't exist, create it automatically. If no `inbox-state.json` exists, treat all emails as NEW. Skip learning if no pending drafts.
+The draft-vs-actual comparison is specified once, in `${CLAUDE_PLUGIN_ROOT}/commands/draft-review.md`. Read that file and run its comparison before anything else: match pending drafts in `~/.claude/drafts/pending/` against what was actually sent, classify each as SENT_AS_IS / MODIFIED / REWRITTEN / NOT_SENT, update the style guide, and move processed drafts to `reviewed/`.
 
-Check `~/.claude/drafts/pending/` for unprocessed draft files.
-If pending drafts exist:
+Three differences apply when running under `/mail-review`:
 
-1. Read Archive via `mcp__outlook-bridge__outlook_list_mail` to find matching sent emails (Archive is the primary source — user regularly empties Sent Items, but all replies are CC'd to self and land in Archive):
+- Run it silently. Emit one line, `LEARNING: Processed N drafts, accuracy X/10`, rather than the full delta report; `/draft-review` is the command for the formal report.
+- **First run**: if the `~/.claude/drafts/` directory structure does not exist, create it automatically. If no `inbox-state.json` exists, treat all emails as NEW.
+- If `~/.claude/drafts/pending/` is empty, skip the whole step without comment.
 
-   ```
-   Tool: mcp__outlook-bridge__outlook_list_mail
-   Args: {
-     "folder": "Archive",
-     "top": 30,
-     "select": "Id,Subject,From,ToRecipients,CcRecipients,ReceivedDateTime,ConversationId"
-   }
-   ```
-
-   Filter client-side to messages where `From.upn` matches the user's UPN. For body content, follow up per-Id with `mcp__outlook-bridge__outlook_get_mail`.
-   - Also check Sent Items (`folder: "Sent Items"`) as a supplement for very recent emails (last 1-2 hours) that may not yet be in Archive
-   - Match by subject keywords and approximate date (within 72h of draft creation)
-2. For each matched draft:
-   - Extract the ACTUAL reply text the user sent (strip signature and quoted text)
-   - Compare against the `draft_text` from the pending JSON
-   - Analyze: length, tone, content, word choice, decision, skip/reply differences
-   - Classify: SENT_AS_IS | MODIFIED | REWRITTEN | NOT_SENT
-3. **Auto-classify stale drafts**: Any draft in `pending/` older than 72 hours with no matching sent email → NOT_SENT (triage error). Learn: was the email low-priority? Was the recommended action wrong?
-4. Scan the last 20 sent items for **organic emails** not matching any draft:
-   - New recipients → create profile stub
-   - Sentence patterns, question frequency, imperative usage
-   - If consistent across 3+ organic emails → apply as style guide update
-5. Compute accuracy score: `(SENT_AS_IS + 0.5 * MODIFIED) / total_drafts`
-6. If any learnings found:
-   - Back up style guide to `~/.claude/drafts/style-guide-backups/`
-   - Update `shared/style-guide.md` in the email-handler plugin directory
-   - Move processed drafts to `reviewed/` with `delta_type`, `learnings`, `reviewed_date`
-   - Append a dated entry to `~/.claude/drafts/learnings.md` with accuracy score
-7. Show a brief learning summary:
-
-   ```
-   LEARNING: Processed N drafts — accuracy X/10
-     SENT_AS_IS: X | MODIFIED: X | REWRITTEN: X | NOT_SENT: X
-   Style guide updated: [changes]
-   ```
-
-6. Ingest ALL recent sent emails (continuous learning)
-   - Read last 20 Archive messages via `mcp__outlook-bridge__outlook_list_mail` (`folder: "Archive", top: 20`), filter client-side to messages where `From.upn` matches the user's UPN
-     (Archive is the canonical source — Sent Items gets emptied regularly; user CCs himself on all replies)
-   - For each: identify recipient, analyze length, language, tone, greeting, closing
-   - Compare against current style guide profiles
-   - If actual email deviates from profile consistently, update the profile
-   - Log: `"CONTINUOUS LEARNING: Analyzed N organic emails, M style updates applied"`
+Do NOT restate the comparison specification here. If the two ever disagree, `draft-review.md` wins.
 
 ### 1. Load Context
 
-- Read the communication style guide from `shared/style-guide.md`
+- Read the communication style guide from `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`
 - Read `~/.claude/drafts/inbox-state.json` to know which emails were seen in the previous run
 
-### 2. Read Emails via outlook-bridge MCP
+### 2-6. Read, classify, recommend, and present the briefing
 
-Call `mcp__outlook-bridge__outlook_auth_check` first; if `status != "ok"`, surface the auth flow before continuing.
+Call `mcp__plugin_mail_outlook-bridge__outlook_auth_check` first; if `status != "ok"`, surface the auth flow before continuing.
 
-**Reading inbox messages:**
+These five steps are specified once, in `${CLAUDE_PLUGIN_ROOT}/commands/inbox-briefing.md`, sections 2 through 6. Read that file and follow it exactly: reading messages via `outlook_list_mail` / `outlook_get_mail`, attachment extraction, NEW vs PREVIOUSLY SEEN classification, the action taxonomy, gist generation, and the briefing output format.
 
-```
-Tool: mcp__outlook-bridge__outlook_list_mail
-Args: {
-  "folder": "Inbox",
-  "top": 50,
-  "select": "Id,Subject,From,ToRecipients,CcRecipients,ReceivedDateTime,HasAttachments,IsRead,WebLink,ConversationId"
-}
-```
+Two differences apply when running under `/mail-review`:
 
-**Reading archive:**
+- Default to `top: 50`. Drafting needs a wider sweep than a plain briefing.
+- More than one action may apply to a single email (for example URGENT + REPLY). Keep every action that fits, because the drafting step below keys off them.
 
-```
-Tool: mcp__outlook-bridge__outlook_list_mail
-Args: {
-  "folder": "Archive",
-  "top": N,
-  "select": "Id,Subject,From,ToRecipients,CcRecipients,ReceivedDateTime,HasAttachments,IsRead,WebLink,ConversationId"
-}
-```
-
-**Reading full message body** (for important/complex emails that need deeper analysis):
-
-```
-Tool: mcp__outlook-bridge__outlook_get_mail
-Args: { "id": "<Id>", "body": "html" }   # use "text" for plain-text extraction
-```
-
-**Key points:**
-
-- One `outlook_list_mail` call returns up to 100 messages — use `since` + `all:true` + `max` for larger sweeps
-- Use `select` to keep payloads small; only request body via `outlook_get_mail` when needed
-- For `--unread` flag: include `IsRead` in `select` and filter client-side (`IsRead == false`)
-- `Id` is a stable identifier for each message
-- If `{error: "auth_required"}` is returned, run `outlook-cli login` via Bash with user approval and retry
-
-### 2b. Extract Attachment Content (if relevant)
-
-For emails with attachments (PPTX, PDF, DOCX, XLSX), use `markitdown` to extract content for summarization. Save attachments via the MCP wrapper:
-
-```
-Tool: mcp__outlook-bridge__outlook_download_attachments
-Args: { "id": "<Id>", "out": "<TEMP_DIR>/mail_att", "overwrite": true }
-```
-
-The tool returns the absolute paths of saved files. Then convert each saved attachment:
-
-```bash
-markitdown "<TEMP_DIR>/mail_att/filename.pptx" | head -200
-```
-
-Use the extracted text to include a one-line attachment summary in the briefing gist, e.g.:
-
-- "ATTACHMENT: Q1 Cards Revenue Report — revenue up 12% YoY, 3 action items"
-- "ATTACHMENT: Project timeline (Excel) — 15 milestones, next deadline April 3"
-
-Only extract attachments for emails marked REPLY, URGENT, or DELEGATE — skip for MONITOR/SKIP to save time. Clean up temp files after extraction: `find <TEMP_DIR>/mail_att -type f -delete` on macOS/Linux, `Remove-Item $env:TEMP\mail_att\* -Recurse -Force` on Windows.
-
-### 3. Classify New vs Previously Seen
-
-Compare current inbox against `inbox-state.json`:
-
-- **NEW**: Emails not in the previous state (arrived since last run)
-- **PREVIOUSLY SEEN**: Emails that were in inbox during a prior run
-  - If previously seen with an action recommendation, note if the user acted on it or not
-
-### 4. Analyze & Recommend Actions
-
-For each email, determine:
-
-| Action | When | Symbol |
-|--------|------|--------|
-| **REPLY** | Needs your direct response (decision, approval, input) | ↩️ |
-| **DELEGATE** | Someone on your team should handle this | 👉 |
-| **FORWARD** | Needs to be sent to someone outside the thread | ➡️ |
-| **MONITOR** | You're CC'd or FYI — no action now but keep an eye | 👀 |
-| **URGENT** | Time-sensitive, needs immediate attention | ⚡ |
-| **SKIP** | No action needed (newsletter, notification, auto-email) | ⏭️ |
-| **FOLLOW-UP** | You already replied but thread needs follow-up check | 🔄 |
-
-Multiple actions can apply (e.g., URGENT + REPLY).
-
-### 5. Generate Gist
-
-For each email, write a 1-2 sentence gist:
-
-- What is this about? (substance, not just subject)
-- What does the sender want from you specifically?
-- Any context that matters (deadline, escalation, repeat request)
-
-### 6. Present Inbox Briefing
-
-Present the briefing in this format:
-
-```
-═══════════════════════════════════════════════
-INBOX BRIEFING — [date], [time]
-═══════════════════════════════════════════════
-
-NEW SINCE LAST RUN ([count] emails)
-───────────────────────────────────────────────
-1. [SENDER] — [Subject]
-   GIST: [1-2 sentence summary]
-   ACTION: [symbol] [ACTION] — [brief reason]
-
-2. [SENDER] — [Subject]
-   GIST: [1-2 sentence summary]
-   ACTION: [symbol] [ACTION] — [brief reason]
-
-PREVIOUSLY SEEN ([count] emails)
-───────────────────────────────────────────────
-3. [SENDER] — [Subject]
-   GIST: [1-2 sentence summary]
-   STATUS: [still waiting / user replied / updated since last run]
-   ACTION: [symbol] [ACTION] — [brief reason]
-
-INSIGHTS
-───────────────────────────────────────────────
-- [X] emails need your decision/reply
-- [Pattern/theme observed, e.g., "Boss escalated same issue twice this week"]
-- [Urgency note, e.g., "Sender X waiting since 20:57 — no response yet"]
-- [Delegation opportunity, e.g., "3 emails could be handled by your team"]
-- [Any thread connections between emails]
-═══════════════════════════════════════════════
-```
+Do NOT restate the briefing specification here. If the two ever disagree, `inbox-briefing.md` wins.
 
 ### 6b. (OPTIONAL) Enrich drafts with knowledge-store context
 
-> **Only run this step if `mcp__second-brain__*` tools are available in your environment.** The `second-brain` MCP server is available via the optional `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (requires the `weirdapps/plessas-second-brain` knowledge store). If you don't see `mcp__second-brain__*` tools listed, **skip this entire section** — the `mail` plugin is fully functional without it, drafts will just lean on the email thread itself + the style guide.
+> **Only run this step if second-brain tools are available in your environment**, that is, if your tool list contains tools whose names begin with `mcp__second-brain__`. The `second-brain` MCP server is available via the optional `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (requires the `weirdapps/plessas-second-brain` knowledge store). If no such tool is listed, **skip this entire section**; the `mail` plugin is fully functional without it, drafts will just lean on the email thread itself + the style guide.
 
 If `second-brain` is available, query it to enrich draft context. The style guide tells you HOW to write; second-brain tells you WHAT to say.
 
 **For each email marked REPLY, DELEGATE, FOLLOW-UP, or FORWARD, run in parallel:**
 
-1. `mcp__second-brain__search_emails` — search by subject keywords to find thread history and prior decisions
-2. `mcp__second-brain__topic_context` — get broader topic context (related threads, key people, open actions)
-3. `mcp__second-brain__person_context` — for senders/recipients where relationship context would sharpen the draft
-4. `mcp__second-brain__query_decisions` — if the thread involves a pending decision or approval
-5. `mcp__second-brain__query_emails` — filter by person + date range for recent exchanges on the topic
+1. `mcp__second-brain__search_emails`: search by subject keywords to find thread history and prior decisions
+2. `mcp__second-brain__topic_context`: get broader topic context (related threads, key people, open actions)
+3. `mcp__second-brain__person_context`: for senders/recipients where relationship context would sharpen the draft
+4. `mcp__second-brain__query_decisions`: if the thread involves a pending decision or approval
+5. `mcp__second-brain__query_emails`: filter by person + date range for recent exchanges on the topic
 
 **Use the gathered context to:**
 
@@ -227,7 +68,7 @@ If `second-brain` is available, query it to enrich draft context. The style guid
 - Add productive pressure by citing deadlines, audit findings, or commitments
 - Avoid re-asking questions that were already answered in the thread
 
-**Keep drafts BRIEF** — context makes them sharper, not longer. A 10-word draft that references the right fact beats a 50-word draft that's vague.
+**Keep drafts BRIEF**: context makes them sharper, not longer. A 10-word draft that references the right fact beats a 50-word draft that's vague.
 
 **Skip second-brain queries for:**
 
@@ -299,7 +140,7 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
 **For each reply draft:**
 
 1. Display the draft text in the conversation
-2. **Copy to clipboard as rich text** (justified alignment preserved) — platform-aware:
+2. **Copy to clipboard as rich text** (justified alignment preserved), platform-aware:
    - **macOS**: `printf '<html>…</html>' | textutil -stdin -format html -convert rtf -stdout | pbcopy`
    - **Windows**: `Get-Content file.html | Set-Clipboard` (PowerShell) or `clip < file.html` (plain HTML)
    - **Linux**: `xclip -selection clipboard -t text/html < file.html`
@@ -355,7 +196,7 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
 <examples>
 ## Usage Examples
 
-### Full workflow — briefing + drafts (auto-learns first)
+### Full workflow: briefing + drafts (auto-learns first)
 
 ```
 /mail-review
@@ -379,7 +220,7 @@ Reply drafts are presented as text in the conversation (not auto-injected into O
 /mail-review --unread
 ```
 
-### Learning mode only — process pending drafts
+### Learning mode only: process pending drafts
 
 ```
 /mail-review --learn

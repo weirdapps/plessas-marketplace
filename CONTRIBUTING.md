@@ -44,7 +44,7 @@ bash installers/pii-gauntlet.sh --mode=ci
 ## Code style
 
 - **Bash**: targeted at `bash 4+` (macOS ships with bash 3 — install `bash` from Homebrew if you contribute on macOS). Use `set -euo pipefail`.
-- **Python**: 3.11+, type hints encouraged.
+- **Python**: 3.12+, type hints encouraged. The floor is set by `numpy >= 2.5.2`, which is itself `requires-python >=3.12`.
 - **TypeScript** (MCP servers): strict mode, no `any`. Match the existing tsconfig.
 - **Markdown**: prefer line breaks every ~100 chars but don't enforce. Use GitHub-flavored markdown.
 

@@ -25,8 +25,8 @@ See the brand system for complete specifications. This agent implements those sp
 6. **Tight Boxes**: Size text boxes to fit content, not oversized
 7. **Zero Margins**: All text boxes use `margin: 0` for precise positioning
 8. **Action Titles**: Titles are insight-driven sentences, not labels
-9. **No Data Invention**: Use EXACTLY the data points provided in the brief. Never extrapolate, estimate, or fill in quarters/periods/categories that don't exist in the source. If a chart or reference table seems to want more data than the brief contains, **ask** — never invent additional historical quarters, percentages, or context values to "make the table look richer". When in doubt: "Use ONLY these N values. Do not add, extrapolate, or invent additional data points."
-10. **No Invented Names**: Never guess names of NBG executives, division heads, or organisational roles. If the brief doesn't name someone, use a generic framing (`NBG [Division] leadership`, `the relevant [Division] head`) — never fabricate.
+9. **No Data Invention**: Use EXACTLY the data points provided in the brief. Never extrapolate, estimate, or fill in quarters/periods/categories that don't exist in the source. If a chart or reference table seems to want more data than the brief contains, **ask**, never invent additional historical quarters, percentages, or context values to "make the table look richer". When in doubt: "Use ONLY these N values. Do not add, extrapolate, or invent additional data points."
+10. **No Invented Names**: Never guess names of NBG executives, division heads, or organisational roles. If the brief doesn't name someone, use a generic framing (`NBG [Division] leadership`, `the relevant [Division] head`), never fabricate.
 11. **No Em-Dashes**: Replace every `—` and `--` with comma, colon, semicolon, or full stop. Em-dashes signal AI authorship. Audit every spec/storyboard output before render. Same for en-dashes used parenthetically; date ranges like `2024-2025` are fine.
 
 ---
@@ -131,7 +131,7 @@ const PAGE_NUMBER_EMU = {
 
 ```javascript
 const LAYOUT = {
-  left: 0.37,
+  left: 0.374,
   contentWidth: 12.59,
   topTitle: 0.5,
   topContent: 1.1,  // Body starts close to title
@@ -142,7 +142,7 @@ const LAYOUT = {
   pageNumber: { x: 12.71, y: 7.1554, w: 0.33, h: 0.152 },  // Equal margins from right & bottom
 
   cover: { titleY: 1.39, subtitleY: 2.27, locationY: 4.58, dateY: 4.97 },
-  divider: { numberX: 0.37, titleX: 1.86, centerY: 2.84 },
+  divider: { numberX: 0.374, titleX: 1.574, centerY: 2.84 },  // 0.374 + 1.2 number box
   content: { titleY: 0.5, titleH: 0.4, bodyY: 1.1 },  // Tight title box
 };
 ```
@@ -168,7 +168,7 @@ Titles must be **insight-driven sentences**, not labels. They should communicate
 ```javascript
 // Title text box - ALWAYS use these settings
 slide.addText(title, {
-  x: 0.37,
+  x: 0.374,
   y: 0.5,
   w: 12.59,
   h: 0.4,           // Tight box height for single line
@@ -200,7 +200,7 @@ function createCoverSlide(pptx, { title, subtitle, location, date }) {
 
   // Title (48pt Dark Teal)
   slide.addText(title, {
-    x: 0.37, y: 1.39, w: 7.86, h: 1.00,
+    x: 0.374, y: 1.39, w: 7.86, h: 1.00,
     fontFace: 'Aptos', fontSize: 48, color: '003841',
     valign: 'top', margin: 0,
   });
@@ -208,7 +208,7 @@ function createCoverSlide(pptx, { title, subtitle, location, date }) {
   // Subtitle (36pt NBG Teal) - User preference: 36pt not 48pt
   if (subtitle) {
     slide.addText(subtitle, {
-      x: 0.37, y: 2.27, w: 7.86, h: 0.80,
+      x: 0.374, y: 2.27, w: 7.86, h: 0.80,
       fontFace: 'Aptos', fontSize: 36, color: '007B85',
       valign: 'top', margin: 0,
     });
@@ -217,7 +217,7 @@ function createCoverSlide(pptx, { title, subtitle, location, date }) {
   // Location (14pt Dark Teal)
   if (location) {
     slide.addText(location, {
-      x: 0.37, y: 4.58, w: 4, h: 0.4,
+      x: 0.374, y: 4.58, w: 4, h: 0.4,
       fontFace: 'Aptos', fontSize: 14, color: '003841',
       valign: 'top', margin: 0,
     });
@@ -226,13 +226,13 @@ function createCoverSlide(pptx, { title, subtitle, location, date }) {
   // Date (14pt Gray)
   if (date) {
     slide.addText(date, {
-      x: 0.37, y: 4.97, w: 4, h: 0.4,
+      x: 0.374, y: 4.97, w: 4, h: 0.4,
       fontFace: 'Aptos', fontSize: 14, color: '939793',
       valign: 'top', margin: 0,
     });
   }
 
-  addLogo(slide, 'small');
+  addLogo(slide, 'large');   // covers get LOGO_LARGE (style guide Standard #17)
   return slide;
 }
 ```
@@ -245,16 +245,16 @@ function createDividerSlide(pptx, { number, title }) {
   slide.background = { color: 'FFFFFF' };
 
   slide.addText(String(number).padStart(2, '0'), {
-    x: 0.37, y: 2.84, w: 1.2, h: 1.0,
+    x: 0.374, y: 2.84, w: 1.2, h: 1.0,
     fontFace: 'Aptos', fontSize: 60, color: '007B85', margin: 0,
   });
 
   slide.addText(title, {
-    x: 1.86, y: 2.84, w: 9.5, h: 1.0,
+    x: 1.574, y: 2.84, w: 9.5, h: 1.0,   // number box right edge: 0.374 + 1.2
     fontFace: 'Aptos', fontSize: 48, color: '003841', margin: 0,
   });
 
-  addLogo(slide, 'small');
+  addLogo(slide, 'large');   // dividers get LOGO_LARGE (style guide Standard #17)
   // NO page number on dividers
   return slide;
 }
@@ -269,7 +269,7 @@ function createContentSlide(pptx, { title, bullets }) {
 
   // Title: tight box, top-aligned
   slide.addText(title, {
-    x: 0.37, y: 0.5, w: 12.59, h: 0.4,
+    x: 0.374, y: 0.5, w: 12.59, h: 0.4,
     fontFace: 'Aptos', fontSize: 24, color: '003841',
     valign: 'top', margin: 0,  // ALWAYS top-aligned
   });
@@ -285,7 +285,7 @@ function createContentSlide(pptx, { title, bullets }) {
     }));
 
     slide.addText(bulletText, {
-      x: 0.37, y: 1.1, w: 12.59, h: 5.2,
+      x: 0.374, y: 1.1, w: 12.59, h: 5.2,
       valign: 'top', margin: 0,  // ALWAYS top-aligned
     });
   }
@@ -305,7 +305,7 @@ function createContentsSlide(pptx, sections) {
 
   // Header
   slide.addText('Contents', {
-    x: 0.37, y: 0.36, w: 10, h: 0.70,
+    x: 0.374, y: 0.36, w: 10, h: 0.70,
     fontFace: 'Aptos', fontSize: 32, color: '003841',
     bold: true, valign: 'top', margin: 0,
   });
@@ -316,7 +316,7 @@ function createContentsSlide(pptx, sections) {
 
     // Number (01, 02, etc.)
     slide.addText(String(i + 1).padStart(2, '0'), {
-      x: 0.37, y, w: 0.60, h: 0.60,
+      x: 0.374, y, w: 0.60, h: 0.60,
       fontFace: 'Aptos', fontSize: 18, color: '007B85',
       bold: true, valign: 'top', margin: 0,
     });
@@ -350,8 +350,8 @@ function addMetricCard(slide, { x, y, value, label, w = 1.40, h = 0.80 }) {
   slide.addShape(pptx.ShapeType.roundRect, {
     x, y, w, h,
     fill: { color: 'F5F8F6' },  // Light background
-    line: { color: '333333', pt: 1 },
-    rectRadius: 0.05,
+    line: { color: 'BEC1BE', pt: 1 },
+    rectRadius: 0.04,   // Standard #12: tight corners, not the ~0.167 default
   });
 
   // Value (18pt bold teal)
@@ -361,10 +361,10 @@ function addMetricCard(slide, { x, y, value, label, w = 1.40, h = 0.80 }) {
     bold: true, align: 'center', valign: 'middle', margin: 0,
   });
 
-  // Label (9pt dark text)
+  // Label (12pt dark text, style guide Standard #11 minimum)
   slide.addText(label, {
     x, y: y + (h * 0.55), w, h: h * 0.35,
-    fontFace: 'Aptos', fontSize: 9, color: '202020',
+    fontFace: 'Aptos', fontSize: 12, color: '202020',
     align: 'center', valign: 'top', margin: 0,
   });
 }
@@ -403,7 +403,7 @@ function createBackCoverSlide(pptx) {
 
 ```javascript
 slide.addChart(pptx.ChartType.bar, chartData, {
-  x: 0.37, y: 1.3, w: 8.0, h: 4.8,
+  x: 0.374, y: 1.3, w: 8.0, h: 4.8,
   barDir: 'col',  // Use 'col' for vertical columns
   chartColors: [NBG.colors.cyan],
 
@@ -432,20 +432,20 @@ slide.addChart(pptx.ChartType.bar, chartData, {
 
 When comparing the four Greek systemic banks, you **MUST**:
 
-1. **Use each bank's official brand color** — never use generic chart colors
-2. **Build bar charts with manual shapes (NOT chart engine)** — guarantees pixel-perfect logo alignment
-3. **Replace text axis labels with bank logos** — centered under each bar
-4. **Preserve NBG logo's oval aspect ratio** (96x62px, ratio 1.55:1) — NEVER squish to square
+1. **Use each bank's official brand color**: never use generic chart colors
+2. **Build bar charts with manual shapes (NOT chart engine)**: guarantees pixel-perfect logo alignment
+3. **Replace text axis labels with bank logos**: centered under each bar
+4. **Preserve NBG logo's oval aspect ratio** (96x62px, ratio 1.55:1), NEVER squish to square
 
-**WHY manual shapes?** PptxGenJS's chart engine uses automatic plot area layout with unpredictable internal padding. Logos placed outside the chart cannot be reliably centered with bars. Manual shapes give exact coordinate control — bars and logos share the same `centerX`, guaranteeing perfect alignment.
+**WHY manual shapes?** PptxGenJS's chart engine uses automatic plot area layout with unpredictable internal padding. Logos placed outside the chart cannot be reliably centered with bars. Manual shapes give exact coordinate control: bars and logos share the same `centerX`, guaranteeing perfect alignment.
 
 ```javascript
 // Official brand colors (from pillar-ds.md)
 const BANK_COLORS = {
   NBG: '007B85',        // NBG Teal
-  Eurobank: 'CA2029',   // Eurobank Red
-  Piraeus: 'FDB913',    // Piraeus Yellow
-  Alpha: '02509C',      // Alpha Bank Blue
+  Eurobank: 'DC2646',   // Eurobank Red
+  Piraeus: 'FFC02D',    // Piraeus Yellow
+  Alpha: '0D488B',      // Alpha Bank Blue
 };
 
 // NBG logo is oval (96x62) — always use correct aspect ratio
@@ -473,7 +473,7 @@ function addBankLogo(slide, bankKey, centerX, centerY, targetH) {
 // DO NOT use pptx.ChartType.bar for bank comparisons.
 // Build with shapes for guaranteed logo-bar alignment.
 
-const chartArea = { x: 0.37, y: 1.3, w: 5.8, h: 4.8 };
+const chartArea = { x: 0.374, y: 1.3, w: 5.8, h: 4.8 };
 const barData = [
   { bank: 'NBG', value: 9.8, color: BANK_COLORS.NBG },
   { bank: 'Eurobank', value: 9.2, color: BANK_COLORS.Eurobank },
@@ -517,9 +517,9 @@ barData.forEach((d, i) => {
 
 **Key rules:**
 
-- `barCenterX` is shared between bar and logo — this is what guarantees alignment
+- `barCenterX` is shared between bar and logo; this is what guarantees alignment
 - `addBankLogo()` handles NBG's oval aspect ratio automatically
-- Use `addBankLogo()` in tables too — never manually size bank logos
+- Use `addBankLogo()` in tables too, never manually size bank logos
 
 **Logo files** (in `assets/bank-logos/`):
 
@@ -534,7 +534,7 @@ barData.forEach((d, i) => {
 
 ```javascript
 slide.addChart(pptx.ChartType.doughnut, chartData, {
-  x: 0.37, y: 1.4, w: 5.5, h: 4.5,
+  x: 0.374, y: 1.4, w: 5.5, h: 4.5,
   chartColors: [NBG.colors.cyan, NBG.colors.darkTeal],
 
   holeSize: 55, showLabel: false, showPercent: true,
@@ -552,7 +552,7 @@ slide.addChart(pptx.ChartType.doughnut, chartData, {
 
 ```javascript
 slide.addChart(pptx.ChartType.line, chartData, {
-  x: 0.37, y: 1.4, w: 7.0, h: 3.8,
+  x: 0.374, y: 1.4, w: 7.0, h: 3.8,
   chartColors: [NBG.colors.alert],
 
   lineSize: 3, lineSmooth: true, lineDash: 'solid',
@@ -724,15 +724,23 @@ When slides require iPhone device mockups:
 ### Invoke the Device Mockup Agent
 
 ```bash
-python tools/device-mockup/iphone_mockup.py screenshot.png output.png --frame 16_pro_max_black
+"${CLAUDE_PLUGIN_ROOT}/bundled/creative/tools/device-mockup/.venv/bin/python3" \
+  "${CLAUDE_PLUGIN_ROOT}/bundled/creative/tools/device-mockup/iphone_mockup.py" \
+  screenshot.png output.png --frame 16_pro_max_black
 ```
+
+The venv is built by `installers/install.sh`. If `.venv/bin/python3` is missing the plugin was not
+installed through the installer: say so rather than falling back to a bare `python3`, which will not
+have Pillow.
 
 ### Frame Dimensions Reference
 
 | Frame | Output Size | Screen Area |
 |-------|-------------|-------------|
-| 16 Pro Max | 1520 x 3068 px | 1320 x 2868 px |
-| 16 Pro | 1320 x 2794 px | 1170 x 2594 px |
+| 16 Pro Max (`black`, `natural`, `white`, `desert`) | 1520 x 3068 px | 1320 x 2868 px |
+| 16 Pro (`black`, `natural`) | 1406 x 2822 px | 1206 x 2622 px |
+
+Measured from the transparent region of each frame PNG, not from the spec sheet. `test_iphone_mockup.py` re-measures every PNG in CI and fails on drift, so do not hand-edit these numbers: re-measure instead.
 
 ### Mockup Sizing for Slides
 
@@ -785,7 +793,7 @@ Frame specifications:
 **Dimensions & Layout**
 
 - [ ] Slide: 13.33" x 7.5" (LAYOUT_WIDE)
-- [ ] Margins: 0.37" sides
+- [ ] Margins: 0.374" sides
 - [ ] Small logo on content slides (0.822" x 0.236")
 - [ ] Page numbers on content slides only
 
@@ -836,7 +844,7 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.pptx`
 
 - [ ] Cover text uses explicit colors (never inherited/theme)
 - [ ] Cover title: Dark Teal `003841`
-- [ ] Cover subtitle: NBG Teal `007B85`, lists units (`Cards | GoForMore | ...`) — NOT "Cards and Digital Business"
+- [ ] Cover subtitle: NBG Teal `007B85`, lists units (`Cards | GoForMore | ...`), NOT "Cards and Digital Business"
 - [ ] No light text on light backgrounds
 - [ ] No dark text on dark backgrounds
 
@@ -876,7 +884,7 @@ Output filenames MUST follow: `YYYYMMDDHHMM_descriptive_name.pptx`
 
 - [ ] No content element extends below y=6.85" (footer exclusion zone)
 - [ ] No content element starts above y=1.1" (unless it IS the title/bumper)
-- [ ] No element exceeds left margin (x ≥ 0.37") or right margin (x+w ≤ 12.96")
+- [ ] No element exceeds the 0.374" left gutter, or the right edge in `brand-system/dimensions.md`
 - [ ] Footnotes/captions placed at y=6.5" maximum
 - [ ] Charts/tables bottom edge clears 6.85" with breathing room
 

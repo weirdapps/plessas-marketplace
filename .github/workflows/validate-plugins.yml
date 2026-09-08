@@ -69,14 +69,16 @@ jobs:
       - name: Validate command frontmatter
         run: |
           errors=0
-          for cmd_file in plugins/*/commands/*.md; do
-            if [ -f "$cmd_file" ]; then
-              if ! head -1 "$cmd_file" | grep -q "^---$"; then
-                echo "$cmd_file missing frontmatter"
-                errors=$((errors + 1))
-              fi
+          # `find`, not `plugins/*/commands/*.md`. The one-level glob could not
+          # see plugins/decks/bundled/creative/commands/, so three shipped
+          # commands went unchecked here, in rename-guard.yml and in
+          # validate_consistency.py all at once.
+          while IFS= read -r cmd_file; do
+            if ! head -1 "$cmd_file" | grep -q "^---$"; then
+              echo "$cmd_file missing frontmatter"
+              errors=$((errors + 1))
             fi
-          done
+          done < <(find plugins -path '*/commands/*.md' -not -path '*/node_modules/*')
           [ $errors -eq 0 ] && echo "All command files have frontmatter" || exit 1
 
       - name: Validate skill frontmatter

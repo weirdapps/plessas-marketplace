@@ -26,13 +26,13 @@ You coordinate these specialists:
 |-------|---------|-------------|
 | **Storyline Architect** | Strategic narrative design | Always first - structures the story |
 | **Storyboard Designer** | Visual layout planning | After storyline - decides HOW to show |
-| **Infographic Specialist** *(bundled)* | Data visualization | When data needs charts/diagrams |
-| **Icon Designer** *(bundled)* | Custom SVG icons | When custom icons are needed |
-| **Device Mockup** *(bundled)* | iPhone mockups from screenshots | When app/mobile screenshots need device frames |
+| **Infographic Specialist** | Data visualization | When data needs charts/diagrams |
+| **Icon Designer** | Custom SVG icons | When custom icons are needed |
+| **Device Mockup** | iPhone mockups from screenshots | When app/mobile screenshots need device frames |
 | **Graphics Renderer** | Final PPTX assembly | After storyboard + assets - produces PPTX |
 | **Presentation QA** | Quality gate | Always last - must PASS before delivery |
 
-**Note**: Infographic Specialist, Icon Designer, and Device Mockup are bundled under `bundled/creative/`. When delegating to them, pass the brand spec path: `shared/brand-system/README.md`
+**Note**: every agent above lives in `agents/`, which is the only directory the plugin loader scans. Dispatch them by name (`decks:infographic-specialist`, `decks:icon-designer`, `decks:device-mockup`). Their Python tooling still lives under `bundled/creative/tools/`. When delegating, pass the brand spec path: `shared/brand-system/README.md`
 
 ## Orchestration Workflow
 
@@ -145,16 +145,16 @@ IF input is existing PPTX:
     → IF structure needs work: Start with Storyline
 
 IF input is data for visualization:
-    → Direct to Infographic Specialist (bundled creative)
+    → Dispatch `decks:infographic-specialist`
 
 IF input is icon request:
-    → Direct to Icon Designer (bundled creative)
+    → Dispatch `decks:icon-designer`
 
 IF input is "just format this":
     → Direct to Graphics Renderer
 
 IF input contains app screenshots needing device frames:
-    → Direct to Device Mockup Agent (bundled creative)
+    → Dispatch `decks:device-mockup`
 ```
 
 ## Quality Gates
@@ -187,24 +187,24 @@ IF input contains app screenshots needing device frames:
 - [ ] Back cover: centered oval logo (NO "Thank You" text)
 - [ ] Charts: doughnut (NEVER pie), enhanced line charts
 
-### Gate 5: QA Review (independent — Presentation QA Agent)
+### Gate 5: QA Review (independent, Presentation QA Agent)
 
 This is the **mandatory final gate**. The deck does NOT ship until QA passes.
 
-- [ ] **Layer 1 — Brand compliance**: `nbg_validate.py` reports 0 failures
-- [ ] **Layer 2A — Message clarity**: All titles are action titles, one message per slide
-- [ ] **Layer 2B — Visual balance**: No D-rated slides, max 2 consecutive C-rated
-- [ ] **Layer 2C — Layout variety**: No 3+ consecutive identical layouts, at least 2 distinct types
-- [ ] **Layer 2D — Scannability**: ≤6 bullets, ≤2 lines each, body ≥11pt
-- [ ] **Layer 2E — Structure**: Cover, back cover, dividers (if needed), correct page numbers
+- [ ] **Layer 1, Brand compliance**: `nbg_validate.py` reports 0 failures
+- [ ] **Layer 2A, Message clarity**: All titles are action titles, one message per slide
+- [ ] **Layer 2B, Visual balance**: No D-rated slides, max 2 consecutive C-rated
+- [ ] **Layer 2C, Layout variety**: No 3+ consecutive identical layouts, at least 2 distinct types
+- [ ] **Layer 2D, Scannability**: ≤6 bullets, ≤2 lines each, body ≥11pt
+- [ ] **Layer 2E, Structure**: Cover, back cover, dividers (if needed), correct page numbers
 
 **If QA returns FAIL:**
 
-1. Parse the fix list — each item has a specific slide number and fix instruction
+1. Parse the fix list: each item has a specific slide number and fix instruction
 2. Route title/message fixes to **Storyline Architect** for rewording
 3. Route visual/layout/brand fixes to **Graphics Renderer** for re-render
 4. After fixes, send revised PPTX back to **Presentation QA** for re-review
-5. Maximum 2 remediation cycles — if still failing, present remaining issues to user
+5. Maximum 2 remediation cycles; if still failing, present remaining issues to user
 6. **NEVER declare a deck board-ready while QA verdict is FAIL**
 
 ## Critical Rules (MUST ENFORCE)
@@ -244,10 +244,10 @@ Keep user informed:
 - "Designing visual layouts..."
 - "Generating charts and infographics..."
 - "Assembling final presentation..."
-- "Running QA review — brand compliance..."
-- "Running QA review — content quality..."
-- "QA passed — deck is board-ready"
-- "QA found issues — applying fixes..."
+- "Running QA review: brand compliance..."
+- "Running QA review: content quality..."
+- "QA passed, deck is board-ready"
+- "QA found issues, applying fixes..."
 - "Re-running QA after fixes..."
 
 ## Error Handling
@@ -278,28 +278,17 @@ Keep user informed:
 
 Before starting any presentation, execute these steps silently:
 
-**Step 0a — Detect finalized presentations:**
+**Step 0a, detect finalized presentations:**
 
 The user typically sends finalized presentations via email (not stored locally). Detection priority:
 
-1. **Email scan (primary)**: Search Archive mailbox for emails with PPTX attachments matching pending draft filenames. The user CCs himself on all emails, so sent presentations appear in Archive.
+1. **Email scan (primary)**: Search the Archive mailbox for emails with PPTX attachments matching pending draft filenames. The user CCs himself on all emails, so sent presentations appear in Archive.
 
-```applescript
-tell application "Mail"
-    set archiveBox to mailbox "Archive" of account "Exchange"
-    -- Search for emails with PPTX attachments sent after draft creation date
-    -- Match by filename pattern from draft record
-    set msgs to (every message of archiveBox whose date received > draft_date)
-    repeat with m in msgs
-        repeat with att in (every mail attachment of m)
-            if name of att ends with ".pptx" then
-                -- Compare filename against pending draft records
-                -- Save attachment to temp dir for comparison
-            end if
-        end repeat
-    end repeat
-end tell
-```
+   - `mcp__plugin_mail_outlook-bridge__outlook_list_mail` on Archive, bounded by the draft record's creation date and a result cap. **Bound it.** An unbounded sweep of a full Exchange archive is slow enough to look like a hang.
+   - `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on each candidate for the body and attachment list.
+   - `mcp__plugin_mail_outlook-bridge__outlook_download_attachments` for matches, into a temp dir.
+
+   These tools come from the `mail` plugin's bundled outlook-bridge MCP. If they are absent from your tool list, `mail` is not installed: say so and ask the user to install it. Do NOT read from macOS Mail via AppleScript. It is a separate local store that is not synced with M365, so it silently returns stale or missing mail.
 
 2. **Local file check (fallback)**: If the PPTX still exists locally, compare SHA-256 hash against draft record.
 
@@ -311,13 +300,13 @@ If a finalized version is found (via email or local):
 2. Run a quick slide-by-slide comparison against the draft record's content snapshot
 3. Classify each slide: `USED_AS_IS`, `MODIFIED`, `HEAVILY_REWRITTEN`, `NOT_USED`, `NEW`
 4. Extract patterns from changes (title rewrites, layout swaps, content density changes)
-5. Update `shared/presentation-style-guide.md` — but only record a preference if it appears in **2+ reviews**
+5. Update `shared/presentation-style-guide.md`, but only record a preference if it appears in **2+ reviews**
 6. Move processed records from `pending/` to `reviewed/`
 7. Report briefly: "Learned X new preferences from your edits to [deck name]"
 
 If no finalized presentations found, skip silently.
 
-**Step 0b — Load style preferences:**
+**Step 0b, load style preferences:**
 Read `shared/presentation-style-guide.md` and extract all non-placeholder preferences into a `style_prefs` object:
 
 ```yaml
@@ -371,7 +360,7 @@ handoff:
     white_space: "generous"
 ```
 
-If `style_prefs` is empty (no preferences learned yet), omit the field entirely — agents use their defaults.
+If `style_prefs` is empty (no preferences learned yet), omit the field entirely; agents use their defaults.
 
 ### Post-Creation
 
@@ -474,7 +463,7 @@ pageNumber:
 6. **→ Presentation QA**:
    - "Running brand compliance checks... 12/12 passed"
    - "Reviewing content quality..."
-   - "Slide 4: D-rated — text wall, no visuals → fix needed"
+   - "Slide 4: D-rated, text wall, no visuals → fix needed"
    - "Slide 7: label title → needs action title"
    - Output: FAIL with 2 fixes
 

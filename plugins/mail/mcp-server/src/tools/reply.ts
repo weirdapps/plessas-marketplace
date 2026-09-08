@@ -97,7 +97,8 @@ export const replyTool: Tool = {
   handler: async (args: ReplyArgs) => {
     const { cliArgs, cleanup } = await buildReplyCliArgs('reply', args);
     try {
-      return await runOutlookCli(cliArgs);
+      // Not idempotent: a retried exit 5 can send the reply twice.
+      return await runOutlookCli(cliArgs, { idempotent: false });
     } finally {
       await cleanupTemp(cleanup);
     }
@@ -113,7 +114,8 @@ export const replyAllTool: Tool = {
   handler: async (args: ReplyArgs) => {
     const { cliArgs, cleanup } = await buildReplyCliArgs('reply-all', args);
     try {
-      return await runOutlookCli(cliArgs);
+      // Not idempotent: a retried exit 5 can send the reply twice.
+      return await runOutlookCli(cliArgs, { idempotent: false });
     } finally {
       await cleanupTemp(cleanup);
     }

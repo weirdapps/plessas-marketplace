@@ -1,0 +1,11 @@
+// Typecheck-only config: the base tsconfig scopes `include` to src/** so that
+// `tsc` emits exactly dist/, which leaves tests/** unchecked. This adds them
+// without touching build output. Run it with `npm run typecheck`.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

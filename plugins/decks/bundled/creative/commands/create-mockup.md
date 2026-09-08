@@ -18,11 +18,14 @@ User request: $ARGUMENTS
 3. **Run mockup tool**: Execute the iphone_mockup.py script from the plugin's tools directory:
 
    ```bash
-   # Find the plugin root (directory containing this command file, two levels up)
-   PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-   cd "$PLUGIN_ROOT/tools/device-mockup"
-   python iphone_mockup.py "<screenshot-path>" [output.png] [--frame FRAME_KEY]
+   cd "${CLAUDE_PLUGIN_ROOT}/bundled/creative/tools/device-mockup"
+   ./.venv/bin/python3 iphone_mockup.py "<screenshot-path>" [output.png] [--frame FRAME_KEY]
    ```
+
+   `${CLAUDE_PLUGIN_ROOT}` is the plugin's own root; do not try to derive it from `$0`, which is not
+   set in a command prompt. The venv is built by `installers/install.sh`. If `.venv/bin/python3` is
+   missing, tell the user to run the installer rather than falling back to a bare `python3`, which
+   will not have Pillow.
 
 4. **Report result**: Show the output path and mockup dimensions
 

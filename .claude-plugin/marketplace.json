@@ -1,54 +1,71 @@
 {
   "name": "plessas-marketplace",
-  "description": "Cross-platform Claude Code plugins for productivity at NBG: decks, mail, meetings, chat, excel, docs.",
   "owner": {
-    "name": "weirdapps"
+    "name": "weirdapps",
+    "url": "https://github.com/weirdapps"
   },
-  "metadata": {
-    "version": "2.1.0"
-  },
+  "description": "Cross-platform Claude Code plugins for productivity at NBG: decks, mail, meetings, chat, excel, docs.",
+  "version": "2.2.0",
   "plugins": [
     {
       "name": "decks",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "presentations",
       "source": "./plugins/decks",
-      "description": "Branded presentation system with storyline, storyboard, graphics, QA agents. Bundles icon, infographic, device-mockup creative tools."
+      "description": "Branded presentation system with storyline, storyboard, graphics, QA agents. Bundles icon, infographic, device-mockup creative tools.",
+      "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/decks",
+      "repository": "https://github.com/weirdapps/plessas-marketplace",
+      "license": "MIT"
     },
     {
       "name": "mail",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "communications",
       "source": "./plugins/mail",
-      "description": "Outlook mail with bundled outlook-cli MCP wrapper. Read, draft, triage, style-match, briefings, self-learning."
+      "description": "Outlook mail with bundled outlook-cli MCP wrapper. Read, draft, triage, style-match, briefings, self-learning.",
+      "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/mail",
+      "repository": "https://github.com/weirdapps/plessas-marketplace",
+      "license": "MIT"
     },
     {
       "name": "meetings",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "communications",
       "source": "./plugins/meetings",
-      "description": "Calendar-aware meeting briefings with attendee dossiers, post-meeting decision capture."
+      "description": "Calendar-aware meeting briefings with attendee dossiers, post-meeting decision capture.",
+      "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/meetings",
+      "repository": "https://github.com/weirdapps/plessas-marketplace",
+      "license": "MIT"
     },
     {
       "name": "chat",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "communications",
       "source": "./plugins/chat",
-      "description": "Microsoft Teams interactive commands with bundled teams-bridge MCP. Inbox, reply, summarize, channel digest."
+      "description": "Microsoft Teams interactive commands with bundled teams-bridge MCP. Inbox, reply, summarize, channel digest.",
+      "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/chat",
+      "repository": "https://github.com/weirdapps/plessas-marketplace",
+      "license": "MIT"
     },
     {
       "name": "excel",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "analysis",
       "source": "./plugins/excel",
-      "description": "Excel analysis: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx."
+      "description": "Excel analysis: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx.",
+      "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/excel",
+      "repository": "https://github.com/weirdapps/plessas-marketplace",
+      "license": "MIT"
     },
     {
       "name": "docs",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "documents",
       "source": "./plugins/docs",
-      "description": "Word document creation: reports, formal letters, internal memos. Wraps document-skills:docx."
+      "description": "Word document creation: reports, formal letters, internal memos. Wraps document-skills:docx.",
+      "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/docs",
+      "repository": "https://github.com/weirdapps/plessas-marketplace",
+      "license": "MIT"
     }
   ]
 }

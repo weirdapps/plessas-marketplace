@@ -11,7 +11,9 @@ export const listMessagesTool: Tool = {
       team_id: { type: 'string', description: 'Team ID (for channel messages, with channel_id).' },
       channel_id: { type: 'string', description: 'Channel ID (with team_id).' },
       top: { type: 'integer', minimum: 1, maximum: 100, description: 'Max messages to return.' },
-      since: { type: 'string', description: 'ISO-8601 UTC timestamp — only messages after this.' },
+      // No `since`: teams-cli has no time filter, so advertising one made callers
+      // report a period the data never covered. Use `top` and read the actual
+      // timestamps back off the returned messages.
     },
     additionalProperties: false,
   },
@@ -20,7 +22,9 @@ export const listMessagesTool: Tool = {
     // --team, --channel, --page-size. These were --chat-id / --team-id /
     // --channel-id / --top / --since, none of which commander accepts (there is
     // no allowUnknownOption), so every call failed on argument parsing.
-    // --since has no CLI equivalent at all and is dropped rather than faked.
+    // --since has no CLI equivalent at all. It is now gone from the inputSchema
+    // too: while it was advertised but ignored, callers built a "last N hours"
+    // window on it and reported a period the results never covered.
     const cliArgs = ['list-messages'];
     if (args.chat_id) cliArgs.push('--chat', args.chat_id);
     if (args.team_id) cliArgs.push('--team', args.team_id);

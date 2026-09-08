@@ -27,14 +27,14 @@
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | Title | Aptos | 48pt | #003841 | Regular |
-| Subtitle (NBG-template covers — `13_Cover` etc.) | Aptos | **24pt** | #007B85 | Regular |
-| Subtitle (clean DIY cover on Blank — pipe-separated units list) | Aptos | **24pt** | #007B85 | Regular |
+| Subtitle (NBG-template covers, `13_Cover` etc.) | Aptos | **24pt** | #007B85 | Regular |
+| Subtitle (clean DIY cover on Blank, pipe-separated units list) | Aptos | **24pt** | #007B85 | Regular |
 | Location | Aptos | 14pt | #003841 | Regular |
 | Date | Aptos | 14pt | #939793 | Regular |
 
 **Pipe-separated units list** (clean DIY cover signature, observed in NBG executive reference decks):
 `Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls`
-The full unit list is the subtitle — NOT a generic "Cards and Digital Business" string.
+The full unit list is the subtitle, NOT a generic "Cards and Digital Business" string.
 
 ### Divider Slide
 
@@ -47,25 +47,29 @@ The full unit list is the subtitle — NOT a generic "Cards and Digital Business
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| "Contents" Header | Aptos | **32pt** | #003841 | Bold |
+| "Contents" Header | Aptos | **24pt** | #003841 | Regular |
 | Section Number | Aptos | **18pt** | #007B85 | Bold |
 | Section Title | Aptos | **16pt** | #003841 | Bold |
-| Section Description | Aptos | **12pt** | #595959 | Regular |
+| Section Description | Aptos | **12pt** | #5A5F5A | Regular |
 
 ### Content Slide
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | **Action Title** | Aptos | **24pt** | #003841 | Regular |
-| Body Text | Aptos | 11pt | #202020 | Regular |
+| Body Text | Aptos | **14pt** | #202020 | Regular |
 | Bullet L1 | Aptos | 14pt | #202020 | Regular |
-| Bullet L2 | Aptos | 12pt | #202020 | Regular |
-| Bullet L3 | Aptos | 11pt | #202020 | Regular |
-| Footnotes | Aptos | 8pt | #939793 | Regular |
+| Bullet L2 | Aptos | 14pt | #202020 | Regular |
+| Bullet L3 | Aptos | 14pt | #202020 | Regular |
+| Footnotes | Aptos | 11pt | #939793 | Regular |
 
-### Metric Cards (KPIs) — NBG executive signature pattern
+Every bullet level sits at the 14pt body minimum. Separate the levels by indent and bullet
+character, not by shrinking the type. Sizes in this file are the specified values; the
+per-element floors they must clear live in `presentation-style-guide.md` Standard #11.
 
-Used for "Key Figures" slides — 3-up cards (3.5" × 3.0", `#F5F8F6` fill). Observed 30+ times across reference decks.
+### Metric Cards (KPIs): NBG executive signature pattern
+
+Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill). Observed 30+ times across reference decks.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
@@ -74,7 +78,7 @@ Used for "Key Figures" slides — 3-up cards (3.5" × 3.0", `#F5F8F6` fill). Obs
 
 Examples of KPI big-number text (typical NBG executive deck): `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`.
 
-Caption is the metric label — short, lowercase or sentence case, no period: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
+Caption is the metric label. Keep it short, lowercase or sentence case, no period: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
 
 **Note**: earlier brand-system drafts used `#003841` for the KPI value; the actual NBG executive pattern is `#007B85` (NBG Teal). Bold + Teal makes the big number pop without competing with the dark-teal title above.
 
@@ -84,7 +88,7 @@ Used on Key Figures / Progress & Priorities slides.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| Unit pill (rounded chip — "Cards", "Digital Banking") | Aptos | **16pt** | `#FFFFFF` on `#003841` fill | **Bold** |
+| Unit pill (rounded chip: "Cards", "Digital Banking") | Aptos | **16pt** | `#FFFFFF` on `#003841` fill | **Bold** |
 | Section title (next to unit pill) | Aptos | **22pt** | `#003841` | Regular |
 | Owner subtitle ("Head: A. Smith") | Aptos | **14pt** | `#5A5F5A` | Regular |
 
@@ -104,21 +108,18 @@ Used on Progress & Priorities slides.
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | Chart Title | Aptos | **12pt** | #202020 | Bold |
-| Chart Labels | Aptos | 10pt | #202020 | Regular |
-| Chart Values | Aptos | 10pt | #202020 | Bold |
-| Table Header (NBG executive pattern) | Aptos | **10.5pt** | `#FFFFFF` on `#003841` fill | **Bold** |
+| Chart Labels | Aptos | 11pt | #202020 | Regular |
+| Chart Values | Aptos | 11pt | #202020 | Bold |
+| Table Header (NBG executive pattern) | Aptos | **12pt** | `#FFFFFF` on `#003841` fill | **Bold** |
 | Table First Column (label) | Aptos | **12pt** | `#202020` | **Bold** |
-| Table Body Cell | Aptos | **10.5pt** | `#202020` | Regular |
+| Table Body Cell | Aptos | **12pt** | `#202020` | Regular |
 | Table Numeric Cell | Aptos | **12pt** | `#202020` | Regular |
-| Table Notes (footnote) | Aptos | **10pt** | `#5A5F5A` | Regular |
-| In-cell positive emphasis ("+1") | Aptos | 10.5pt | `#007B85` | Bold |
-| In-cell priority flag ("H2") | Aptos | 10.5pt | `#CC9900` | Bold |
+| Table Notes (footnote) | Aptos | **11pt** | `#5A5F5A` | Regular |
+| In-cell positive emphasis ("+1") | Aptos | 12pt | `#007B85` | Bold |
+| In-cell priority flag ("H2") | Aptos | 12pt | `#CC9900` | Bold |
 
-**Executive table styling rules** (from reference NBG decks):
-
-- Zebra rows: alternate `#FFFFFF` and `#F5F8F6`
-- NO custom border overrides (default thin)
-- Status emphasis goes in-cell (color + bold), NOT full-cell fills
+**Executive table styling rules**: fills, borders and in-cell emphasis are specified once in
+[layouts.md](layouts.md#table-styling-nbg-executive-signature). This file carries only the type sizes.
 
 ### Page Number
 
@@ -161,7 +162,7 @@ bullet:
   character: "•"
   unicode: "2022"
   font: "Arial"
-  color: "#00DFF8"  # Bright Cyan
+  color: "#00ADBF"  # Cyan (see colors.md)
 ```
 
 ## Number Formatting

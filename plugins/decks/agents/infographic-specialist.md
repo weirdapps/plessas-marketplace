@@ -370,7 +370,7 @@ kpi_dashboard:
       style:
         # Standard metric card styling (user preference)
         background: "F5F8F6"  # Light gray background
-        border: {width: 1, color: "333333"}
+        border: {width: 1, color: "BEC1BE"}
         corner_radius: 6.25%
         value_font: Aptos
         value_size: 18         # 18pt for values
@@ -667,7 +667,7 @@ Before outputting any visualization:
 
 1. **Don't use 3D charts** - They distort data
 2. **Don't use more than 6 colors** - Creates visual noise
-3. **Never use pie charts** — always use doughnut charts instead
+3. **Never use pie charts**: always use doughnut charts instead
 4. **Don't add decorative elements** - Every element must convey information
 5. **Don't use gradients** - Use solid colors only
 6. **Don't overcrowd** - Less is more

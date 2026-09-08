@@ -1,6 +1,6 @@
 # promote-rule
 
-Stage 3 — self-learning. After /triage-inbox runs, scan the audit log for repeated LLM suggestions of the same (sender_domain → folder) pair.
+Stage 3, self-learning. After /triage-inbox runs, scan the audit log for repeated LLM suggestions of the same (sender_domain → folder) pair.
 
 ## Detection
 
@@ -34,6 +34,6 @@ On `y`: append rules to `~/.claude/triage/rules.yaml`, clear pending-promotions.
 
 ## Safety
 
-- Never auto-promote — user must explicitly confirm.
+- Never auto-promote; the user must explicitly confirm.
 - Never promote a `keep_locked` sender's pattern.
 - Audit-log the promotion event itself.

@@ -20,7 +20,11 @@ cd plugins/decks/tools/nbg-presentation
 
 # Build a presentation from an example
 python nbg_build.py ../../examples/executive-summary.yaml output.pptx
+python nbg_build.py ../../examples/executive-summary.yaml -o output.pptx   # same thing
 ```
+
+The build exits non-zero if the deck fails `nbg_validate.py`, so a zero exit means the file was
+written and it passed. Dependencies: see `../tools/nbg-presentation/README.md`.
 
 ### Option 2: Use as Template
 
@@ -30,10 +34,13 @@ python nbg_build.py ../../examples/executive-summary.yaml output.pptx
 
 ## YAML Structure
 
-All examples follow the McKinsey-quality storyline structure:
+All examples follow the McKinsey-quality storyline structure.
+
+There is no `template:` key. `nbg_build.py` draws every slide from scratch with python-pptx and
+never opens a .pptx, so a template value could not have changed the output; the key was metadata
+pointing at a file, and both are gone. See `brand-system/generation-methods.md`.
 
 ```yaml
-template: GR  # or EN for English template
 
 presentation:
   title: "Presentation Title"
@@ -65,12 +72,31 @@ slides:
     recommended_visual: bar_chart  # Helps select best layout
     content:
       title: "Chart Action Title"
+      description: "Optional caption, rendered under the title"
     chart:
-      type: bar
-      data: {...}
+      type: bar          # bar | bar_stacked | bar_horizontal | line | doughnut | pie
+      data:
+        categories: ["Q1", "Q2", "Q3"]
+        series:
+          - name: "2025"
+            values: [12, 15, 18]
+          - name: "2026"
+            values: [14, 19, 23]
+
+  - type: table
+    content:
+      title: "Table Action Title"
+    table:
+      headers: ["Metric", "2025", "2026"]
+      rows:
+        - ["Revenue", "EUR 42M", "EUR 48M"]
+      highlight_column: 2   # optional, emphasises that column in NBG Teal
 
   - type: back_cover
 ```
+
+`chart.data` is the contract. The builder reads `chart.type`, `chart.data.categories` and
+`chart.data.series`; a chart slide with no series prints a warning and leaves the plot area blank.
 
 ## Slide Types
 
@@ -81,7 +107,7 @@ slides:
 | `content` | Text with bullets | title, points |
 | `chart` | Data visualization | title, chart data |
 | `table` | Tabular data | title, table data |
-| `infographic` | Visual process/list | title, items |
+| `infographic` | Visual process/list | title, items (renders as bullets: there is no infographic layout yet) |
 | `back_cover` | Closing slide | (none) |
 
 ## Visual Recommendations

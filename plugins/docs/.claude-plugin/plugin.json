@@ -1,7 +1,7 @@
 {
   "name": "docs",
   "description": "Word document creation: generic docs, formal letters, internal memos. Uses document-skills:docx when available, falls back to python-docx. NBG formatting conventions.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "weirdapps"
   },
@@ -14,5 +14,7 @@
     "memo",
     "report"
   ],
-  "commands": "./commands"
+  "commands": "./commands",
+  "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/docs",
+  "repository": "https://github.com/weirdapps/plessas-marketplace"
 }

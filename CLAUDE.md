@@ -43,61 +43,102 @@ shared/                        # Cross-plugin shared assets (brand-system, email
 
 ## Testing
 
-**One test suite runs in CI:** `sonarcloud.yml` runs `pytest plugins --cov=plugins` as a blocking
-step, so a failing Python test fails the build. It is not gated on `SONAR_TOKEN` (only the scan
-steps are), but the whole job is skipped while the repo is private. The vitest suite is still NOT
-gated: no workflow runs `npm test`. Everything else is a structural or security guard, not a test
-run. What exists, and what actually executes:
+Three workflows run tests and checks, and all of them can go red.
 
-- `scripts/validate_consistency.py --verbose` — consistency checks across manifests and commands.
-  Runs in `validate-plugins.yml`.
-- PII scan: `bash installers/pii-gauntlet.sh --mode=ci`. Runs in `pii-check.yml`.
-- `plugins/mail/mcp-server/tests/`: vitest, 4 files / 29 tests. Real coverage, but NOT wired
-  into any workflow. Run it by hand after touching `outlook-bridge`: `npm test` in that directory.
-- `plugins/chat/mcp-server/`: **no tests at all.** Its `npm test` uses `--passWithNoTests`, so it
-  exits 0 while verifying nothing. Any `teams-bridge` change is unverified; test manually.
-- `plugins/decks/tools/nbg-presentation/test_nbg_build.py`,
-  `plugins/decks/tools/nbg-keynote/test_nbg_keynote.py` (33 tests, real coverage of the keynote
-  compositor) and `plugins/decks/bundled/creative/tools/device-mockup/test_iphone_mockup.py` all
-  run in CI under `pytest plugins`. `sonarcloud.yml` gates that run on a `tests/`, `test/`, or
-  `__tests__` directory found anywhere outside `node_modules`; `plugins/mail/mcp-server/tests` is
-  currently the only match, so the vitest directory is what switches the Python run on. Run the
-  keynote suite by hand after touching `nbg_keynote.py`:
-  `(cd plugins/decks/tools/nbg-keynote && python3 -m pytest test_nbg_keynote.py -q)`.
-- `ruff` and `mypy` are configured in `pyproject.toml` but no workflow invokes them. Run them
-  locally if you touch Python.
+- **`tests.yml`** is the authoritative gate. `pytest plugins -q` on Python 3.12, and
+  `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 20.
+  Unconditional: no repo-visibility gate, no token gate, no `continue-on-error`. It also
+  asserts each server's `tests/` directory is non-empty, so a suite cannot pass by being
+  deleted.
+- **`lint.yml`** runs the whole `.pre-commit-config.yaml` hook set (ruff, ruff-format,
+  mypy, gitleaks, yamllint, markdownlint, hygiene) plus `claude plugin validate --strict`
+  on all six plugins and the marketplace root. `plugin validate` needs no credentials and
+  no network.
+- **`validate-plugins.yml`** runs `scripts/validate_consistency.py`, which is where the
+  repo-specific invariants live.
+
+`sonarcloud.yml` still runs pytest, but only to produce `coverage.xml`. It is not the gate.
 
 Run locally before pushing:
 
 ```bash
+uv run --no-project --with pyyaml python scripts/validate_consistency.py --verbose
 bash installers/pii-gauntlet.sh --mode=doctor
-python3 scripts/validate_consistency.py --verbose
-(cd plugins/mail/mcp-server && npm test)   # only if you touched outlook-bridge
+pytest plugins -q
+(cd plugins/mail/mcp-server && npm run typecheck && npm test)
+(cd plugins/chat/mcp-server && npm run typecheck && npm test)
 ```
 
-## CI
+`validate_consistency.py` needs `pyyaml`, which a stock `python3` does not have; the
+`uv run` form above is the reliable invocation. `scripts/skill-trigger-probe.sh` measures
+natural-language routing across the six router skills, spawns real `claude` calls, and is
+**not** wired into CI. Its case 2 is nondeterministic (four runs on identical input gave
+three fails and one pass), so treat 16/17 as the score and do not read a single run as a
+regression or an improvement.
 
-Six GitHub Actions workflows (`.github/workflows/`):
+## Facts about Claude Code this repo has been burned by
 
-| Workflow | Trigger | What it checks |
-|----------|---------|----------------|
-| `validate-plugins.yml` | push/PR to master | `marketplace.json` JSON validity, all `plugin.json` files have required fields, all READMEs present, all command files have frontmatter, consistency script |
-| `pii-check.yml` | push/PR | Personal data leakage scan |
-| `rename-guard.yml` | push/PR | Stale command names, missing `allowed-tools`, deprecated tool names |
-| `sonarcloud.yml` | push/PR | Static analysis / quality gate (skipped if the repo is private or `SONAR_TOKEN` is unset) |
-| `codeql.yml` | push/PR/weekly | Security scanning (Python and JavaScript/TypeScript) |
-| `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch/minor, never majors. Thin caller: the logic lives in `weirdapps/shared-workflows/.github/workflows/dependabot-auto-merge.yml@main`, so edit it there, not here |
+Each of these was verified against the live runtime in Claude Code 2.1.265, not inferred
+from documentation. They are the failure modes most likely to recur.
+
+- **A plugin-bundled MCP server's tools are namespaced `mcp__plugin_<plugin>_<server>__<tool>`.**
+  So the tool is `mcp__plugin_mail_outlook-bridge__outlook_list_mail`, never
+  `mcp__outlook-bridge__outlook_list_mail`. The bare form does not exist and matches nothing:
+  in `allowed-tools` it pre-approves nothing, and in a hook matcher or permission rule it
+  never fires. A server the USER configures stays bare, which is why `mcp__second-brain__*`
+  is correct as written. `validate_consistency.py` now enforces this.
+- **`allowed-tools` pre-approves; it does not restrict.** Every tool stays callable whatever
+  the field says. The consequence is not cosmetic: an unlisted tool prompts interactively and
+  is **auto-denied in headless, `-p` and scheduled runs**. `disallowed-tools` is the field
+  that actually removes a tool.
+- **The `agents` key in `plugin.json` loads nothing.** A valid file list passes
+  `claude plugin validate --strict` and registers zero agents; an invalid value silently
+  voids the manifest's other component paths and falls back to full auto-discovery.
+  `agents/*.md` at the plugin root is the only mechanism that works, so an agent that must
+  load lives there and nowhere else. `commands`, by contrast, accepts an array of
+  directories and works, but REPLACES the default scan, so `./commands` must be listed
+  explicitly alongside any addition.
+- **`plugin.json` `version` is the update cache key.** Claude Code executes from
+  `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`. A version that never changes
+  means installed users never receive a fix, however many commits land. Bump it in both
+  `plugin.json` and the `marketplace.json` entry on every release; the two disagreeing is a
+  trap, because `plugin.json` silently wins.
+- **`claude plugin validate` passing is not evidence a plugin works.** It checks manifest
+  shape. It does not check that tool names resolve, that referenced agents exist, or that an
+  MCP server starts.
+- **`marketplace.json` accepts a top-level `version`, but NOT top-level `license`,
+  `homepage` or `repository`.** Those are per-plugin-entry fields; at the root they are
+  unknown fields, which `--strict` treats as errors.
+
+## The defect this repo keeps producing
+
+A declared constraint is documentation until something reads it. Five instances were found
+in one audit: `allowed-tools` naming tools that did not exist under that namespace; a
+"Safety contract (enforced by code)" where four of five clauses were prose; a `since`
+parameter advertised in an MCP inputSchema and discarded by the handler; a `maxItems: 20`
+batch cap no validator consulted; and three validator checks that iterated `a:rPr` when
+every deck the builder produces carries `a:defRPr`, so they passed having examined nothing.
+
+The general rule, and the one worth applying to any new check: **a check must distinguish
+"found nothing" from "did not look".** A validator that reports success without measuring is
+worse than no validator, because a human stops looking. `nbg_validate.py` now tracks how
+many candidates each check examined, and `presentation-qa.md` instructs the agent to treat a
+zero-candidate pass as unverified.
 
 ## Key Dependencies
 
 - `mail` and `chat` bundle their own MCP servers (Node.js 20+, TypeScript). `mcp-server/dist/` is
   gitignored, NOT committed: `installers/install.sh` builds it, and `run.sh` rebuilds on first MCP
   call if `dist/server.js` is missing. Never commit `dist/`.
-- `meetings` requires `mail` to be installed (shares its `outlook-bridge` MCP for calendar).
+- `meetings` requires `mail`, declared machine-readably as `"dependencies": ["mail"]` in its
+  `plugin.json`, so Claude Code installs `mail` with it. Note there are no OPTIONAL plugin
+  dependencies: a declared dependency that is missing or disabled disables the dependent plugin,
+  so only genuinely hard dependencies belong in that field. Soft integrations (`second-brain`,
+  `document-skills`) are probed at runtime in the skill body instead.
 - Optional enrichment: `second-brain` MCP (richer attendee dossiers), `document-skills` plugin
   (better xlsx/docx output).
 - Python tooling: ruff + mypy via `pyproject.toml` (no package install — tooling-only config).
-- Python 3.12+ is required by the `decks` Python tools. `numpy>=2.5.1`, the floor in both
+- Python 3.12+ is required by the `decks` Python tools. `numpy>=2.5.2`, the floor in both
   `tools/nbg-keynote/requirements.txt` and `bundled/creative/tools/device-mockup/requirements.txt`,
   declares `requires-python >=3.12`, so `pip install -r` fails to resolve on 3.11. `ruff`
   `target-version` and `mypy` `python_version` are pinned to `py312`/`3.12` to match.
@@ -105,5 +146,5 @@ Six GitHub Actions workflows (`.github/workflows/`):
 ## Brand Notes
 
 `decks` ships NBG branding. To adapt for another brand: swap `plugins/decks/shared/brand-system/`
-assets, replace `NBG-Template-GR.pptx`, and do a project-wide rename of "NBG". The multi-agent
+assets and do a project-wide rename of "NBG". No .pptx template is bundled. The multi-agent
 pipeline itself is brand-agnostic.

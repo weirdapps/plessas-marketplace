@@ -10,9 +10,9 @@ Compare two data sets within an Excel workbook and produce a variance analysis.
 
 ## Workflow
 
-1. **Read the workbook** — try these methods in order:
+1. **Read the workbook**, trying these methods in order:
    1. **`document-skills:xlsx` skill** (preferred): invoke via `Skill(document-skills:xlsx)`. If the skill is available it handles reading, formatting, and writing xlsx files natively.
-   2. **Fallback — openpyxl/pandas via Python**: if the skill is not installed, use `openpyxl` to read and `pandas` for variance computations (install with `pip3 install openpyxl pandas` if missing).
+   2. **Fallback (openpyxl/pandas via Python)**: if the skill is not installed, use `openpyxl` to read and `pandas` for variance computations, running Python through `uv`, which installs nothing permanently: `uv run --no-project --with openpyxl --with pandas python -c "..."`. Without `uv`, use a venv (`python3 -m venv .venv && .venv/bin/pip install openpyxl pandas`). A bare `pip3 install` fails with `externally-managed-environment` on PEP 668 systems; use `--break-system-packages` only as a last resort.
    3. **Read tool**: for `.csv`/`.tsv` files, read directly as text.
 
 2. **Identify comparison axes**: if base/target not specified, auto-detect:
@@ -34,7 +34,7 @@ Compare two data sets within an Excel workbook and produce a variance analysis.
 
 5. **Save output** to `~/Downloads/` with `YYYYMMDDHHMM_variance_<descriptor>.xlsx` naming.
 
-6. **Commentary**: 3-5 sentences explaining the key variances — not just listing numbers but WHY they might matter.
+6. **Commentary**: 3-5 sentences explaining the key variances, not just listing numbers but WHY they might matter.
 
 ## NBG conventions
 

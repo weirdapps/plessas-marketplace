@@ -1,7 +1,7 @@
 ---
 description: "Surface recent decisions, track delegations, and check decision consistency"
 argument-hint: "[today|week|TOPIC] [--pending]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__second-brain__query_actions, mcp__second-brain__query_decisions
 ---
 
 <objective>
@@ -60,17 +60,17 @@ For action items with assigned owners:
 DELEGATION TRACKER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OVERDUE (action needed):
-  [Task] — assigned to [Owner] — due [date] (X days overdue)
-  [Task] — assigned to [Owner] — due [date] (X days overdue)
+  [Task], assigned to [Owner], due [date] (X days overdue)
+  [Task], assigned to [Owner], due [date] (X days overdue)
 
 DUE SOON (next 3 days):
-  [Task] — assigned to [Owner] — due [date]
+  [Task], assigned to [Owner], due [date]
 
 IN PROGRESS:
-  [Task] — assigned to [Owner] — due [date]
+  [Task], assigned to [Owner], due [date]
 
 COMPLETED:
-  [Task] — assigned to [Owner] — completed [date]
+  [Task], assigned to [Owner], completed [date]
 ```
 
 ### 8. Decision Consistency Checks
@@ -84,21 +84,21 @@ Look for potential contradictions:
 ```
 CONSISTENCY ALERTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[date]: Approved [X] — but on [earlier date] denied similar request
-[date]: Delegated [task] to [A] — but [B] was already assigned
+[date]: Approved [X], but on [earlier date] denied similar request
+[date]: Delegated [task] to [A], but [B] was already assigned
 ```
 
 ### 9. Present Decision Report
 
 ```
-DECISIONS — [period]
+DECISIONS: [period]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Total decisions: N
 Total action items: N (X completed, Y pending, Z overdue)
 
 RECENT DECISIONS:
-  [date] [topic] — [decision summary] (decided by [name])
-  [date] [topic] — [decision summary] (decided by [name])
+  [date] [topic]: [decision summary] (decided by [name])
+  [date] [topic]: [decision summary] (decided by [name])
 
 DELEGATION STATUS:
   [overdue/due soon/in progress/completed counts]

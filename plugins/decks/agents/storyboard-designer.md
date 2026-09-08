@@ -19,7 +19,7 @@ This agent references the brand system for exact positioning and specifications.
 
 ## Core Principles
 
-1. **One format, elements by message**: There is ONE NBG deck format (`shared/presentation-style-guide.md` Standard #20), never a per-use-case format. Choose which elements to place on the shared chassis by what each slide must say — every layout choice supports the message. The single exception is **keynote mode** (Standard #21, spec in `shared/brand-system/keynote.md`): a dark full-bleed format for talks given live from a stage to an external or bank-wide audience. It is built by `/create-keynote`, not by this pipeline. If a brief meets all four of its entry criteria, say so and hand off; otherwise stay in the light format
+1. **One format, elements by message**: There is ONE NBG deck format (`shared/presentation-style-guide.md` Standard #20), never a per-use-case format. Choose which elements to place on the shared chassis by what each slide must say; every layout choice supports the message. The single exception is **keynote mode** (Standard #21, spec in `shared/brand-system/keynote.md`): a dark full-bleed format for talks given live from a stage to an external or bank-wide audience. It is built by `/create-keynote`, not by this pipeline. If a brief meets all four of its entry criteria, say so and hand off; otherwise stay in the light format
 2. **White Space is Power**: Generous breathing room, not cramped
 3. **Visual Hierarchy**: Guide the eye to what matters
 4. **NBG Consistency**: All choices within brand guidelines
@@ -90,8 +90,8 @@ page_number:
 
 ```yaml
 margins:
-  left: 0.37"
-  right: 0.37"
+  left: 0.374"
+  right: 0.374"
   top_title: 0.5"
   top_content: 1.33"
 ```
@@ -100,7 +100,7 @@ margins:
 
 ```yaml
 content_area:
-  x: 0.37"
+  x: 0.374"
   y: 1.33"
   width: 12.59"
   height: 4.5"
@@ -128,6 +128,16 @@ content_area:
 
 ---
 
+## Variance: do not let the deck read as generated
+
+Uniformity is the strongest current tell of an AI-produced deck, and layout is where it shows first: title-plus-bullets on every content slide, the same grid on every page, every element on the same rhythm. Human decks vary because their content varies.
+
+- Use something other than title-plus-bullets on a meaningful share of content slides. The Layout Library below exists to be drawn from, not picked from once.
+- Do not carry one column split across a whole section because it worked on the first slide.
+- Two adjacent slides with identical geometry should be a deliberate echo, not the default.
+
+Judgement, not a quota. A mechanically enforced variance rule would be its own kind of uniformity.
+
 ## Layout Library
 
 ### Cover Slide
@@ -135,7 +145,7 @@ content_area:
 ```yaml
 cover:
   title:
-    x: 0.37"
+    x: 0.374"
     y: 1.39"
     w: 7.86"
     h: 1.00"
@@ -144,7 +154,7 @@ cover:
     color: "003841"
 
   subtitle:
-    x: 0.37"
+    x: 0.374"
     y: 2.27"
     w: 7.86"
     h: 0.80"
@@ -153,14 +163,14 @@ cover:
     color: "007B85"
 
   location:
-    x: 0.37"
+    x: 0.374"
     y: 4.58"
     font: Aptos
     size: 14pt
     color: "003841"
 
   date:
-    x: 0.37"
+    x: 0.374"
     y: 4.97"
     font: Aptos
     size: 14pt
@@ -172,14 +182,14 @@ cover:
 ```yaml
 divider:
   number:
-    x: 0.37"
+    x: 0.374"
     y: 2.84"
     font: Aptos
     size: 60pt
     color: "007B85"
 
   title:
-    x: 1.86"
+    x: 1.574"   # number box right edge: 0.374 gutter + 1.2 number width
     y: 2.84"
     font: Aptos
     size: 48pt
@@ -191,7 +201,7 @@ divider:
 ```yaml
 contents:
   header:
-    x: 0.37"
+    x: 0.374"
     y: 0.36"
     w: 10"
     h: 0.70"
@@ -207,7 +217,7 @@ contents:
     vertical_spacing: 0.85"
 
     number:
-      x: 0.37"
+      x: 0.374"
       w: 0.60"
       h: 0.60"
       font: Aptos
@@ -241,7 +251,7 @@ metric_card:
   # Light background card for KPIs
   background:
     fill: "F5F8F6"
-    border: 1pt "333333"
+    border: 1pt "BEC1BE"
     corner_radius: 6.25%
     size: 1.40" x 0.80"
 
@@ -264,13 +274,13 @@ metric_card:
 ```yaml
 full_width:
   title:
-    x: 0.37"
+    x: 0.374"
     y: 0.5"
     w: 12.59"
     h: 0.6"
 
   content:
-    x: 0.37"
+    x: 0.374"
     y: 1.33"
     w: 12.59"
     h: 4.5"
@@ -281,12 +291,12 @@ full_width:
 ```yaml
 two_column_even:
   title:
-    x: 0.37"
+    x: 0.374"
     y: 0.5"
     w: 12.59"
 
   left_column:
-    x: 0.37"
+    x: 0.374"
     y: 1.33"
     w: 5.5"
     h: 4.5"
@@ -303,12 +313,12 @@ two_column_even:
 ```yaml
 two_column_text_chart:
   title:
-    x: 0.37"
+    x: 0.374"
     y: 0.5"
     w: 12.59"
 
   text_column:
-    x: 0.37"
+    x: 0.374"
     y: 1.33"
     w: 4.5"
     h: 4.5"
@@ -325,7 +335,7 @@ two_column_text_chart:
 ```yaml
 three_column:
   col1:
-    x: 0.37"
+    x: 0.374"
     y: 1.33"
     w: 3.6"
 
@@ -440,18 +450,18 @@ title_structure:
 
 When designing slides that compare NBG with other Greek systemic banks (Eurobank, Piraeus, Alpha Bank):
 
-1. **Specify manual bar chart** — tell the renderer to use shapes (NOT chart engine) for guaranteed logo-bar alignment
-2. **Require bank brand colors**: NBG Teal (#007B85), Eurobank Red (#CA2029), Piraeus Yellow (#FDB913), Alpha Blue (#02509C)
-3. **Require bank logos on chart axis** — logos replace text labels, centered under each bar
-4. **Note NBG's oval logo** — the renderer must use `addBankLogo()` to preserve 1.55:1 aspect ratio
+1. **Specify manual bar chart**: tell the renderer to use shapes (NOT chart engine) for guaranteed logo-bar alignment
+2. **Require bank brand colors**: NBG Teal (#007B85), Eurobank Red (#DC2646), Piraeus Yellow (#FFC02D), Alpha Blue (#0D488B)
+3. **Require bank logos on chart axis**: logos replace text labels, centered under each bar
+4. **Note NBG's oval logo**: the renderer must use `addBankLogo()` to preserve 1.55:1 aspect ratio
 5. **Include logos in tables** too, with bank-colored name text
 
 Example storyboard note:
 
 ```
-visual_type: manual_bar_chart (NOT chart engine — use shapes for logo alignment)
+visual_type: manual_bar_chart (NOT chart engine, use shapes for logo alignment)
 chart_axis: bank_logos (replace text labels)
-colors: per_bank_brand (NBG=#007B85, Eurobank=#CA2029, Piraeus=#FDB913, Alpha=#02509C)
+colors: per_bank_brand (NBG=#007B85, Eurobank=#DC2646, Piraeus=#FFC02D, Alpha=#0D488B)
 ```
 
 ---
@@ -537,6 +547,8 @@ For each slide, ask: **"How can this be SHOWN, not just told?"**
 | Distribution | **Doughnut** (NEVER pie), stacked bar |
 | Categories | Icon grid, numbered list |
 
+**Infographics come from `decks:infographic-specialist` as SVG, never as a slide type.** `nbg_build.py` has no infographic renderer: `_classify_slide` files `type: infographic` under plain content, and its `content.items` degrade to a bullet list, silently, so the numbered grid you specified never appears. Specify the infographic as a visual asset for `decks:infographic-specialist` to produce, and let the renderer place the resulting SVG. Charts and tables are the opposite case and are safe as slide types (`charts/*` and `tables/*` both have real renderers).
+
 ### NEVER create all-text slides
 
 Executive audiences need visuals:
@@ -574,7 +586,7 @@ storyboard:
           type: text
           content: "Slide Title Here"
           position:
-            x: 0.37
+            x: 0.374
             y: 0.5
             w: 12.59
             h: 0.6
@@ -623,7 +635,7 @@ storyboard:
 Before outputting storyboard:
 
 - [ ] All positions within slide bounds (13.33" x 7.5")
-- [ ] Standard margins respected (0.37" sides)
+- [ ] Standard margins respected (0.374" sides)
 - [ ] Small logo (0.822" x 0.236") on content slides
 - [ ] Page numbers on content slides only
 - [ ] Text boxes have margin: 0

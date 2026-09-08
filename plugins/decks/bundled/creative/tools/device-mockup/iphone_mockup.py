@@ -29,7 +29,10 @@ except ImportError:
 
 
 # Frame configurations
-# content_* defines where the screenshot content should be placed
+# content_* defines where the screenshot content should be placed, and must be
+# the exact bounding box of the frame PNG's inner transparent region. Anything
+# smaller clips the screenshot and leaves a transparent strip inside the bezel.
+# test_iphone_mockup.py re-measures every PNG by flood fill and fails on drift.
 # Paths are relative to the assets/device-frames directory
 FRAMES: dict[str, dict[str, Any]] = {
     "16_pro_max_black": {
@@ -60,19 +63,23 @@ FRAMES: dict[str, dict[str, Any]] = {
         "content_right": 1419,
         "content_bottom": 2967,
     },
+    # Both 16 Pro frames were 1170x2594 at (75, 100) against a measured screen of
+    # 1206x2622: 27px of the screenshot clipped off the left, with transparent
+    # strips left down the right edge and along the bottom. The two PNGs differ
+    # by 2px in where their screen starts, so they carry different boxes.
     "16_pro_black": {
         "path": "16 Pro - Black Titanium.png",
-        "content_left": 75,
+        "content_left": 102,
         "content_top": 100,
-        "content_right": 1244,
-        "content_bottom": 2693,
+        "content_right": 1307,
+        "content_bottom": 2721,
     },
     "16_pro_natural": {
         "path": "16 Pro - Natural Titanium.png",
-        "content_left": 75,
+        "content_left": 100,
         "content_top": 100,
-        "content_right": 1244,
-        "content_bottom": 2693,
+        "content_right": 1305,
+        "content_bottom": 2721,
     },
 }
 
@@ -120,9 +127,7 @@ def get_frames_dir():
     return frames_dir
 
 
-def create_mockup(
-    screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, frames_dir=None
-):
+def create_mockup(screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, frames_dir=None):
     """
     Create a pixel-perfect iPhone mockup.
 
@@ -237,9 +242,7 @@ Available frames:
         choices=list(FRAMES.keys()),
         help=f"iPhone frame to use (default: {DEFAULT_FRAME})",
     )
-    parser.add_argument(
-        "--list-frames", action="store_true", help="List available frames"
-    )
+    parser.add_argument("--list-frames", action="store_true", help="List available frames")
     parser.add_argument("--frames-dir", help="Override device-frames directory")
 
     args = parser.parse_args()

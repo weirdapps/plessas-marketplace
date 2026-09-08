@@ -14,6 +14,11 @@ export const loginTool: Tool = {
   handler: async (args) => {
     const cliArgs = ['login'];
     if (args.chrome_channel) cliArgs.push('--chrome-channel', args.chrome_channel);
-    return runTeamsCli(cliArgs, { noAutoReauth: false, timeoutMs: 120_000 });
+    // Derived, not rounded: teams-cli's own loginTimeoutMs default is 300_000
+    // (src/config/load.ts:18), plus the 15s process-startup allowance used across
+    // this server. The old 120_000 killed an interactive sign-in at two minutes,
+    // well inside the window a human needs for password plus MFA, and less than
+    // half of what the CLI was still waiting on.
+    return runTeamsCli(cliArgs, { noAutoReauth: false, timeoutMs: 315_000, idempotent: false });
   },
 };

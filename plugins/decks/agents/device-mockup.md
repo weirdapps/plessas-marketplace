@@ -29,23 +29,29 @@ You can be invoked standalone, from `decks`, or by other plugins when device moc
 ### Tool Location
 
 ```
-tools/device-mockup/iphone_mockup.py
+${CLAUDE_PLUGIN_ROOT}/bundled/creative/tools/device-mockup/iphone_mockup.py
 ```
 
 ### Command Line
 
+Always run through the venv the installer builds. A bare `python3` will not have Pillow; if
+`.venv/bin/python3` is missing, the plugin was not installed through `installers/install.sh`, so say
+so rather than falling back.
+
 ```bash
+cd "${CLAUDE_PLUGIN_ROOT}/bundled/creative/tools/device-mockup"
+
 # Basic usage
-python iphone_mockup.py screenshot.png
+./.venv/bin/python3 iphone_mockup.py screenshot.png
 
 # Custom output path
-python iphone_mockup.py screenshot.png output_mockup.png
+./.venv/bin/python3 iphone_mockup.py screenshot.png output_mockup.png
 
 # Different frame color
-python iphone_mockup.py screenshot.png --frame 16_pro_max_natural
+./.venv/bin/python3 iphone_mockup.py screenshot.png --frame 16_pro_max_natural
 
 # List available frames
-python iphone_mockup.py --list-frames
+./.venv/bin/python3 iphone_mockup.py --list-frames
 ```
 
 ### Available Frames

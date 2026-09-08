@@ -1,8 +1,8 @@
 # NBG Complete Color Palette
 
-> **Note**: For digital product colors (apps, web), see [pillar-ds.md](pillar-ds.md) for the complete Pillar Design System palette (Tsopanakis — resynced 2026-05-24).
+> **Note**: For digital product colors (apps, web), see [pillar-ds.md](pillar-ds.md) for the complete Pillar Design System palette (Tsopanakis, resynced 2026-05-24).
 >
-> **Scope of this file**: presentation-system colors only (PowerPoint/PDF decks). Body text stays `#202020` (between Pillar Black `#162020` and email body `#404040` — intentional difference, optimised for projection readability). Status reds: `#AA0028` is retained for **NBG corporate charts and segment coding** (Private banking signature); `#BE4B4B` from Pillar applies to **digital products** (alerts, error states in app UI).
+> **Scope of this file**: presentation-system colors only (PowerPoint/PDF decks). Body text stays `#202020` (between Pillar Black `#162020` and email body `#404040`, an intentional difference optimised for projection readability). Status reds: `#AA0028` is retained for **NBG corporate charts and segment coding** (Private banking signature); `#BE4B4B` from Pillar applies to **digital products** (alerts, error states in app UI).
 
 ## Theme Colors (NBG Colors 2)
 
@@ -56,23 +56,32 @@
 | Black | `#212121` | 33, 33, 33 | Alternative text |
 | Aqua Light | `#3EDEF8` | 62, 222, 248 | Light accent |
 | Light Grey | `#BEC1BE` | 190, 193, 190 | Subtle elements |
-| Grey | `#595959` | 89, 89, 89 | Legacy TOC descriptions — prefer `#5A5F5A` |
-| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, TOC teasers, table notes (canonical secondary grey — NBG executive signature)** |
+| Grey | `#595959` | 89, 89, 89 | Legacy TOC descriptions; prefer `#5A5F5A` |
+| **Caption Grey** | **`#5A5F5A`** | 90, 95, 90 | **Captions, owner subtitles, TOC teasers, table notes (canonical secondary grey, the NBG executive signature)** |
 | Pale Grey | `#F5F8F6` | 245, 248, 246 | Light backgrounds, KPI card fill |
 
-### Grey hierarchy (avoid drift — one grey per role)
+### Grey hierarchy (avoid drift: one grey per role)
 
-Three greys, three jobs. Do NOT introduce others (`#666666`, `#595959` as body/caption, `#5B5B69`, etc. — all seen drifting across reference decks):
+Three greys, three jobs. Do NOT introduce others (`#666666`, `#595959` as body/caption, `#5B5B69`; all seen drifting across reference decks):
 
 | Grey | Role |
 |------|------|
-| `#5A5F5A` | Captions, subtitles, owner lines, TOC teasers, table notes — the secondary-text grey |
+| `#5A5F5A` | Captions, subtitles, owner lines, TOC teasers, table notes; the secondary-text grey |
 | `#939793` | Page numbers, process-flow arrows, subtle UI marks, "partner/them" ownership coding |
 | `#BEC1BE` | Dividers, card borders, hairlines |
 
 Body text is `#202020` (never a grey). Retire `#595959` / `#666666` as body or caption greys.
 
 ## Status/Semantic Colors
+
+Three status palettes, three scopes. Pick the one that matches the surface and do not mix
+two of them on one slide.
+
+| Palette | Scope |
+|---------|-------|
+| Official NBG Corporate | Binary positive/negative in charts and official brand graphics |
+| Practical Status | Status pills and badges in DIY KPI / Progress decks |
+| Graded Severity Ramp | Six-step severity scales in tables and heat-coded charts, where a two-color pair cannot carry the distinction |
 
 ### Official NBG Corporate Palette (charts, brand graphics)
 
@@ -85,23 +94,26 @@ Body text is `#202020` (never a grey). Retire `#595959` / `#666666` as body or c
 
 ### Practical Status Colors (DIY decks, status pills, "Delivered/Priorities" patterns)
 
-These are the colors observed across reference NBG executive decks — used in status badges, "Delivered" rows, priority pills. Cleaner reading at small sizes than the chart-grade NBG palette above.
+These are the colors observed across reference NBG executive decks, used in status badges, "Delivered" rows, priority pills. Cleaner reading at small sizes than the chart-grade NBG palette above.
 
 | Status | Hex | Light variant | Usage |
 |--------|-----|---------------|-------|
 | **OK / Delivered** | `#008000` | `#E8F5E9` | Status pill (text white on #008000), "Delivered" row accent stripe + pale fill |
-| **TBD / In progress** | `#CC9900` | `#FFFFCC` | Amber priority pill (text white on #CC9900) |
-| **Warning / Risk** | `#CC0000` | — | Severe priority indicator (text white) |
+| **TBD / In progress** | `#CC9900` | `#FFFFCC` | Amber priority pill (text `#202020` on #CC9900: white is 2.58:1 and fails Standard #22) |
+| **Warning / Risk** | `#CC0000` | n/a | Severe priority indicator (text white) |
 
-**When to use which palette**: Charts and official brand graphics → corporate palette. Status pills and DIY KPI/Progress decks → practical palette.
+**When to use which palette**: see the scope table at the top of this section.
 
-### Recommended-option highlight (comparison slides) — gold, one convention
+### Recommended-option highlight (comparison slides): gold, one convention
 
-When one option among several is THE recommendation, mark it in **gold `#D9A757`** (Premium accent): a 1.5pt gold border, optional `#FBF3E4` cream fill, and a small gold "RECOMMENDED" tab/pill (white ALL-CAPS text).
+When one option among several is THE recommendation, mark it in **gold `#D9A757`** (Premium accent): a 1.5pt gold border, optional `#FBF3E4` cream fill, and a small gold "RECOMMENDED" tab/pill with `#202020` ALL-CAPS text (white on gold is 2.19:1 and fails Standard #22).
 
 **Use gold, not green.** Green (`#008000` / `#73AF3C`) is already the Delivered / OK / Success color, so a green "recommended" badge collides with status coding on any slide that carries both. Gold is otherwise reserved for premium/selected and stays unambiguous. Pick ONE convention per deck and keep it; do not mix a green "recommended" pill with the gold treatment. Component geometry: see `layouts.md → Recommended-Option Highlight`.
 
-## Status Colors (Tables & Charts Only)
+## Graded Severity Ramp (tables and heat-coded charts)
+
+A six-step ramp for severity or heat scales. Not a substitute for the corporate palette:
+a plain positive/negative pair in a chart stays `#73AF3C` / `#AA0028`.
 
 | Status | Hex | RGB | Usage |
 |--------|-----|-----|-------|
@@ -143,9 +155,10 @@ Use these colors in order for chart data series:
 
 > **Moved to `pillar-ds.md`** (resynced 2026-05-24 from Tsopanakis live repo).
 >
-> For category-based data visualisation (spending categories, PFM segments, budget breakdowns), use the **16-category palette** in [pillar-ds.md → PFM Category Colors](pillar-ds.md#pfm-category-colors-charts). The older 10-category set that previously lived here has been retired — it was outdated and did not match the live Pillar Figma source.
+> For category-based data visualisation (spending categories, PFM segments, budget breakdowns), use the **16-category palette** in [pillar-ds.md → PFM Category Colors](pillar-ds.md#pfm-category-colors-charts). The older 10-category set that previously lived here has been retired: it was outdated and did not match the live Pillar Figma source.
 >
-> Quick access for chart series (Main shades):
+> Quick access for chart series (Main shades). The categorical ceiling in Standard #22
+> applies: this is a lookup table for category colours, not licence to plot 16 series.
 >
 > ```javascript
 > // Pillar PFM Category chart colors — Main shades
@@ -183,7 +196,7 @@ Use these colors in order for chart data series:
 | Callout / takeaway strip | `#E6F5F6` | None |
 | Recommended-option card | `#FBF3E4` | 1.5pt `#D9A757` (gold) |
 
-**Tint hierarchy**: `#F5F8F6` = default card; `#E6F5F6` = soft pale-teal takeaway/callout strip (the bottom "bottom line" bar); `#CBFAFF` = stronger cyan highlight card; `#FBF3E4` + gold border = the recommended option (see Recommended-option highlight below). Pick `#E6F5F6` for takeaway strips consistently — do not drift to `#EAF4F5` or other one-off tints.
+**Tint hierarchy**: `#F5F8F6` = default card; `#E6F5F6` = soft pale-teal takeaway/callout strip (the bottom "bottom line" bar); `#CBFAFF` = stronger cyan highlight card; `#FBF3E4` + gold border = the recommended option (see Recommended-option highlight below). Pick `#E6F5F6` for takeaway strips consistently; do not drift to `#EAF4F5` or other one-off tints.
 
 ### Dark Theme (DO NOT USE)
 
@@ -242,15 +255,15 @@ const NBG_CHART_COLORS = [
 | Bright accent | `#00DFF8` (Bright Cyan) |
 | Subtle elements | `#939793` (Medium Gray) |
 | **KPI card background** | `#F5F8F6` (Off-white) |
-| **KPI big number** | `#007B85` (NBG Teal) — **50pt Aptos BOLD** |
-| **KPI caption / owner subtitle** | `#5A5F5A` (Caption Gray) — NBG executive signature |
+| **KPI big number** | `#007B85` (NBG Teal), **50pt Aptos BOLD** |
+| **KPI caption / owner subtitle** | `#5A5F5A` (Caption Gray), the NBG executive signature |
 | **Unit pill (header chip)** | fill `#003841` (Dark Teal), text white |
-| TOC description | `#595959` (Gray) |
+| TOC description | `#5A5F5A` (Caption Gray) |
 | Page number | `#939793` (Medium Gray) |
 | Icons | `#003841` (Dark Teal) |
-| **Status — OK** | `#008000` fill, white text — DIY status pills |
-| **Status — TBD** | `#CC9900` fill, white text — DIY status pills |
-| **Status — Warn** | `#CC0000` fill, white text — DIY status pills |
+| **Status: OK** | `#008000` fill, white text, DIY status pills |
+| **Status: TBD** | `#CC9900` fill, `#202020` text, DIY status pills |
+| **Status: Warn** | `#CC0000` fill, white text, DIY status pills |
 | **Delivered row stripe + pale fill** | accent `#008000` + body `#E8F5E9` |
 
 ---
@@ -268,15 +281,15 @@ const NBG_CHART_COLORS = [
 
 **Rule of thumb:** If the background fill is light (R+G+B > 400), text MUST be dark `#003841`. If background is dark (R+G+B < 400), text MUST be white.
 
-### Cover Slide Contrast — CRITICAL
+### Cover Slide Contrast: CRITICAL
 
 Cover layouts may have overlapping graphic elements. Rules:
 
 1. All cover text must have sufficient contrast against BOTH the background AND any decorative graphics
-2. Use **Dark Teal `#003841`** for the main title — readable on light backgrounds
-3. Use **NBG Teal `#007B85`** for the subtitle — ensures visibility
+2. Use **Dark Teal `#003841`** for the main title: readable on light backgrounds
+3. Use **NBG Teal `#007B85`** for the subtitle: ensures visibility
 4. **Never use white or light colors** for cover text on white backgrounds
-5. **Always set explicit colors** — never rely on theme/inherited colors for covers
+5. **Always set explicit colors**: never rely on theme/inherited colors for covers
 
 ### Icon Contrast
 
@@ -288,11 +301,11 @@ Cover layouts may have overlapping graphic elements. Rules:
 
 ---
 
-## Dark-Mode Tokens — Keynote Mode ONLY
+## Dark-Mode Tokens: Keynote Mode ONLY
 
 These apply **only** to the dark full-bleed keynote format (Standard #21, spec in
 [keynote.md](keynote.md)). They are not available to normal decks, documents, emails or charts.
-Every token maps to a light-mode colour above — do not introduce new ones.
+Every token maps to a light-mode colour above; do not introduce new ones.
 
 | Token | Hex | Maps from | Usage |
 |-------|-----|-----------|-------|
@@ -304,7 +317,7 @@ Every token maps to a light-mode colour above — do not introduce new ones.
 | `accent-mute` | `#008292` | `#BEC1BE` | Non-highlighted bars |
 | `ground-top` | `#00161B` | `#FFFFFF` | Gradient top, scrim base |
 | `ground-bot` | `#003841` | `#F5F8F6` | Gradient bottom (the brand Dark Teal) |
-| `negative` | `#FF5263` | `#AA0028` | Negative statistic — `AA0028` is unreadable on dark |
+| `negative` | `#FF5263` | `#AA0028` | Negative statistic; `AA0028` is unreadable on dark |
 | `rule` | `#788C8E` | `#BEC1BE` | Chart baseline |
 
 **Bright Cyan `#00DFF8` is still banned as a background.** In keynote mode it is only ever text or a

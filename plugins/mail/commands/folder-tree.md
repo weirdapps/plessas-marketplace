@@ -1,7 +1,7 @@
 ---
 description: "Display the Outlook folder hierarchy with message counts as a Unicode tree"
 argument-hint: ""
-allowed-tools: mcp__outlook-bridge__outlook_list_folders
+allowed-tools: mcp__plugin_mail_outlook-bridge__outlook_list_folders
 ---
 
 # /folder-tree
@@ -10,7 +10,7 @@ Display the Outlook folder hierarchy with message counts.
 
 ## Implementation
 
-1. Call `mcp__outlook-bridge__outlook_list_folders` with `recursive: true`
+1. Call `mcp__plugin_mail_outlook-bridge__outlook_list_folders` with `recursive: true`
 2. Render the result as a Unicode tree:
    - `📁 Inbox (47)` for branch nodes
    - Indent children with `├──` / `└──` glyphs

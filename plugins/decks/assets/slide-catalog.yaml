@@ -3,11 +3,13 @@
 # Template has 205 slides total (indices 0-204)
 
 version: "1.0"
-description: "NBG PowerPoint Template Slide Catalog"
+description: "NBG PowerPoint master-layout index. Reference only: no template file
+  ships with this plugin, and nbg_build.py never opens one (see
+  brand-system/generation-methods.md). These indices record the layout numbering of
+  the internal NBG template for anyone working against a copy of their own."
 
 templates:
   GR:
-    path: "assets/templates/NBG-Template-GR.pptx"
     slides:
       covers:
         simple_white: 16          # White background, title + subtitle (has decorative elements)
@@ -76,8 +78,11 @@ templates:
 # - Centered position: x=5.44", y=2.98", w=2.45", h=1.54"
 # - NEVER use "Thank You" or "Questions" text on back covers
 
+  # NOT INSTALLED. There is no NBG-Template-EN.pptx in assets/templates/; only the
+  # GR template ships. This block is retained as a record of the index mapping, which
+  # is identical to GR, and must not be read as an available option. Nothing consumes
+  # the `path` field, and `template:` in a spec is metadata that does not change output.
   EN:
-    path: "assets/templates/NBG-Template-EN.pptx"
     slides:
       # Same structure as GR - indices are identical
       covers:

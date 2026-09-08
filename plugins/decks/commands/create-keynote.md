@@ -18,23 +18,23 @@ deck does not qualify, stop and use `/create-presentation` instead.
 
 <process>
 
-### Step 1 — Gate on the entry criteria (do this before anything else)
+### Step 1: Gate on the entry criteria (do this before anything else)
 
 Read `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/keynote.md`.
 
 All four must hold:
 
-1. Audience is **external or bank-wide** — conference, town hall, industry panel. NOT a committee,
+1. Audience is **external or bank-wide**: conference, town hall, industry panel. NOT a committee,
    board or ExCo working session.
 2. **Delivered live from a stage by a speaker.** Not read alone, not circulated as a document.
 3. **Projected large, in a darkened room.**
-4. The slides are the **backdrop, not the record** — the argument lives in the speaker notes.
+4. The slides are the **backdrop, not the record**: the argument lives in the speaker notes.
 
 If any of these is unclear from `$ARGUMENTS`, ask. If any fails, say so plainly and switch to
 `/create-presentation`. Never for ExCo, board, credit committee, or a deck someone else will edit:
 keynote slides are flattened images and can only be regenerated from their YAML.
 
-### Step 2 — Storyline
+### Step 2: Storyline
 
 Dispatch `decks:storyline-architect` with the brief, telling it this is a **spoken keynote**:
 
@@ -44,9 +44,9 @@ Dispatch `decks:storyline-architect` with the brief, telling it this is a **spok
 - Every slide needs a **spoken note**, and the note carries the argument. The slide carries at most
   one sentence or one number.
 - Action titles throughout. No bullets except on a single `points` slide.
-- No em-dashes. No invented NBG names or figures — every number needs a source.
+- No em-dashes. No invented NBG names or figures; every number needs a source.
 
-### Step 3 — Choose an archetype per slide
+### Step 3: Choose an archetype per slide
 
 Map each message to one of the nine archetypes in `keynote.md`:
 
@@ -62,39 +62,44 @@ Map each message to one of the nine archetypes in `keynote.md`:
 | the line to repeat afterwards | `closing` |
 | the end | `back` |
 
-### Step 4 — Imagery
+### Step 4: Imagery
 
 Keynote photography is cinematic, dark, and blue-teal graded: night cityscapes, architecture,
 close detail, interiors with practical lights. Never stock-smiling people, never bright daylight.
 
 Source it, in this order:
 1. Ask the user for photographs they already have.
-2. Generate with `Skill(manage-nano-banana)` — prompt for a dark, blue-teal-graded, cinematic frame
+2. Generate with `Skill(manage-nano-banana)`: prompt for a dark, blue-teal-graded, cinematic frame
    at 16:9 with negative space on the side the text will occupy.
 
 Save images to a working directory under `~/Downloads`, never in the repo.
 
-### Step 5 — Write the YAML
+### Step 5: Write the YAML
 
 Start from `${CLAUDE_PLUGIN_ROOT}/tools/nbg-keynote/example.yaml`. Set `meta.language: el` for a
 Greek talk so the kickers drop the tonos in all-caps. Set `meta.output` to
-`~/Downloads/YYYYMMDDHHMM_<talk_name>` — get the timestamp with
+`~/Downloads/YYYYMMDDHHMM_<talk_name>`. Get the timestamp with
 `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, never guess it, and never add a version suffix.
 
 Quote any string containing a comma or a colon. Inline flow maps split on commas.
 
-### Step 6 — Validate, then build
+### Step 6: Validate, then build
 
 ```bash
 cd ${CLAUDE_PLUGIN_ROOT}/tools/nbg-keynote
-python3 nbg_keynote.py <spec>.yaml --validate    # fails on missing notes, >2 charts, bad images
-python3 nbg_keynote.py <spec>.yaml
+./.venv/bin/python3 nbg_keynote.py <spec>.yaml --validate   # fails on missing notes, >2 charts, bad images
+./.venv/bin/python3 nbg_keynote.py <spec>.yaml
 ```
 
-The compositor writes both a `.pptx` and a `.pdf`. **Take contrast warnings seriously** — they mean
+The venv is built by `installers/install.sh`, the same way `tools/nbg-presentation/.venv` is. If
+`.venv/bin/python3` is missing, this plugin was not installed through the installer. Say so and stop.
+Do NOT fall back to a bare `python3`: it will not have Pillow, numpy, python-pptx or PyYAML, and on a
+PEP 668 system `pip install -r requirements.txt` fails outright with `externally-managed-environment`.
+
+The compositor writes both a `.pptx` and a `.pdf`. **Take contrast warnings seriously**: they mean
 a photograph is too bright under a text block; swap the image or move the text with `align`.
 
-### Step 7 — Review
+### Step 7: Review
 
 Read the generated PDF back and check every slide:
 
@@ -110,7 +115,7 @@ Report both output paths. Offer to re-render individual slides with `--slides N`
 
 <constraints>
 - Read `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/keynote.md` before writing any YAML.
-- Never edit the generated PPTX by hand — change the YAML and re-render.
+- Never edit the generated PPTX by hand; change the YAML and re-render.
 - Never commit photographs or generated decks to the repo. Everything goes to `~/Downloads`.
 - Greek wordmark always, even on an English talk. There is no English NBG logo.
 - No em-dashes, no invented NBG names, no version suffixes in filenames.

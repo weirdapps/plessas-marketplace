@@ -66,3 +66,50 @@ def test_missing_screenshot_gives_error():
         text=True,
     )
     assert result.returncode != 0
+
+
+# ---------------------------------------------------- content box vs the PNG
+
+
+def _measured_screen_box(frame_path):
+    """The bounding box of the frame's inner transparent region.
+
+    Same flood fill the compositor uses at paste time, so the config is checked
+    against the pixels the mask will actually reveal.
+    """
+    import numpy as np
+    from PIL import Image
+
+    img = Image.open(frame_path).convert("RGBA")
+    alpha = np.array(img)[:, :, 3]
+    width, height = img.size
+    mask = iphone_mockup._flood_fill_screen_mask(alpha, width // 2, height // 2)
+    ys, xs = np.nonzero(mask)
+    assert xs.size, f"{frame_path.name}: no transparent screen region found"
+    return int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
+
+
+@pytest.mark.parametrize("frame_key", sorted(iphone_mockup.FRAMES))
+def test_content_box_matches_the_measured_screen_region(frame_key):
+    """A content box smaller than the screen clips the screenshot.
+
+    Both 16 Pro frames were configured 1170x2594 at (75, 100) against a real
+    screen of 1206x2622: 27px off the left of every screenshot, with transparent
+    strips down the right edge and along the bottom.
+    """
+    frames_dir = iphone_mockup.get_frames_dir()
+    config = iphone_mockup.FRAMES[frame_key]
+    frame_path = frames_dir / config["path"]
+    if not frame_path.exists():
+        pytest.skip(f"{frame_path} not installed")
+
+    measured = _measured_screen_box(frame_path)
+    configured = (
+        config["content_left"],
+        config["content_top"],
+        config["content_right"],
+        config["content_bottom"],
+    )
+    assert configured == measured, (
+        f"{frame_key}: config {configured} but the PNG's screen is {measured}"
+    )

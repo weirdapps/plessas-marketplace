@@ -74,7 +74,7 @@ A migration message in `CHANGELOG.md ### Removed` should call this out.
 
 1. `run.sh` running `npm install` on first MCP launch ✓ confirmed via code reading
 2. `npm install` actually fetching `outlook-tool` / `teams-cli` from `git+https://...` URLs ✓ confirmed by inspecting node_modules
-3. The `mcp__outlook-bridge__outlook_doctor` call from inside the slash command actually triggering MCP startup if it's not already running — **not confirmed**. Possible that the MCP server starts only on the first user-facing command, not on doctor calls.
+3. The `mcp__plugin_mail_outlook-bridge__outlook_doctor` call from inside the slash command actually triggering MCP startup if it's not already running — **not confirmed**. Possible that the MCP server starts only on the first user-facing command, not on doctor calls.
 
 **Test plan:**
 

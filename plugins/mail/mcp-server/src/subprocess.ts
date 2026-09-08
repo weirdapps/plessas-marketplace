@@ -85,15 +85,26 @@ export function __setSpawnForTests(impl: SpawnLike | undefined): void {
   spawnImpl = (impl ?? (nodeSpawn as unknown as SpawnLike));
 }
 
+// A shell is needed only for the Windows PATH fallback, where the target is the
+// `outlook-cli` .cmd shim that Node >= 20.12.2 refuses to spawn without one.
+// The bundled path runs process.execPath, a real .exe, so it needs no shell: with
+// one, every argument goes through cmd.exe and user-controlled mail subjects,
+// bodies, recipients and search queries become shell metacharacters.
+export function shouldUseShell(platform: string, cliAbsPath: string | null): boolean {
+  return platform === 'win32' && cliAbsPath === null;
+}
+
 function spawnOnce(args: string[], timeoutMs: number): Promise<SpawnResult> {
   return new Promise((resolve, reject) => {
-    const isWindows = process.platform === 'win32';
+    const useShell = shouldUseShell(process.platform, CLI_ABS_PATH);
     // Use absolute paths (current node + bundled CLI) when available — survives
     // PATH stripping in launchd/GUI launches and fnm session-bin rotation.
     // Fall back to bare command name if outlook-tool isn't installed as a dep.
+    // That fallback is the one remaining shell-exposed path, reached only by a
+    // legacy `npm link` install on Windows.
     const cmd = CLI_ABS_PATH ? process.execPath : 'outlook-cli';
     const finalArgs = CLI_ABS_PATH ? [CLI_ABS_PATH, ...args] : args;
-    const child = spawnImpl(cmd, finalArgs, { stdio: ['ignore', 'pipe', 'pipe'], ...(isWindows && { shell: true }) } as any);
+    const child = spawnImpl(cmd, finalArgs, { stdio: ['ignore', 'pipe', 'pipe'], ...(useShell && { shell: true }) } as any);
     let stdout = '', stderr = '';
     child.stdout.on('data', (b: Buffer) => { stdout += b.toString(); });
     child.stderr.on('data', (b: Buffer) => { stderr += b.toString(); });
@@ -115,12 +126,29 @@ function spawnOnce(args: string[], timeoutMs: number): Promise<SpawnResult> {
 export interface RunOutlookCliOpts {
   timeoutMs?: number;
   noAutoReauth?: boolean;       // default true — MCP wrapper never wants browser pop-up
+  /**
+   * Default true. Exit 5 covers "response lost" as well as "call failed", so a
+   * timed-out send-mail may already have been delivered. Retrying it delivers it
+   * again. Set false on every non-idempotent write: the caller then gets one
+   * error saying the upstream state is unknown instead of up to four sends.
+   */
+  idempotent?: boolean;
+  /**
+   * Exit codes whose stdout still carries a payload the caller wants. Several CLI
+   * commands print their result and only THEN set a non-zero exit to flag a bad
+   * state (move-mail sets 5 for a non-empty failed[]). Throwing that away loses
+   * the only report of what actually happened. Empty by default; a code listed
+   * here still falls through to the error path if stdout does not parse.
+   */
+  payloadExitCodes?: number[];
 }
 
 export async function runOutlookCli<T = unknown>(
   args: string[],
   opts: RunOutlookCliOpts = {},
 ): Promise<T> {
+  const idempotent = opts.idempotent !== false;
+  const payloadExitCodes = opts.payloadExitCodes ?? [];
   const finalArgs = [...args];
   if (opts.noAutoReauth !== false && !finalArgs.includes('--no-auto-reauth')) {
     finalArgs.push('--no-auto-reauth');
@@ -142,18 +170,32 @@ export async function runOutlookCli<T = unknown>(
       }
     }
 
-    const mapping = EXIT_CODE_MAP[result.exitCode] ?? { code: 'internal' as const, retryable: false };
+    // Non-zero exit that still carries a report: the payload is already on stdout
+    // and is the only place the caller learns what happened. Throwing it away and
+    // retrying the whole batch would re-move the ids that already moved.
+    if (payloadExitCodes.includes(result.exitCode) && result.stdout.trim() !== '') {
+      try { return JSON.parse(result.stdout) as T; }
+      catch { /* not a payload after all: fall through to the normal error path */ }
+    }
 
-    if (mapping.retryable && attempt < RETRY_DELAYS_MS.length) {
+    const mapping = EXIT_CODE_MAP[result.exitCode] ?? { code: 'internal' as const, retryable: false };
+    const retryable = mapping.retryable && idempotent;
+
+    if (retryable && attempt < RETRY_DELAYS_MS.length) {
       await sleep(RETRY_DELAYS_MS[attempt]);
       continue;
     }
 
-    const remediation = mapping.code === 'auth_required'
-      ? 'Run `outlook-cli login` then retry.'
-      : undefined;
+    let remediation: string | undefined;
+    if (mapping.code === 'auth_required') {
+      remediation = 'Run `outlook-cli login` then retry.';
+    } else if (mapping.code === 'upstream' && !idempotent) {
+      remediation = 'NOT retried, because this operation is not idempotent and exit 5 covers a lost response as well as a failed call: '
+        + 'the upstream state is unknown and the operation may or may not have completed. '
+        + 'Check Drafts, Sent Items or the target folder before repeating it.';
+    }
 
-    throw new OutlookCliError(mapping.code, result.exitCode, result.stderr, mapping.retryable, remediation);
+    throw new OutlookCliError(mapping.code, result.exitCode, result.stderr, retryable, remediation);
   }
 
   throw new OutlookCliError('upstream', 5, 'Retries exhausted', true);

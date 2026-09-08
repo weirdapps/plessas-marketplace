@@ -1,7 +1,7 @@
 ---
 description: "Create a new NBG-branded presentation from content or brief"
 argument-hint: "[topic, content, or brief]"
-allowed-tools: Agent, Read, Write, Bash, Skill(manage-nano-banana), Skill(document-skills:pptx)
+allowed-tools: Agent, Read, Write, Bash, Skill(manage-nano-banana), Skill(document-skills:pptx), mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_get_mail
 ---
 
 <objective>
@@ -19,14 +19,14 @@ User request: $ARGUMENTS
 mkdir -p ~/.claude/presentations/pending ~/.claude/presentations/reviewed
 ```
 
-This is idempotent — does nothing if the directories already exist.
+This is idempotent: it does nothing if the directories already exist.
 
 ### 0. Continuous Learning (automatic)
 
 - Check `~/.claude/presentations/pending/` for drafts the user has modified since generation
 - If modified drafts found: quick-compare, extract patterns, update `shared/presentation-style-guide.md`
 - Load learned style preferences from the style guide (title style, layout, charts, density, narrative framework)
-- Pass preferences to downstream agents in handoff payloads (see orchestrator AGENT.md)
+- Pass preferences to downstream agents in handoff payloads (the envelope shape is defined in `decks:nbg-presenter`)
 
 ### 1. Analyze Input & Apply Pyramid Principle
 
@@ -37,7 +37,7 @@ This is idempotent — does nothing if the directories already exist.
 
 ### 2. Storyline Creation (Storyline Architect)
 
-Use the Storyline Architect skill to create narrative structure:
+Dispatch `decks:storyline-architect` to create the narrative structure:
 
 - Apply **Pyramid Principle**: Answer first, then support
 - Define **ONE key message per slide** (no exceptions)
@@ -49,7 +49,7 @@ Use the Storyline Architect skill to create narrative structure:
 
 ### 3. Storyboard Design (Storyboard Designer)
 
-Use the Storyboard Designer skill for visual layout:
+Dispatch `decks:storyboard-designer` for visual layout:
 
 - Select appropriate NBG layouts for each slide type
 - Specify exact positioning (pixels, not approximations)
@@ -59,14 +59,14 @@ Use the Storyboard Designer skill for visual layout:
 
 ### 4. Asset Generation (if needed)
 
-- **Infographic Specialist** (always available): Charts, diagrams, KPI dashboards (SVG-based)
-- **Icon Designer** (always available): Custom NBG-compliant SVG icons
-- **manage-nano-banana** (OPTIONAL — only if `plessas-lab` marketplace is installed): Complex AI-generated infographics requiring rasterised image output. If the `Skill(manage-nano-banana)` is not available in your environment, silently skip this step and rely on the SVG-based Infographic Specialist + Icon Designer for all visuals — every deck remains fully producible without it.
+- Dispatch `decks:infographic-specialist` for charts, diagrams and KPI dashboards (SVG-based)
+- Dispatch `decks:icon-designer` for custom NBG-compliant SVG icons
+- **manage-nano-banana** (OPTIONAL, only if `plessas-lab` marketplace is installed): Complex AI-generated infographics requiring rasterised image output. If the `Skill(manage-nano-banana)` is not available in your environment, silently skip this step and rely on `decks:infographic-specialist` and `decks:icon-designer` for all visuals; every deck remains fully producible without it.
 - Apply semantic colors: green=good, red=bad, gray=neutral
 
 ### 5. Final Assembly (Graphics Renderer)
 
-Use Graphics Renderer or document-skills:pptx to create pixel-perfect PPTX:
+Dispatch `decks:graphics-renderer` to create the pixel-perfect PPTX (it may use `document-skills:pptx` internally):
 
 - Dimensions: 13.33" x 7.5" (LAYOUT_WIDE) (NBG custom, NOT standard)
 - Background: white (#FFFFFF) - ALWAYS
@@ -74,19 +74,25 @@ Use Graphics Renderer or document-skills:pptx to create pixel-perfect PPTX:
 - Small logo on content slides (0.374", 7.071")
 - Large logo on covers/dividers (0.374", 6.271")
 - Page numbers on content slides only (12.71", 7.1554")
-- Bullets: Bright Cyan (#00DFF8)
+- Bullets: Cyan (#00ADBF)
 - All text boxes: margin: 0
 - **NO pie charts** - use doughnut instead
 - **NO "Thank You" slides** - use plain back cover with centered logo
 
 ### 5B. Cross-Plugin Integration
 
-- **--from-email [subject]**: If provided, read the email thread from Apple Mail and use it as input content
+- **--from-email [subject]**: If provided, read the email thread through the `mail` plugin's outlook-bridge MCP (`mcp__plugin_mail_outlook-bridge__outlook_list_mail`, then `mcp__plugin_mail_outlook-bridge__outlook_get_mail`) and use it as input content. If those tools are absent from your tool list the `mail` plugin is not installed: say so and ask the user to install it. Do not fall back to macOS Mail, which is not synced with M365.
 - After completion, offer: "Would you like to email this deck? Use `/send-mail` with the deck attached."
 
-### 6. McKinsey Quality Check
+### 6. QA Gate (Presentation QA)
 
-- **Read-Through Test**: Read only titles - do they tell the story?
+Dispatch `decks:presentation-qa` with the rendered PPTX path. **This is a gate, not a review: nothing ships until it returns PASS.**
+
+It runs both layers, brand compliance via `nbg_validate.py` and then content and composition, and returns either PASS or a per-slide fix list. On a fix list, dispatch `decks:graphics-renderer` with that list and re-run QA. Maximum 2 remediation cycles; if it still fails, stop and present the remaining issues to the user rather than shipping.
+
+The standards it holds you to:
+
+- **Read-Through Test**: Read only titles, do they tell the story?
 - **5-7 Second Test**: Is each slide scannable?
 - **Brand Compliance**: All NBG specs followed?
 - **"So What?" Passed**: Does every slide contribute?
@@ -112,7 +118,7 @@ Use Graphics Renderer or document-skills:pptx to create pixel-perfect PPTX:
 - Title: 003841 (Dark Teal)
 - Body: 202020 (Dark Text)
 - Section numbers: 007B85 (NBG Teal)
-- Bullets: 00DFF8 (Bright Cyan)
+- Bullets: 00ADBF (Cyan)
 - Background: FFFFFF (White)
 
 ### Logo (from Template)

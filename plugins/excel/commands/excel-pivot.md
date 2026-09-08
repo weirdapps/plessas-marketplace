@@ -1,5 +1,5 @@
 ---
-description: "Build a pivot table from an Excel workbook — suggest or execute groupings, aggregations, and insights."
+description: "Build a pivot table from an Excel workbook: suggest or execute groupings, aggregations, and insights."
 argument-hint: "<file> [intent]"
 allowed-tools: Read, Write, Bash, Agent, Skill(document-skills:xlsx)
 ---
@@ -10,9 +10,9 @@ Build pivot-style analysis from an Excel workbook.
 
 ## Workflow
 
-1. **Read the workbook** — try these methods in order:
+1. **Read the workbook**, trying these methods in order:
    1. **`document-skills:xlsx` skill** (preferred): invoke via `Skill(document-skills:xlsx)`. If the skill is available it handles reading, formatting, and writing xlsx files natively.
-   2. **Fallback — openpyxl/pandas via Python**: if the skill is not installed, use `openpyxl` to read and `pandas` for pivot operations (install with `pip3 install openpyxl pandas` if missing).
+   2. **Fallback (openpyxl/pandas via Python)**: if the skill is not installed, use `openpyxl` to read and `pandas` for pivot operations, running Python through `uv`, which installs nothing permanently: `uv run --no-project --with openpyxl --with pandas python -c "..."`. Without `uv`, use a venv (`python3 -m venv .venv && .venv/bin/pip install openpyxl pandas`). A bare `pip3 install` fails with `externally-managed-environment` on PEP 668 systems; use `--break-system-packages` only as a last resort.
    3. **Read tool**: for `.csv`/`.tsv` files, read directly as text.
 
 2. **If no intent specified**: analyse the data structure and suggest 2-3 useful pivots based on the columns available. Present suggestions and let the user pick.
@@ -24,7 +24,7 @@ Build pivot-style analysis from an Excel workbook.
 
 4. **Save output** to `~/Downloads/` with the standard `YYYYMMDDHHMM_pivot_<descriptor>.xlsx` naming.
 
-5. **Insight commentary**: after the pivot, add 2-3 sentences of insight — what the data shows, any trends, anything surprising.
+5. **Insight commentary**: after the pivot, add 2-3 sentences of insight covering what the data shows, any trends, anything surprising.
 
 ## NBG conventions
 

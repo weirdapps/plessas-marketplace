@@ -2,35 +2,22 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-import { authCheckTool } from './tools/auth-check.js';
-import { authRenewTool } from './tools/auth-renew.js';
-import { healthCheckTool } from './tools/health-check.js';
-import { listTeamsTool } from './tools/list-teams.js';
-import { listChannelsTool } from './tools/list-channels.js';
-import { listChatsTool } from './tools/list-chats.js';
-import { listMessagesTool } from './tools/list-messages.js';
-import { sendMessageTool } from './tools/send-message.js';
-import { resolveMriTool } from './tools/resolve-mri.js';
-import { loginTool } from './tools/login.js';
-import { doctorTool } from './tools/doctor.js';
+// ALL_TOOLS is the single registry: adding a tool to the barrel serves it here
+// and covers it in tests/tools-registry.test.ts at the same time.
+import { ALL_TOOLS } from './tools/index.js';
 import { TeamsCliError } from './subprocess.js';
+import { validateArgs } from './validate-args.js';
+import pkg from '../package.json' with { type: 'json' };
 
-const TOOLS = [
-  authCheckTool, authRenewTool, healthCheckTool, loginTool,
-  listTeamsTool, listChannelsTool, listChatsTool, listMessagesTool,
-  sendMessageTool, resolveMriTool,
-  // Diagnostics
-  doctorTool,
-];
-const TOOLS_BY_NAME = Object.fromEntries(TOOLS.map(t => [t.name, t]));
+const TOOLS_BY_NAME = Object.fromEntries(ALL_TOOLS.map(t => [t.name, t]));
 
 const server = new Server(
-  { name: 'teams-bridge', version: '0.2.0' },
+  { name: 'teams-bridge', version: pkg.version },
   { capabilities: { tools: {} } },
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: TOOLS.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
+  tools: ALL_TOOLS.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (req) => {
@@ -41,8 +28,23 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       isError: true,
     };
   }
+  // Check against the declared inputSchema before spawning: an absent required
+  // field otherwise reaches the CLI as `undefined` and comes back as an opaque
+  // internal error instead of naming the field.
+  const args = (req.params.arguments ?? {}) as Record<string, unknown>;
+  const problem = validateArgs(tool, args);
+  if (problem) {
+    return {
+      content: [{ type: 'text', text: JSON.stringify({
+        error: 'invalid_input',
+        message: problem,
+        tool: req.params.name,
+      }) }],
+      isError: true,
+    };
+  }
   try {
-    const result = await tool.handler(req.params.arguments ?? {});
+    const result = await tool.handler(args);
     return { content: [{ type: 'text', text: JSON.stringify(result) }] };
   } catch (err) {
     if (err instanceof TeamsCliError) {

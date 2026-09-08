@@ -1,7 +1,7 @@
 ---
 description: "Create an infographic or data visualization (NBG brand defaults)"
 argument-hint: "[data or description of infographic]"
-allowed-tools: Task, Skill(manage-nano-banana), Bash
+allowed-tools: Agent, Read, Write, Skill(manage-nano-banana), Bash
 ---
 
 <objective>

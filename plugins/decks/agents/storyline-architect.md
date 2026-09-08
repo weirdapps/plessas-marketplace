@@ -155,7 +155,7 @@ presentation:
 
 - First impression, set the tone
 - Strong title (48pt) that captures the essence
-- Subtitle (36pt): list units as `Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls` — NEVER use "Cards and Digital Business"
+- Subtitle (36pt): list units as `Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls`. NEVER use "Cards and Digital Business"
 - Location and date in smaller text
 
 ### Contents
@@ -228,6 +228,16 @@ Examples:
 - "Revenue Exceeded Targets by €15M"
 - "Three Initiatives Drove the Turnaround"
 - "Customer Complaints Dropped to Record Low"
+
+## Variance: do not let the deck read as generated
+
+The strongest current tell of an AI-written deck is not a typo or an ugly colour, it is **uniformity**: every slide carrying the same number of bullets, every bullet trimmed to the same length, every page the same shape. Human decks are uneven because the arguments they carry are uneven. A partner red-inks a deck that reads as regular before they red-ink one that reads as wrong.
+
+- **Let bullet counts differ across slides.** One sentence on one slide and five on the next are both correct if that is what each point needs. Three bullets everywhere is a tell.
+- **Do not equalise bullet lengths.** Trim for sense, never to make a column look flush. A four-word bullet next to a two-line one is ordinary writing.
+- **Let some slides carry no bullets at all.** The strongest slide in most decks is one number or one sentence.
+
+This is judgement, not arithmetic. Do not hit a variance quota, just stop smoothing.
 
 ## Content Refinement Rules
 

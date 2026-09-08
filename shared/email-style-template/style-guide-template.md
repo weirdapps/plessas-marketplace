@@ -1,20 +1,20 @@
-# Email Style Guide — Template
+# Email Style Guide Template
 
-> **What this is:** A template for the `mail` plugin's style guide. The plugin uses this to match your voice when drafting replies. Copy to `<plugin-root>/shared/style-guide.md` and customise the `<< REPLACE >>` blocks. For best results, regenerate it from your actual sent mail using `/style-rebuild` after a few weeks of usage.
+> **What this is:** A template for the `mail` plugin's style guide. The plugin uses this to match your voice when drafting replies. Copy to `<plugin-root>/shared/style-guide.md` and customise the `<< REPLACE >>` blocks. For best results, update it from your actual sent mail using `/style-sync` after a few weeks of usage.
 
 ---
 
 ## Identity
 
 `<< REPLACE >>` Your name, role, and email. Example:
-> Name Surname — Role at NBG
+> Name Surname, Role at NBG
 >
 > - Email: firstname.lastname@nbg.gr (primary)
-> - Always CC self on replies — Archive is the canonical source for sent mail
+> - Always CC self on replies: Archive is the canonical source for sent mail
 
 ## Signature Block (auto-appended by Outlook)
 
-> The mail plugin's drafting commands NEVER include the signature in reply text — Outlook adds it automatically from `~/.outlook-cli/signature.html`.
+> The mail plugin's drafting commands NEVER include the signature in the body text. On the tool-driven paths the bridge appends it from `~/.outlook-cli/signature.html` on every send unless you pass `no_signature: true`. When you paste a text draft into Outlook's own Reply window instead, Outlook adds its own configured signature.
 
 `<< REPLACE >>` Your signature lines. Example:
 
@@ -77,37 +77,37 @@ Greek is the dominant language for internal NBG communication. Mixed Greek/Engli
 
 ## Subject Line Rules
 
-- ALWAYS lowercase by default — **EXCEPT acronyms/initialisms which stay ALL-CAPS** (each letter represents a word, not a word itself)
+- ALWAYS lowercase by default, **EXCEPT acronyms/initialisms which stay ALL-CAPS** (each letter represents a word, not a word itself)
 - Greek acronyms: ΕΤΕ, ΔΤ, ΟΚ, ΦΥΙ, ΑΤΜ, ΟΕΕ, ΔΟΥ
 - Latin acronyms: NBG, KPI, IRIS, EU, AI, NPE, BoD, ExCo, ESG, CRO, CFO, PSD3, MiCA, ATM
 - Mixed-case acronyms keep their canonical form: BoD, ExCo, eIDAS, iOS
 - Proper nouns (Δημήτρης, Christina, Outlook) are unaffected
 - 5-9 words ideal
-- Lead with the noun ("payment terminal rollout — phase 2") not the verb ("re: please review payment...")
+- Lead with the noun ("payment terminal rollout, phase 2") not the verb ("re: please review payment...")
 - Re: / FW: prefixes auto-added by Outlook; don't manually type them
 
 ## Body Format Rules
 
-- **Font: Aptos Light 12pt, colour `#404040`** (not regular Aptos — Aptos Light reads slightly thinner/airier at the same point size). In HTML, write `font-family: &quot;Aptos Light&quot;, Aptos, sans-serif;` so it's shell-safe inside `printf` / PowerShell
+- **Font: Aptos Light 12pt, colour `#404040`** (not regular Aptos; Aptos Light reads slightly thinner/airier at the same point size). In HTML, write `font-family: &quot;Aptos Light&quot;, Aptos, sans-serif;` so it's shell-safe inside `printf` / PowerShell
 - **Text alignment: `text-align: justify`** on the body for professional appearance in Outlook
-- **Encoding: UTF-8 everywhere** — HTML files include `<meta charset="UTF-8">`. Never windows-1253 or ISO-8859-7 (those render as garbled text in modern apps and break Outlook paste)
-- NO `<p>` tags — use `<br>` for line break, `<br><br>` for paragraph break
+- **Encoding: UTF-8 everywhere**. HTML files include `<meta charset="UTF-8">`. Never windows-1253 or ISO-8859-7 (those render as garbled text in modern apps and break Outlook paste)
+- NO `<p>` tags: use `<br>` for line break, `<br><br>` for paragraph break
 - Bullet lists: `<ul><li>...</li></ul>` with inline styling for the list items
 - Tables: inline styled `<table>` with `border-collapse: collapse`, header row in bold
-- Headings inside body: `<b>` (NOT `<h1>`/`<h2>` — they render with browser defaults)
-- Hyperlinks: `<a href="...">visible text</a>` — full URL never in body
-- **Signature exception**: Outlook signatures (`~/.outlook-cli/signature.html`) stay on regular Aptos for the wrapper and Aptos SemiBold for the name — body in Light reads airy, signature in regular weight acts as the "anchor"
+- Headings inside body: `<b>` (NOT `<h1>`/`<h2>`, which render with browser defaults)
+- Hyperlinks: `<a href="...">visible text</a>`, full URL never in body
+- **Signature exception**: Outlook signatures (`~/.outlook-cli/signature.html`) stay on regular Aptos for the wrapper and Aptos SemiBold for the name; body in Light reads airy, signature in regular weight acts as the "anchor"
 
 ## Anti-Patterns (NEVER DO)
 
 These flag AI authorship and are unacceptable in NBG executive communication:
 
-- **Never use em-dashes (`—` or `--`)** — replace with comma, colon, semicolon, or full stop based on context. Same restraint for en-dashes used parenthetically; date ranges like `2024-2025` are fine
-- **Never invent NBG executive names** — if a name isn't already known, ASK rather than guess. Acceptable framings when unknown: `NBG [Division] leadership`, `the relevant [Division] head`, `the NBG [Division] team`
+- **Never use em-dashes (`—` or `--`)**: replace with comma, colon, semicolon, or full stop based on context. Same restraint for en-dashes used parenthetically; date ranges like `2024-2025` are fine
+- **Never invent NBG executive names**: if a name isn't already known, ASK rather than guess. Acceptable framings when unknown: `NBG [Division] leadership`, `the relevant [Division] head`, `the NBG [Division] team`
 - **Never use formal `Σας` address** for direct reports or inner-circle colleagues
-- **Never use standard ellipsis (`...`)** in Greek business email — convention is two dots (`..`)
-- **Never write lengthy paragraphs** for routine matters — keep BRIEF replies under ~20 words
-- **Never include the signature** in drafted reply text — Outlook appends it automatically
+- **Never use standard ellipsis (`...`)** in Greek business email; convention is two dots (`..`)
+- **Never write lengthy paragraphs** for routine matters; keep BRIEF replies under ~20 words
+- **Never include the signature** in drafted reply text; Outlook appends it automatically
 
 ---
 
@@ -163,13 +163,13 @@ The `mail` plugin maintains a per-recipient profile in `<plugin-root>/shared/rec
 - Last-contact date
 - Language (Greek / English / mixed)
 
-This file is **per-user and gitignored** — it grows organically from your sent mail. Do NOT commit it.
+This file is **per-user and gitignored**; it grows organically from your sent mail. Do NOT commit it.
 
 `<< REPLACE >>` Optionally enumerate explicit overrides for specific recipients here:
 
 ```
-- recipient.name@nbg.gr — always Greek, always brief, always CC their assistant
-- another.name@external.com — formal English only, full title, 24-hour response window
+- recipient.name@nbg.gr: always Greek, always brief, always CC their assistant
+- another.name@external.com: formal English only, full title, 24-hour response window
 ```
 
 ---
@@ -182,17 +182,16 @@ When the `mail` plugin drafts a reply, it:
 2. Reads the recipient profile (or uses defaults if new)
 3. Reads this style guide
 4. Reads any personal overlay at `~/.claude/private/email-style-personal.md`
-5. Generates a draft (no signature — Outlook appends)
+5. Generates a draft (no signature; Outlook appends)
 6. Creates an Outlook draft (does NOT send)
 7. You review and send manually
 
-`/mail-draft-review` lets you compare what you sent vs. what Claude drafted, and feeds corrections back into this guide.
+`/draft-review` lets you compare what you sent vs. what Claude drafted, and feeds corrections back into this guide.
 
 ---
 
 ## Maintenance
 
-- After ~1 month of usage: run `/style-rebuild` to regenerate this guide from your actual sent mail
-- `/mail-style-sync` does an incremental update with new sent mail since last sync
-- `/mail-style-stats` shows accuracy trends (drafted vs. actual)
-- `/mail-style-rollback` restores a previous version from backup
+- After ~1 month of usage: run `/style-sync` to update this guide from your actual sent mail. It is incremental, covering only sent mail since the last sync.
+- `/style-stats` shows accuracy trends (drafted vs. actual)
+- `/style-rollback` restores a previous version from backup

@@ -2,13 +2,12 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import type { Tool } from '../tool.js';
 import { getResolvedCli } from '../subprocess.js';
 import { checkAuth } from '../auth-guard.js';
+import pkg from '../../package.json' with { type: 'json' };
 
-const _require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ROOT = join(__dirname, '..', '..');
 const STATUS_FILE = join(SERVER_ROOT, '.last-startup.json');
@@ -51,7 +50,10 @@ function buildSuggestion(opts: {
     return `Last MCP startup FAILED: ${opts.lastStartupError ?? 'unknown'}. Check stderr from Claude or run 'bash mcp-server/run.sh' manually to see the error.`;
   }
   if (opts.cliMode === 'path') {
-    return `outlook-tool not bundled in mcp-server/node_modules. The MCP is using a global outlook-cli on PATH. To get the bundled (more robust) install, run: cd ${SERVER_ROOT} && npm install`;
+    // Keep this command identical in shape to the one run.sh prints. A bare
+    // `npm install` here would pull several hundred MB of Playwright browsers
+    // that the bundled CLI does not need at install time.
+    return `outlook-tool not bundled in mcp-server/node_modules. The MCP is using a global outlook-cli on PATH. To get the bundled (more robust) install, run: cd ${SERVER_ROOT} && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci`;
   }
   if (opts.authStatus === 'missing' || opts.authStatus === 'expired') {
     return `Auth missing/expired. Run: outlook-cli login --sharepoint-host ${suggestedTenantHost()}`;
@@ -65,11 +67,10 @@ export const doctorTool: Tool = {
   inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   handler: async () => {
     const cli = getResolvedCli();
-    let mcpVersion = 'unknown';
-    try {
-      const pkg = _require('../../package.json') as { version?: string };
-      mcpVersion = pkg.version ?? 'unknown';
-    } catch { /* ignore */ }
+    // Same JSON import server.ts uses. The old runtime `_require('../../package.json')`
+    // resolved relative to the emitted file, so it reported the version correctly
+    // only from dist/tools/ and read 'unknown' from anywhere else.
+    const mcpVersion = pkg.version;
 
     let auth: { status: string; hoursRemaining?: number; account?: { upn: string } } | { status: string; error: string };
     try {

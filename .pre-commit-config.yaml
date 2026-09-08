@@ -12,6 +12,14 @@ repos:
       - id: check-yaml
         args: ['--unsafe']  # Allow custom YAML tags in GitHub Actions
       - id: check-json
+        # tsconfig files are JSONC, not JSON: TypeScript has always accepted
+        # `//` comments there and the compiler documents it. check-json is a
+        # strict JSON parser, so it fails them at line 1 column 0. Both
+        # tsconfig.test.json files open with a comment explaining why the file
+        # exists at all, which is worth more than satisfying a parser that was
+        # never meant to read them. The base tsconfig.json files happen to be
+        # comment-free and would pass either way; this covers any future one.
+        exclude: (^|/)tsconfig.*\.json$
       - id: check-merge-conflict
       - id: mixed-line-ending
         args: ['--fix=lf']
@@ -61,4 +69,14 @@ repos:
         # bundled tools, MCP servers) are loose markdown by design — they
         # mix prose, code fences, and YAML frontmatter for LLM consumption.
         # Lint only top-level docs and per-plugin READMEs.
-        exclude: ^plugins/[^/]+/(agents|commands|skills|shared|bundled|tools|mcp-server)/
+        #
+        # shared/brand-system/ is the second half of that same rule. It is not
+        # hand-written: scripts/sync_brand_system.sh copies it verbatim from
+        # plugins/decks/shared/brand-system/, which the first clause already
+        # exempts. Linting the mirror but not its source put two guards in
+        # direct conflict. markdownlint wanted a blank line added to
+        # shared/brand-system/generation-methods.md:260 (MD032), and the moment
+        # anyone added it the no-drift guard (validate_consistency.py's
+        # check_brand_system_sync) would fail on the resulting difference.
+        # Fix a generated file at its source or not at all.
+        exclude: ^(plugins/[^/]+/(agents|commands|skills|shared|bundled|tools|mcp-server)|shared/brand-system)/

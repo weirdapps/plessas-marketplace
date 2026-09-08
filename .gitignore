@@ -81,3 +81,14 @@ plugins/mail/shared/style-guide.md
 .coverage
 .coverage.*
 htmlcov/
+
+# uv lockfile. pyproject.toml is tooling-only with no [project] table, so there is
+# nothing to lock: `uv lock` emits a 3-line stub that pins a python floor which then
+# drifts from the real one. If a [project] table is ever added, delete this line.
+uv.lock
+
+# The user-generated mail style guide contains real names, addresses and per-recipient
+# profiles. The plugin now anchors its writes to ${CLAUDE_PLUGIN_ROOT}, but a stray copy
+# written with this repo as CWD must never be committable either.
+/shared/style-guide.md
+style-guide.local.md

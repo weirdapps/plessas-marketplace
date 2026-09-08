@@ -28,19 +28,23 @@ User request: $ARGUMENTS
    - Slide-by-slide assessment
 
 3. **Restructure Narrative**
-   - Apply Storyline Architect principles
+
+   Dispatch `decks:storyline-architect` with the extracted Markdown:
    - One key message per slide
    - Insight-driven titles
    - Logical flow
 
 4. **Redesign Layouts**
+
+   Dispatch `decks:storyboard-designer` with the revised storyline:
    - Apply appropriate NBG layouts
    - Improve visual hierarchy
    - Add proper white space
    - Align with brand guidelines
 
 5. **Regenerate Presentation**
-   - Apply NBG specifications:
+
+   Dispatch `decks:graphics-renderer` with the storyboard. Apply NBG specifications:
      - Dimensions: 13.33" x 7.5" (LAYOUT_WIDE)
      - Font: Aptos
      - Colors: NBG palette
@@ -50,10 +54,13 @@ User request: $ARGUMENTS
      - Back cover: centered oval logo (no text)
      - Charts: doughnut only (NEVER pie)
 
-6. **Quality Assurance**
-   - Brand compliance check
-   - Scannable in 5-7 seconds
-   - Board-ready appearance
+6. **QA Gate**
+
+   Dispatch `decks:presentation-qa` with the regenerated PPTX. **This is a gate, not a review: a
+   redesign does not ship until it returns PASS.** A redesign is exactly the case where the gate
+   earns its keep, because the input deck was off-standard by definition. On a fix list, dispatch
+   `decks:graphics-renderer` with it and re-run QA; maximum 2 cycles, then stop and present the
+   remaining issues rather than shipping.
 </process>
 
 <redesign_principles>

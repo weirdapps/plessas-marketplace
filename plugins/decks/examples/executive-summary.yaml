@@ -1,7 +1,6 @@
 # Executive Summary Presentation
 # A concise board-level presentation following McKinsey Pyramid Principle
 
-template: GR
 
 presentation:
   title: "Q4 2025 Digital Banking Performance"
@@ -24,7 +23,7 @@ slides:
 
   - type: content
     content:
-      title: "Digital channels exceeded all KPIs, driven by mobile app adoption increase of 23%"
+      title: "Digital channels exceeded all KPIs, driven by 23% mobile app adoption growth"
       bumper: "KEY FINDING"
       points:
         - "Mobile active users reached 2.8M, up 23% YoY"

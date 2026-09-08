@@ -1,26 +1,26 @@
 # Calendar Access Patterns
 
-> **Cross-platform note:** AppleScript fallback paths in this file (`tell application "Microsoft Outlook"`, `tell application "Mail"`, etc.) only run on macOS. On Windows or Linux, the agent should rely on `mcp__outlook-bridge__*` tools and skip the AppleScript blocks entirely. Each AppleScript block is prefixed with an explicit OSTYPE guard.
+> **Cross-platform note:** AppleScript fallback paths in this file (`tell application "Microsoft Outlook"`, `tell application "Mail"`, etc.) only run on macOS. On Windows or Linux, the agent should rely on `mcp__plugin_mail_outlook-bridge__*` tools and skip the AppleScript blocks entirely. Each AppleScript block is prefixed with an explicit OSTYPE guard.
 
 Calendar access for meeting intelligence. The outlook-bridge MCP wrapper around `outlook-cli` is the primary method (Microsoft Graph, structured JSON). Outlook AppleScript is a last-resort emergency fallback.
 
-> **IMPORTANT**: macOS Calendar is NOT reliable — it is out of sync with M365. NEVER use macOS Calendar AppleScript.
+> **IMPORTANT**: macOS Calendar is NOT reliable; it is out of sync with M365. NEVER use macOS Calendar AppleScript.
 
 ## PRIMARY: outlook-cli via outlook-bridge MCP
 
-Use `mcp__outlook-bridge__outlook_list_calendar` for structured queries (today, date range, attendees-per-event). The wrapper authenticates via `outlook-cli`'s cached session — call `mcp__outlook-bridge__outlook_auth_check` first if you suspect the token has expired.
+Use `mcp__plugin_mail_outlook-bridge__outlook_list_calendar` for structured queries (today, date range, attendees-per-event). The wrapper authenticates via `outlook-cli`'s cached session; call `mcp__plugin_mail_outlook-bridge__outlook_auth_check` first if you suspect the token has expired.
 
 ### Today's events
 
 ```
-Tool: mcp__outlook-bridge__outlook_list_calendar
+Tool: mcp__plugin_mail_outlook-bridge__outlook_list_calendar
 Args: { "from": "now", "to": "end of day" }
 ```
 
 ### Date range
 
 ```
-Tool: mcp__outlook-bridge__outlook_list_calendar
+Tool: mcp__plugin_mail_outlook-bridge__outlook_list_calendar
 Args: { "from": "2026-04-22T00:00:00Z", "to": "2026-04-29T00:00:00Z" }
 ```
 
@@ -29,7 +29,7 @@ Args: { "from": "2026-04-22T00:00:00Z", "to": "2026-04-29T00:00:00Z" }
 ### Single event details (with full attendees + body)
 
 ```
-Tool: mcp__outlook-bridge__outlook_get_event
+Tool: mcp__plugin_mail_outlook-bridge__outlook_get_event
 Args: { "id": "AAMkAGI..." }
 ```
 
@@ -48,7 +48,7 @@ Use Outlook AppleScript ONLY if the outlook-bridge MCP is unavailable.
 
 ### Reading Today's Calendar Events
 
-**macOS only — skip on Windows/Linux:**
+**macOS only, skip on Windows/Linux:**
 
 ```bash
 if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -112,7 +112,7 @@ Outlook handles recurring events differently. The `every calendar event` query m
 
 | Scenario | Method |
 |----------|--------|
-| Default — structured "what's on my calendar" / range / event detail | outlook-bridge MCP (`outlook_list_calendar`, `outlook_get_event`) |
+| Default: structured "what's on my calendar" / range / event detail | outlook-bridge MCP (`outlook_list_calendar`, `outlook_get_event`) |
 | outlook-bridge unavailable | Outlook AppleScript |
 | User passes `--outlook` flag | Outlook AppleScript |
 

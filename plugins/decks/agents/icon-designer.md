@@ -1,6 +1,6 @@
 ---
 name: icon-designer
-description: SVG icon generator — NBG duotone, stroke-based outlines with accent details. Brand-configurable with NBG defaults.
+description: "SVG icon generator: NBG duotone, stroke-based outlines with accent details. Brand-configurable with NBG defaults."
 ---
 
 # Icon Designer

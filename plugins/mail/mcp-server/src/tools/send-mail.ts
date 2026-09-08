@@ -97,7 +97,8 @@ export const sendMailTool: Tool = {
     if (args.dry_run === true) cliArgs.push('--dry-run');
 
     try {
-      return await runOutlookCli(cliArgs);
+      // Not idempotent: a retried exit 5 can send the same mail twice.
+      return await runOutlookCli(cliArgs, { idempotent: false });
     } finally {
       await cleanupTempBodies(bodyFiles);
     }

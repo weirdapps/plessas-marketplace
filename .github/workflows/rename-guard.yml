@@ -43,7 +43,12 @@ jobs:
       - name: Verify every plugin command has `allowed-tools` in its frontmatter
         run: |
           set -e
-          missing=$(grep -L '^allowed-tools:' plugins/*/commands/*.md 2>/dev/null || true)
+          # `find`, not `plugins/*/commands/*.md`. That glob is exactly one
+          # level deep and cannot reach plugins/decks/bundled/creative/commands/,
+          # which holds three real commands the marketplace ships. See the
+          # no-task-in-allowed-tools job below for what the blind spot hid.
+          missing=$(find plugins -path '*/commands/*.md' -not -path '*/node_modules/*' \
+                      -exec grep -L '^allowed-tools:' {} + 2>/dev/null || true)
           if [ -n "$missing" ]; then
             echo "::error::These command files are missing 'allowed-tools' in frontmatter:"
             echo "$missing"
@@ -77,7 +82,13 @@ jobs:
         run: |
           set -e
           # `Task` is the deprecated alias for `Agent`. Standardised on Agent 2026-05-09.
-          hits=$(grep -nE '^allowed-tools:.*\bTask\b' plugins/*/commands/*.md 2>/dev/null || true)
+          # This job globbed plugins/*/commands/*.md until 2026-09-09 and so
+          # never looked inside plugins/decks/bundled/creative/commands/, where
+          # create-infographic.md had been declaring `allowed-tools: Task, ...`
+          # the entire time. The guard reported OK on every run. Search at any
+          # depth, and keep it that way.
+          hits=$(find plugins -path '*/commands/*.md' -not -path '*/node_modules/*' \
+                   -exec grep -nE '^allowed-tools:.*\bTask\b' {} + 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "::error::Found 'Task' in allowed-tools. Use 'Agent' (current Claude Code tool name)."
             echo "$hits"

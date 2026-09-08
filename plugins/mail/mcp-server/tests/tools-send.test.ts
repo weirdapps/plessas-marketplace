@@ -15,6 +15,7 @@ import {
   replyAllTool,
   forwardTool,
   captureSignatureTool,
+  moveMailTool,
 } from '../src/tools/index.js';
 
 let capturedArgs: string[] = [];
@@ -203,6 +204,99 @@ describe('outlook_forward', () => {
     expect(capturedArgs.filter((a) => a === '--to')).toHaveLength(2);
     expect(capturedArgs.filter((a) => a === '--cc')).toHaveLength(1);
     expect(capturedArgs.filter((a) => a === '--bcc')).toHaveLength(1);
+  });
+});
+
+/** Spawn stub with a chosen exit code, counting attempts. */
+function failingSpawn(opts: { stdout?: string; stderr?: string; exitCode: number }): { spawn: SpawnLike; calls: () => number } {
+  let calls = 0;
+  const spawn = ((_cmd: string, args: readonly string[]) => {
+    calls++;
+    capturedArgs = meaningfulArgs(args);
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const child = new EventEmitter() as any;
+    child.stdout = stdout;
+    child.stderr = stderr;
+    child.kill = () => {};
+    setImmediate(() => {
+      if (opts.stdout) stdout.emit('data', Buffer.from(opts.stdout));
+      if (opts.stderr) stderr.emit('data', Buffer.from(opts.stderr));
+      child.emit('close', opts.exitCode);
+    });
+    return child;
+  }) as SpawnLike;
+  return { spawn, calls: () => calls };
+}
+
+describe('write tools do not retry on exit 5', () => {
+  // Exit 5 also covers "Graph accepted it and the response was lost", so a retry
+  // here is a duplicate send, not a recovery.
+  it.each([
+    ['outlook_send_mail', () => sendMailTool.handler({ to: ['x@y.com'], subject: 's', html_body: '<p>b</p>' })],
+    ['outlook_reply', () => replyTool.handler({ message_id: 'AAMk-1', html_file: `${tmpDir}/r.html` })],
+    ['outlook_reply_all', () => replyAllTool.handler({ message_id: 'AAMk-1', html_file: `${tmpDir}/r.html` })],
+    ['outlook_forward', () => forwardTool.handler({ message_id: 'AAMk-1', to: ['f@x.com'], html_file: `${tmpDir}/r.html` })],
+  ])('%s spawns the CLI exactly once', async (_name, call) => {
+    const { spawn, calls } = failingSpawn({ stderr: 'timeout', exitCode: 5 });
+    __setSpawnForTests(spawn);
+    await expect(call()).rejects.toMatchObject({ code: 'upstream', retryable: false });
+    expect(calls()).toBe(1);
+  });
+});
+
+describe('outlook_move_mail', () => {
+  it('surfaces the partial-failure payload instead of throwing the batch away', async () => {
+    const payload = {
+      moved: [{ sourceId: 'a', newId: 'a2' }],
+      failed: [{ sourceId: 'b', code: 'UPSTREAM_HTTP_404' }],
+      summary: { requested: 2, moved: 1, failed: 1 },
+    };
+    const { spawn, calls } = failingSpawn({ stdout: JSON.stringify(payload), exitCode: 5 });
+    __setSpawnForTests(spawn);
+    const result = await moveMailTool.handler({ ids: ['a', 'b'], to: 'Archive' });
+    expect(result).toEqual(payload);
+    expect(calls()).toBe(1);
+    expect(capturedArgs).toContain('--continue-on-error');
+  });
+
+  it('does not accept a partial payload when continue_on_error is off', async () => {
+    const { spawn } = failingSpawn({ stdout: '{"moved":[],"failed":[]}', exitCode: 5 });
+    __setSpawnForTests(spawn);
+    await expect(moveMailTool.handler({ ids: ['a'], to: 'Archive', continueOnError: false }))
+      .rejects.toMatchObject({ code: 'upstream' });
+    expect(capturedArgs).not.toContain('--continue-on-error');
+  });
+});
+
+describe('outlook_move_mail destination guard', () => {
+  it.each([
+    'Deleted Items', 'DeletedItems', 'deleted items',
+    'Junk Email', 'JunkEmail', 'Junk', 'Trash', 'RecoverableItems',
+    'Inbox/Junk', 'Archive/2026/Deleted Items',
+  ])('refuses to move into %s without spawning anything', async (to) => {
+    const { spawn, calls } = failingSpawn({ stdout: '{}', exitCode: 0 });
+    __setSpawnForTests(spawn);
+    await expect(moveMailTool.handler({ ids: ['a'], to })).rejects.toMatchObject({
+      code: 'invalid_input',
+      exitCode: 2,
+    });
+    expect(calls()).toBe(0);
+  });
+
+  it.each([
+    'Archive', 'Inbox/Projects/Alpha', 'Inbox/Archive-2026',
+    'Junk Mail Reports', 'Trashed Ideas',
+  ])('still allows %s', async (to) => {
+    await moveMailTool.handler({ ids: ['a'], to });
+    expect(capturedArgs).toContain('--to');
+    expect(capturedArgs).toContain(to);
+  });
+
+  it('cannot judge a raw id destination, and says so rather than pretending', async () => {
+    // Documented limitation: --to accepts id:<raw>, which no name check can resolve.
+    await moveMailTool.handler({ ids: ['a'], to: 'id:AAMkRawFolderId' });
+    expect(capturedArgs).toContain('id:AAMkRawFolderId');
   });
 });
 

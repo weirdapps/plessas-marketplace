@@ -1,12 +1,12 @@
 # Email Handler
 
-Email command center — inbox briefings, action recommendations, style-matched draft replies, Outlook sending, and self-learning.
+Email command center: inbox briefings, action recommendations, style-matched draft replies, Outlook sending, and self-learning.
 
 ## What It Does
 
 1. **Learns** from previous drafts vs your actual responses (automatic, every run)
-2. **Briefs** you on your inbox — gists, insights, new vs previously seen
-3. **Recommends** actions — reply, delegate, forward, monitor, skip, urgent, follow-up
+2. **Briefs** you on your inbox: gists, insights, new vs previously seen
+3. **Recommends** actions: reply, delegate, forward, monitor, skip, urgent, follow-up
 4. **Drafts** replies matching your communication style per recipient
 5. **Sends** via the `outlook-bridge` MCP server (Microsoft Graph v2.0, draft-first by default)
 6. **Tracks** inbox state across runs to highlight what's changed
@@ -15,10 +15,10 @@ Email command center — inbox briefings, action recommendations, style-matched 
 
 | Command | Description |
 |---------|-------------|
-| `/inbox-briefing` | Quick inbox scan — summaries, action flags, insights (read-only, no drafting) |
+| `/inbox-briefing` | Quick inbox scan: summaries, action flags, insights (read-only, no drafting) |
 | `/mail-review` | Full inbox briefing + action flags + draft replies |
 | `/triage-inbox` | Triage unread mail: rule-match, LLM-classify, batch-move with a safety contract and undo |
-| `/draft-review` | Deep learning pass — compare drafts to actual responses |
+| `/draft-review` | Deep learning pass: compare drafts to actual responses |
 | `/reply` | Reply (or reply-all) to an email with auto-quote + signature, draft-first |
 | `/forward` | Forward an email to new recipient(s), draft-first by default |
 | `/send-mail` | Send an email via Outlook (HTML, attachments, auto-CC self) |
@@ -27,7 +27,7 @@ Email command center — inbox briefings, action recommendations, style-matched 
 | `/decisions` | Surface recent decisions, track delegations, and check decision consistency |
 | `/style-rollback` | Restore a previous version of the style guide from backups |
 | `/style-stats` | Accuracy trends, top corrections, and recipient profile accuracy |
-| `/style-sync` | Periodic deep sync — update style guide from new sent emails since last sync |
+| `/style-sync` | Periodic deep sync: update style guide from new sent emails since last sync |
 | `/mail-doctor` | Diagnose `outlook-bridge` MCP: Node binary, CLI install mode, auth status, last startup |
 | `/auth-setup` | One-time M365 OAuth bootstrap + signature capture |
 
@@ -57,7 +57,7 @@ Next /mail-review → auto-compares drafts vs actual responses
 Style guide updated → next drafts are more accurate
 ```
 
-No manual `/draft-review` needed — learning runs automatically at the start of every `/mail-review`. Use `/draft-review` only for deep analysis or focused recipient review.
+No manual `/draft-review` needed; learning runs automatically at the start of every `/mail-review`. Use `/draft-review` only for deep analysis or focused recipient review.
 
 ### Persistent State
 
@@ -87,7 +87,7 @@ The legacy AppleScript send path is preserved in git history but no longer wired
 
 ## Style Guide
 
-Built by analyzing thousands of actual emails from your sent folder. The style guide lives at `shared/style-guide.md` (gitignored — yours stays local). A sanitized template is at `shared/style-guide-example.md` to show the structure.
+Built by analyzing thousands of actual emails from your sent folder. The style guide lives at `shared/style-guide.md` (gitignored, yours stays local). A sanitized template is at `shared/style-guide-example.md` to show the structure.
 
 The shipped reference style guide (NBG context) is characterized by:
 

@@ -2,6 +2,113 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] — 2026-09-09
+
+A full audit of the marketplace: correctness, security, CI and documentation. The headline
+items are three defects that were invisible because the things meant to catch them reported
+success.
+
+### Fixed — correctness
+
+- **Every MCP tool name in the repo was wrong.** A plugin-bundled server namespaces its tools
+  `mcp__plugin_<plugin>_<server>__<tool>`, so the real name is
+  `mcp__plugin_mail_outlook-bridge__outlook_list_mail`, not `mcp__outlook-bridge__outlook_list_mail`.
+  All 140 references used the bare form, which matches nothing: `allowed-tools` pre-approved
+  nothing, so every MCP call inside a mail, chat or meetings command fell back to the permission
+  flow, prompting interactively and **auto-denying in headless and scheduled runs**. Both
+  `meetings` commands additionally gated their fail-fast check on the bare prefix, so they
+  reported `mail` as missing even when it was installed. `validate_consistency.py` now enforces
+  the scoped form.
+- **Every chart in every shipped deck example rendered empty.** `nbg_build.py` read chart data
+  from `slide.content.*` while all three examples wrote it to `slide.chart.data.*`, and the
+  `chart` key was never read. Measured on a build of `quarterly-report.yaml`: both chart parts
+  carried zero `<c:ser>`, zero categories and zero values, and `nbg_validate.py` reported the
+  deck as passing.
+- **Three of seventeen validator checks examined nothing.** `check_font_sizes`,
+  `check_title_overflow` and `check_color_contrast` iterated `a:rPr`, while every deck the
+  builder produces carries `a:defRPr` (measured: 0 versus 37). All three passed vacuously on
+  every run; the tell was `Sizes used:` printing an empty list. Every check now reports how many
+  candidates it examined, and a zero-candidate pass is no longer reported as clean.
+- `From.upn` does not exist on a message; the field is `From.EmailAddress.Address`. Seven call
+  sites meant the sent-mail corpus was always empty, so the style-learning loop silently learned
+  nothing.
+- `email-handler.md` referenced `outlook_reply_mail` and `outlook_forward_mail`, neither of which
+  has ever existed.
+- The label-colour picker chose between white and `#202020` without checking the winner cleared
+  anything. At fill luminance 0.2101 the best available ratio is 4.036:1, under WCAG AA; two
+  palette colours (`#5D8D2F`, `#F60037`) failed. Pure black as the dark candidate moves the
+  crossover to 4.583:1 and clears all 52.
+- `install.ps1` passed `-Encoding` to `Copy-Item`, which has no such parameter. With
+  `$ErrorActionPreference = 'Stop'` this killed every fresh Windows install at the CLAUDE.md step.
+- `install.ps1` reported `[OK]` after failed `npm install`, `npm run build` and `pip install`,
+  because `$ErrorActionPreference` does not govern native exit codes. Every native call now
+  checks `$LASTEXITCODE`.
+- `install.sh` aborted two thirds of the way through on a machine without `python3`, leaving a
+  half-installed state.
+- Neither installer installed `nbg-keynote`'s dependencies, so `/create-keynote` died with
+  `ModuleNotFoundError` on a fresh install.
+- `inject_table_data.py` renamed every namespace prefix it had not pre-registered, corrupting
+  exactly the real PowerPoint files it exists to edit.
+- `nbg_keynote.py --validate` passed four classes of spec that then crashed the build.
+- `nbg_build.py` never inspected the validator's return code, so a crashed validator was
+  indistinguishable from a clean deck. It also had no argument parsing: `-o out.pptx` wrote a
+  file named `-o`.
+- Device-mockup content boxes were wrong for both 16 Pro frames, clipping the screenshot and
+  leaving transparent strips. Frame geometry is now measured from each PNG and asserted in CI.
+- 128 INDEX filename references pointed at files that do not exist; 6 resolved before, 128 now.
+
+### Fixed — security
+
+- **Windows command injection in both bundled MCP servers.** `spawn` was called with
+  `shell: true` on Windows, routing mail subjects, bodies, folder names and Teams message HTML
+  through `cmd.exe`. A shell is now used only for the legacy PATH-fallback case, where Node
+  refuses to spawn a `.cmd` shim without one.
+- **A timed-out send was retried up to four times.** Exit 5 covers a lost response as well as a
+  failed call, and was blanket-retryable, so a `sendMail` that Graph had already accepted could be
+  delivered four times. Retryability is now a property of the call: non-idempotent writes surface
+  the ambiguity instead of repeating it.
+- `outlook_move_mail` now refuses Deleted Items, Junk, Trash and Recoverable Items by name, and
+  the documented 20-id batch cap is enforced rather than merely declared.
+- The `[Claude]` attribution prefix on Teams sends is enforced in the bridge, not only in prose.
+- Three holes in `pii-gauntlet.sh`, each of which switched checks off: an unanchored path
+  exemption that exempted 13 tracked files including two already containing real addresses; a
+  filter that dropped any line containing the word "copyright"; and single-letter fixture-host
+  names that made any tenant ending in a, b, x, y or z invisible. The CI gate was also
+  case-sensitive where the local doctor was not, and neither could see tracked *filenames* —
+  two shipped PNGs disclosed an internal project name in their own names while the scanner
+  reported PASS.
+- Every argument is now validated against its declared inputSchema at the MCP dispatch point,
+  so required fields, types, enums and bounds are checked rather than documented.
+
+### Added
+
+- `tests.yml`: `pytest plugins` plus both vitest suites and typechecks, unconditional. Previously
+  the only Python test run in CI was gated on `sonarcloud.yml` finding a directory named `tests`,
+  and the sole match was a TypeScript directory.
+- `lint.yml`: the full pre-commit hook set plus `claude plugin validate --strict` on all seven
+  manifests.
+- `teams-bridge` went from zero tests to a real suite; `--passWithNoTests` is gone. Test counts
+  across the repo: 45 to 88 Python, 29 to 138 TypeScript.
+- Six new checks in `validate_consistency.py`, including MCP tool-name resolution and
+  plugin/marketplace version agreement.
+- Standard #22: accessibility, with measured contrast ratios, the WCAG 2.1 AA baseline via
+  EN 301 549 V3.2.1 and a WCAG 2.2 gap-test.
+- `"dependencies": ["mail"]` on `meetings`, replacing a prose-only requirement.
+
+### Changed
+
+- All six plugins to 1.1.0, marketplace to 2.2.0. **Plugin version is the cache key Claude Code
+  uses to decide whether an installed copy is stale, and it had never been bumped**, so no user
+  had ever received a post-install fix.
+- The three bundled creative commands and four previously unreachable agents now load. `decks`
+  registers 9 skills and 8 agents, up from 6 and 4. Agent files moved into `agents/`, which is
+  the only directory Claude Code auto-discovers.
+- The QA gate is dispatched by `create-presentation`, `redesign-deck` and `polish-slides`; it was
+  reachable from none of them.
+- Around 700 em-dashes removed from prompt files that themselves forbid em-dashes.
+- Roughly a dozen numeric self-contradictions reconciled across the brand system, including the
+  body-text floor (stated four ways), the page-number position (0.48" apart) and the left gutter.
+
 ## [2.1.0] — 2026-05-11
 
 ### Added
