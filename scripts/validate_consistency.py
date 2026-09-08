@@ -582,7 +582,34 @@ def check_skill_files() -> None:
                     f"{rel}: frontmatter name '{name}' does not match its directory "
                     f"'{skill_dir.name}'"
                 )
-            elif name and fm.get("description"):
+            # The description must survive a SINGLE-LINE reader, not just a YAML
+            # parser. validate-plugins.yml extracts it with awk and the
+            # skill-trigger probe with grep, so a multi-line value (a `>-` or `|`
+            # block scalar, or a plain scalar wrapped over two lines) parses
+            # perfectly here and reaches those two as the literal ">-", two
+            # characters, which then fails the 400-char floor, the Greek-script
+            # check and the negative-boundary check at once. That is exactly what
+            # happened when a folded scalar was used to escape a colon: strict
+            # YAML went green and CI went red. Quote the value on one line
+            # instead; embedded quotes escape fine.
+            desc = fm.get("description")
+            if desc:
+                raw = ""
+                for line in skill_file.read_text(encoding="utf-8").splitlines()[1:]:
+                    if line == "---":
+                        break
+                    if line.startswith("description:"):
+                        raw = line[len("description:") :].strip()
+                        break
+                if len(raw) < len(" ".join(desc.split())):
+                    error(
+                        f"{rel}: description is not on one line, so a single-line "
+                        f"reader sees {len(raw)} chars where YAML sees "
+                        f"{len(desc)}. Put it on one line as a quoted scalar."
+                    )
+                else:
+                    ok(f"{rel}: description is single-line readable")
+            if name and fm.get("description"):
                 ok(f"{rel}: name matches directory, description present")
 
 

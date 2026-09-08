@@ -202,6 +202,25 @@ describe('html detection', () => {
 });
 
 describe('[Claude] attribution', () => {
+  // CodeQL flagged the original single-pass tag strip as incomplete multi-character
+  // sanitization. The value never reaches a renderer, so this is not XSS: it decides
+  // whether the attribution prefix is already present. Stripping to a fixed point is
+  // the accepted remediation and costs one extra comparison. Measured on this regex,
+  // the greedy [^>]* means one pass is already stable for every input tried, so the
+  // loop is defensive rather than load-bearing. What these tests pin is the property
+  // that actually matters: exactly one prefix, whatever the markup looks like.
+  it('adds exactly one prefix to malformed markup', () => {
+    const once = withAttribution('<<b>>hello');
+    expect(once.match(/\[Claude\]/g)).toHaveLength(1);
+  });
+
+  it('is idempotent, so a re-send never stacks prefixes', () => {
+    for (const body of ['plain', '<p>para</p>', '<<b>>malformed', '  leading space']) {
+      const once = withAttribution(body);
+      expect(withAttribution(once)).toBe(once);
+    }
+  });
+
   it('prepends the prefix to a plain-text body that lacks it', () => {
     expect(withAttribution('running late')).toBe('[Claude] running late');
   });

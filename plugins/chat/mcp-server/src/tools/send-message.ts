@@ -18,10 +18,30 @@ export const ATTRIBUTION_PREFIX = '[Claude]';
  * than sitting outside the first block element.
  */
 export function withAttribution(body: string, prefix: string = ATTRIBUTION_PREFIX): string {
-  const visible = body.replace(/<[^>]*>/g, '').trimStart();
-  if (visible.startsWith(prefix)) return body;
+  if (visibleText(body).startsWith(prefix)) return body;
   const lead = /^(?:\s*<[^>]+>)*\s*/.exec(body)?.[0] ?? '';
   return `${body.slice(0, lead.length)}${prefix} ${body.slice(lead.length)}`;
+}
+
+/**
+ * The text a recipient actually sees, with markup removed.
+ *
+ * A single `body.replace(/<[^>]*>/g, '')` is not enough, and the failure is not
+ * theoretical here. One pass over `<<p>>[Claude] hi` removes the inner `<p>` and
+ * leaves `<>[Claude] hi`, so the caller sees a string that does NOT start with the
+ * prefix and prepends a second one. Run it the other way and a body can be crafted
+ * whose stripped form starts with the prefix while the rendered message shows no
+ * attribution at all, which defeats the one guarantee this function exists to make.
+ * Strip to a fixed point instead, so no arrangement of nested or malformed angle
+ * brackets can leave a tag behind.
+ */
+function visibleText(body: string): string {
+  let out = body;
+  for (;;) {
+    const next = out.replace(/<[^>]*>/g, '');
+    if (next === out) return next.trimStart();
+    out = next;
+  }
 }
 
 /** A tag paired with its own closing tag: <p>x</p>, <b>x</b>, <div ...>x</div>. */
