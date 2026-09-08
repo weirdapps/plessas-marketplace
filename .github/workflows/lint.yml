@@ -84,8 +84,11 @@ jobs:
       # consumption by design (the same reason .pre-commit-config.yaml
       # excludes plugins/*/{agents,commands,skills,...} from markdownlint),
       # and reformatting them is not a lint fix, it is an edit to a prompt.
+      # --only-binary :all: refuses source distributions, so no setup.py from a
+      # dependency runs during install. ruff ships wheels for every platform, so
+      # this costs nothing here.
       - name: Install ruff
-        run: pip install 'ruff==0.15.12'
+        run: "pip install --only-binary=:all: ruff==0.15.12"
 
       # Both blocking. Four files under plugins/decks/tools/ and
       # bundled/creative/tools/ were formatted at ruff's default 88 rather than

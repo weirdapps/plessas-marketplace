@@ -41,13 +41,19 @@ jobs:
       - name: Install dependencies
         run: |
           set -euo pipefail
-          python -m pip install --upgrade pip
+          # --only-binary :all: throughout: refuses source distributions, so no
+          # dependency's setup.py executes during install. Every package these
+          # tools need (numpy, Pillow, python-pptx, lxml, PyYAML, defusedxml)
+          # publishes manylinux wheels, so nothing legitimate is excluded, and a
+          # package that stops shipping one fails here loudly rather than running
+          # arbitrary build code on the runner.
+          python -m pip install --only-binary :all: --upgrade pip
           # No `pip install -e .`: pyproject.toml is tooling-only and declares
           # no [project] table, so an editable install cannot work. The tools'
           # dependencies live in per-tool requirements.txt files instead.
           find plugins -name requirements.txt -not -path "*/node_modules/*" -print0 \
-            | xargs -0 -I{} pip install -r {}
-          pip install pytest pytest-cov
+            | xargs -0 -I{} pip install --only-binary :all: -r {}
+          pip install --only-binary :all: pytest pytest-cov
 
       # No continue-on-error, no `|| true`, no if-guard. This step exists to be
       # able to go red. Zero skips as of 2026-09-09. No test count recorded on
@@ -106,6 +112,13 @@ jobs:
           # `npm ci` resolves them; downloading browsers to run unit tests that
           # never open one is pure waste.
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+          # NOT --ignore-scripts, and this is deliberate rather than an oversight.
+          # Both bundled CLIs are `git+https` dependencies that build from source in
+          # their own `prepare` script, so suppressing lifecycle scripts would leave
+          # node_modules/<cli>/dist/cli.js absent and every MCP tool would fail at
+          # spawn. The scripts that run are from weirdapps/outlook-access and
+          # weirdapps/teams-access, both pinned to an exact commit SHA in
+          # package.json, which is the control that substitutes for it.
         run: npm ci
 
       # teams-bridge's `test` script carried `--passWithNoTests` from creation
