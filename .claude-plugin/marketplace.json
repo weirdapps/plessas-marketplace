@@ -35,7 +35,10 @@
       "description": "Calendar-aware meeting briefings with attendee dossiers, post-meeting decision capture.",
       "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/meetings",
       "repository": "https://github.com/weirdapps/plessas-marketplace",
-      "license": "MIT"
+      "license": "MIT",
+      "dependencies": [
+        "mail"
+      ]
     },
     {
       "name": "chat",

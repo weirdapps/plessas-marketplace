@@ -18,8 +18,5 @@
   ],
   "commands": "./commands",
   "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/meetings",
-  "repository": "https://github.com/weirdapps/plessas-marketplace",
-  "dependencies": [
-    "mail"
-  ]
+  "repository": "https://github.com/weirdapps/plessas-marketplace"
 }
