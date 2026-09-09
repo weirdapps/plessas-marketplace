@@ -75,7 +75,7 @@ jobs:
       - name: Run pytest
         run: |
           set -euo pipefail
-          pytest plugins -q -rs | tee /tmp/pytest.out
+          pytest plugins scripts -q -rs | tee /tmp/pytest.out
           if grep -qE '[0-9]+ skipped' /tmp/pytest.out; then
             echo "::error::tests were skipped; a dependency is probably missing"
             exit 1

@@ -45,7 +45,7 @@ shared/                        # Cross-plugin shared assets (brand-system, email
 
 Three workflows run tests and checks, and all of them can go red.
 
-- **`tests.yml`** is the authoritative gate. `pytest plugins -q` on Python 3.12, and
+- **`tests.yml`** is the authoritative gate. `pytest plugins scripts -q` on Python 3.12, and
   `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 20.
   Unconditional: no repo-visibility gate, no token gate, no `continue-on-error`. It also
   asserts each server's `tests/` directory is non-empty, so a suite cannot pass by being
@@ -55,7 +55,13 @@ Three workflows run tests and checks, and all of them can go red.
   on all six plugins and the marketplace root. `plugin validate` needs no credentials and
   no network.
 - **`validate-plugins.yml`** runs `scripts/validate_consistency.py`, which is where the
-  repo-specific invariants live.
+  repo-specific invariants live. That script is itself tested, by
+  `scripts/test_validate_consistency.py`. Until 2026-09-09 it was not: `pytest` collected
+  only `plugins/`, so the repo's main guard had zero coverage and every PR touching it
+  failed SonarCloud's new-code gate for a reason that had nothing to do with the PR. Each
+  check is driven in both directions, and the three added that day were mutation-tested
+  (stub the condition, confirm exactly one test goes red) because a check that has never
+  been observed to fail is the same defect it exists to catch.
 
 `sonarcloud.yml` still runs pytest, but only to produce `coverage.xml`. It is not the gate.
 
@@ -64,7 +70,7 @@ Run locally before pushing:
 ```bash
 uv run --no-project --with pyyaml python scripts/validate_consistency.py --verbose
 bash installers/pii-gauntlet.sh --mode=doctor
-pytest plugins -q
+pytest plugins scripts -q
 (cd plugins/mail/mcp-server && npm run typecheck && npm test)
 (cd plugins/chat/mcp-server && npm run typecheck && npm test)
 ```
