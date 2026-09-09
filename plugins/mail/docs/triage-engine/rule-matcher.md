@@ -9,11 +9,11 @@ Stage 1 of the triage cascade. Match an email against the user's `~/.claude/tria
 
 ## Algorithm
 
-For each rule (in file order — first match wins):
+For each rule (in file order, first match wins):
 
 1. Evaluate `when` predicates AND-style (all must match)
 2. If matched, return `{ rule_name, action }`
-3. If no rule matches, return `{ rule_name: null, action: null }` — caller proceeds to Stage 2 LLM
+3. If no rule matches, return `{ rule_name: null, action: null }`; the caller proceeds to Stage 2 LLM
 
 ## Predicate semantics
 

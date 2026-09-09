@@ -4,7 +4,7 @@
 
 Keynote mode is the one sanctioned exception to the light-mode NBG deck format
 (`presentation-style-guide.md` Standard #21). It exists for talks delivered live to an external or
-bank-wide audience. Everything else — every committee, board and ExCo deck — uses the light format
+bank-wide audience. Everything else (every committee, board and ExCo deck) uses the light format
 and `tools/nbg-presentation/nbg_build.py`.
 
 Generator: `tools/nbg-keynote/nbg_keynote.py` (YAML in, PPTX + PDF out).
@@ -13,11 +13,11 @@ Generator: `tools/nbg-keynote/nbg_keynote.py` (YAML in, PPTX + PDF out).
 
 All four must hold. If any fails, use light mode.
 
-1. Audience is **external or bank-wide** — conference, town hall, industry panel. Not a committee,
+1. Audience is **external or bank-wide**: conference, town hall, industry panel. Not a committee,
    board or ExCo working session.
 2. **Delivered live from a stage by a speaker.** Not read alone, not circulated as a document.
 3. **Projected large, in a darkened room.**
-4. The slides are the **backdrop, not the record** — the argument lives in the speaker notes.
+4. The slides are the **backdrop, not the record**: the argument lives in the speaker notes.
 
 Never for: ExCo, board, credit committee, or any deck someone else will edit. Keynote slides are
 flattened images; they cannot be edited downstream, only regenerated from the YAML.
@@ -28,7 +28,7 @@ Greek wordmark on every slide, always. Aptos throughout. The teal family. Left-g
 Action titles. No em-dashes, no invented NBG names, no version suffixes in filenames. Keynote is the
 same brand inverted, not a second identity.
 
-## Palette — dark tokens
+## Palette: dark tokens
 
 Each token maps to a light-mode colour in `colors.md`. Do not introduce new colours.
 
@@ -55,7 +55,7 @@ All values below are pixels at 2560 wide. 1px = 0.375pt.
 
 | Element | Value | Note |
 |---|---|---|
-| Side gutter | 155 (0.807") both sides | Wider than the business 0.374" on purpose — read from 20m |
+| Side gutter | 155 (0.807") both sides | Wider than the business 0.374" on purpose: read from 20m |
 | Safe area | 100 from every edge | Nothing critical outside it |
 | Kicker | y=150; 22×22 `accent` square at x=155; ALL-CAPS SemiBold 30, +6 tracking, from x=199 | The keynote's section pill |
 | Action title | y=250, Light 52–56 | |
@@ -80,7 +80,7 @@ Every scrim also lays a bottom band so the footer reads, and a vignette.
 | Duo stat | ExtraBold | 260–300 | left `ink`, right `accent` |
 | Statement | Light | 72–86 | `ink`, emphasis in `accent` |
 | Action title | Light | 52–56 | `ink` |
-| Stat caption | Light | 48–60 | `accent` — but `ink` when the number is `negative` |
+| Stat caption | Light | 48–60 | `accent`, but `ink` when the number is `negative` |
 | Body / support | Regular | 34–38 | `ink-2` |
 | Kicker | SemiBold | 30 | `accent` |
 | Speaker name / role / venue | SemiBold 30 / Regular 27 / Regular 24 | | `accent` / `ink-2` / `ink-3` |
@@ -92,14 +92,14 @@ takes a white caption.
 ### Text column widths
 
 Narrower over a photograph than over the gradient. A `left` scrim has faded by roughly x=1840, so a
-full-width line runs out of its own background and onto the image — legible by the contrast guard's
+full-width line runs out of its own background and onto the image, legible by the contrast guard's
 measure, because the box as a whole is still dark, but visibly wrong at the end of the line.
 
 | Block | On gradient | On a photograph | `align: right` |
 |---|---|---|---|
 | Hero-stat caption | 2100 | 1700 | 1250 |
 | Hero-stat support | 1950 | 1750 | 1250 |
-| Statement | 2260 | 1500 | — |
+| Statement | 2260 | 1500 | n/a |
 
 Override per slide with `maxw` when a particular photograph needs it.
 
@@ -122,7 +122,7 @@ Override per slide with `maxw` when a particular photograph needs it.
 1. **Every slide except `back` carries a speaker note.** A keynote slide without one is half a
    slide. `--validate` fails the build.
 2. **Contrast is measured, not eyeballed.** The compositor samples the 90th-percentile luminance
-   under every text box and deepens a feathered scrim patch until the text clears WCAG — 4.5:1 for
+   under every text box and deepens a feathered scrim patch until the text clears WCAG: 4.5:1 for
    text under 48px, 3:1 at or above it. If it cannot get there it warns; change the photograph.
 3. **Charts are a bounded concession.** Keynote charts are drawn primitives, not native PPTX
    charts, which contradicts the light-mode rule. The bound: **at most 2 chart slides, at most 7

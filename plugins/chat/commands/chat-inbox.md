@@ -1,6 +1,6 @@
 ---
 description: "Summarise unread Microsoft Teams chats. Lists recent chats, highlights unread, surfaces urgent items."
-allowed-tools: Read, Bash, mcp__teams-bridge__teams_auth_check, mcp__teams-bridge__teams_list_chats, mcp__teams-bridge__teams_list_messages, mcp__teams-bridge__teams_resolve_mri
+allowed-tools: Read, Bash, mcp__plugin_chat_teams-bridge__teams_auth_check, mcp__plugin_chat_teams-bridge__teams_list_chats, mcp__plugin_chat_teams-bridge__teams_list_messages, mcp__plugin_chat_teams-bridge__teams_resolve_mri
 ---
 
 # Teams Chat Inbox
@@ -9,13 +9,13 @@ Summarise the user's recent Microsoft Teams chats, highlighting chats with unrea
 
 ## Workflow
 
-1. **Check auth** first via `mcp__teams-bridge__teams_auth_check`. If status is not `ok`, tell the user to run `teams-cli login` and stop.
+1. **Check auth** first via `mcp__plugin_chat_teams-bridge__teams_auth_check`. If status is not `ok`, tell the user to run `teams-cli login` and stop.
 
-2. **List recent chats** via `mcp__teams-bridge__teams_list_chats` with `top: 20`.
+2. **List recent chats** via `mcp__plugin_chat_teams-bridge__teams_list_chats` with `top: 20`.
 
-3. **For each chat with recent activity** (last 24 hours), fetch the last 5 messages via `mcp__teams-bridge__teams_list_messages` with the chat_id and `top: 5`.
+3. **For each chat with recent activity** (last 24 hours), fetch the last 5 messages via `mcp__plugin_chat_teams-bridge__teams_list_messages` with the chat_id and `top: 5`.
 
-4. **Resolve sender identities** if needed via `mcp__teams-bridge__teams_resolve_mri` for any MRI-format sender IDs.
+4. **Resolve sender identities** if needed via `mcp__plugin_chat_teams-bridge__teams_resolve_mri` for any MRI-format sender IDs.
 
 5. **Synthesise a briefing** with:
    - Total chats with recent activity
@@ -25,11 +25,11 @@ Summarise the user's recent Microsoft Teams chats, highlighting chats with unrea
 
 ## Output Format
 
-Present as a concise briefing — not a raw dump. Group by urgency:
+Present as a concise briefing, not a raw dump. Group by urgency:
 
-1. **Needs response** — someone asked you a question or tagged you
-2. **FYI** — informational messages, no action needed
-3. **Low priority** — group chats with ambient activity
+1. **Needs response**: someone asked you a question or tagged you
+2. **FYI**: informational messages, no action needed
+3. **Low priority**: group chats with ambient activity
 
 ## Auth Error Handling
 

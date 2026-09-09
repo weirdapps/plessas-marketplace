@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""NBG Keynote compositor — build a cinematic dark keynote from a YAML spec.
+"""NBG Keynote compositor: build a cinematic dark keynote from a YAML spec.
 
 Renders 2560x1440 slides with Pillow (full-bleed imagery, directional teal scrims,
 Aptos typography, film grain) and assembles them into a 13.333x7.5in PPTX plus a
@@ -28,6 +28,12 @@ from pathlib import Path
 import numpy as np
 import yaml
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+# nbg_color sits one level up, shared with nbg-presentation. These are scripts
+# in hyphenated directories rather than a package, so add the path by hand.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from nbg_color import contrast_ratio  # noqa: E402
+from nbg_color import relative_luminance as luminance  # noqa: E402,F401  (re-export)
 
 # ============================================================ canvas constants
 
@@ -143,7 +149,7 @@ def font(kind: str, size: int) -> ImageFont.FreeTypeFont:
 
 
 # Greek all-caps drops the tonos but keeps the dialytika. Python's str.upper()
-# keeps both, so 'η συναίνεση'.upper() renders as 'Η ΣΥΝΑΊΝΕΣΗ' — a visible typo.
+# keeps both, so 'η συναίνεση'.upper() renders as 'Η ΣΥΝΑΊΝΕΣΗ', a visible typo.
 TONOS = "́"
 DIALYTIKA = "̈"
 
@@ -236,24 +242,13 @@ def grain(im: Image.Image, seed: int, amt: int = GRAIN_SIGMA) -> Image.Image:
 # ============================================================ contrast guard
 
 
-def _linear(c: float) -> float:
-    c /= 255.0
-    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
-
-
-def luminance(rgb) -> float:
-    r, g, b = (_linear(float(v)) for v in rgb[:3])
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-
-def contrast_ratio(fg, bg_lum: float) -> float:
-    fl = luminance(fg)
-    hi, lo = max(fl, bg_lum), min(fl, bg_lum)
-    return (hi + 0.05) / (lo + 0.05)
+# luminance() and contrast_ratio() come from ../nbg_color.py, the single copy
+# shared with nbg_build.py and nbg_validate.py. _bg_luminance below keeps its
+# own vectorised form because it samples a whole image patch, not one colour.
 
 
 def _bg_luminance(canvas: Image.Image, box) -> float:
-    """90th-percentile luminance under a text box — the brightest realistic patch,
+    """90th-percentile luminance under a text box, the brightest realistic patch,
     not the average, because text fails where the photograph is lightest."""
     x0, y0, x1, y1 = (max(0, int(v)) for v in box)
     x1, y1 = min(W, max(x1, x0 + 1)), min(H, max(y1, y0 + 1))
@@ -288,7 +283,7 @@ def ensure_contrast(canvas: Image.Image, box, fg, min_ratio: float, label: str =
             return
     canvas.paste(trial, (0, 0))
     warn(
-        f"contrast below {min_ratio}:1 even at maximum scrim{' — ' + label if label else ''}. "
+        f"contrast below {min_ratio}:1 even at maximum scrim{', ' + label if label else ''}. "
         f"Use a darker photograph or move the text."
     )
 
@@ -332,6 +327,11 @@ def para(
     if not text:
         return y
     lines = wrap(text, fnt, maxw)
+    if not lines:
+        # Whitespace-only text clears `if not text` but wraps to no lines, which
+        # used to reach max() on an empty sequence and abort the whole build
+        # with a raw traceback. There is nothing to draw, so draw nothing.
+        return y
     if guard:
         width = max(fnt.getlength(ln) for ln in lines)
         ensure_contrast(
@@ -408,11 +408,15 @@ def draw_bars(canvas, cats, vals, highlight=None, unit="") -> None:
         bw = float(BAR_W_CAP)
         x0 = x0 + (span - (bw * n + gap * (n - 1))) / 2  # centre the group
     mx = max(vals)
+    # An all-zero (or all-negative) series has no scale. The bars collapse onto
+    # the baseline instead of dividing by zero; validate() rejects such a spec
+    # before it ever reaches here, so this is the belt to that pair of braces.
+    scale = (base - top - 90) / mx if mx > 0 else 0.0
     d = ImageDraw.Draw(canvas)
     d.line([M, base, X_RIGHT, base], fill=RULE, width=2)
     for i, (c, v) in enumerate(zip(cats, vals, strict=True)):
         bx = x0 + i * (bw + gap)
-        bh = v / mx * (base - top - 90)  # true zero baseline
+        bh = v * scale  # true zero baseline
         col = ACCENT if highlight == i else (ACCENT_BAR if n <= 3 else ACCENT_MUTE)
         d.rectangle([bx, base - bh, bx + bw, base], fill=col)
         d.text(
@@ -449,16 +453,31 @@ def _ground(spec, assets: Path):
     ), True
 
 
+def is_color(v) -> bool:
+    """True for a NAMED_COLORS key or a #RRGGBB hex string.
+
+    Split out of _color so validate() can reject a bad colour before a render
+    aborts on it. The hex branch also checks the digits: 'chartreuse!' is six
+    characters after stripping nothing, and used to reach int(..., 16).
+    """
+    if not isinstance(v, str):
+        return False
+    if v in NAMED_COLORS:
+        return True
+    h = v.lstrip("#")
+    return len(h) == 6 and all(c in "0123456789abcdefABCDEF" for c in h)
+
+
 def _color(spec, key, default):
     v = spec.get(key)
     if v is None:
         return default
-    if isinstance(v, str) and v in NAMED_COLORS:
+    if not is_color(v):
+        raise SystemExit(f"unknown colour '{v}' for '{key}'")
+    if v in NAMED_COLORS:
         return NAMED_COLORS[v]
-    if isinstance(v, str) and len(v.lstrip("#")) == 6:
-        h = v.lstrip("#")
-        return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
-    raise SystemExit(f"unknown colour '{v}' for '{key}'")
+    h = v.lstrip("#")
+    return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
 
 
 def render_cover(c, s, ctx, on_image):
@@ -551,7 +570,7 @@ def render_hero_stat(c, s, ctx, on_image):
     shadow_text(c, (x, vy), str(s["value"]), font("x", vsize), vcolor, shadow=on_image)
     cy = s.get("caption_y", vy + int(vsize * 1.18))
     csize = s.get("caption_size", 48 if right else (58 if on_image else 60))
-    # The caption is normally accent cyan. When the number is red it goes white —
+    # The caption is normally accent cyan. When the number is red it goes white:
     # cyan against negative red is two loud colours fighting for the same eye.
     y = para(
         c,
@@ -789,7 +808,25 @@ def warn(msg: str) -> None:
     print(f"  warning: {msg}", file=sys.stderr)
 
 
+# Colour keys a renderer will push through _color(). Two live on the slide,
+# two inside the duo-stat halves.
+_COLOR_KEYS = ("color", "caption_color")
+_COLOR_SUBKEYS = ("left", "right")
+
+
+def _blank(v) -> bool:
+    """A string that renders to nothing. Numbers and lists are never blank."""
+    return isinstance(v, str) and not v.strip()
+
+
 def validate(spec: dict, assets: Path) -> list[str]:
+    """Check a spec well enough that `--validate` is worth trusting.
+
+    README.md sells --validate as the gate before a render. Four specs used to
+    clear it and then fail the build: whitespace-only text, mismatched cats and
+    vals, an all-zero bar series, and an unknown colour name. Two of those came
+    out as raw tracebacks.
+    """
     errors: list[str] = []
     slides = spec.get("slides") or []
     if not slides:
@@ -803,13 +840,43 @@ def validate(spec: dict, assets: Path) -> list[str]:
         for k in REQUIRED_KEYS[t]:
             if k not in s:
                 errors.append(f"slide {i} ({t}): missing required key '{k}'")
+            elif _blank(s[k]):
+                errors.append(f"slide {i} ({t}): '{k}' is blank, so it would render nothing")
         # Standard #21: a keynote slide without a speaker note is half a slide.
         if t != "back" and not str(s.get("notes", "")).strip():
             errors.append(f"slide {i} ({t}): missing speaker notes")
+        if t == "points":
+            for j, p in enumerate(s.get("points") or [], 1):
+                if not str(p).strip():
+                    errors.append(f"slide {i} (points): point {j} is blank")
         if t == "bars":
             charts += 1
-            if len(s.get("vals", [])) > MAX_BARS:
-                errors.append(f"slide {i}: {len(s['vals'])} bars exceeds the {MAX_BARS} limit")
+            cats = s.get("cats") or []
+            vals = s.get("vals") or []
+            if len(cats) != len(vals):
+                errors.append(
+                    f"slide {i} (bars): {len(cats)} cats and {len(vals)} vals; "
+                    f"they must be the same length"
+                )
+            bad = [v for v in vals if isinstance(v, bool) or not isinstance(v, (int, float))]
+            if bad:
+                errors.append(f"slide {i} (bars): non-numeric value(s) {bad}")
+            elif vals and max(vals) <= 0:
+                errors.append(
+                    f"slide {i} (bars): every value is {max(vals)} or less; a bar chart "
+                    f"needs at least one positive value to set its scale"
+                )
+            if len(vals) > MAX_BARS:
+                errors.append(f"slide {i}: {len(vals)} bars exceeds the {MAX_BARS} limit")
+        for key in _COLOR_KEYS:
+            if key in s and not is_color(s[key]):
+                errors.append(f"slide {i} ({t}): unknown colour '{s[key]}' for '{key}'")
+        for side in _COLOR_SUBKEYS:
+            half = s.get(side)
+            if isinstance(half, dict) and "color" in half and not is_color(half["color"]):
+                errors.append(
+                    f"slide {i} ({t}): unknown colour '{half['color']}' for '{side}.color'"
+                )
         if s.get("scrim") and s["scrim"] not in SCRIM_SIDES:
             errors.append(f"slide {i}: unknown scrim '{s['scrim']}'")
         if s.get("image"):
@@ -846,7 +913,7 @@ def main() -> int:
             print(f"  - {e}", file=sys.stderr)
         return 1
     if args.validate:
-        print(f"OK — {len(spec['slides'])} slides, spec valid.")
+        print(f"OK: {len(spec['slides'])} slides, spec valid.")
         return 0
 
     if args.out:
@@ -885,7 +952,7 @@ def main() -> int:
         ground, on_image = _ground(s, assets)
         canvas = grain(ground, base_seed + i)  # deterministic per slide
         RENDERERS[s["type"]](canvas, s, ctx, on_image)
-        # JPEG 4:4:4 — 4:2:0 smears the grain and the fine type
+        # JPEG 4:4:4, 4:2:0 smears the grain and the fine type
         canvas.convert("RGB").save(out_img, quality=92, subsampling=0)
         print(f"  slide {i:02d}  {s['type']}")
 

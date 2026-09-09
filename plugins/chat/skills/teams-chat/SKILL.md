@@ -1,6 +1,6 @@
 ---
 name: teams-chat
-description: Anything to do with the user's Microsoft Teams conversations: seeing what came in, catching up on a thread or a channel, working out who is waiting on a response, and replying. Use this whenever a request concerns Teams, chats, channels or direct messages, however it is phrased, for example "what did I miss", "is anyone waiting on me", "catch me up on the project channel", "tell them I am running late", or in Greek «τι έγινε όσο έλειπα», «με έχει ψάξει κανείς», «τι λέει το κανάλι», «πες τους ότι θα αργήσω». These are samples, not an exhaustive list: judge by meaning, not by matching words. Do NOT use for email (use outlook-mail), for preparing or debriefing a meeting (use meeting-workflows), or for building presentations or documents.
+description: "Anything to do with the user's Microsoft Teams conversations: seeing what came in, catching up on a thread or a channel, working out who is waiting on a response, and replying. Use this whenever a request concerns Teams, chats, channels or direct messages, however it is phrased, for example \"what did I miss\", \"is anyone waiting on me\", \"catch me up on the project channel\", \"tell them I am running late\", or in Greek «τι έγινε όσο έλειπα», «με έχει ψάξει κανείς», «τι λέει το κανάλι», «πες τους ότι θα αργήσω». These are samples, not an exhaustive list: judge by meaning, not by matching words. Do NOT use for email (use outlook-mail), for preparing or debriefing a meeting (use meeting-workflows), or for building presentations or documents."
 ---
 
 # Microsoft Teams chat

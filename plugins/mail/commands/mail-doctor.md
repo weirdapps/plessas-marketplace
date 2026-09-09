@@ -1,7 +1,7 @@
 ---
-description: "Diagnose the outlook-bridge MCP — node, CLI install mode, auth, last startup, and what to fix"
+description: "Diagnose the outlook-bridge MCP: node, CLI install mode, auth, last startup, and what to fix"
 argument-hint: ""
-allowed-tools: mcp__outlook-bridge__outlook_doctor
+allowed-tools: mcp__plugin_mail_outlook-bridge__outlook_doctor
 ---
 
 # /mail-doctor
@@ -10,11 +10,11 @@ Run a self-diagnostic on the outlook-bridge MCP server. Use this whenever the ma
 
 ## Implementation
 
-1. Call `mcp__outlook-bridge__outlook_doctor` with no arguments.
+1. Call `mcp__plugin_mail_outlook-bridge__outlook_doctor` with no arguments.
 2. Render the result as a compact one-screen report:
 
 ```
-outlook-bridge MCP — Doctor
+outlook-bridge MCP: Doctor
 
   MCP server   : <name> v<version>
   Node binary  : <path>  (<version>)
@@ -33,6 +33,6 @@ outlook-bridge MCP — Doctor
 
 ## Notes
 
-- Read-only diagnostic — no side effects.
+- Read-only diagnostic, no side effects.
 - This is the FIRST command to try when mail commands fail. It tells you exactly what's wrong without needing to dig through MCP logs.
-- "CLI mode = bundled" means the plugin's `mcp-server/node_modules/outlook-tool/` is being used (preferred — survives PATH stripping). "CLI mode = path" means the MCP server is calling `outlook-cli` via shell PATH (legacy fallback).
+- "CLI mode = bundled" means the plugin's `mcp-server/node_modules/outlook-tool/` is being used (preferred, survives PATH stripping). "CLI mode = path" means the MCP server is calling `outlook-cli` via shell PATH (legacy fallback).

@@ -1,7 +1,7 @@
 ---
 description: "Reply (or reply-all) to an email with auto-quote + signature, draft-first"
 argument-hint: "[message id or natural language; what you want to say; optionally --reply-all]"
-allowed-tools: Bash, Read, mcp__outlook-bridge__outlook_reply, mcp__outlook-bridge__outlook_reply_all, mcp__outlook-bridge__outlook_list_mail, mcp__outlook-bridge__outlook_get_mail
+allowed-tools: Bash, Read, mcp__plugin_mail_outlook-bridge__*
 ---
 
 <objective>
@@ -20,9 +20,9 @@ Three input forms:
 
 **A. Direct message id**: user gives an `AAMk-...` id → use it as `message_id`.
 
-**B. Natural language reference**: "reply to the latest from Maria" / "reply to the budget thread" → call `mcp__outlook-bridge__outlook_list_mail` with `top: 20` and a sensible folder (Inbox by default), filter results client-side by sender / subject substring, pick the best match. Confirm the choice with the user before sending if there's any ambiguity.
+**B. Natural language reference**: "reply to the latest from Maria" / "reply to the budget thread" → call `mcp__plugin_mail_outlook-bridge__outlook_list_mail` with `top: 20` and a sensible folder (Inbox by default), filter results client-side by sender / subject substring, pick the best match. Confirm the choice with the user before sending if there's any ambiguity.
 
-**C. Already in conversation context**: a recent `/mail-review` or `/inbox-briefing` listed the message — re-use that id directly.
+**C. Already in conversation context**: a recent `/mail-review` or `/inbox-briefing` listed the message; re-use that id directly.
 
 If still ambiguous after natural-language matching, ask the user to disambiguate (show top 3 candidates).
 
@@ -38,14 +38,14 @@ Prepare the user's NEW reply content as HTML:
 
 - Convert any markdown to HTML
 - Aptos Light 12pt #404040, no `<p>` tags, `<br>`/`<br><br>` for spacing
-- Keep it brief and on-tone — match the user's style from `shared/style-guide.md`
-- The auto-quoted original AND the signature are appended automatically — do NOT include either in your HTML
+- Keep it brief and on-tone, matching the user's style from `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`
+- The auto-quoted original AND the signature are appended automatically; do NOT include either in your HTML
 
 Example:
 
 ```html
 <html><body style="font-family: &quot;Aptos Light&quot;, Aptos, sans-serif; font-size: 12pt; color: #404040; text-align: justify;">
-Thanks for the update — confirming the timeline works on our end.<br><br>
+Thanks for the update, confirming the timeline works on our end.<br><br>
 Will circulate the revised deck tomorrow morning.
 </body></html>
 ```
@@ -63,11 +63,11 @@ Will circulate the revised deck tomorrow morning.
 
 **Optional flags**:
 
-- `send_now: true` — bypass draft, dispatch immediately
-- `no_signature: true` — skip signature appending (rarely needed)
-- `signature_file: "/path/to/custom-sig.html"` — override default signature
-- `no_open: true` — create draft but don't activate Outlook desktop
-- `dry_run: true` — preview without contacting M365
+- `send_now: true` bypasses the draft and dispatches immediately
+- `no_signature: true` skips signature appending (rarely needed)
+- `signature_file: "/path/to/custom-sig.html"` overrides the default signature
+- `no_open: true` creates the draft but does not activate Outlook desktop
+- `dry_run: true` previews without contacting M365
 
 ## 5. Confirm result
 
@@ -88,8 +88,8 @@ The tool returns:
 
 Report:
 
-- "Reply draft created (id `AAMk-...`) — Microsoft Outlook activated. Review and send. Signature applied: ✓ Auto-quote: ✓"
-- If `signatureApplied: false` and the user expected one: warn that `~/.outlook-cli/signature.html` is missing — run `outlook-cli capture-signature` (or invoke `mcp__outlook-bridge__outlook_capture_signature`) once.
+- "Reply draft created (id `AAMk-...`). Microsoft Outlook activated. Review and send. Signature applied: ✓ Auto-quote: ✓"
+- If `signatureApplied: false` and the user expected one: warn that `~/.outlook-cli/signature.html` is missing; run `outlook-cli capture-signature` (or invoke `mcp__plugin_mail_outlook-bridge__outlook_capture_signature`) once.
 - If error: report and suggest fixes (auth → `outlook-cli auth-check`; bad message id → re-list).
 
 </instructions>

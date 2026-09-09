@@ -6,19 +6,19 @@ Microsoft Teams interactive commands. Inbox briefings, draft replies, thread sum
 
 | Command | Description |
 |---------|-------------|
-| `/chat-inbox` | Summarise unread Teams chats — recent activity, urgency assessment, action items |
+| `/chat-inbox` | Summarise unread Teams chats: recent activity, urgency assessment, action items |
 | `/chat-reply` | Draft and auto-send a reply to a Teams chat. Prefixes `[Claude]`; falls back to draft-and-confirm when the target chat is ambiguous |
-| `/chat-summarize` | Summarise a single Teams chat or thread — decisions, action items, key points |
-| `/chat-channel-digest` | Executive summary of a Teams channel — recent activity across threads |
-| `/chat-doctor` | Diagnose `teams-bridge` MCP — Node binary, CLI install mode, auth status, last startup, suggested next step |
+| `/chat-summarize` | Summarise a single Teams chat or thread: decisions, action items, key points |
+| `/chat-channel-digest` | Executive summary of a Teams channel: recent activity across threads |
+| `/chat-doctor` | Diagnose `teams-bridge` MCP: Node binary, CLI install mode, auth status, last startup, suggested next step |
 | `/auth-setup` | One-time Teams auth bootstrap (`--force-reauth` to redo it) |
 
 ## How it works
 
-The plugin ships with a Node-based MCP server (`mcp-server/` — built on first start via `run.sh`) that wraps `teams-cli` (a separate npm package, installed automatically by the marketplace setup script). All Teams operations go through that bridge:
+The plugin ships with a Node-based MCP server (`mcp-server/`, built on first start via `run.sh`) that wraps `teams-cli` (a separate npm package, installed automatically by the marketplace setup script). All Teams operations go through that bridge:
 
 - **Read paths** (`teams_list_chats`, `teams_list_messages`, `teams_resolve_mri`) read from Microsoft Graph + the chatsvc API
-- **Write paths** (`teams_send_message`) post via Graph (chats only — channel sends are not yet supported by the underlying API scope)
+- **Write paths** (`teams_send_message`) post via Graph (chats only; channel sends are not yet supported by the underlying API scope)
 
 Send paths go through `teams_send_message`. `/chat-reply` auto-sends by default; see `### Send behaviour` below for details.
 
@@ -37,7 +37,7 @@ The marketplace setup script (`installers/install.sh`) handles all dependencies:
 1. Clones and `npm link`s the `teams-cli` package (from `weirdapps/teams-access`)
 2. Builds the bundled `teams-bridge` MCP server
 
-> **Warning — npm name collision:** A *different* `teams-cli@1.1.0` exists on the npm registry. The bridge's `package.json` uses a `git+https://` URL pointing at `weirdapps/teams-access` — never switch it to a bare semver range or you'll pull a stranger's package.
+> **Warning (npm name collision):** A *different* `teams-cli@1.1.0` exists on the npm registry. The bridge's `package.json` uses a `git+https://` URL pointing at `weirdapps/teams-access`; never switch it to a bare semver range or you'll pull a stranger's package.
 
 To authenticate Teams (one-time), inside Claude Code:
 
@@ -55,7 +55,7 @@ The first time you run a `/chat-*` command after install (or after a long idle p
 
 ## Troubleshooting
 
-If a command returns an auth error, run `/chat-doctor` first — it surfaces the exact problem (missing CLI, expired session, network issue) and tells you the one command to fix it.
+If a command returns an auth error, run `/chat-doctor` first; it surfaces the exact problem (missing CLI, expired session, network issue) and tells you the one command to fix it.
 
 If `teams-cli` is not on PATH after install (some corporate-locked laptops disallow `npm link` to the global prefix), the plugin still works. `teams-cli` is also a pinned `git+https` dependency of the bridge itself, so the server resolves `teams-cli/dist/cli.js` out of `plugins/chat/mcp-server/node_modules/` and only falls back to a bare `teams-cli` PATH lookup if that resolution fails. No user action required. What you lose is `teams-cli` as a standalone command in your own shell.
 

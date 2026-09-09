@@ -18,7 +18,11 @@ export const createFolderTool: Tool = {
   handler: async (args) => {
     const cliArgs = ['create-folder', args.path];
     if (args.createParents !== false) cliArgs.push('--create-parents');
-    if (args.idempotent !== false) cliArgs.push('--idempotent');
-    return runOutlookCli(cliArgs);
+    const idempotent = args.idempotent !== false;
+    if (idempotent) cliArgs.push('--idempotent');
+    // Retry safety follows the CLI flag: with --idempotent a collision returns the
+    // existing folder, so a lost response is safe to repeat. Without it, the second
+    // attempt hits exit 6 and reports failure for a folder that was in fact created.
+    return runOutlookCli(cliArgs, { idempotent });
   },
 };

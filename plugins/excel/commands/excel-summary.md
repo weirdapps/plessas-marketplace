@@ -1,5 +1,5 @@
 ---
-description: "Analyse and summarise an Excel workbook — structure, KPIs, anomalies, data quality."
+description: "Analyse and summarise an Excel workbook: structure, KPIs, anomalies, data quality."
 argument-hint: "<file>"
 allowed-tools: Read, Bash, Agent, Skill(document-skills:xlsx)
 ---
@@ -10,9 +10,9 @@ Read an Excel workbook and produce a structured summary suitable for a busy exec
 
 ## Workflow
 
-1. **Read the workbook** — try these methods in order:
+1. **Read the workbook**, trying these methods in order:
    1. **`document-skills:xlsx` skill** (preferred): invoke via `Skill(document-skills:xlsx)`. If the skill is available it handles reading, formatting, and writing xlsx files natively.
-   2. **Fallback — openpyxl/pandas via Python**: if the skill is not installed, use `python3 -c "import openpyxl; ..."` (install with `pip3 install openpyxl` if missing).
+   2. **Fallback (openpyxl/pandas via Python)**: if the skill is not installed, run Python through `uv`, which installs nothing permanently: `uv run --no-project --with openpyxl python -c "import openpyxl; ..."`. Without `uv`, use a venv (`python3 -m venv .venv && .venv/bin/pip install openpyxl`). A bare `pip3 install` fails with `externally-managed-environment` on PEP 668 systems; use `--break-system-packages` only as a last resort.
    3. **Read tool**: for `.csv`/`.tsv` files, read directly as text.
 
 2. **Analyse each sheet**:

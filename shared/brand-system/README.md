@@ -4,7 +4,7 @@
 
 All agents and commands should reference these specifications. Do NOT create duplicate specifications elsewhere.
 
-> **Canonical / mirror:** the canonical copy lives at `plugins/decks/shared/brand-system/`. The marketplace-root `shared/brand-system/` is an **auto-synced mirror — do not hand-edit it.** Edit the canonical, then run `scripts/sync_brand_system.sh`. CI (`validate_consistency.py`) fails on any drift between the two.
+> **Canonical / mirror:** the canonical copy lives at `plugins/decks/shared/brand-system/`. The marketplace-root `shared/brand-system/` is an **auto-synced mirror; do not hand-edit it.** Edit the canonical, then run `scripts/sync_brand_system.sh`. CI (`validate_consistency.py`) fails on any drift between the two.
 
 ## Quick Reference
 
@@ -57,25 +57,25 @@ aspect_ratio: 16:9
 | Rule | Enforcement |
 |------|-------------|
 | **BUILD FROM SCRATCH** | **Never use NBG template files** (`Presentation()` not `Presentation(template)`). Templates carry phantom "Placeholder text" artifacts. See `generation-methods.md`. |
-| **White backgrounds ONLY** | Never use dark themes, dark dividers, or colored cover backgrounds. **One exception: keynote mode** — see [keynote.md](keynote.md) and Standard #21 |
-| **ALWAYS use Greek logo** | Use `nbg-logo-gr.png` for ALL presentations — NEVER use the English logo |
-| **NO Bright Cyan backgrounds** | `00DFF8` is TOO BRIGHT for box/card backgrounds — use `F5F8F6` (off-white) instead |
-| **NO dark bg + light text** | Fails accessibility. Use light backgrounds (#F5F8F6, #FFFFFF) with dark text (#003841, #202020). **Keynote mode inverts this** under a measured WCAG guard — see [keynote.md](keynote.md) |
+| **White backgrounds ONLY** | Never use dark themes, dark dividers, or colored cover backgrounds. **One exception: keynote mode**, see [keynote.md](keynote.md) and Standard #21 |
+| **ALWAYS use Greek logo** | Use `nbg-logo-gr.png` for ALL presentations; NEVER use the English logo |
+| **NO Bright Cyan backgrounds** | `00DFF8` is TOO BRIGHT for box/card backgrounds; use `F5F8F6` (off-white) instead |
+| **NO dark bg + light text** | Fails accessibility. Use light backgrounds (#F5F8F6, #FFFFFF) with dark text (#003841, #202020). **Keynote mode inverts this** under a measured WCAG guard; see [keynote.md](keynote.md) |
 | **NO pie charts** | Always use doughnut instead |
 | **NO "Thank You" slides** | Use plain back cover with centered logo |
 | **Title weight** | Aptos Regular (NOT SemiBold) |
 | **Text boxes** | `margin: 0`, `valign: 'top'` ALWAYS |
 | **Content title size** | 24pt (NOT 44pt or larger) |
-| **Body text size** | 14-16pt preferred. 12pt minimum where space is tight. Never 11pt or below for body. |
+| **Body text size** | 14pt minimum, 16pt preferred. The full per-element floor table is `presentation-style-guide.md` Standard #11. |
 | **Cover subtitle** | 24pt pipe-separated unit list (`Cards \| GoForMore \| Embedded \| Digital \| SSB \| Direct \| Fraud \| Controls`). NOT "Cards and Digital Business". No periods. |
-| **Dividers** | Title only — no subtitle/description. White background. Large logo (same as cover). |
+| **Dividers** | Title only, no subtitle/description. White background. Large logo (same as cover). |
 | **Line charts** | Thick lines (3.5pt), hollow "donut" markers (white fill + colored ring matching line width) |
 | **Chart colors** | ALWAYS specify explicit NBG colors. Same `#00ADBF` for both column AND bar charts. |
 | **Table numbers** | Right-aligned. Text columns left-aligned. Zebra rows: alternate #FFFFFF / #F5F8F6. |
 | **NO shadows** | All shapes, pills, boxes must have no shadow |
 | **Bumper is a pill** | Rounded rect, fill 007B85, 9pt Bold white ALL CAPS |
 | **Charts are native** | Use proper python-pptx/PptxGenJS charts, NOT shape-drawn boxes |
-| **Page numbers** | On content/chart/table slides ONLY. Not on cover, dividers, back cover. Position: (12.23, 7.16). |
+| **Page numbers** | On content/chart/table slides ONLY. Not on cover, dividers, back cover. Position: see Quick Reference above and [dimensions.md](dimensions.md#page-number-placement). |
 | **No periods in titles** | Titles and subtitles have no trailing periods |
 
 ## Typography Hierarchy
@@ -86,7 +86,7 @@ aspect_ratio: 16:9
 | Cover subtitle | **24pt** | 007B85 | Regular |
 | Divider number | 60pt | 007B85 | Regular |
 | Divider title | **48pt** | 003841 | Regular |
-| Contents header | **32pt** | 003841 | Bold |
+| Contents header | **24pt** | 003841 | Regular |
 | Content title | **24pt** | 003841 | Regular |
 | Body text | **14-16pt** | 202020 | Regular |
 | Bumper (pill) | 9pt | FFFFFF on 007B85 | Bold |
@@ -113,8 +113,14 @@ Use in order for data series:
 
 ## Reference Files
 
+**Precedence**: the numbered Standards in
+[presentation-style-guide.md](../presentation-style-guide.md) override every file in this
+directory, including this one, wherever they disagree. Cite the Standard number when you
+follow it.
+
 | File | Contents |
 |------|----------|
+| [presentation-style-guide.md](../presentation-style-guide.md) | **Numbered NBG Standards. Overrides everything below.** |
 | [colors.md](colors.md) | Complete color palette + contrast rules |
 | [typography.md](typography.md) | Font specifications |
 | [layouts.md](layouts.md) | Slide layout catalog + divider rules |
@@ -192,6 +198,3 @@ const NBG = {
 
 **Version**: 3.4.0
 **Last Updated**: February 2026
-
-<!-- maint-note:brand-dup -->
-> **Maintenance note — duplicate tree:** Two copies of this NBG brand-system exist: `plessas-marketplace/shared/brand-system/` (marketplace-wide) and `plessas-marketplace/plugins/decks/shared/brand-system/` (bundled with the decks plugin). They have **drifted** (8 files differ; each tree also has unique files). When changing a brand spec, update BOTH — or designate one canonical and re-sync the other. Do NOT assume they are identical.

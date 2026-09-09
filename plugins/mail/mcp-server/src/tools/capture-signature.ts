@@ -35,6 +35,7 @@ export const captureSignatureTool: Tool = {
     if (typeof args.out === 'string' && args.out.length > 0) {
       cliArgs.push('--out', args.out);
     }
-    return runOutlookCli(cliArgs);
+    // Not idempotent: it overwrites signature.html from a live SentItems read.
+    return runOutlookCli(cliArgs, { idempotent: false });
   },
 };

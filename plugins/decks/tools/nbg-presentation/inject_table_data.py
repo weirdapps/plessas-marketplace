@@ -41,6 +41,7 @@ from xml.etree.ElementTree import (  # nosemgrep: python.lang.security.use-defus
 )
 
 import defusedxml.ElementTree as ET
+from ooxml_ns import write_preserving_namespaces
 
 # NBG Colors (without # prefix)
 NBG_COLORS = {
@@ -66,7 +67,13 @@ for prefix, uri in NAMESPACES.items():
 
 
 def find_tables_in_slide(slide_file: Path) -> list:
-    """Find all tables in a slide and return their XML elements."""
+    """Find all tables in a slide and return their XML elements.
+
+    The raw bytes travel with the tree: they are the only record of which
+    namespace prefixes the source declared, and ElementTree renames or drops
+    every one it was not told about. See ooxml_ns.write_preserving_namespaces.
+    """
+    raw = slide_file.read_bytes()
     tree = ET.parse(slide_file)
     root = tree.getroot()
 
@@ -76,14 +83,12 @@ def find_tables_in_slide(slide_file: Path) -> list:
     for gf in root.findall(".//{{{}}}graphicFrame".format(NAMESPACES["p"])):
         tbl = gf.find(".//{{{}}}tbl".format(NAMESPACES["a"]))
         if tbl is not None:
-            tables.append((gf, tbl, tree, slide_file))
+            tables.append((gf, tbl, tree, slide_file, raw))
 
     return tables
 
 
-def update_table_cell(
-    cell: Element, text: str, is_header: bool = False, highlight: bool = False
-):
+def update_table_cell(cell: Element, text: str, is_header: bool = False, highlight: bool = False):
     """Update the text content of a table cell."""
     # Find or create the text body
     txBody = cell.find(".//{{{}}}txBody".format(NAMESPACES["a"]))
@@ -180,14 +185,12 @@ def inject_table_data(pptx_path: str, config_path: str, output_path: str):
             tables = find_tables_in_slide(slide_file)
 
             if table_index < len(tables):
-                gf, tbl, tree, file_path = tables[table_index]
+                gf, tbl, tree, file_path, raw = tables[table_index]
                 print(f"Updating table {table_index} on slide {slide_num + 1}")
                 update_table(tbl, data, highlight_column)
-                tree.write(file_path, xml_declaration=True, encoding="UTF-8")
+                write_preserving_namespaces(tree, file_path, raw)
             else:
-                print(
-                    f"Warning: Table index {table_index} not found on slide {slide_num + 1}"
-                )
+                print(f"Warning: Table index {table_index} not found on slide {slide_num + 1}")
 
         # Repack PPTX
         with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -201,9 +204,7 @@ def inject_table_data(pptx_path: str, config_path: str, output_path: str):
 
 def main():
     if len(sys.argv) < 4:
-        print(
-            "Usage: python inject_table_data.py <input.pptx> <config.json> <output.pptx>"
-        )
+        print("Usage: python inject_table_data.py <input.pptx> <config.json> <output.pptx>")
         print("\nExample config.json:")
         print(
             json.dumps(

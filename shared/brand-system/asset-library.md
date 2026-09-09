@@ -56,22 +56,22 @@ Comprehensive library of NBG brand assets for presentations.
    - White `#FFFFFF` on dark backgrounds
    - NBG Teal `#007B85` for accent icons
 
-2. **Never use icons without text** — always pair with a label or heading
+2. **Never use icons without text**: always pair with a label or heading
 
-3. **Consistent sizing per slide** — all icons same size
+3. **Consistent sizing per slide**: all icons same size
    - Inline/list icons: 48px
    - Feature callouts: 64-80px
 
-4. **One icon per item** — don't stack multiple icons
+4. **One icon per item**: don't stack multiple icons
 
-5. **Never crop icons** — always preserve full image and aspect ratio
+5. **Never crop icons**: always preserve full image and aspect ratio
 
 ### When to Use Icons
 
-- Infographic slides — visual anchors for each item
-- Callout slides — pair with each callout
-- Benefits lists — one icon per benefit, aligned left
-- Section dividers — single large icon for reinforcement
+- Infographic slides: visual anchors for each item
+- Callout slides: pair with each callout
+- Benefits lists: one icon per benefit, aligned left
+- Section dividers: single large icon for reinforcement
 
 **Do NOT use icons** on text-heavy slides or slides with screenshots.
 
@@ -110,7 +110,7 @@ Need an icon?
 
 ---
 
-## Duotone Icons (SVG) — official style
+## Duotone Icons (SVG): official style
 
 **Path:** `assets/icons-duotone/`
 
@@ -164,12 +164,12 @@ The official NBG icon style is **duotone**: stroke-based teal outlines with acce
 
 ### Illustration Rules
 
-1. **Never crop** — always show full illustration
-2. **Preserve aspect ratio** — never stretch
-3. **Light backgrounds only** — won't work on dark slides
-4. **One per slide** — never combine multiple illustrations
-5. **Use with image-left/right layouts** — as visual anchor with text
-6. **Don't mix with screenshots** — different visual purposes
+1. **Never crop**: always show full illustration
+2. **Preserve aspect ratio**: never stretch
+3. **Light backgrounds only**: won't work on dark slides
+4. **One per slide**: never combine multiple illustrations
+5. **Use with image-left/right layouts**: as visual anchor with text
+6. **Don't mix with screenshots**: different visual purposes
 
 A 9-piece SVG **splash** set (investments, insurance, loan, p2p, moneybox, cyber protection, remote service, maintenance) lives in `assets/illustrations/splash/` for Internet Banking promo styling.
 
@@ -199,11 +199,11 @@ See `assets/illustrations/INDEX.md` for complete reference.
 
 ### Logo Rules
 
-1. **Never stretch or crop** — preserve aspect ratio
-2. **Match variant to background** — light logos on light, dark on dark
-3. **App icons only when relevant** — only for slides about that app
-4. **Minimum size** — never below 80px on longest dimension
-5. **Clearance** — leave at least half logo height as whitespace around it
+1. **Never stretch or crop**: preserve aspect ratio
+2. **Match variant to background**: light logos on light, dark on dark
+3. **App icons only when relevant**: only for slides about that app
+4. **Minimum size**: never below 80px on longest dimension
+5. **Clearance**: leave at least half logo height as whitespace around it
 
 See `assets/logos/INDEX.md` for complete reference.
 
@@ -226,24 +226,24 @@ See `assets/logos/INDEX.md` for complete reference.
 
 ### Screenshot Categories (retail-mobile example)
 
-- `loans/` — Loan products and applications
-- `cards/` — Card views and management
-- `card-management/` — Card settings and controls
-- `accounts/` — Account views and details
-- `investments/` — Investment products
-- `moneybox/` — Savings features
-- `iris/` — IRIS payment flows
-- `subscriptions/` — Subscription management
-- `profile/` — User profile screens
-- `notifications/` — Notification screens
-- `onboarding/` — New user flows
-- `sole-proprietorship/` — Business features
+- `loans/`: Loan products and applications
+- `cards/`: Card views and management
+- `card-management/`: Card settings and controls
+- `accounts/`: Account views and details
+- `investments/`: Investment products
+- `moneybox/`: Savings features
+- `iris/`: IRIS payment flows
+- `subscriptions/`: Subscription management
+- `profile/`: User profile screens
+- `notifications/`: Notification screens
+- `onboarding/`: New user flows
+- `sole-proprietorship/`: Business features
 
 ### Screenshot Rules
 
 1. **Read the INDEX.md** in each product folder before selecting
-2. **Match product to context** — if discussing Retail Mobile, use only retail-mobile screenshots
-3. **One product per slide** — never mix products
+2. **Match product to context**: if discussing Retail Mobile, use only retail-mobile screenshots
+3. **One product per slide**: never mix products
 4. **If no relevant screenshot exists**, use solid NBG Teal fill as placeholder
 
 ### Aspect Ratio Rules (Critical)
@@ -251,9 +251,9 @@ See `assets/logos/INDEX.md` for complete reference.
 **Never stretch screenshots.** Strategy:
 
 1. **Fit whole screenshot** inside placeholder, centered (preferred)
-2. **Crop only as fallback** — if fit looks bad
+2. **Crop only as fallback**: if fit looks bad
 
-**NEVER crop these products — always fit:**
+**NEVER crop these products, always fit:**
 
 - `retail-mobile` (mobile UI would be cut off)
 - `next-app` (mobile UI would be cut off)
@@ -267,7 +267,7 @@ See `assets/screenshots/*/INDEX.md` for complete reference per product.
 
 ## Asset Selection Workflow
 
-1. **Identify slide purpose** — what are you communicating?
+1. **Identify slide purpose**: what are you communicating?
 2. **Choose asset type**:
    - Abstract concept → **Illustration**
    - Specific product feature → **Screenshot**
@@ -275,7 +275,7 @@ See `assets/screenshots/*/INDEX.md` for complete reference per product.
    - Brand presence → **Logo**
 3. **Read the INDEX.md** for that asset category
 4. **Select specific asset** that matches content
-5. **Insert with correct sizing** — preserve aspect ratio
+5. **Insert with correct sizing**: preserve aspect ratio
 
 ---
 

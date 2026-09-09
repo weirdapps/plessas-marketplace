@@ -1,7 +1,7 @@
 {
   "name": "decks",
   "description": "Branded presentation system: storyline → storyboard → graphics → QA. Multi-agent pipeline producing board-ready, NBG-branded PPTX. Bundles icon, infographic, and device-mockup creative agents.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "weirdapps"
   },
@@ -19,5 +19,10 @@
     "infographic",
     "mockup"
   ],
-  "commands": "./commands"
+  "commands": [
+    "./commands",
+    "./bundled/creative/commands"
+  ],
+  "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/decks",
+  "repository": "https://github.com/weirdapps/plessas-marketplace"
 }

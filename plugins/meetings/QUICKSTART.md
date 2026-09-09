@@ -1,21 +1,21 @@
-# meetings — Quickstart
+# meetings Quickstart
 
 A 5-minute path from zero to "I walk into every meeting prepared and walk out with decisions captured."
 
 ## What it does
 
-Reads today's calendar via Microsoft Graph, builds a per-attendee dossier from your knowledge store (last contact, open action items, recent decisions, sentiment) when the optional `second-brain` MCP is available, and cross-references your inbox for emails related to the meeting topics. The output is a structured per-meeting briefing with suggested talking points. After the meeting, captures decisions, action items, and follow-ups into a structured debrief — and optionally distributes a summary to attendees.
+Reads today's calendar via Microsoft Graph, builds a per-attendee dossier from your knowledge store (last contact, open action items, recent decisions, sentiment) when the optional `second-brain` MCP is available, and cross-references your inbox for emails related to the meeting topics. The output is a structured per-meeting briefing with suggested talking points. After the meeting, captures decisions, action items, and follow-ups into a structured debrief, and optionally distributes a summary to attendees.
 
 ## Prerequisites
 
 - Claude Code installed
-- The **`mail` plugin** must be installed first — `meetings` uses its bundled `outlook-bridge` MCP server for calendar access. There is no separate calendar MCP.
+- The **`mail` plugin** must be installed first; `meetings` uses its bundled `outlook-bridge` MCP server for calendar access. There is no separate calendar MCP.
 - A Microsoft 365 / Outlook account at NBG (or any tenant)
-- Optional: the `second-brain` MCP server (via the `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace) for richer attendee dossiers built from your email corpus. Without it, briefings still work — they fall back to calendar metadata + live inbox cross-reference.
+- Optional: the `second-brain` MCP server (via the `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace) for richer attendee dossiers built from your email corpus. Without it, briefings still work; they fall back to calendar metadata + live inbox cross-reference.
 
 ## Install
 
-Inside Claude Code, install both — `mail` first, then `meetings`:
+Inside Claude Code, install both, `mail` first, then `meetings`:
 
 ```
 /plugin install mail@plessas-marketplace
@@ -38,7 +38,7 @@ Output (typical):
 
 ```
 ═══════════════════════════════════════════════
-MEETING PREP — 2026-05-11 (today, 3 meetings)
+MEETING PREP: 2026-05-11 (today, 3 meetings)
 ═══════════════════════════════════════════════
 
 09:30–10:00  1:1 with Cards Sector Director
@@ -52,7 +52,7 @@ DOSSIER:
 TALKING POINTS:
   • Confirm Wed slot to brief CEO on Q1 numbers
   • Status of ExCo approval for new pricing
-  • Fee mix shift toward credit — sustainability?
+  • Fee mix shift toward credit, sustainability?
 
 11:00–12:00  ExCo monthly review
 ───────────────────────────────────────────────
@@ -63,8 +63,8 @@ ATTENDEES:
 RELATED INBOX:
   - CFO Office: Board pack draft for May (deadline 2026-05-13)
 TALKING POINTS:
-  • Cards Q1 beat (+12%) — flag for May Board pack
-  • Digital channel CSAT issue — second escalation this month
+  • Cards Q1 beat (+12%), flag for May Board pack
+  • Digital channel CSAT issue, second escalation this month
 
 15:00–15:30  ATM hardware partner sync
 ───────────────────────────────────────────────
@@ -74,7 +74,7 @@ RELATED INBOX:
   - Vendor: ATM platform Q2 roadmap (3 days ago, no reply yet)
 TALKING POINTS:
   • Hardware refresh timeline confirmation
-  • Digital euro readiness — pilot scope
+  • Digital euro readiness, pilot scope
 
 DAY SUMMARY
 ───────────────────────────────────────────────

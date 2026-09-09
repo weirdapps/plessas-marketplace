@@ -1,4 +1,7 @@
 node_modules/
+# `dist/` only. NOT `bundle/`: bundle/server.mjs is the committed esbuild
+# output that run.sh prefers, and it is the reason this server starts without
+# node_modules present. See the note in the repo-root .gitignore.
 dist/
 *.log
 .last-startup.json

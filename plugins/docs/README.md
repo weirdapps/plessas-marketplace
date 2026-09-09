@@ -7,8 +7,8 @@ Word document creation with NBG formatting baked in. Three command shapes: gener
 | Command | Description |
 |---------|-------------|
 | `/docs-create <topic> [type:report\|proposal\|brief\|notes]` | Structured Word document. `type` picks a section template (default: `report`) |
-| `/docs-letter <recipient> <subject>` | Formal business letter — letterhead, salutation, body, valediction, signature block |
-| `/docs-memo <topic>` | Internal memo — TO/FROM/DATE/RE header, structured body, optional distribution list |
+| `/docs-letter <recipient> <subject>` | Formal business letter: letterhead, salutation, body, valediction, signature block |
+| `/docs-memo <to> <subject>` | Internal memo: TO/FROM/DATE/SUBJECT header, structured body, optional distribution list |
 
 ## How it works
 
@@ -24,25 +24,25 @@ Each command:
    - Page numbers: bottom centre
 5. Writes the `.docx` to `~/Downloads/` with a `YYYYMMDDHHMM_<descriptive_name>.docx` filename (Athens timezone), per the global file-naming convention
 
-You then open the file in Word, review, and edit as needed. The plugin never modifies a document in place — every run produces a fresh timestamped file.
+You then open the file in Word, review, and edit as needed. The plugin never modifies a document in place; every run produces a fresh timestamped file.
 
 ## Document templates
 
 ### Report
 
-Title page · executive summary · numbered sections with headings · conclusions · appendix slot.
+Title page · table of contents · executive summary · sections with headings · conclusions.
 
 ### Proposal
 
-Title · problem statement · proposed solution · timeline · budget · next steps · sign-off block.
+Title · problem statement · proposed solution · timeline · budget · next steps.
 
 ### Brief
 
-Title · background (1-2 paragraphs) · key points (bulleted) · recommendation · author/date footer.
+Title · background · key points (bulleted) · recommendation.
 
 ### Notes
 
-Title · date · attendees (if applicable) · numbered discussion points · action items table.
+Title · date · attendees (if applicable) · numbered points · action items.
 
 ### Letter (`/docs-letter`)
 
@@ -64,9 +64,9 @@ For best results, install Anthropic's `document-skills` plugin (`/plugin install
 
 ## Tips
 
-- **Greek and English**: pass content in either language. The plugin detects the language and uses the appropriate salutations / valedictions (`Αγαπητέ <όνομα>,` / `Με εκτίμηση,` for Greek; `Dear <name>,` / `Best regards,` for English).
-- **Iteration**: re-run the command with the same topic — you'll get a new timestamped file, not an overwrite. Compare side-by-side, keep the better version.
-- **Letterhead customisation**: the default letterhead uses NBG branding from `shared/brand-system/`. To override (e.g. for personal letters), pass the content with `--no-letterhead`.
+- **Greek and English**: pass content in either language. The plugin detects the language and uses the appropriate salutations / valedictions (`Αξιότιμε/η <όνομα>,` / `Με εκτίμηση,` for Greek; `Dear <name>,` / `Sincerely,` for English).
+- **Iteration**: re-run the command with the same topic; you'll get a new timestamped file, not an overwrite. Compare side-by-side, keep the better version.
+- **Letterhead**: this plugin ships no letterhead assets and has no `--no-letterhead` flag. `/docs-letter` builds the sender block from your prompt, or from `~/.outlook-cli/signature.html` when that file exists.
 - **Distribution list on memos**: include `cc:` or `distribution:` lines in your prompt and they'll appear in the header.
 
 ## License

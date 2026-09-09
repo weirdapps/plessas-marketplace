@@ -77,7 +77,7 @@ Update Node to v20 or newer:
 
 ### `python3: command not found` (decks plugin)
 
-Install Python 3.11+ from <https://www.python.org/downloads/>. The `decks` plugin builds a virtual env on first install for its PowerPoint validation tools.
+Install Python 3.12+ from <https://www.python.org/downloads/>. The `decks` plugin builds a virtual env on first install for its PowerPoint validation tools.
 
 ### `git: command not found`
 

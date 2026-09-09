@@ -1,4 +1,4 @@
-# chat — Quickstart
+# chat Quickstart
 
 A 5-minute path from zero to "my Teams chats are summarised and my replies are drafted."
 
@@ -10,7 +10,7 @@ Bridges Microsoft Teams to Claude Code. Reads your chats and channels via Micros
 
 - Claude Code installed
 - A Microsoft 365 / Teams account at NBG (or any tenant)
-- The marketplace setup script has been run (`installers/install.sh`) — this puts `teams-cli` on your PATH
+- The marketplace setup script has been run (`installers/install.sh`), which puts `teams-cli` on your PATH
 
 ## Install
 
@@ -46,31 +46,31 @@ Output (typical):
 
 ```
 ═══════════════════════════════════════════════
-TEAMS INBOX — 2026-05-10, 09:14
+TEAMS INBOX: 2026-05-10, 09:14
 ═══════════════════════════════════════════════
 
 NEEDS RESPONSE (3)
 ───────────────────────────────────────────────
-1. Cards Sector Director (1:1) — 2 unread
+1. Cards Sector Director (1:1): 2 unread
    "Need your sign-off on Q1 cards revenue slide before
-    the 11:00 ExCo prep — see attached deck"
+    the 11:00 ExCo prep, see attached deck"
    ACTION: Reply with sign-off or redlines (deadline: 11:00)
 
-2. Cards Leadership (group, 6 people) — 4 unread
+2. Cards Leadership (group, 6 people): 4 unread
    Discussion on the new fee-restructure rollout; Fraud
    Director raised a vector concern that needs a call.
    ACTION: Decide if call needed or async resolution OK
 
-3. Digital Director (1:1) — 1 unread
-   CSAT drop on new release — escalation path question
+3. Digital Director (1:1): 1 unread
+   CSAT drop on new release, escalation path question
    ACTION: Delegate to Customer Insights or take ownership
 
 FYI (4)
 ───────────────────────────────────────────────
-4. Direct Reports (group) — 2 unread (loyalty programme kudos thread)
-5. Subsidiary leadership (group) — 1 unread (board pack reminder)
-6. Embedded Banking project (channel) — 7 unread across 2 threads
-7. Peer AGM (1:1) — 1 unread (Business Banking sync request)
+4. Direct Reports (group): 2 unread (loyalty programme kudos thread)
+5. Subsidiary leadership (group): 1 unread (board pack reminder)
+6. Embedded Banking project (channel): 7 unread across 2 threads
+7. Peer AGM (1:1): 1 unread (Business Banking sync request)
 
 LOW PRIORITY (3)
 ───────────────────────────────────────────────
@@ -105,7 +105,7 @@ Bonus commands: `/chat-channel-digest <channel>` (executive summary of a project
 
 ```
 /chat-channel-digest <channel>
-# Returns: executive summary across recent threads —
+# Returns: executive summary across recent threads
 # decisions made, open questions, who's blocked
 ```
 
@@ -123,11 +123,11 @@ Bonus commands: `/chat-channel-digest <channel>` (executive summary of a project
 | Symptom | Fix |
 |---|---|
 | `auth_required` error | Run `/chat:auth-setup --force-reauth`, or `teams-cli login` |
-| Cold-start delay (30-60s) on first command after install | Normal — the MCP server runs `npm install` + `npm run build` the first time. Subsequent calls are instant |
+| Cold-start delay (30-60s) on first command after install | Normal: the MCP server runs `npm install` + `npm run build` the first time. Subsequent calls are instant |
 | "Channel sends not supported" | Microsoft Graph send scope is missing for channels in the underlying API. Send works for chats (1:1, group); channel **reads** work fine |
 | `teams-cli` not on PATH | Some corporate-locked laptops disallow `npm link` to global. Harmless: `teams-cli` is also a pinned dependency of the bridge, so the server resolves it from `plugins/chat/mcp-server/node_modules/teams-cli/dist/cli.js`. No action needed |
 
-If anything else looks off, run `/chat-doctor` — it surfaces the exact problem (missing CLI, expired session, network issue) and tells you the one command to fix it.
+If anything else looks off, run `/chat-doctor`; it surfaces the exact problem (missing CLI, expired session, network issue) and tells you the one command to fix it.
 
 ## Where things live
 

@@ -16,6 +16,29 @@
 # Run a real-session spot check of three or four cases after any description
 # change.
 #
+# NONDETERMINISM: READ THIS BEFORE TRUSTING A SCORE.
+#
+# The score is not reproducible, so a single run is not a measurement.
+# Measured 2026-09-09: case 2 was run four times on byte-identical input and
+# produced three fails and one pass. Nothing about the repo changed between
+# those runs.
+#
+# Two consequences, both easy to get wrong:
+#
+#   * A total of 16/17 is not a stable figure and 17/17 is not evidence of an
+#     improvement. Either can come back different on the next run with no
+#     edit in between. If you want to claim a description change helped, run
+#     the affected case several times before and after and compare the rates,
+#     not the single scores.
+#   * This CANNOT be wired as a pass/fail CI gate as written. It would flake,
+#     people would learn to re-run it until green, and a re-run-until-green
+#     gate is worse than no gate. That is why no workflow invokes it.
+#
+# `claude plugin eval` is the first-party alternative and it addresses this
+# directly: `--runs` repeats each case (default 3) and `--threshold` scores
+# against the aggregate rather than a single sample. If this probe ever needs
+# to gate anything, port it there rather than adding retries here.
+#
 # Requires: claude CLI on PATH with ambient auth (Claude Code session or
 # ANTHROPIC_API_KEY). No personal config files are sourced.
 #

@@ -1,0 +1,38 @@
+# Line-ending normalisation for the whole repo.
+#
+# There was no .gitattributes here at all until 2026-09-09, which meant every
+# text file was at the mercy of each contributor's local `core.autocrlf`. That
+# is not hypothetical for this repo: it ships installers/install.ps1 and a
+# documented Windows install path, and Git for Windows installs with
+# core.autocrlf=true by default. Meanwhile .pre-commit-config.yaml runs
+# `mixed-line-ending --fix=lf`, which normalises the working tree while
+# nothing normalised what git actually stored. This file closes that gap.
+#
+# `text=auto eol=lf` means: git decides text vs binary by content, and every
+# file it calls text is stored AND checked out with LF, on every platform.
+* text=auto eol=lf
+
+# Binary assets, marked explicitly so no checkout can rewrite their bytes.
+# Only the extensions actually tracked here are listed; add to this list when
+# a new binary type arrives rather than pre-declaring types the repo lacks.
+#
+# `-text` disables end-of-line conversion. It deliberately does NOT use the
+# `binary` shorthand (which is `-text -diff`): git already detects these as
+# binary by content for diff purposes, so the extra `-diff` buys nothing, and
+# keeping the attribute minimal means it says exactly what it does.
+#
+# .svg is NOT here on purpose: it is XML, it benefits from LF normalisation
+# and from readable diffs, and it is covered by the `text=auto` rule above.
+*.png  -text
+*.pdf  -text
+*.pptx -text
+
+# The two committed MCP bundles. Already covered by `* text=auto eol=lf` above,
+# which stores and checks them out LF on every platform, so this is not fixing a
+# breakage. It is here because .github/workflows/lint.yml rebuilds these two
+# files on ubuntu and compares them BYTE FOR BYTE against what was committed
+# from macOS. `-text` takes git's text/binary heuristic and any future change to
+# the rule above out of that comparison entirely, so a drift failure can only
+# ever mean the source and the artefact really disagree.
+plugins/mail/mcp-server/bundle/server.mjs -text
+plugins/chat/mcp-server/bundle/server.mjs -text

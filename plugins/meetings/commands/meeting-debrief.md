@@ -1,7 +1,7 @@
 ---
-description: "Post-meeting debrief — capture decisions, action items, and distribute summary"
+description: "Post-meeting debrief: capture decisions, action items, and distribute summary"
 argument-hint: "[meeting name or number] [--distribute]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outlook-bridge__*
 ---
 
 <objective>
@@ -15,17 +15,21 @@ User request: $ARGUMENTS
 
 ### 0. Verify Outlook MCP Available (FAIL-FAST)
 
-This plugin reads the calendar via `mcp__outlook-bridge__*` tools bundled in the **mail** plugin. Check the bridge is reachable:
+This plugin reads the calendar via the outlook-bridge MCP tools bundled in the **mail** plugin, whose names all begin with `mcp__plugin_mail_outlook-bridge__`. Check the bridge is reachable:
 
 ```
-Tool: mcp__outlook-bridge__outlook_auth_check
+Tool: mcp__plugin_mail_outlook-bridge__outlook_auth_check
 ```
 
-If the tool is **not available**, stop and tell the user:
+If that tool is **not available** (no tool whose name begins with `mcp__plugin_mail_outlook-bridge__` appears in your tool list), stop and tell the user:
 
 > The `meetings` plugin requires the `mail` plugin to be installed.
 > Install it with: `/plugin install mail@plessas-marketplace`
 > Then re-run `/meeting-debrief`.
+
+### 0b. Dispatch the meeting-intelligence agent
+
+Invoke `agents/meeting-intelligence` for the debrief run. That agent owns the capture flow and the debrief JSON schema. The steps below state the contract it must satisfy; execute them directly only if the agent is unavailable.
 
 ### 1. Identify Meeting
 
@@ -35,13 +39,13 @@ If the tool is **not available**, stop and tell the user:
 
 ### 2. Read Calendar for Meeting Details
 
-Use the outlook-bridge MCP as the primary calendar source — structured M365-synced data via Microsoft Graph:
+Use the outlook-bridge MCP as the primary calendar source, which returns structured M365-synced data via Microsoft Graph:
 
 ```
-Tool: mcp__outlook-bridge__outlook_list_calendar
+Tool: mcp__plugin_mail_outlook-bridge__outlook_list_calendar
 Args: { "from": "start of today", "to": "end of today" }
 
-Tool: mcp__outlook-bridge__outlook_get_event
+Tool: mcp__plugin_mail_outlook-bridge__outlook_get_event
 Args: { "id": "<event Id>" }
 ```
 
@@ -52,23 +56,39 @@ See `shared/calendar-access.md` for access patterns.
 
 Ask the user to provide (free text is fine):
 
-- **Decisions made** — what was decided, by whom
-- **Action items** — what, who owns it, deadline
-- **Follow-ups** — things to track or revisit
-- **Key takeaways** — notable observations
+- **Decisions made**: what was decided, by whom
+- **Action items**: what, who owns it, deadline
+- **Follow-ups**: things to track or revisit
+- **Key takeaways**: notable observations
 
 Parse and structure the user's input.
 
 ### 4. Save Debrief
 
 Ensure `~/.claude/meetings/debriefs/` exists.
-Save as `YYYY-MM-DD-meeting-name.json` with structured data:
+Save as `YYYY-MM-DD-meeting-name.json` (lowercase, spaces to hyphens) using exactly these field names, so later runs can read the file back:
 
-- Meeting metadata (name, date, time, attendees)
-- Decisions with attribution
-- Action items with owners and deadlines
-- Follow-ups with timing
-- Free-form notes
+```json
+{
+  "meeting": {
+    "name": "Meeting name from calendar",
+    "date": "2026-03-21",
+    "time": "14:00-15:00",
+    "attendees": ["Name 1", "Name 2"]
+  },
+  "decisions": [
+    { "decision": "What was decided", "decided_by": "Who made the call", "context": "Brief context" }
+  ],
+  "action_items": [
+    { "action": "What needs to be done", "owner": "Who owns it", "deadline": "When (if specified)", "status": "open" }
+  ],
+  "follow_ups": [
+    { "topic": "What to track", "when": "When to follow up", "with": "Who to follow up with" }
+  ],
+  "notes": "Free-form notes or key takeaways",
+  "debriefed_at": "ISO-8601 timestamp"
+}
+```
 
 ### 5. Distribute Summary (if `--distribute` or user confirms)
 
@@ -82,7 +102,7 @@ Use `/send-mail` to create the email via Outlook, addressed to all attendees.
 
 ### 6. Log to Decision Tracker
 
-If `plugins/_shared/decision-tracker/` exists, append decisions and action items.
+If a decision tracker exists at `~/.claude/meetings/decision-tracker/`, append the decisions and action items to it. The plugin does not create that directory; skip this step when it is absent.
 </process>
 
 <specifications>

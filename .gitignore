@@ -10,6 +10,15 @@ dist/
 build/
 *.egg-info/
 
+# NOT ignored, deliberately: plugins/{mail,chat}/mcp-server/bundle/server.mjs.
+# That single esbuild output inlines each MCP server's only runtime npm package
+# and is what run.sh executes, so a fresh checkout starts the server with no
+# `npm ci` and no `tsc` at all. It is a tracked build artefact on purpose. Three
+# `dist/` rules exist in this repo (here plus one in each mcp-server/.gitignore)
+# and none of them matches `bundle/`; verified with `git check-ignore -v`. Do not
+# "tidy up" by widening any of them, and do not add `bundle/`: the servers would
+# silently fall back to the 15.5s npm-ci path that made this necessary.
+
 # Playwright MCP debug artifacts (console logs, page snapshots) — scratch output
 .playwright-mcp/
 
@@ -81,3 +90,19 @@ plugins/mail/shared/style-guide.md
 .coverage
 .coverage.*
 htmlcov/
+
+# uv lockfile. pyproject.toml is tooling-only with no [project] table, so there is
+# nothing to lock: `uv lock` emits a 3-line stub that pins a python floor which then
+# drifts from the real one. If a [project] table is ever added, delete this line.
+uv.lock
+
+# The user-generated mail style guide contains real names, addresses and per-recipient
+# profiles. The plugin now anchors its writes to ${CLAUDE_PLUGIN_ROOT}, but a stray copy
+# written with this repo as CWD must never be committable either.
+/shared/style-guide.md
+style-guide.local.md
+
+# claude plugin eval run artifacts. Timestamped per run, ~2MB per full sweep, and
+# they carry the full model transcript of every case. The cases, graders and mocks
+# ARE tracked; only the output of running them is not.
+plugins/*/evals/results/

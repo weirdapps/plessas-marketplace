@@ -1,7 +1,7 @@
 ---
-description: "Summarise a Microsoft Teams chat or thread — decisions, action items, key points."
+description: "Summarise a Microsoft Teams chat or thread: decisions, action items, key points."
 argument-hint: "[chat_id] [hours]"
-allowed-tools: Read, Bash, mcp__teams-bridge__teams_auth_check, mcp__teams-bridge__teams_list_chats, mcp__teams-bridge__teams_list_messages, mcp__teams-bridge__teams_resolve_mri
+allowed-tools: Read, Bash, mcp__plugin_chat_teams-bridge__teams_auth_check, mcp__plugin_chat_teams-bridge__teams_list_chats, mcp__plugin_chat_teams-bridge__teams_list_messages, mcp__plugin_chat_teams-bridge__teams_resolve_mri
 ---
 
 # Teams Chat Summarise
@@ -12,7 +12,7 @@ Produce a concise summary of a Microsoft Teams chat conversation.
 
 1. **If no chat_id provided**: list recent chats and let the user pick.
 
-2. **Fetch messages** via `mcp__teams-bridge__teams_list_messages` with `top: 50` and optionally `since` (computed from hours arg, default 24h).
+2. **Fetch messages** via `mcp__plugin_chat_teams-bridge__teams_list_messages` with `top` (default 50). The tool has no server-side time filter, so fetch by count and, when the user asks for a time window, filter the returned messages client-side by timestamp.
 
 3. **Resolve participant identities** for any MRI-format senders.
 

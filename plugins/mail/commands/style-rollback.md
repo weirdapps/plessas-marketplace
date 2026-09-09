@@ -23,9 +23,9 @@ Present available versions:
 ```
 STYLE GUIDE BACKUPS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  1. 202603210830 — 15.2 KB — [first line / description]
-  2. 202603180600 — 14.8 KB — [first line / description]
-  3. 202603150430 — 12.1 KB — [first line / description]
+  1. 202603210830, 15.2 KB, [first line / description]
+  2. 202603180600, 14.8 KB, [first line / description]
+  3. 202603150430, 12.1 KB, [first line / description]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -42,13 +42,13 @@ Before overwriting, save the current style guide:
 
 ```bash
 TZ='Europe/Athens' date '+%Y%m%d%H%M'
-cp plugins/mail/shared/style-guide.md \
+cp "${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md" \
    ~/.claude/drafts/style-guide-backups/YYYYMMDDHHMM_style-guide.md
 ```
 
 ### 4. Restore Selected Version
 
-Copy the selected backup to `plugins/mail/shared/style-guide.md`.
+Copy the selected backup to `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`.
 
 ### 5. Show Diff Summary
 
@@ -77,8 +77,8 @@ Changes: [brief summary]
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `date` | No | — | Date to restore (YYYYMMDD or YYYYMMDDHHMM format) |
-| `list` | No | — | Just list available backups without restoring |
+| `date` | No | - | Date to restore (YYYYMMDD or YYYYMMDDHHMM format) |
+| `list` | No | - | Just list available backups without restoring |
 
 ## Output
 
@@ -108,7 +108,7 @@ Changes: [brief summary]
 /style-rollback 202603180600
 ```
 
-### Interactive — will prompt for selection
+### Interactive: will prompt for selection
 
 ```
 /style-rollback

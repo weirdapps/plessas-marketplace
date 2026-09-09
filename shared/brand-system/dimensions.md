@@ -18,12 +18,32 @@ slide:
 
 ```yaml
 margins:
-  left: 0.37"
-  right: 0.37"
+  left: 0.374"        # the Standard #15 gutter
+  right: 0.374"       # mirror of the gutter; right edge at 12.956"
   top_title: 0.5"
-  top_content: 1.1"
+  top_content: 1.33"   # where content starts; the 1.1" floor below is a different number
   bottom: 0.5"
 ```
+
+`top_content` is where the first content block **starts**. The 1.1" in Content Safe Zones
+below is the **floor** it may never cross, which is what `nbg_validate.py` enforces. Two
+quantities, not two answers.
+
+The left gutter for titles and every left-aligned text block is **0.374"**, per
+`presentation-style-guide.md` Standard #15: the same vertical line the NBG logo sits on.
+The right edge mirrors it at **12.956"** (`13.33 - 0.374`). `nbg_validate.py` states the same
+pair, so the boundary and the placement value are one number each; there is no second,
+looser pair to keep track of.
+
+**Boundaries versus placement coordinates.** A boundary (the right edge, the safe-zone
+limits) has one home, here, and Standard #15 and the agents must reference it rather than
+restate it. A placement coordinate that a renderer copies literally (the gutter, the divider
+title x) is restated wherever a geometry block is specified, each time with its derivation
+inline, because a spec block has to be complete to be usable.
+
+`contentWidth` below is still **12.59"** while `nbg_build.py` ships `CONTENT_W = 12.582`
+(`13.33 - 2 * 0.374`). Do not change one without the other: the value appears in the agents
+and the validator too, and a partial move would create a third state.
 
 ## Text Box Rules
 
@@ -55,7 +75,7 @@ const LOGO_SMALL = {
   w: 0.822,
   h: 0.236
 };
-// Distance from bottom edge: 0.19"
+// Distance from bottom edge: 7.5 - (7.071 + 0.236) = 0.19"
 ```
 
 ### Large Logo - Covers & Dividers
@@ -103,8 +123,9 @@ const PAGE_NUMBER = {
   valign: 'middle',
   margin: 0
 };
-// Distance from bottom edge: 0.19" (aligned with small logo)
-// Distance from right edge: 0.36"
+// Derived from the coordinates above. Do not restate these anywhere else:
+//   from right edge:  13.33 - (12.71 + 0.33)   = 0.29"
+//   from bottom edge: 7.5   - (7.1554 + 0.152) = 0.19"  (level with the small logo)
 ```
 
 ### Which Slides Get Page Numbers
@@ -125,7 +146,7 @@ const PAGE_NUMBER = {
 
 ```yaml
 full_width:
-  x: 0.37"
+  x: 0.374"
   y: 1.33"
   w: 12.59"
   h: 4.5"
@@ -136,7 +157,7 @@ full_width:
 ```yaml
 two_column_even:
   left:
-    x: 0.37"
+    x: 0.374"
     y: 1.33"
     w: 5.5"
     h: 4.5"
@@ -152,7 +173,7 @@ two_column_even:
 ```yaml
 two_column_text_chart:
   text:
-    x: 0.37"
+    x: 0.374"
     y: 1.33"
     w: 4.5"
     h: 4.5"
@@ -168,7 +189,7 @@ two_column_text_chart:
 ```yaml
 three_column:
   col1:
-    x: 0.37"
+    x: 0.374"
     y: 1.33"
     w: 3.6"
   col2:
@@ -188,20 +209,20 @@ three_column:
 ```yaml
 cover:
   title:
-    x: 0.37"
+    x: 0.374"
     y: 1.39"
     w: 7.86"
     h: 1.56"
   subtitle:
-    x: 0.37"
+    x: 0.374"
     y: 2.27"
     w: 7.86"
     h: 1.44"
   location:
-    x: 0.37"
+    x: 0.374"
     y: 4.58"
   date:
-    x: 0.37"
+    x: 0.374"
     y: 4.97"
 ```
 
@@ -210,12 +231,12 @@ cover:
 ```yaml
 divider:
   number:
-    x: 0.37"
+    x: 0.374"
     y: 2.84"
     w: 1.2"
     h: 1.0"
   title:
-    x: 1.86"
+    x: 1.574"    # 0.374 gutter + 1.2 number-box width, immediately right of the number
     y: 2.84"
     w: 9.5"
     h: 1.0"
@@ -225,27 +246,30 @@ divider:
 
 ```yaml
 content:
-  bumper_pill:   # Optional — rounded rect, fill 007B85, 9pt Bold white ALL CAPS
-    x: 0.37"
+  bumper_pill:   # Optional. Rounded rect, fill 007B85, 9pt Bold white ALL CAPS
+    x: 0.374"    # Standard #15 gutter
     y: 0.35"
     w: 1.3"
     h: 0.3"
     shadow: none  # NO shadow on any element
   title:
-    x: 0.37"
+    x: 0.374"    # Standard #15 gutter, never 0.37 and never 0.5
     y: 0.75"     # 0.5" if no bumper
     w: 12.59"
-    h: 0.4"
+    h: 0.4"      # title bottom lands at 0.9", per Standard #11
     valign: top
     margin: 0
   body:
-    x: 0.37"
+    x: 0.374"
     y: 1.3"      # 1.1" if no bumper
     w: 12.59"
     h: 5.0"
     valign: top
     margin: 0
 ```
+
+This block is the single home for content-slide geometry. `layouts.md` and
+`generation-methods.md` point here rather than repeating it.
 
 ## Content Safe Zones (Non-Negotiable)
 
@@ -274,21 +298,21 @@ Elements must stay within their designated vertical zones to prevent overlap wit
 |------|---------|-------|----------|
 | Title zone | 0.0" | 1.1" | Bumper pill, slide title |
 | Content safe area | 1.1" | 6.85" | Body text, charts, tables, images, icons |
-| Footer exclusion | 6.85" | 7.5" | Logo (small), page number — **no content here** |
+| Footer exclusion | 6.85" | 7.5" | Logo (small), page number, **no content here** |
 
 ### Horizontal Boundaries
 
 | Boundary | Value | Rule |
 |----------|-------|------|
-| Left margin | 0.37" | No element left edge < 0.37" |
-| Right margin | 12.96" | No element right edge > 12.96" (13.33" - 0.37") |
+| Left boundary | 0.374" | No element left edge < 0.374", the gutter |
+| Right boundary | 12.956" | No element right edge > 12.956" (13.33" - 0.374") |
 | Content width | 12.59" | Maximum usable width |
 
 ### Overlap Prevention Rules
 
-1. **No content below y=6.85"** — reserves space for logo and page number
+1. **No content below y=6.85"**: reserves space for logo and page number
 2. **No content above y=1.1"** unless it IS the title or bumper pill
-3. **Content y + h must not exceed 6.85"** — if it does, reduce height or reflow
+3. **Content y + h must not exceed 6.85"**: if it does, reduce height or reflow
 4. **Footnotes/captions**: place at y=6.5" max (0.35" above footer zone)
 5. **Charts/tables**: bottom edge must clear 6.85" with ≥0.1" breathing room
 
@@ -297,7 +321,7 @@ const SAFE_ZONES = {
   title:   { yMin: 0.0,  yMax: 1.1  },
   content: { yMin: 1.1,  yMax: 6.85 },
   footer:  { yMin: 6.85, yMax: 7.5  },
-  horizontal: { xMin: 0.37, xMax: 12.96 }
+  horizontal: { xMin: 0.374, xMax: 12.956 }
 };
 
 // Validation helper
@@ -314,11 +338,11 @@ function isInContentZone(element) {
 ```javascript
 const LAYOUT = {
   // Margins
-  left: 0.37,
-  right: 0.37,
+  left: 0.374,        // Standard #15 gutter; place left-aligned elements here
+  right: 0.374,       // mirror of the gutter
   topTitle: 0.5,
   topContent: 1.33,
-  contentWidth: 12.59,
+  contentWidth: 12.59,   // nbg_build.py ships 12.582; see the note above before changing
 
   // Small logo (content slides)
   logo: {
@@ -362,9 +386,9 @@ const LAYOUT = {
 
   // Divider positions
   divider: {
-    numberX: 0.37,
+    numberX: 0.374,
     numberW: 1.2,
-    titleX: 1.86,
+    titleX: 1.574,   # 0.374 + 1.2, see the divider block above
     centerY: 2.84
   },
 

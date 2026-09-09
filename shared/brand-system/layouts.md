@@ -11,31 +11,14 @@ emu: 12,192,000 x 6,858,000
 
 ## Logo Placement (from Template)
 
-### Small Logo - Content Slides
+Positions and sizes: [dimensions.md](dimensions.md#logo-placement-from-template). Which logo
+goes on which slide, and always the Greek asset:
 
-Use for ALL content slides, charts, tables, infographics.
-
-| Element | Position (x, y) | Size (w x h) | Edge Distance |
-|---------|-----------------|--------------|---------------|
-| Small Logo | 0.374", 7.071" | 0.822" x 0.236" | 0.19" from bottom |
-
-### Large Logo - Covers & Dividers
-
-Use for cover slides and section dividers only.
-
-| Element | Position (x, y) | Size (w x h) |
-|---------|-----------------|--------------|
-| Large Logo | 0.374", 6.271" | 2.191" x 0.630" |
-
-### Back Cover Logo - Centered
-
-Plain back cover with centered oval NBG building logo (NO text).
-
-| Element | Position (x, y) | Size (w x h) | Notes |
-|---------|-----------------|--------------|-------|
-| Centered Oval Logo | 5.44", 2.98" | 2.45" x 1.54" | Centered on slide |
-
-Asset: `assets/nbg-back-cover-logo.png`
+| Slide type | Logo | Asset |
+|------------|------|-------|
+| Content, chart, table, infographic, contents | Small | `assets/nbg-logo-gr.png` |
+| Cover, section divider | Large | `assets/nbg-logo-gr.png` |
+| Back cover | Centered oval, no text | `assets/nbg-back-cover-logo.png` |
 
 ## Page Numbers
 
@@ -43,9 +26,8 @@ Asset: `assets/nbg-back-cover-logo.png`
 
 Page numbers appear on **content slides only** (not cover, dividers, back cover).
 
-| Element | Position (x, y) | Size (w x h) | Edge Distance |
-|---------|-----------------|--------------|---------------|
-| Page Number | 12.71", 7.1554" | 0.33" x 0.152" | 0.29" right, 0.27" bottom |
+Position, size and the derived edge distances live in
+[dimensions.md](dimensions.md#page-number-placement). Do not restate them here.
 
 ### Styling
 
@@ -67,23 +49,21 @@ Page numbers appear on **content slides only** (not cover, dividers, back cover)
 
 ## Standard Margins
 
-| Edge | Value |
-|------|-------|
-| Left margin | 0.37" |
-| Right margin | 0.37" |
-| Top (title) | 0.5" |
-| Top (content) | 1.33" |
+See [dimensions.md](dimensions.md#margins--safe-zones). The left gutter for placing text is
+0.374" (Standard #15).
 
 ## Cover Slides
 
 ### Elements
 
-| Element | Font | Size | Position (x, y) |
-|---------|------|------|-----------------|
-| Title | Aptos | 48pt | 0.37", 1.39" |
-| Subtitle | Aptos | **24pt** | 0.37", 2.27" |
-| Location | Aptos | 14pt | 0.37", 4.58" |
-| Date | Aptos | 14pt | 0.37", 4.97" |
+Positions: [dimensions.md → Cover Slide](dimensions.md#cover-slide).
+
+| Element | Font | Size |
+|---------|------|------|
+| Title | Aptos | 48pt |
+| Subtitle | Aptos | **24pt** |
+| Location | Aptos | 14pt |
+| Date | Aptos | 14pt |
 
 ### Dimensions
 
@@ -98,7 +78,7 @@ The subtitle lists the organizational units, NOT the generic department name:
 Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls
 ```
 
-Never use "Cards and Digital Business" — always list the individual units separated by pipes.
+Never use "Cards and Digital Business"; always list the individual units separated by pipes.
 
 ### Colors
 
@@ -113,8 +93,8 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 
 | Element | Font | Size | Color | Position |
 |---------|------|------|-------|----------|
-| "Contents" Header | Aptos Bold | **32pt** | #003841 | 0.37", 0.36" |
-| Section Number | Aptos Bold | **18pt** | #007B85 | 0.37", y (see below) |
+| "Contents" Header | Aptos | **24pt** Regular | #003841 | 0.374", 0.40" |
+| Section Number | Aptos Bold | **18pt** | #007B85 | 0.374", y (see below) |
 | Section Title | Aptos Bold | **16pt** | #003841 | 1.10", y |
 | Description | Aptos | **12pt** | #5A5F5A | 1.10", y + 0.35" |
 
@@ -128,10 +108,14 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 
 ### Elements
 
-| Element | Font | Size | Position |
-|---------|------|------|----------|
-| Section Number | Aptos | 60pt | 0.37", 2.84" |
-| Section Title | Aptos | **48pt** | 1.86", 2.84" |
+Positions: [dimensions.md → Divider Slide](dimensions.md#divider-slide). The number is the
+leftmost element and takes the 0.374" gutter; the title sits to its right and is the one
+title that does not start at the gutter (Standard #15).
+
+| Element | Font | Size |
+|---------|------|------|
+| Section Number | Aptos | 60pt |
+| Section Title | Aptos | **48pt** |
 
 ### Number Format
 
@@ -141,7 +125,7 @@ Never use "Cards and Digital Business" — always list the individual units sepa
 
 ### Divider Consistency Rule (Non-Negotiable)
 
-**Use only ONE type of divider across the entire presentation — never mix styles.**
+**Use only ONE type of divider across the entire presentation; never mix styles.**
 
 | Rule | Enforcement |
 |------|-------------|
@@ -159,81 +143,29 @@ If the section title is long (>25 characters) and wraps to multiple lines, the d
 
 ## Content Layouts
 
-### Full Width Content
+Full width, two column 50/50, two column 40/60 and three column are specified in
+[dimensions.md](dimensions.md#content-areas), together with the content-slide title and body
+boxes. This catalog describes when to reach for each one; the coordinates have one home.
 
-```yaml
-full_width:
-  title:
-    x: 0.37"
-    y: 0.5"
-    w: 12.59"
-    h: 0.6"
-  content:
-    x: 0.37"
-    y: 1.33"
-    w: 12.59"
-    h: 4.5"
-```
-
-### Two Column (50/50)
-
-```yaml
-two_column_even:
-  left:
-    x: 0.37"
-    y: 1.33"
-    w: 5.5"
-    h: 4.5"
-  right:
-    x: 6.1"
-    y: 1.33"
-    w: 5.5"
-    h: 4.5"
-```
-
-### Two Column (40/60 - Text/Chart)
-
-```yaml
-two_column_text_chart:
-  text:
-    x: 0.37"
-    y: 1.33"
-    w: 4.5"
-    h: 4.5"
-  chart:
-    x: 5.1"
-    y: 1.2"
-    w: 6.7"
-    h: 4.6"
-```
-
-### Three Column
-
-```yaml
-three_column:
-  col1:
-    x: 0.37"
-    y: 1.33"
-    w: 3.6"
-  col2:
-    x: 4.2"
-    y: 1.33"
-    w: 3.6"
-  col3:
-    x: 8.0"
-    y: 1.33"
-    w: 3.6"
-```
+| Layout | Reach for it when |
+|--------|-------------------|
+| Full width | One chart, one table, or one idea carries the slide |
+| Two column 50/50 | Two comparable blocks of equal weight |
+| Two column 40/60 | Text on the left arguing over a chart on the right |
+| Three column | Three parallel items, typically KPI cards |
 
 ## Content Typography
 
 | Element | Font | Size | Spacing |
 |---------|------|------|---------|
 | Title | Aptos | 24pt | Line: 0.9 |
-| Body text | Aptos | 11-14pt | Before: 9pt |
+| Body text | Aptos | 14pt | Before: 9pt |
 | Bullet L1 | Aptos | 14pt | Before: 14pt |
-| Bullet L2 | Aptos | 12pt | Before: 5pt |
-| Footnotes | Aptos | 8pt | - |
+| Bullet L2 | Aptos | 14pt | Before: 5pt |
+| Footnotes | Aptos | 11pt | - |
+
+Sizes match [typography.md](typography.md#content-slide); the floors behind them are
+Standard #11.
 
 ## Back Cover / Closing Slides
 
@@ -255,7 +187,7 @@ three_column:
 - Contact information (use dedicated slides)
 - Any decorative elements
 
-## Metric Card Component — TWO patterns
+## Metric Card Component: TWO patterns
 
 ### (A) Inline KPI Callout (small, for chart-slide margins)
 
@@ -271,11 +203,11 @@ Light background card placed in the right margin of a chart slide for a key call
 | Element | Font | Size | Color | Alignment |
 |---------|------|------|-------|-----------|
 | Value | Aptos Bold | **18pt** | `#007B85` | Center |
-| Label | Aptos | **9pt** | `#202020` | Center |
+| Label | Aptos | **12pt** | `#202020` | Center |
 
-### (B) Executive KPI Card — 3-up "Key Figures" pattern (signature)
+### (B) Executive KPI Card: 3-up "Key Figures" pattern (signature)
 
-Used for "Key Figures" slides — observed 30+ times across NBG executive reference decks. This is the **dominant** content pattern when the slide message is "here are the headline numbers for this unit."
+Used for "Key Figures" slides, observed 30+ times across NBG executive reference decks. This is the **dominant** content pattern when the slide message is "here are the headline numbers for this unit."
 
 **Slide composition** (3 cards, equal-width, centered):
 
@@ -296,74 +228,79 @@ Card 3: Rectangle at (8.81, 2.15, 3.5, 3.0)   fill = #F5F8F6, no border
 
 | Element | Position | Font | Size | Color | Weight |
 |---|---|---|---|---|---|
-| Unit pill (rounded chip) | (0.37, 0.45, ~1.4–2.3, 0.4) — fill `#003841` | Aptos | 16pt | white | **Bold** |
+| Unit pill (rounded chip) | (0.374, 0.45, ~1.4–2.3, 0.4), fill `#003841` | Aptos | 16pt | white | **Bold** |
 | Section title (next to pill) | (~1.92–2.82, 0.48, 5.0, 0.38) | Aptos | 22pt | `#003841` | Regular |
-| Owner subtitle ("Head: A. Smith") | (0.37, 1.05, 4.0, 0.3) | Aptos | 14pt | `#5A5F5A` | Regular |
+| Owner subtitle ("Head: A. Smith") | (0.374, 1.05, 4.0, 0.3) | Aptos | 14pt | `#5A5F5A` | Regular |
 
 Big-number examples (typical NBG executive deck): `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`. Caption examples: `Live Credit Cards`, `MS in Cards Turnover`, `Fee Income`.
 
-## Status Pills (NBG executive signature — Progress & Priorities slides)
+## Status Pills (NBG executive signature, Progress & Priorities slides)
 
 Used to flag commitment status on right-half "Priorities" lists.
 
 | Element | Position | Fill | Text |
 |---|---|---|---|
 | Numbered bullet (oval) | (6.37, 2.12+i*row, 0.28, 0.28) | `#007B85` | white 10pt **Bold** ("1", "2", ...) |
-| Status badge (right-aligned rounded rect) | (12.34, 2.12+i*row, 0.62, 0.26) | `#008000` (OK) / `#CC9900` (TBD) / `#CC0000` (Warn) | white 11pt **Bold** ("OK"/"TBD"/"H2") |
-| Bullet body text | (6.75, 2.12+i*row, 5.49, 0.28) | — | Aptos 14pt `#202020` Regular |
+| Status badge (right-aligned rounded rect) | (12.34, 2.12+i*row, 0.62, 0.26) | `#008000` (OK) / `#CC9900` (TBD) / `#CC0000` (Warn) | 11pt **Bold**: white on green and red, `#202020` on the amber (Standard #22) |
+| Bullet body text | (6.75, 2.12+i*row, 5.49, 0.28) | n/a | Aptos 14pt `#202020` Regular |
 
-**Left half — "Delivered" rows** (paired with Priorities right):
+**Left half, "Delivered" rows** (paired with Priorities right):
 
 | Element | Position | Fill | Text |
 |---|---|---|---|
-| Accent stripe | (0.37, ..., 0.05, 0.52) | `#008000` | — |
+| Accent stripe | (0.374, ..., 0.05, 0.52) | `#008000` | n/a |
 | Row body | (0.42, ..., 5.45, 0.52) | `#E8F5E9` | Arial 15pt **Bold** `#008000` ("✓ <delivered item>") |
 
 ## Recommended-Option Highlight (comparison slides)
 
-When one option among several is the recommendation, mark it with the **gold** treatment — never green (green is reserved for Delivered/OK status; see `colors.md → Recommended-option highlight`).
+When one option among several is the recommendation, mark it with the **gold** treatment, never green (green is reserved for Delivered/OK status; see `colors.md → Recommended-option highlight`).
 
 | Element | Spec |
 |---|---|
 | Card border | 1.5pt `#D9A757` (gold) around the recommended card only |
-| Card fill | `#FBF3E4` (cream) — optional, for extra pull |
-| "RECOMMENDED" tab | small rounded pill/tab, fill `#D9A757`, white ALL-CAPS Aptos ~10pt Bold, notched at the card's top edge |
+| Card fill | `#FBF3E4` (cream); optional, for extra pull |
+| "RECOMMENDED" tab | small rounded pill/tab, fill `#D9A757`, `#202020` ALL-CAPS Aptos 11pt Bold, notched at the card's top edge |
 
 One convention per deck: pick the gold treatment and keep it consistent. Do not also place a green "recommended" pill elsewhere in the same deck. The non-recommended options stay in the default `#F5F8F6` card with no border.
 
-## Clean Executive Cover (DIY on Blank Page) — signature
+## Clean Executive Cover (DIY on Blank Page): signature
 
-When a clean executive cover is needed (clean, white, NO decorative shapes), build on the **Blank Page** layout (Master 9 in NBG-Template-GR.pptx — the only cover-grade layout with a fully white background):
+When a clean executive cover is needed (clean, white, NO decorative shapes), build on the **Blank Page** layout (Master 9 in the internal NBG template, the only cover-grade layout with a fully white background; the template is not bundled, and `assets/slide-catalog.yaml` records the index mapping):
 
-| Element | Position | Font | Size | Color | Weight |
-|---|---|---|---|---|---|
-| Title | (0.37, 1.36, 7.86, 0.81) | Aptos | **48pt** | `#003841` | Regular |
-| Subtitle (pipe-separated unit list) | (0.37, 2.40, 12.59, 0.80) | Aptos | **24pt** | `#007B85` | Regular |
-| Location | (0.37, 4.0, 4.0, 0.3) | Aptos | 14pt | `#003841` | Regular |
-| Date | (0.37, 4.4, 4.0, 0.3) | Aptos | 14pt | `#939793` | Regular |
-| **NBG logo (large)** | **(0.37, 6.27, 2.19, 0.63)** | — | — | — | always Greek logo (`assets/nbg-logo-gr.png`) |
+Positions: [dimensions.md → Cover Slide](dimensions.md#cover-slide) and
+[Large Logo](dimensions.md#large-logo---covers--dividers). Type and color:
+
+| Element | Font | Size | Color | Weight |
+|---|---|---|---|---|
+| Title | Aptos | **48pt** | `#003841` | Regular |
+| Subtitle (pipe-separated unit list) | Aptos | **24pt** | `#007B85` | Regular |
+| Location | Aptos | 14pt | `#003841` | Regular |
+| Date | Aptos | 14pt | `#939793` | Regular |
+| **NBG logo (large)** | n/a | n/a | n/a | always Greek logo (`assets/nbg-logo-gr.png`) |
 
 **Subtitle convention**: pipe-separated unit list, e.g. `Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls`. NOT a generic department-name string.
 
 **Decoration policy**: white background, NO colored bars, NO decorative shapes. Decoration is purely typographic (size/weight/color contrast).
 
-> The bundled NBG-Template-GR.pptx ALSO ships master-layout covers (`13_Cover`, `14_Cover`, `24_Cover`) which carry pre-baked decorative bands. These work, but the NBG executive default favours the DIY-on-Blank approach because it stays purely white. Use master-layout covers only when you specifically want the layout's pre-baked visual.
+> The internal NBG template ALSO carries master-layout covers (`13_Cover`, `14_Cover`, `24_Cover`) which carry pre-baked decorative bands. These work, but the NBG executive default favours the DIY-on-Blank approach because it stays purely white. Use master-layout covers only when you specifically want the layout's pre-baked visual.
 
-## Lean Divider (DIY on Blank Page) — signature
+## Lean Divider (DIY on Blank Page): signature
 
 The bundled `1_Divider` / `6_Divider` master layouts have **dark-teal background fills** that violate the "white backgrounds only" rule. For a white divider, build on **Blank Page**:
 
-| Element | Position | Font | Size | Color | Weight |
-|---|---|---|---|---|---|
-| Section number (e.g. "01") | (0.37, 2.84, 1.4, 0.9) | Aptos | **60pt** | `#007B85` | Regular |
-| Section title (e.g. "Organization & People") | (1.86, 2.88, 10.0, 0.9) | Aptos | **48pt** | `#003841` | Regular |
-| **NBG logo (large — same as cover)** | **(0.37, 6.27, 2.19, 0.63)** | — | — | — | Greek logo |
+Positions: [dimensions.md → Divider Slide](dimensions.md#divider-slide). Type and color:
+
+| Element | Font | Size | Color | Weight |
+|---|---|---|---|---|
+| Section number (e.g. "01") | Aptos | **60pt** | `#007B85` | Regular |
+| Section title (e.g. "Organization & People") | Aptos | **48pt** | `#003841` | Regular |
+| **NBG logo (large, same as cover)** | n/a | n/a | n/a | Greek logo |
 
 White background. No description text. No page number on dividers.
 
 > NBG executive decks often dispense with section dividers entirely (most reference decks have ZERO dividers). Use sparingly.
 
-## Progress & Priorities — 2-column split (NBG executive signature)
+## Progress & Priorities: 2-column split (NBG executive signature)
 
 Used in Progress & Priorities slides. Same page header as Key Figures (unit pill + title + owner subtitle).
 
@@ -375,24 +312,26 @@ LEFT half (Delivered):                   RIGHT half (Priorities):
     (5-7 rows max)                           (5-7 numbered priorities max)
 ```
 
-LEFT column x range: 0.37 → 5.87 (width 5.5)
-RIGHT column x range: 6.37 → 12.96 (width 6.59)
+LEFT column x range: 0.374 → 5.87 (width 5.5)
+RIGHT column x range: 6.37 → 12.956 (width 6.59)
 
 ## Table Styling (NBG executive signature)
 
 From a reference deck slide 4 (10×7 table at (0.37, 1.65, 12.41, 4.03)):
 
-- **Header row**: fill `#003841`, **10.5pt Aptos Bold WHITE**
+**This is the single table spec.** `typography.md` and `charts.md` point here.
+
+- **Header row**: fill `#003841`, **12pt Aptos Bold WHITE**
 - **Body rows alternate (zebra)**: `#FFFFFF` and `#F5F8F6`
 - **First column** (label): 12pt Aptos **Bold** `#202020`
-- **Other body cells**: 10.5pt Aptos Regular `#202020`
-- **Numeric value cells**: 12pt (slightly larger than label cells for emphasis)
+- **Other body cells**: 12pt Aptos Regular `#202020`
+- **Numeric value cells**: 12pt, emphasis carried by weight rather than size
 - **In-cell positive emphasis** ("+1"): `#007B85` Bold
 - **Neutral dashes**: `#939793`
 - **Priority flags** ("H2"): `#CC9900` Bold
-- **Notes column**: 10pt `#5A5F5A` Regular
+- **Notes column**: 11pt `#5A5F5A` Regular
 - **Borders**: default thin (no custom override)
-- **NO full-cell status fills** — emphasis is in-cell color + bold, not row coloring
+- **NO full-cell status fills**: emphasis is in-cell color + bold, not row coloring
 
 ## Infographic Patterns
 
@@ -429,9 +368,9 @@ From a reference deck slide 4 (10×7 table at (0.37, 1.65, 12.41, 4.03)):
 | Ellipse | Icons, bullets |
 | Line | Dividers, timelines |
 
-## Element Sequences (starting points — NOT separate formats)
+## Element Sequences (starting points, NOT separate formats)
 
-There is ONE NBG deck format (see `presentation-style-guide.md` Standard #20). The rows below are **common element sequences**, not deck-type templates: every deck uses the same chassis (cover, logo, page numbers, palette, cards) and simply selects the elements its message needs. Start from the closest sequence, then add or drop elements by what each slide must say — never invent a new format per topic.
+There is ONE NBG deck format (see `presentation-style-guide.md` Standard #20). The rows below are **common element sequences**, not deck-type templates: every deck uses the same chassis (cover, logo, page numbers, palette, cards) and simply selects the elements its message needs. Start from the closest sequence, then add or drop elements by what each slide must say; never invent a new format per topic.
 
 | Communication need | Common element sequence (adapt freely) |
 |---|---|

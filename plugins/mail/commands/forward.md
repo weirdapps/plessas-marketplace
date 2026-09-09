@@ -1,7 +1,7 @@
 ---
 description: "Forward an email to new recipient(s), draft-first by default"
 argument-hint: "[message id or natural language; recipients; optional note]"
-allowed-tools: Bash, Read, mcp__outlook-bridge__outlook_forward, mcp__outlook-bridge__outlook_list_mail, mcp__outlook-bridge__outlook_get_mail
+allowed-tools: Bash, Read, mcp__plugin_mail_outlook-bridge__*
 ---
 
 <objective>
@@ -28,14 +28,14 @@ If ambiguous, show top 3 candidates and ask.
 
 Required: at least one TO recipient. Extract from user request. Validate each address (must contain `@`).
 
-Optional: CC and BCC. CC-self is NOT auto-applied for forwards (the original message stays threaded; you don't need a personal copy).
+Optional: CC and BCC. CC-self IS applied automatically, exactly as it is for a new send; pass `no_cc_self: true` to suppress it.
 
 ## 3. Compose the forwarding note (optional)
 
 If the user wants to add context to the forward ("FYI for the Q2 review"), prepare the HTML note:
 
 - Aptos Light 12pt #404040
-- Brief — usually 1-3 lines
+- Brief, usually 1-3 lines
 - Do NOT include the original (auto-quoted) or the signature (auto-appended)
 
 If the user has nothing to add, use a minimal placeholder like `<p>FYI</p>` or skip the body. The CLI requires at least one of `html_body`/`text_body`/`html_file`/`text_file`.
@@ -55,11 +55,11 @@ If the user has nothing to add, use a minimal placeholder like `<p>FYI</p>` or s
 
 **Optional flags**:
 
-- `send_now: true` — dispatch immediately, skip draft
-- `no_signature: true` — skip signature
-- `signature_file: "/path"` — custom signature file
-- `no_open: true` — don't activate Outlook
-- `dry_run: true` — preview only
+- `send_now: true` dispatches immediately, skipping the draft
+- `no_signature: true` skips the signature
+- `signature_file: "/path"` sets a custom signature file
+- `no_open: true` does not activate Outlook
+- `dry_run: true` previews only
 
 ## 5. Confirm result
 

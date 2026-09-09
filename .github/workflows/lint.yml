@@ -1,0 +1,278 @@
+name: Lint
+
+# Separate from tests.yml on purpose: the toolchains differ, and a formatting
+# nit should never sit in the same red check as a failing test. Read the checks
+# list and you can tell at a glance which kind of thing broke.
+#
+# .pre-commit-config.yaml has configured ruff, mypy, gitleaks, yamllint,
+# markdownlint and the hygiene hooks since the repo was created, and none of it
+# ran unless a contributor happened to have installed pre-commit locally. The
+# `pre-commit` job below is that config, enforced.
+#
+# Deliberately NOT here:
+#   * scripts/validate_consistency.py already runs in validate-plugins.yml.
+#     Running it twice buys nothing and doubles the noise on a failure.
+#   * scripts/sync_brand_system.sh --check is redundant with that script's
+#     check_brand_system_sync(), which compares the same *.md set between
+#     plugins/decks/shared/brand-system/ and shared/brand-system/ by name and
+#     by content. Verified 2026-09-09: same files, same comparison, same
+#     failure. Adding the shell check would be a second alarm on one wire.
+#   * scripts/skill-trigger-probe.sh spawns real `claude` invocations against a
+#     model and measures natural-language routing. It needs ambient auth and it
+#     is non-deterministic by construction. It stays a manual tool.
+
+"on":
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    name: pre-commit hooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      # Runs the hooks the repo already declares, at the revs it already pins,
+      # with the args it already sets. That is the point of going through
+      # pre-commit rather than reimplementing ruff/mypy/yamllint as bespoke
+      # steps: local and CI cannot drift, because there is only one config.
+      #
+      # `SKIP: ruff-format` is gone: it was skipped while 4 Python files sat
+      # formatted at ruff's default 88 against this repo's line-length 100, and
+      # decks-python reformatted them on 2026-09-09. `ruff format --check .`
+      # repo-wide at the pinned 0.15.12 is now "12 files already formatted".
+      #
+      # `SKIP: mypy` also came and went the same day. A large rewrite of
+      # nbg_validate.py and test_nbg_build.py introduced 3 type errors,
+      # including a real crash path (a sort key whose regex could return None,
+      # raising AttributeError mid-sort). decks-python fixed all three without
+      # a single `# type: ignore`, and found a fourth of the same shape that
+      # nothing had flagged. Both SKIPs are gone and the full hook set runs.
+      #
+      # One thing to know before adding to this hook's additional_dependencies:
+      # mypy here runs WITHOUT XML stubs. Adding types-defusedxml and
+      # lxml-stubs takes the repo from 0 errors to about 40 across 8 files.
+      # That is a stricter configuration, not a truer one, and it is a
+      # deliberate 40-error decision rather than a tidy-up.
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd  # v3.0.1
+
+  ruff-format:
+    name: ruff format (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      # Pinned to the same rev .pre-commit-config.yaml pins for
+      # ruff-pre-commit, so `pre-commit run ruff-format` locally and this step
+      # give the same verdict. Do NOT float this: ruff 0.16 began formatting
+      # Python inside markdown code fences, which turns 6 agent/command prompt
+      # files into failures. Those files are loose markdown for LLM
+      # consumption by design (the same reason .pre-commit-config.yaml
+      # excludes plugins/*/{agents,commands,skills,...} from markdownlint),
+      # and reformatting them is not a lint fix, it is an edit to a prompt.
+      # --only-binary :all: refuses source distributions, so no setup.py from a
+      # dependency runs during install. ruff ships wheels for every platform, so
+      # this costs nothing here.
+      - name: Install ruff
+        run: "pip install --only-binary=:all: ruff==0.15.12"
+
+      # Both blocking. Four files under plugins/decks/tools/ and
+      # bundled/creative/tools/ were formatted at ruff's default 88 rather than
+      # this repo's line-length 100 and failed the format check until
+      # 2026-09-09, when decks-python reformatted them at the pinned version.
+      # Measured repo-wide at 0.15.12 immediately after: `ruff format --check .`
+      # is "12 files already formatted", exit 0, and `ruff check .` passes.
+      - name: ruff check
+        run: ruff check .
+
+      - name: ruff format --check
+        run: ruff format --check .
+
+  markdown-fences:
+    name: markdown fences (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: '20'
+
+      # .pre-commit-config.yaml excludes plugins/*/{agents,commands,skills,...}
+      # from markdownlint entirely, and that exclusion is right for the prose
+      # rules: these files are loose markdown written for an LLM to read, so
+      # line length and heading style are not defects there. But excluding them
+      # wholesale also turned off the STRUCTURAL rules, and one of those was
+      # load-bearing. plugins/decks/agents/infographic-specialist.md:132 had a
+      # stray opening fence that swallowed two substantive spec sections into a
+      # code block, and it went unnoticed because the total fence count stayed
+      # even. A fence-balance check would have called that file clean; MD040
+      # catches it, because the stray fence has no language tag.
+      #
+      # So: the fence rules only, prose rules off, over exactly the tree the
+      # pre-commit hook skips.
+      - name: Write the fence-only ruleset
+        run: |
+          cat > /tmp/md-fences.yaml <<'YAML'
+          default: false
+          MD040: true   # fenced-code-language
+          MD031: true   # blanks-around-fences
+          MD048: true   # code-fence-style
+          YAML
+
+      # Advisory, and the number is the reason. Measured 2026-09-09 over the
+      # 74 files the pre-commit hook excludes: 119 hits in 40 files, 116 MD040
+      # and 3 MD031. Worst offenders are meeting-prep.md and inbox-briefing.md
+      # at 9 each. That is a real backlog, not a rule to slip in blocking at
+      # the end of a session, and an honest visible 119 beats a rule someone
+      # excludes again next week. Flip `continue-on-error` off once it is
+      # worked down; MD040 is the one that pays for itself.
+      - name: markdownlint (fence rules only)
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          find plugins -type f -name '*.md' \
+            \( -path '*/agents/*' -o -path '*/commands/*' -o -path '*/skills/*' \
+               -o -path '*/shared/*' -o -path '*/bundled/*' -o -path '*/tools/*' \
+               -o -path '*/mcp-server/*' \) \
+            -not -path '*/node_modules/*' > /tmp/md-files.txt
+          echo "::notice::$(wc -l < /tmp/md-files.txt | tr -d ' ') files in scope"
+          npx --yes markdownlint-cli@0.43.0 --config /tmp/md-fences.yaml \
+            $(cat /tmp/md-files.txt)
+
+  manifests:
+    name: claude plugin validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: '20'
+
+      # Pinned like every other tool here. An unpinned CLI can add a --strict
+      # rule in a patch release and take master red with no change to this
+      # repo, which is the exact failure mode the SHA pinning elsewhere in
+      # .github/workflows exists to prevent. Bumping this is a deliberate act.
+      - name: Install the Claude Code CLI
+        run: npm install -g '@anthropic-ai/claude-code@2.1.265'
+
+      # Verified 2026-09-09 on 2.1.265: `plugin validate` is a purely local
+      # manifest check. Run with an empty HOME, an empty CLAUDE_CONFIG_DIR and
+      # no ANTHROPIC_API_KEY it still exits 0 in well under a second, so it
+      # needs neither credentials nor network on a runner.
+      - name: Validate every plugin manifest and the marketplace root
+        run: |
+          set -euo pipefail
+          fail=0
+          for dir in plugins/*/; do
+            name=$(basename "$dir")
+            case "$name" in _*) continue ;; esac
+            echo "::group::$name"
+            claude plugin validate "./$dir" --strict || fail=1
+            echo "::endgroup::"
+          done
+          echo "::group::marketplace root"
+          claude plugin validate . --strict || fail=1
+          echo "::endgroup::"
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::at least one manifest failed --strict validation"
+            exit 1
+          fi
+          echo "OK - all plugin manifests and the marketplace root validate."
+
+  bundle-drift:
+    name: mcp bundle matches source (${{ matrix.server }})
+    runs-on: ubuntu-latest
+
+    # Why this job exists. plugins/*/mcp-server/bundle/server.mjs is a committed
+    # esbuild output with @modelcontextprotocol/sdk INLINED, and run.sh prefers
+    # it over dist/. package.json still declares the SDK, so Dependabot will keep
+    # bumping the manifest while the artefact that actually executes never moves.
+    # Nothing else in this repo would notice: every Dependabot PR would go green
+    # while the shipped server ran an older SDK indefinitely, which on a public
+    # repo means a known-vulnerable version could sit in the artefact with no
+    # check pointing at it. Rebuilding and comparing bytes is the only thing that
+    # ties the declaration to the artefact.
+    #
+    # It catches the plainer failure too: an edit to src/ that nobody rebuilt.
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [mail, chat]
+    defaults:
+      run:
+        working-directory: plugins/${{ matrix.server }}/mcp-server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: plugins/${{ matrix.server }}/mcp-server/package-lock.json
+
+      # npm ci, not a bare esbuild install: the bundle inlines the SDK, so the
+      # rebuild has to see the same node_modules the committed bytes were built
+      # from. package-lock.json is what makes that the same tree.
+      # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD and the absence of --ignore-scripts are
+      # both for the same reason as in tests.yml; see the comments there.
+      - name: Install dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+
+      # BLOCKING. It shipped non-blocking for exactly one run, because the one
+      # thing nobody could test locally was this comparison: reproducibility was
+      # verified on macOS (three consecutive `npm run build:bundle` runs gave
+      # byte-identical output, mail 593040 bytes sha256 db4b6dc6..., chat 580276
+      # bytes sha256 439eda7a...) while CI rebuilds on ubuntu-latest and compares
+      # against bytes committed from macOS. That run happened on PR #94 (runs/34296559878)
+      # and both servers matched, so the guard now blocks. A guard left
+      # non-blocking past the thing it was waiting on becomes decoration.
+      #
+      # If the bytes ever do diverge, do NOT relax the comparison. The documented
+      # fallback is to stamp the bundle with the exact @modelcontextprotocol/sdk
+      # and esbuild versions it was built from and assert the stamp matches
+      # package.json. That is weaker (it proves the declaration, not the code)
+      # but it is platform-independent. Not implemented, on purpose.
+      - name: Rebuild the bundle and compare with the committed bytes
+        run: |
+          set -euo pipefail
+          bundle=bundle/server.mjs
+          describe() {
+            printf '%s bytes, sha256 %s' \
+              "$(wc -c < "$1" | tr -d ' ')" \
+              "$(sha256sum "$1" | cut -d' ' -f1)"
+          }
+          # Distinguish "matches" from "there was nothing to compare". A bundle
+          # that got gitignored, or deleted, must fail here rather than pass by
+          # examining nothing.
+          git ls-files --error-unmatch "$bundle" > /dev/null
+          cp "$bundle" /tmp/committed.mjs
+          npm run build:bundle
+          if cmp -s /tmp/committed.mjs "$bundle"; then
+            echo "::notice::bundle matches source -- $(describe "$bundle")"
+            exit 0
+          fi
+          echo "::error::$bundle does not match a rebuild from src/ and" \
+               "package-lock.json. Run 'npm run build:bundle' in" \
+               "plugins/${{ matrix.server }}/mcp-server, then commit the result."
+          echo "committed $(describe /tmp/committed.mjs)"
+          echo "rebuilt   $(describe "$bundle")"
+          cmp /tmp/committed.mjs "$bundle" || true
+          exit 1

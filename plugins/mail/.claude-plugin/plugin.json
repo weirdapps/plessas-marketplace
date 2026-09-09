@@ -1,7 +1,7 @@
 {
   "name": "mail",
   "description": "Outlook mail commands: triage, briefings, drafts, style-matching, self-learning. Bundles outlook-cli MCP wrapper. Reads/sends via outlook-bridge MCP.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "weirdapps"
   },
@@ -17,5 +17,7 @@
     "style-matching",
     "self-learning"
   ],
-  "commands": "./commands"
+  "commands": "./commands",
+  "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/mail",
+  "repository": "https://github.com/weirdapps/plessas-marketplace"
 }

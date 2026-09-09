@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Tests for the NBG keynote compositor.
 
-No CI workflow runs Python tests in this repo. Run by hand after touching nbg_keynote.py:
-    python3 -m pytest test_nbg_keynote.py -v
+Runs in CI under `pytest plugins`. Locally, without the dependencies installed:
+    uv run --with pytest --with pillow --with numpy --with pyyaml --with python-pptx \
+        python -m pytest test_nbg_keynote.py -q
 """
 
 import nbg_keynote as k
@@ -245,3 +246,78 @@ def test_grain_is_deterministic_per_seed():
     c = k.grain(k.gradient_bg(), 43)
     assert a.tobytes() == b.tobytes()
     assert a.tobytes() != c.tobytes()
+
+
+# ------------------------------------------- specs that used to clear --validate
+
+# README.md sells `--validate` as the gate before a render. These four specs
+# passed it and then failed the build; cases 1 and 3 came out as raw tracebacks.
+
+
+def test_whitespace_only_text_is_rejected(tmp_path):
+    errors = k.validate(_spec({"type": "statement", "text": "   ", "notes": "n"}), tmp_path)
+    assert any("blank" in e for e in errors), errors
+
+
+def test_whitespace_only_text_can_no_longer_crash_the_renderer():
+    """wrap() returns no lines, and max() over no lines used to raise."""
+    canvas = k.gradient_bg()
+    y = k.para(canvas, k.M, 400, "   ", k.font("l", 50), k.INK, 1200, 60)
+    assert y == 400
+
+
+def test_mismatched_cats_and_vals_is_rejected(tmp_path):
+    spec = _spec({"type": "bars", "cats": ["a", "b", "c"], "vals": [1, 2], "notes": "n"})
+    errors = k.validate(spec, tmp_path)
+    assert any("same length" in e for e in errors), errors
+
+
+def test_all_zero_bar_values_are_rejected(tmp_path):
+    spec = _spec({"type": "bars", "cats": ["a", "b"], "vals": [0, 0], "notes": "n"})
+    errors = k.validate(spec, tmp_path)
+    assert any("positive value" in e for e in errors), errors
+
+
+def test_all_zero_bar_values_can_no_longer_divide_by_zero():
+    """v / mx with mx == 0 raised ZeroDivisionError mid-render."""
+    canvas = k.gradient_bg()
+    k.draw_bars(canvas, ["a", "b"], [0, 0])  # must not raise
+
+
+def test_non_numeric_bar_values_are_rejected(tmp_path):
+    spec = _spec({"type": "bars", "cats": ["a"], "vals": ["x"], "notes": "n"})
+    errors = k.validate(spec, tmp_path)
+    assert any("non-numeric" in e for e in errors), errors
+
+
+def test_unknown_colour_is_rejected_by_validate(tmp_path):
+    spec = _spec({"type": "hero-stat", "value": "42", "color": "chartreuse", "notes": "n"})
+    errors = k.validate(spec, tmp_path)
+    assert any("chartreuse" in e for e in errors), errors
+
+
+def test_unknown_colour_in_a_duo_stat_half_is_rejected(tmp_path):
+    spec = _spec(
+        {
+            "type": "duo-stat",
+            "left": {"value": "1", "color": "puce"},
+            "right": {"value": "2"},
+            "notes": "n",
+        }
+    )
+    errors = k.validate(spec, tmp_path)
+    assert any("puce" in e and "left.color" in e for e in errors), errors
+
+
+def test_is_color_rejects_six_non_hex_characters():
+    assert k.is_color("#00DFF8")
+    assert k.is_color("accent")
+    assert not k.is_color("zzzzzz")
+    assert not k.is_color("chartreuse")
+    assert not k.is_color(42)
+
+
+def test_blank_point_is_rejected(tmp_path):
+    spec = _spec({"type": "points", "points": ["real", "  "], "notes": "n"})
+    errors = k.validate(spec, tmp_path)
+    assert any("point 2 is blank" in e for e in errors), errors

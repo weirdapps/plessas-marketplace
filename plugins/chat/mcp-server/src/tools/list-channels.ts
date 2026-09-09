@@ -12,8 +12,13 @@ export const listChannelsTool: Tool = {
     additionalProperties: false,
   },
   handler: async (args) => {
+    // The CLI needs one of the two modes (teams-access/src/cli.ts:101-102):
+    // --team-id for a single team, --all-teams to flatten across every team.
+    // Sending neither exited 2, so the "Omit for all teams" the schema advertises
+    // was unreachable. Wire the flag rather than withdraw the mode.
     const cliArgs = ['list-channels'];
     if (args.team_id) cliArgs.push('--team-id', args.team_id);
+    else cliArgs.push('--all-teams');
     return runTeamsCli(cliArgs);
   },
 };

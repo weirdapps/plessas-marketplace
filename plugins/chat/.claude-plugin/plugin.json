@@ -1,7 +1,7 @@
 {
   "name": "chat",
   "description": "Microsoft Teams interactive commands. Read chats and channels, draft replies, summarize threads. Bundles teams-bridge MCP wrapping teams-cli.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "weirdapps"
   },
@@ -14,5 +14,7 @@
     "messaging",
     "teams-bridge"
   ],
-  "commands": "./commands"
+  "commands": "./commands",
+  "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/chat",
+  "repository": "https://github.com/weirdapps/plessas-marketplace"
 }

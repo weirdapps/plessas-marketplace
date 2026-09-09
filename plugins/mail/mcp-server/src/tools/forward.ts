@@ -78,7 +78,8 @@ export const forwardTool: Tool = {
     if (args.dry_run === true) cliArgs.push('--dry-run');
 
     try {
-      return await runOutlookCli(cliArgs);
+      // Not idempotent: a retried exit 5 can forward the same mail twice.
+      return await runOutlookCli(cliArgs, { idempotent: false });
     } finally {
       if (cleanup.length > 0) {
         await Promise.all(cleanup.map((p) => fs.unlink(p).catch(() => undefined)));

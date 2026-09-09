@@ -26,7 +26,7 @@
 |----------|------------|---------|
 | 1 | **Doughnut** | Proportions, percentages (ALWAYS instead of pie) |
 | 2 | **Column Clustered** | Comparisons, rankings, categories (vertical) |
-| 3 | **Bar Clustered** | Horizontal comparisons (same color as column — `#00ADBF`) |
+| 3 | **Bar Clustered** | Horizontal comparisons (same color as column, `#00ADBF`) |
 | 4 | **Stacked Column** | Composition over time (3-4 series max) |
 | 5 | **Line with markers** | Trends, time series (hollow "donut" markers) |
 | 6 | **Stacked Area** | Two overlapping trends (semi-transparent fills) |
@@ -54,7 +54,7 @@ const NBG_CHART_COLORS = ['00ADBF', '003841', '007B85', '939793', 'BEC1BE', '00D
 
 ```javascript
 slide.addChart(pptx.ChartType.bar, chartData, {
-  x: 0.37, y: 1.3, w: 8.0, h: 4.8,
+  x: 0.374, y: 1.3, w: 8.0, h: 4.8,
   chartColors: ['00ADBF'],
 
   // Data labels
@@ -96,7 +96,7 @@ slide.addChart(pptx.ChartType.bar, chartData, {
 
 ```javascript
 slide.addChart(pptx.ChartType.doughnut, chartData, {
-  x: 0.37, y: 1.4, w: 5.5, h: 4.5,
+  x: 0.374, y: 1.4, w: 5.5, h: 4.5,
   chartColors: ['00ADBF', '003841'],
 
   // Doughnut settings
@@ -124,7 +124,7 @@ slide.addChart(pptx.ChartType.doughnut, chartData, {
 
 **This is the preferred format for all time-series / trend charts.** Uses an area chart
 with low-opacity fill below the line, smooth curves, and visible dot markers. The result
-is a clean, modern look — no grid lines, no axis lines, muted axis labels.
+is a clean, modern look: no grid lines, no axis lines, muted axis labels.
 
 Pair with a **KPI callout** in the slide header: title on the left, large metric value
 on the right with a change delta (green/red) and optional YtD.
@@ -132,18 +132,14 @@ on the right with a change delta (green/red) and optional YtD.
 ```javascript
 // PREFERRED: Area-Line Chart
 slide.addChart(pptx.ChartType.area, chartData, {
-  x: 0.37, y: 1.4, w: 7.0, h: 3.8,
+  x: 0.374, y: 1.4, w: 7.0, h: 3.8,
   chartColors: ['007B85'],          // NBG Teal (single series)
   chartColorsOpacity: 15,           // Subtle fill below the line
 
-  // Line styling
-  lineSize: 3,                      // Thick line
+  // Line and marker styling: see the "Hollow Donut Markers" section below (Standard #5).
+  // That block is the only place the line width and marker spec are written down.
   lineSmooth: false,                // Straight segments between points (smooth only if requested)
   lineDash: 'solid',
-
-  // Markers — filled dots at each data point
-  showMarker: true,
-  markerSize: 8,
 
   // Data labels — HIDE for clean look (value shown in KPI callout instead)
   showValue: false,
@@ -183,7 +179,7 @@ Add text shapes above the chart for the headline metric:
 ```javascript
 // Title (left-aligned)
 slide.addText('Αμοιβαία Κεφάλαια', {
-  x: 0.37, y: 0.9, w: 5.0, h: 0.5,
+  x: 0.374, y: 0.9, w: 5.0, h: 0.5,
   fontFace: 'Aptos', fontSize: 18, bold: true, color: '003841',
 });
 
@@ -216,17 +212,12 @@ data labels on each point are needed.
 
 ```javascript
 slide.addChart(pptx.ChartType.line, chartData, {
-  x: 0.37, y: 1.4, w: 7.0, h: 3.8,
+  x: 0.374, y: 1.4, w: 7.0, h: 3.8,
   chartColors: ['007B85'],
 
-  // Line styling
-  lineSize: 3,
+  // Line and marker styling: see the "Hollow Donut Markers" section below (Standard #5).
   lineSmooth: false,                // Straight segments (smooth only if requested)
   lineDash: 'solid',
-
-  // Markers
-  showMarker: true,
-  markerSize: 10,
 
   // Data labels (when needed)
   showValue: true,
@@ -268,6 +259,9 @@ slide.addChart(pptx.ChartType.line, chartData, {
 
 ## Status Colors for Charts
 
+The corporate palette, scoped in [colors.md](colors.md#statussemantic-colors). Status pill
+colors are a different palette and never appear in a chart.
+
 | Status | Hex | Use For |
 |--------|-----|---------|
 | Success/Positive | `73AF3C` | Growth, improvements |
@@ -282,7 +276,8 @@ slide.addChart(pptx.ChartType.line, chartData, {
 2. **Single focus**: Each chart = ONE key message
 3. **Data labels**: Only show if they add value
 4. **Legend**: Position at bottom or right, never obscuring data
-5. **Colors**: Max 3-4 colors per chart
+5. **Colors**: 3-4 per chart is the design target. The hard categorical ceiling, and the
+   OOXML trap that silently degrades a palette past six series, are in Standard #22
 
 ### Supporting Key Messages
 
@@ -341,28 +336,31 @@ valueFontColor: '202020',
 
 ## Table Configuration
 
+The full table spec (fills, borders, in-cell emphasis, column sizes) lives in
+[layouts.md](layouts.md#table-styling-nbg-executive-signature). This is the PptxGenJS form of it.
+
 ```javascript
 // Header row
 const headerStyle = {
   fontFace: 'Aptos',
-  fontSize: 11,
+  fontSize: 12,
   bold: true,
   color: 'FFFFFF',
   fill: { color: '003841' },
 };
 
-// Data rows
+// Data rows: zebra is white / off-white, no teal tints
 const cellStyle = {
   fontFace: 'Aptos',
-  fontSize: 10,
+  fontSize: 12,
   color: '202020',
-  fill: { color: 'E6F0F1' },  // Light teal tint
+  fill: { color: 'FFFFFF' },
 };
 
 // Alternating rows
 const altCellStyle = {
   ...cellStyle,
-  fill: { color: 'F0F5F3' },
+  fill: { color: 'F5F8F6' },
 };
 
 // Table options
@@ -373,9 +371,11 @@ const altCellStyle = {
 }
 ```
 
-## Line Chart — Hollow "Donut" Markers (NBG executive preference)
+## Line Chart: Hollow "Donut" Markers (Standard #5)
 
-Line charts should use **thicker lines** with **hollow circle markers** (white fill, colored ring matching line width):
+The single line and marker spec for this brand system. Every line, area-line and
+multi-series chart uses it; no other block in this file repeats these numbers.
+Thicker lines with **hollow circle markers**: white fill, colored ring matching the line width.
 
 ```javascript
 // Line styling — NBG executive preference
@@ -411,7 +411,9 @@ Use for showing composition trends over time. Both series should have **semi-tra
 chartColors: ['00ADBF', 'BEC1BE'],
 chartColorsOpacity: 40,  // 40% opacity for softer, more professional look
 
-// Line borders matching each series
+// Line borders matching each series.
+// 2.5pt is deliberate: this stroke outlines a filled region rather than carrying a
+// value, so the 3.5pt data-line width in Standard #5 does not apply to it.
 lineSize: 2.5,
 ```
 
@@ -422,7 +424,7 @@ alpha_el = etree.SubElement(color_elem, qn("a:alpha"))
 alpha_el.set("val", "40000")  # 40% = softer than 25%, more readable than 60%
 ```
 
-## Table — Number Alignment Rule
+## Table: Number Alignment Rule
 
 **CRITICAL**: numeric columns (amounts, percentages, counts) must be **right-aligned**. Text columns remain left-aligned.
 
@@ -441,14 +443,15 @@ for p in cell.text_frame.paragraphs:
         p.alignment = PP_ALIGN.RIGHT
 ```
 
-## Waterfall — Data Label Positioning
+## Waterfall: Data Label Positioning
 
 Waterfall is faked via stacked column with invisible base. Data labels should appear **inside bars** (CENTER position) with **white text** on colored bars:
 
 ```javascript
 // Data labels inside bars
 dataLabelPosition: 'center',
-dataLabelColor: 'FFFFFF',  // white text on colored bars
+dataLabelColor: 'FFFFFF',  // on 003841 and 007B85 bars only
+// On Cyan 00ADBF bars use 202020: white is 2.72:1 there and fails Standard #22
 dataLabelFontSize: 12,
 dataLabelFontBold: true,
 ```

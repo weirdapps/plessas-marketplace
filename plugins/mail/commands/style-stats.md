@@ -53,11 +53,11 @@ Aggregate learnings to find recurring correction patterns:
 ```
 TOP 5 CORRECTIONS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Too formal (N times) — "Used 'Dear X' when user prefers 'Hi X'"
-2. Too long (N times) — "Draft avg 150 words, user sent avg 80 words"
-3. Wrong language (N times) — "Drafted in English, user replied in Greek"
-4. Missing action item (N times) — "User added explicit deadline/task"
-5. Unnecessary pleasantries (N times) — "User removed opening small talk"
+1. Too formal (N times): "Used 'Dear X' when user prefers 'Hi X'"
+2. Too long (N times): "Draft avg 150 words, user sent avg 80 words"
+3. Wrong language (N times): "Drafted in English, user replied in Greek"
+4. Missing action item (N times): "User added explicit deadline/task"
+5. Unnecessary pleasantries (N times): "User removed opening small talk"
 ```
 
 ### 4. Per-Recipient Accuracy
@@ -69,7 +69,7 @@ RECIPIENT ACCURACY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [Name]     N drafts  X% accuracy  Top issue: [issue]
 [Name]     N drafts  X% accuracy  Top issue: [issue]
-[Name]     N drafts  X% accuracy  (no issues — perfect match)
+[Name]     N drafts  X% accuracy  (no issues, perfect match)
 ```
 
 ### 5. Style Guide Evolution Timeline
@@ -83,10 +83,10 @@ Track how the style guide has changed over time using backups in `~/.claude/draf
 ```
 STYLE GUIDE EVOLUTION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[date] — Initial creation
-[date] — Added profile for [Name], updated greeting for [Name]
-[date] — Tone adjustment for [Name] (formal -> semi-formal)
-[date] — Full rebuild from corpus (N emails analyzed)
+[date]: Initial creation
+[date]: Added profile for [Name], updated greeting for [Name]
+[date]: Tone adjustment for [Name] (formal -> semi-formal)
+[date]: Full rebuild from corpus (N emails analyzed)
 ```
 
 ### 6. Present Full Report

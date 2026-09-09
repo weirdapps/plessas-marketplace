@@ -71,6 +71,14 @@ jobs:
       # continue-on-error AND `|| true` AND an if-guard that was never true, so
       # it could not go red under any circumstance. Three independent mufflers on
       # a check whose only purpose is to make noise.
+      #
+      # tests.yml is now the authoritative gate: it runs the same suite with no
+      # visibility gate, no token gate and no mufflers, so the tests keep gating
+      # merges even if this whole job is skipped. This run stays because the
+      # scan below needs coverage.xml, and coverage has to be produced inside
+      # the job that uploads it. Keep it able to go red anyway: a pytest that
+      # fails here but passed in tests.yml means the two environments have
+      # drifted, which is worth knowing.
       - name: Run tests with coverage
         if: steps.check-tests.outputs.has_tests == 'true'
         run: pytest plugins --cov=plugins --cov-report=xml --cov-report=term-missing

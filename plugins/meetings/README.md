@@ -45,7 +45,7 @@ Meeting intelligence for `plessas-marketplace`. Reads your calendar, builds per-
 
 ## Calendar Support
 
-- **outlook-bridge MCP** (`mcp__outlook-bridge__outlook_list_calendar` / `outlook_get_event`) — primary. Cross-platform via `outlook-cli`, structured JSON.
-- **Outlook AppleScript** — emergency last-resort fallback on macOS only. Documented in `shared/calendar-access.md` but not invoked by default.
+- **outlook-bridge MCP** (`mcp__plugin_mail_outlook-bridge__outlook_list_calendar` / `outlook_get_event`): primary. Cross-platform via `outlook-cli`, structured JSON.
+- **Outlook AppleScript**: emergency last-resort fallback on macOS only. Documented in `shared/calendar-access.md` but not invoked by default.
 - macOS Calendar is NEVER used (out of sync with M365)
 - See `shared/calendar-access.md` for the full access pattern

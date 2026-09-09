@@ -12,13 +12,21 @@ Every slide is built programmatically with exact NBG brand specifications:
 
 Usage:
     python nbg_build.py storyline.yaml output.pptx
+    python nbg_build.py storyline.yaml -o output.pptx
 """
 
+import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 import yaml
+
+# nbg_color sits one level up, shared with nbg-keynote. These are scripts in
+# hyphenated directories rather than a package, so the path is added by hand.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from nbg_color import AA_NORMAL, contrast_ratio  # noqa: E402
 
 # python-pptx and lxml are required for building presentations.
 # Imported conditionally so tests that only exercise normalize_slide_type()
@@ -46,7 +54,7 @@ ASSETS_DIR = SCRIPT_DIR.parent.parent / "assets"
 CATALOG_PATH = ASSETS_DIR / "slide-catalog.yaml"
 TEMPLATES_DIR = ASSETS_DIR / "templates"
 
-# Logo assets — PNG for python-pptx compatibility (SVG not supported)
+# Logo assets: PNG for python-pptx compatibility (SVG not supported)
 LOGO_PNG = ASSETS_DIR / "nbg-logo-gr.png"
 BACK_COVER_LOGO_PNG = ASSETS_DIR / "nbg-back-cover-logo.png"
 
@@ -62,6 +70,7 @@ if _HAS_PPTX:
     C_TEAL = RGBColor(0x00, 0x7B, 0x85)  # Brand accent, section numbers
     C_BRIGHT_CYAN = RGBColor(0x00, 0xDF, 0xF8)  # Bright Cyan (feature accent)
     C_DARK_TEXT = RGBColor(0x20, 0x20, 0x20)  # Body text
+    C_LABEL_DARK = RGBColor(0x00, 0x00, 0x00)  # Data labels on colored fills only
     C_MEDIUM_GRAY = RGBColor(0x93, 0x97, 0x93)  # Page numbers, dates
     C_WHITE = RGBColor(0xFF, 0xFF, 0xFF)  # Backgrounds
 
@@ -69,7 +78,23 @@ if _HAS_PPTX:
     SLIDE_WIDTH = Inches(13.33)
     SLIDE_HEIGHT = Inches(7.5)
 
-# Logo positions (inches) — per brand system dimensions.md
+# Left gutter. LOGO_SMALL and LOGO_LARGE below already sat at 0.374 while every
+# title, bumper, chart and table sat at 0.37, so the builder misaligned its own
+# text from its own logo by 0.004". presentation-style-guide.md Standard #15 has
+# titles touching the vertical line drawn up from the logo's left edge, so 0.374
+# is the one that wins. Set it here and nowhere else.
+GUTTER = 0.374
+# Content width with symmetric gutters: 13.33 - 2 * GUTTER.
+CONTENT_W = 12.582
+# A divider's section number sits in a box this wide at the gutter, and its title
+# butts against that box's right edge, per presentation-style-guide.md Standard
+# #3 ("title immediately to its right"). Derived rather than written out, because
+# the title used to be a hardcoded 1.86 in the statement after the number box was
+# already placed with GUTTER, leaving a 0.286" gap the standard does not allow.
+DIVIDER_NUMBER_W = 1.2
+DIVIDER_TITLE_X = GUTTER + DIVIDER_NUMBER_W  # 1.574
+
+# Logo positions (inches), per brand system dimensions.md
 LOGO_SMALL = {"x": 0.374, "y": 7.071, "w": 0.822, "h": 0.236}
 LOGO_LARGE = {"x": 0.374, "y": 6.271, "w": 2.191, "h": 0.630}
 LOGO_BACK = {"x": 5.44, "y": 2.98, "w": 2.45, "h": 1.54}
@@ -128,7 +153,47 @@ def _add_textbox(
     return txBox
 
 
-def _add_bumper_pill(slide, text, x=0.37, y=0.35):
+def _set_alt_text(shape, text):
+    """Write OOXML alt text onto a shape's non-visual properties (`descr`).
+
+    python-pptx exposes no API for this and seeds `descr` with the source
+    filename on pictures and with nothing at all on charts and tables, so every
+    deck this builder made shipped a chart a screen reader announces as "Chart
+    3". EN 301 549 adopts WCAG 2.1 AA for non-web documents; see Standard #22 in
+    presentation-style-guide.md for why the liability is the bank's.
+
+    The text must not restate the slide title. A reader who has the title read
+    to them and then hears it again as the chart description has learned
+    nothing, so the callers below describe the SHAPE of the data instead:
+    plot type, series names, category span.
+    """
+    cNvPr = shape._element.find(f".//{qn('p:cNvPr')}")
+    if cNvPr is not None:
+        cNvPr.set("descr", text)
+
+
+def _chart_alt_text(chart_type, categories, series_list):
+    """Alt text for a chart: what it plots, how many series, over what span."""
+    names = [str(s.get("name", "")).strip() for s in series_list]
+    named = ", ".join(n for n in names if n)
+    parts = [f"{chart_type.replace('_', ' ')} chart"]
+    parts.append(f"{len(series_list)} series" + (f" ({named})" if named else ""))
+    if categories:
+        span = f"{categories[0]} to {categories[-1]}" if len(categories) > 1 else str(categories[0])
+        parts.append(f"{len(categories)} categories, {span}")
+    return ". ".join(parts) + "."
+
+
+def _table_alt_text(headers, body_rows):
+    """Alt text for a table: its columns and how many rows of data it holds."""
+    named = ", ".join(str(h).strip() for h in headers if str(h).strip())
+    columns = f"{len(headers) or max((len(r) for r in body_rows), default=0)} columns"
+    if named:
+        columns += f" ({named})"
+    return f"Table. {columns}. {len(body_rows)} data rows."
+
+
+def _add_bumper_pill(slide, text, x=GUTTER, y=0.35):
     """Add bumper as a filled rounded-rect pill with white text (NBG pattern).
 
     Pill: 1.3x0.3, fill #007B85, text 9pt Bold white ALL CAPS.
@@ -279,37 +344,49 @@ def _is_doughnut(chart):
     return chart.chart_type in (XL_CHART_TYPE.DOUGHNUT, XL_CHART_TYPE.PIE)
 
 
-def _relative_luminance(color_hex):
-    """WCAG relative luminance of an RRGGBB string."""
-    channels = []
-    for i in (0, 2, 4):
-        v = int(color_hex[i : i + 2], 16) / 255
-        channels.append(v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4)
-    r, g, b = channels
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+# The dark candidate for a label sitting on a colored fill. PURE BLACK, not the
+# #202020 body text: see _label_text_color for why the difference decides AA.
+LABEL_DARK_HEX = "000000"
 
 
 def _label_text_color(color_hex):
-    """Pick white or dark body text for a label sitting on a colored fill.
+    """Pick white or black for a data label sitting on a colored fill.
 
     colors.md offers an R+G+B > 400 rule of thumb, which misreads the cyan
     #00ADBF used for chart series: dark text clears 6:1 on it where white
     manages only 2.7:1. Measure the contrast and take the better of the two.
+
+    The dark candidate has to be pure black. For any candidate pair the worst
+    case is the fill luminance where the two curves cross, and only black puts
+    that crossing above the 4.5:1 AA floor:
+
+        black   crossover at L=0.1791, best available ratio 4.583:1  clears AA
+        #202020 crossover at L=0.2101, best available ratio 4.036:1  fails AA
+
+    That is the sqrt(0.0525) - 0.05 identity: it holds for pure black and
+    evaporates for any softened black. Measured over the 52 hex colors in
+    brand-system/colors.md, #202020 as the dark candidate emitted a sub-AA label
+    for two of them (#5D8D2F at 4.12:1, #F60037 at 4.22:1); black emits none.
+
+    These labels are 12pt or smaller and bold, which is not WCAG "large text"
+    (that needs 14pt bold or 18pt regular), so the floor is 4.5:1 and not 3:1.
+    C_DARK_TEXT stays #202020 everywhere else: this is a label-on-colored-fill
+    decision, not a body-text one.
     """
-    fill = _relative_luminance(color_hex)
-    dark = _relative_luminance("202020")
-
-    def ratio(a, b):
-        hi, lo = max(a, b), min(a, b)
-        return (hi + 0.05) / (lo + 0.05)
-
-    return C_WHITE if ratio(fill, 1.0) > ratio(fill, dark) else C_DARK_TEXT
+    white_ratio = contrast_ratio(color_hex, "FFFFFF")
+    dark_ratio = contrast_ratio(color_hex, LABEL_DARK_HEX)
+    if max(white_ratio, dark_ratio) < AA_NORMAL:
+        raise ValueError(
+            f"no AA-compliant data label color for fill #{color_hex}: white "
+            f"{white_ratio:.2f}:1, black {dark_ratio:.2f}:1, both under {AA_NORMAL}:1"
+        )
+    return C_WHITE if white_ratio > dark_ratio else C_LABEL_DARK
 
 
 def _style_chart(chart):
     """Apply NBG brand styling to a chart: no title, hidden value axis,
     no gridlines, no plot border, data labels on bars, Aptos throughout."""
-    # No chart title — use slide title textbox instead
+    # No chart title, use slide title textbox instead
     chart.has_title = False
 
     # No legend by default (single-series); caller enables if multi-series
@@ -366,13 +443,85 @@ def _style_chart(chart):
             series.format.fill.fore_color.rgb = RGBColor.from_string(color_hex)
 
 
-def create_chart_slide(prs, content, page_number, chart_type="bar"):
-    """Create a chart slide with NBG styling.
+# A description caption is 0.28" tall and takes 0.12" of clearance under it.
+CAPTION_SHIFT = 0.4
 
-    Bumper:    Pill at (0.37, 0.35)
-    Title:     24pt Dark Teal at (0.37, 0.75)
-    Chart:     at (0.37, 1.3) — 12.59" x 5.0"
-    Logo + page number.
+# Table styling, per the single table spec in brand-system/layouts.md.
+TABLE_HEADER_FILL = "003841"  # header row fill, 12pt Aptos Bold white on it
+TABLE_ZEBRA_FILL = "F5F8F6"  # every second body row
+TABLE_FONT_SIZE = 12
+TABLE_HEADER_H = 0.4
+TABLE_ROW_H = 0.35
+_NUMERIC_CELL = re.compile(r"^[+\-]?[\d.,]+\s*%?$")
+
+
+def _add_caption(slide, content, bumper):
+    """Draw `content.description` under the title. Returns (body top, body height).
+
+    The description carried real text on three of the shipped example slides and
+    was never rendered. It sits below the title rather than above the body, so
+    the 0.15" title-to-content gap the validator enforces still holds, and the
+    body box gives up the same height it takes: dimensions.md wants the body to
+    clear the 6.85" content floor with breathing room, so nothing grows.
+    """
+    top = 1.3 if bumper else 1.1
+    height = 5.0 if bumper else 5.2
+    description = content.get("description")
+    if not description:
+        return top, height
+    _add_textbox(
+        slide,
+        GUTTER,
+        top,
+        CONTENT_W,
+        0.28,
+        description,
+        font_size=12,
+        color=RGBColor(0x5A, 0x5F, 0x5A),
+    )
+    return top + CAPTION_SHIFT, height - CAPTION_SHIFT
+
+
+def _numeric_columns(header_row, body_rows):
+    """Columns whose body cells are all numeric. Those get right-aligned."""
+    width = max((len(r) for r in [header_row, *body_rows] if r), default=0)
+    numeric = set()
+    for col in range(width):
+        cells = [str(r[col]).strip() for r in body_rows if col < len(r) and str(r[col]).strip()]
+        if cells and all(_NUMERIC_CELL.match(c) for c in cells):
+            numeric.add(col)
+    return numeric
+
+
+def _fill_table_cell(cell, text, *, align, header=False, bold=False, color=None, fill=None):
+    """One table cell, per brand-system/layouts.md 'Table Styling'."""
+    cell.fill.solid()
+    cell.fill.fore_color.rgb = RGBColor.from_string(fill or "FFFFFF")
+    cell.margin_left = Inches(0.08)
+    cell.margin_right = Inches(0.08)
+    cell.margin_top = 0
+    cell.margin_bottom = 0
+
+    p = cell.text_frame.paragraphs[0]
+    p.text = text
+    p.alignment = align
+    p.font.size = Pt(TABLE_FONT_SIZE)
+    p.font.name = FONT
+    p.font.bold = header or bold
+    p.font.color.rgb = C_WHITE if header else (color or C_DARK_TEXT)
+
+
+def create_table_slide(prs, content, table_spec, page_number):
+    """Create a table slide (`tables/*` in the slide catalog, or `type: table`).
+
+    Two of the three shipped examples carry a `slide.table` block whose headers
+    and rows were dropped on the floor: `type: table` classified as plain content
+    and the builder had no table renderer at all, so the slide rendered as a bare
+    title. Styling follows the single table spec in brand-system/layouts.md.
+
+    Bumper:  Pill at (0.374, 0.35)
+    Title:   24pt Dark Teal at (0.374, 0.75)
+    Table:   at (0.374, 1.3), 12.582" wide, header row 0.4" and body rows 0.35"
     """
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
@@ -386,9 +535,9 @@ def create_chart_slide(prs, content, page_number, chart_type="bar"):
     if content.get("title"):
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             title_y,
-            12.59,
+            CONTENT_W,
             0.4,
             content["title"],
             font_size=24,
@@ -396,11 +545,122 @@ def create_chart_slide(prs, content, page_number, chart_type="bar"):
             bold=False,
         )
 
+    table_y, available = _add_caption(slide, content, bumper)
+
+    headers = list(table_spec.get("headers") or [])
+    body_rows = [list(r) for r in (table_spec.get("rows") or [])]
+    if not headers and not body_rows:
+        print(f"  WARNING: table slide '{content.get('title', '')[:40]}' has no rows")
+        _add_logo(slide, "small")
+        _add_page_number(slide, page_number)
+        return slide
+
+    n_cols = max(len(r) for r in [headers, *body_rows] if r)
+    n_rows = len(body_rows) + (1 if headers else 0)
+
+    # Shrink the rows rather than run past the content safe area.
+    header_h = TABLE_HEADER_H if headers else 0.0
+    row_h = TABLE_ROW_H
+    if body_rows and header_h + row_h * len(body_rows) > available:
+        row_h = (available - header_h) / len(body_rows)
+
+    total_h = header_h + row_h * len(body_rows)
+    table_frame = slide.shapes.add_table(
+        n_rows, n_cols, Inches(GUTTER), Inches(table_y), Inches(CONTENT_W), Inches(total_h)
+    )
+    _set_alt_text(table_frame, _table_alt_text(headers, body_rows))
+    table = table_frame.table
+    # The theme table style would repaint the header and band the rows over our
+    # own fills; NBG carries both itself.
+    table.first_row = False
+    table.horz_banding = False
+
+    numeric = _numeric_columns(headers, body_rows)
+    highlight = table_spec.get("highlight_column")
+
+    row_index = 0
+    if headers:
+        table.rows[0].height = Inches(header_h)
+        for col in range(n_cols):
+            _fill_table_cell(
+                table.cell(0, col),
+                str(headers[col]) if col < len(headers) else "",
+                align=PP_ALIGN.RIGHT if col in numeric else PP_ALIGN.LEFT,
+                header=True,
+                fill=TABLE_HEADER_FILL,
+            )
+        row_index = 1
+
+    for i, row in enumerate(body_rows):
+        table.rows[row_index + i].height = Inches(row_h)
+        for col in range(n_cols):
+            emphasised = highlight is not None and col == highlight
+            _fill_table_cell(
+                table.cell(row_index + i, col),
+                str(row[col]) if col < len(row) else "",
+                align=PP_ALIGN.RIGHT if col in numeric else PP_ALIGN.LEFT,
+                bold=col == 0 or emphasised,
+                color=C_TEAL if emphasised else C_DARK_TEXT,
+                fill=TABLE_ZEBRA_FILL if i % 2 else "FFFFFF",
+            )
+
+    _add_logo(slide, "small")
+    _add_page_number(slide, page_number)
+    return slide
+
+
+def create_chart_slide(
+    prs, content, page_number, chart_type="bar", categories=None, series_list=None
+):
+    """Create a chart slide with NBG styling.
+
+    Bumper:    Pill at (0.374, 0.35)
+    Title:     24pt Dark Teal at (0.374, 0.75)
+    Caption:   12pt Caption Gray under the title, when content.description is set
+    Chart:     at (0.374, 1.3), 12.582" x 5.0", less any caption above it
+    Logo + page number.
+
+    `categories` and `series_list` come from `slide.chart.data` via _chart_spec().
+    When they are None the older, undocumented `content.categories` /
+    `content.series` pair is read instead, so a direct caller still works.
+    """
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = C_WHITE
+
+    bumper = content.get("bumper") or content.get("hyper_title")
+    if bumper:
+        _add_bumper_pill(slide, bumper)
+
+    title_y = 0.75 if bumper else 0.5
+    if content.get("title"):
+        _add_textbox(
+            slide,
+            GUTTER,
+            title_y,
+            CONTENT_W,
+            0.4,
+            content["title"],
+            font_size=24,
+            color=C_DARK_TEAL,
+            bold=False,
+        )
+
+    body_y, body_h = _add_caption(slide, content, bumper)
+
     # Build chart data
     chart_data = CategoryChartData()
-    categories = content.get("categories", [])
-    series_list = content.get("series", [])
+    if categories is None:
+        categories = content.get("categories", [])
+    if series_list is None:
+        series_list = content.get("series", [])
     chart_data.categories = categories
+
+    if not series_list:
+        print(
+            f"  WARNING: chart slide '{content.get('title', '')[:40]}' has no series "
+            f"data, so its plot area will be blank"
+        )
 
     for s in series_list:
         chart_data.add_series(s.get("name", ""), s.get("values", []))
@@ -417,16 +677,17 @@ def create_chart_slide(prs, content, page_number, chart_type="bar"):
     }
     xl_type = type_map.get(chart_type, XL_CHART_TYPE.COLUMN_CLUSTERED)
 
-    chart_y = 1.3 if bumper else 1.1
-    chart_h = 5.0 if bumper else 5.2
+    chart_y, chart_h = body_y, body_h
     chart_frame = slide.shapes.add_chart(
         xl_type,
-        Inches(0.37),
+        Inches(GUTTER),
         Inches(chart_y),
-        Inches(12.59),
+        Inches(CONTENT_W),
         Inches(chart_h),
         chart_data,
     )
+
+    _set_alt_text(chart_frame, _chart_alt_text(chart_type, categories, series_list))
 
     chart = chart_frame.chart
     _style_chart(chart)
@@ -460,9 +721,9 @@ def create_waterfall_slide(prs, content, page_number):
     python-pptx has no native waterfall type, so we simulate it
     with an invisible base series + positive/negative series.
 
-    Bumper:    Pill at (0.37, 0.35)
-    Title:     24pt Dark Teal at (0.37, 0.75)
-    Chart:     at (0.37, 1.3) — 12.59" x 5.0"
+    Bumper:    Pill at (0.374, 0.35)
+    Title:     24pt Dark Teal at (0.374, 0.75)
+    Chart:     at (0.374, 1.3), 12.582" x 5.0"
     """
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
@@ -476,15 +737,17 @@ def create_waterfall_slide(prs, content, page_number):
     if content.get("title"):
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             title_y,
-            12.59,
+            CONTENT_W,
             0.4,
             content["title"],
             font_size=24,
             color=C_DARK_TEAL,
             bold=False,
         )
+
+    body_y, body_h = _add_caption(slide, content, bumper)
 
     # Waterfall data: list of {label, value} items
     # First and last are totals, middle items are deltas
@@ -528,15 +791,19 @@ def create_waterfall_slide(prs, content, page_number):
     chart_data.add_series("Increase", increase)
     chart_data.add_series("Decrease", decrease)
 
-    chart_y = 1.3 if bumper else 1.1
-    chart_h = 5.0 if bumper else 5.2
+    chart_y, chart_h = body_y, body_h
     chart_frame = slide.shapes.add_chart(
         XL_CHART_TYPE.COLUMN_STACKED,
-        Inches(0.37),
+        Inches(GUTTER),
         Inches(chart_y),
-        Inches(12.59),
+        Inches(CONTENT_W),
         Inches(chart_h),
         chart_data,
+    )
+
+    _set_alt_text(
+        chart_frame,
+        _chart_alt_text("waterfall", categories, [{"name": "Increase"}, {"name": "Decrease"}]),
     )
 
     chart = chart_frame.chart
@@ -619,10 +886,10 @@ def create_waterfall_slide(prs, content, page_number):
 def create_cover_slide(prs, content):
     """Create cover slide with NBG typography hierarchy.
 
-    Title:    48pt Dark Teal at (0.37, 1.39)
-    Subtitle: 36pt NBG Teal at (0.37, 2.27)
-    Location: 14pt Dark Teal at (0.37, 4.58)
-    Date:     14pt Medium Gray at (0.37, 4.97)
+    Title:    48pt Dark Teal at (0.374, 1.39)
+    Subtitle: 36pt NBG Teal at (0.374, 2.27)
+    Location: 14pt Dark Teal at (0.374, 4.58)
+    Date:     14pt Medium Gray at (0.374, 4.97)
     Logo:     Large logo at bottom-left (covers use large)
     NO page number.
     """
@@ -633,7 +900,7 @@ def create_cover_slide(prs, content):
     if content.get("title"):
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             1.39,
             7.86,
             1.00,
@@ -645,7 +912,7 @@ def create_cover_slide(prs, content):
     if content.get("subtitle"):
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             2.27,
             7.86,
             0.80,
@@ -657,7 +924,7 @@ def create_cover_slide(prs, content):
     if content.get("location"):
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             4.58,
             4,
             0.4,
@@ -669,7 +936,7 @@ def create_cover_slide(prs, content):
     if content.get("date"):
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             4.97,
             4,
             0.4,
@@ -685,8 +952,8 @@ def create_cover_slide(prs, content):
 def create_divider_slide(prs, content):
     """Create section divider slide.
 
-    Number: 60pt NBG Teal at (0.37, 2.84)
-    Title:  48pt Dark Teal at (1.86, 2.84)
+    Number: 60pt NBG Teal at (0.374, 2.84), in a 1.2" box
+    Title:  48pt Dark Teal at (1.574, 2.84), flush to the number box's right edge
     Logo:   Large logo at bottom-left (dividers use large)
     NO page number.
     """
@@ -699,12 +966,12 @@ def create_divider_slide(prs, content):
         number = str(number).zfill(2)
 
     if number:
-        _add_textbox(slide, 0.37, 2.84, 1.2, 1.0, number, font_size=60, color=C_TEAL)
+        _add_textbox(slide, GUTTER, 2.84, DIVIDER_NUMBER_W, 1.0, number, font_size=60, color=C_TEAL)
 
     if content.get("title"):
         _add_textbox(
             slide,
-            1.86,
+            DIVIDER_TITLE_X,
             2.84,
             9.5,
             1.0,
@@ -720,9 +987,9 @@ def create_divider_slide(prs, content):
 def create_content_slide(prs, content, page_number):
     """Create content slide with optional bumper pill and bullet points.
 
-    Bumper:  Pill shape at (0.37, 0.35) — 1.3x0.3, #007B85, 9pt Bold white
-    Title:   24pt Dark Teal Regular at (0.37, 0.75)
-    Bullets: 14pt Dark Text at (0.37, 1.3), cyan bullets
+    Bumper:  Pill shape at (0.374, 0.35), 1.3x0.3, #007B85, 9pt Bold white
+    Title:   24pt Dark Teal Regular at (0.374, 0.75)
+    Bullets: 14pt Dark Text at (0.374, 1.3), cyan bullets
     Logo:    Small logo at bottom-left
     Page number at bottom-right.
     """
@@ -735,14 +1002,14 @@ def create_content_slide(prs, content, page_number):
     if bumper:
         _add_bumper_pill(slide, bumper)
 
-    # Action title — 24pt Regular (NOT bold, NOT SemiBold)
+    # Action title: 24pt Regular (NOT bold, NOT SemiBold)
     title_y = 0.75 if bumper else 0.5
     if content.get("title"):
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             title_y,
-            12.59,
+            CONTENT_W,
             0.4,
             content["title"],
             font_size=24,
@@ -750,11 +1017,22 @@ def create_content_slide(prs, content, page_number):
             bold=False,
         )
 
-    # Body content — bullet points
+    body_y, body_h = _add_caption(slide, content, bumper)
+
+    # Body content: bullet points
     points = content.get("points") or content.get("paragraphs") or []
-    body_y = 1.3 if bumper else 1.1
+    if not points and content.get("items"):
+        # Infographic slides carry {title, description} items. There is no
+        # infographic renderer, and dropping them left the slide title-only, so
+        # they degrade to bullets rather than vanishing.
+        points = [
+            f"{i.get('title', '')}: {i.get('description', '')}".strip(": ")
+            if isinstance(i, dict)
+            else str(i)
+            for i in content["items"]
+        ]
     if points:
-        _add_bullets(slide, 0.37, body_y, 12.59, 5.0, points)
+        _add_bullets(slide, GUTTER, body_y, CONTENT_W, body_h, points)
 
     _add_logo(slide, "small")
     _add_page_number(slide, page_number)
@@ -764,7 +1042,7 @@ def create_content_slide(prs, content, page_number):
 def create_contents_slide(prs, sections, page_number):
     """Create table of contents slide.
 
-    Header: 32pt Dark Teal Bold at (0.37, 0.36)
+    Header: 32pt Dark Teal Bold at (0.374, 0.36)
     Items:  Number (18pt Teal) + Title (16pt Dark Teal Bold) + Desc (12pt)
     """
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -773,7 +1051,7 @@ def create_contents_slide(prs, sections, page_number):
 
     _add_textbox(
         slide,
-        0.37,
+        GUTTER,
         0.36,
         10,
         0.70,
@@ -789,7 +1067,7 @@ def create_contents_slide(prs, sections, page_number):
         number = section.get("number", str(i + 1).zfill(2))
         _add_textbox(
             slide,
-            0.37,
+            GUTTER,
             y,
             0.60,
             0.60,
@@ -942,20 +1220,77 @@ def _classify_slide(slide_def):
         return "divider"
     if raw_type in ("contents", "toc"):
         return "contents"
-    if raw_type in ("chart", "bar_chart", "line_chart", "pie_chart"):
-        return "chart"
     if raw_type in ("waterfall", "waterfall_chart"):
         return "waterfall"
+    if raw_type in ("chart", "bar_chart", "line_chart", "pie_chart") or raw_type.startswith(
+        "charts/"
+    ):
+        return "chart"
+    if raw_type == "table" or raw_type.startswith("tables/"):
+        return "table"
 
     # Check recommended_visual for chart hints
     visual = slide_def.get("recommended_visual", "")
-    if visual in ("bar_chart", "comparison_chart"):
-        return "chart"
     if visual == "waterfall_chart":
         return "waterfall"
+    if visual in ("bar_chart", "comparison_chart", "line_chart", "pie_chart"):
+        return "chart"
+    if visual in ("table", "comparison_table"):
+        return "table"
 
-    # Everything else is content (text, infographics, tables)
+    # Everything else is content (text, infographics)
     return "content"
+
+
+def _chart_subtype(slide_def, chart):
+    """Map a slide onto one of create_chart_slide's chart_type keys."""
+    named = chart.get("type")
+    if named:
+        return str(named)
+    for candidate in (slide_def.get("type", ""), slide_def.get("recommended_visual", "")):
+        if candidate.endswith("_chart"):
+            return candidate[: -len("_chart")]
+        if candidate.startswith("charts/"):
+            # Catalog paths: charts/pie_single, charts/bar_dual, charts/line_single
+            return candidate.split("/", 1)[1].split("_", 1)[0]
+    return "bar"
+
+
+def _chart_spec(slide_def):
+    """Resolve a chart slide's type and data from the published contract.
+
+    The canonical shape, used by all three shipped examples and documented in
+    tools/nbg-presentation/README.md:
+
+        - type: chart
+          chart:
+            type: line
+            data:
+              categories: ["Jan", "Feb"]
+              series:
+                - name: "2025"
+                  values: [3.8, 3.7]
+
+    Nothing read `slide.chart` at all before this, so every chart in every
+    shipped example rendered with zero series and zero categories while the
+    validator called the deck clean. Two other shapes are accepted so that
+    anything working today keeps working: the README's single-series doughnut
+    (`chart.labels` plus `chart.values`) and the undocumented
+    `content.categories` / `content.series` pair the builder used to read.
+
+    Returns (chart_type, categories, series), series as {"name", "values"} dicts.
+    """
+    chart = slide_def.get("chart") or {}
+    content = slide_def.get("content") or {}
+    data = chart.get("data") or {}
+
+    categories = data.get("categories") or chart.get("labels") or content.get("categories") or []
+    series = data.get("series") or content.get("series") or []
+    if not series and chart.get("values"):
+        # README doughnut shape: a bare value list with no series name.
+        series = [{"name": chart.get("name", ""), "values": chart["values"]}]
+
+    return _chart_subtype(slide_def, chart), list(categories), list(series)
 
 
 # ---------------------------------------------------------------------------
@@ -984,12 +1319,10 @@ def build_presentation(outline_path, output_path):
         # the second shape, so reading `presentation.slides` alone raised
         # "No slides defined in outline" on every one of them.
         slides = presentation.get("slides") or outline.get("slides", [])
-        template = outline.get("template", "GR")
         print("\n[McKinsey Quality] Using Pyramid Principle structure")
         if presentation.get("main_recommendation"):
             print(f"  Main recommendation: {presentation['main_recommendation'][:60]}...")
     else:
-        template = outline.get("template", "GR")
         slides = outline.get("slides", [])
 
     if not slides:
@@ -997,7 +1330,6 @@ def build_presentation(outline_path, output_path):
 
     print("\nNBG Presentation Builder")
     print(f"{'=' * 50}")
-    print(f"Template: {template}")
     print(f"Slides: {len(slides)}")
     print(f"Output: {output_path}")
     print(f"{'=' * 50}\n")
@@ -1012,7 +1344,6 @@ def build_presentation(outline_path, output_path):
     for slide_def in slides:
         category = _classify_slide(slide_def)
         content = slide_def.get("content", {})
-        raw_type = slide_def.get("type", "content")
 
         if category == "cover":
             create_cover_slide(prs, content)
@@ -1030,9 +1361,28 @@ def build_presentation(outline_path, output_path):
 
         elif category == "chart":
             page_number += 1
-            chart_subtype = raw_type.replace("_chart", "") if "_chart" in raw_type else "bar"
-            create_chart_slide(prs, content, page_number, chart_type=chart_subtype)
-            print(f"  [chart:{chart_subtype}] {content.get('title', '')[:50]}")
+            chart_subtype, categories, series_list = _chart_spec(slide_def)
+            create_chart_slide(
+                prs,
+                content,
+                page_number,
+                chart_type=chart_subtype,
+                categories=categories,
+                series_list=series_list,
+            )
+            print(
+                f"  [chart:{chart_subtype}] {len(series_list)} series x "
+                f"{len(categories)} categories: {content.get('title', '')[:40]}"
+            )
+
+        elif category == "table":
+            page_number += 1
+            table_spec = slide_def.get("table") or {}
+            create_table_slide(prs, content, table_spec, page_number)
+            print(
+                f"  [table] {len(table_spec.get('rows') or [])} rows: "
+                f"{content.get('title', '')[:40]}"
+            )
 
         elif category == "waterfall":
             page_number += 1
@@ -1056,23 +1406,41 @@ def build_presentation(outline_path, output_path):
     print(f"Created: {output_path}")
     print(f"{'=' * 50}\n")
 
-    # Validate
+    # Validate. The return code used to be discarded entirely, so a validator
+    # that died on a missing import printed its traceback and the build still
+    # exited 0 with "Validating..." as its last word.
     validate_script = SCRIPT_DIR / "nbg_validate.py"
-    if validate_script.exists():
-        print("Validating...")
-        subprocess.run([sys.executable, str(validate_script), str(output_path)])
+    if not validate_script.exists():
+        raise RuntimeError(f"validator missing: {validate_script}; the deck is UNVALIDATED")
+
+    print("Validating...")
+    proc = subprocess.run(
+        [sys.executable, str(validate_script), str(output_path)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    print(proc.stdout, end="")
+    if proc.stderr:
+        print(proc.stderr, end="", file=sys.stderr)
+
+    # nbg_validate exits 0 clean, 1 when a check failed, 2 when it could not
+    # finish. An import-time crash never reaches its own handler, so it exits 1
+    # with a traceback; that is the third case and it is not a failed check.
+    crashed = proc.returncode not in (0, 1) or "Traceback (most recent call last)" in (
+        proc.stderr or ""
+    )
+    if crashed:
+        raise RuntimeError(
+            f"nbg_validate.py could not run (exit {proc.returncode}); "
+            f"the deck at {output_path} is UNVALIDATED"
+        )
+    if proc.returncode != 0:
+        raise ValueError(f"nbg_validate.py found brand violations in {output_path}")
+    print("Validation passed.")
 
 
-def main():
-    if len(sys.argv) < 3:
-        print("NBG Presentation Builder")
-        print("=" * 40)
-        print("\nUsage: python nbg_build.py <outline.yaml> <output.pptx>")
-        print("\nCreates presentations from scratch with NBG brand guidelines.")
-        print("White backgrounds, Aptos font, pixel-perfect positioning.")
-        print("\nExample outline.yaml:")
-        print("""
-template: GR
+EXAMPLE_OUTLINE = """Example outline.yaml:
 
 presentation:
   title: "Presentation Title"
@@ -1096,15 +1464,47 @@ presentation:
           - "First bullet point"
           - "Second bullet point"
 
+    - type: chart
+      chart:
+        type: bar
+        data:
+          categories: ["Q1", "Q2"]
+          series:
+            - name: "2026"
+              values: [12, 15]
+
     - type: back_cover
       content: {}
-""")
-        sys.exit(1)
+"""
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="nbg_build.py",
+        description=(
+            "Build an NBG-branded presentation from a YAML outline. White "
+            "backgrounds, Aptos font, pixel-perfect positioning."
+        ),
+        epilog=EXAMPLE_OUTLINE,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("spec", help="YAML outline")
+    # The documented call is two positionals. Keep it, and add -o, because
+    # `nbg_build.py spec.yaml -o out.pptx` used to write a file named "-o".
+    parser.add_argument("output", nargs="?", help="output .pptx path")
+    parser.add_argument("-o", "--output-file", dest="output_file", help="output .pptx path")
+    args = parser.parse_args()
+
+    if args.output_file and args.output:
+        parser.error(f"two output paths given: {args.output!r} and {args.output_file!r}")
+    output = args.output_file or args.output
+    if not output:
+        parser.error("an output path is required, as the second positional or with -o")
 
     try:
-        build_presentation(sys.argv[1], sys.argv[2])
+        build_presentation(args.spec, output)
     except Exception as e:
-        print(f"\nError: {e}")
+        print(f"\nError: {e}", file=sys.stderr)
         sys.exit(1)
 
 

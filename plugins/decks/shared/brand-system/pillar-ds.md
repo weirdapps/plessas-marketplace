@@ -64,7 +64,7 @@
 
 ### PFM Category Colors (Charts)
 
-Use these for data visualization with category-based charts. **Resynced 2026-05-24 from live Pillar repo** (github.com/thomastsop00/pillar-skills) — pairs each category with a `Main` + `Light` shade for chart legends, badges, and PFM segment visualisation:
+Use these for data visualization with category-based charts. **Resynced 2026-05-24 from live Pillar repo** (github.com/thomastsop00/pillar-skills), pairing each category with a `Main` + `Light` shade for chart legends, badges, and PFM segment visualisation:
 
 | Category | Main | Light |
 |----------|------|-------|
@@ -89,7 +89,7 @@ Use these for data visualization with category-based charts. **Resynced 2026-05-
 
 | Name | Hex | Usage |
 |------|-----|-------|
-| Go For More Pink | `#FA8FE1` | Rewards/loyalty campaigns (resynced 2026-05-24 — was `#FF2D77`) |
+| Go For More Pink | `#FA8FE1` | Rewards/loyalty campaigns (resynced 2026-05-24, was `#FF2D77`) |
 | Dark Mode BG | `#000000` | Dark mode backgrounds |
 | Dark Mode Surface | `#111717` | Dark mode cards |
 | Nav background (dark mode) | `#162020` @ 80% opacity | Dark mode nav bar |
@@ -434,7 +434,7 @@ Pillar-sourced assets live alongside the rest of the decks asset library at `plu
 |----------|------|----------|--------|
 | Illustrations | `assets/illustrations/` | 21 teal line-art PNGs (Account, Application, Loan, Card, Gift, Growth, Transfer, IRIS, Teens card, Tasks, Investments, Insurance, Moneybox, Notification, Approval/Reject states) + `INDEX.md` | Pillar (pre-existing) |
 | Icons | `assets/icons/` | 338 PNG icons across 20 categories (basics, money, documents, devices, security, life-stages, etc.) + `INDEX.md` | Pillar (pre-existing) |
-| Logos | `assets/logos/` | NBG emblem, NBG wordmark, RMB/BMB/Next/Authenticator app icons, Go For More (10 total — includes 3 dark variants that pre-existed in the repo; new content uses light variants only per standard #2) | Pillar (pre-existing) |
+| Logos | `assets/logos/` | NBG emblem, NBG wordmark, RMB/BMB/Next/Authenticator app icons, Go For More (10 total, including 3 dark variants that pre-existed in the repo; new content uses light variants only per standard #2) | Pillar (pre-existing) |
 | Screenshots | `assets/screenshots/` | 117 actual product screenshots across 5 NBG digital channels: `retail-mobile/` (RMB), `business-mobile/` (BMB), `next-app/`, `retail-internet/` (RIB), `business-internet/` (BIB) | Pillar (added 2026-05-24) |
 | Brand guide PDF | `shared/brand-system/NBG_Brand_Guidelines.pdf` | Official NBG brand guidelines (1.3 MB, reference) | Pillar (added 2026-05-24) |
 
@@ -451,4 +451,4 @@ Pillar-sourced assets live alongside the rest of the decks asset library at `plu
 **Version**: 1.1.0
 **Source**: NBG Pillar Figma Design System → resynced from github.com/thomastsop00/pillar-skills on 2026-05-24
 **Integrated**: 2026-02 (initial), 2026-05-24 (resync + asset import)
-**Authority**: Pillar design system is the canonical NBG digital UI palette. For PowerPoint decks, presentation-system colours in `colors.md` remain authoritative — Pillar values apply to digital products and PFM data viz only.
+**Authority**: Pillar design system is the canonical NBG digital UI palette. For PowerPoint decks, presentation-system colours in `colors.md` remain authoritative; Pillar values apply to digital products and PFM data viz only.

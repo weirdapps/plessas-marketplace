@@ -1,4 +1,4 @@
-# NBG Iconography Library — Index
+# NBG Iconography Library: Index
 
 **Base path:** `plugins/decks/assets/icons/`
 **Total:** 338 icons across 20 categories
@@ -9,9 +9,9 @@
 ## How to Use Icons in Slides
 
 - Use icons to visually anchor bullet points, section headers, or callout boxes
-- Always tint icons to an NBG brand color — never leave them black on white unless on a dark background
+- Always tint icons to an NBG brand color; never leave them black on white unless on a dark background
 - Recommended sizes: **48px** for inline/bullet icons, **64–80px** for feature callout icons
-- Pair each icon with a short label or heading — never use icons without text context
+- Pair each icon with a short label or heading; never use icons without text context
 - Icons work best on the NBG template's infographic and callout layouts
 
 ---

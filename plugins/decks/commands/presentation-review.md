@@ -1,7 +1,7 @@
 ---
 description: "Compare a finalized presentation against its draft to learn style preferences"
 argument-hint: "[path/to/final.pptx]"
-allowed-tools: Agent, Read, Write, Bash, Skill(document-skills:pptx)
+allowed-tools: Agent, Read, Write, Bash, Skill(document-skills:pptx), mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_get_mail, mcp__plugin_mail_outlook-bridge__outlook_download_attachments
 ---
 
 <objective>
@@ -19,7 +19,7 @@ User request: $ARGUMENTS
 mkdir -p ~/.claude/presentations/pending ~/.claude/presentations/reviewed
 ```
 
-This is idempotent — does nothing if the directories already exist.
+This is idempotent: it does nothing if the directories already exist.
 
 ### 1. Locate Draft Record
 
@@ -119,23 +119,20 @@ Display a clear summary to the user:
 
 When no path is provided, find the finalized version automatically:
 
-**Priority 1 — Email (primary):** The user sends finalized decks via email and CCs himself. Scan Archive for PPTX attachments:
+**Priority 1, Email (primary):** The user sends finalized decks via email and CCs himself, so sent decks land in Archive. Scan it for PPTX attachments:
 
-```applescript
-tell application "Mail"
-    set archiveBox to mailbox "Archive" of account "Exchange"
-    -- Search for emails with PPTX attachments sent after draft creation date
-    -- Match attachment filename against pending draft records
-    -- Save matching attachment to temp dir for comparison
-end tell
-```
+1. `mcp__plugin_mail_outlook-bridge__outlook_list_mail` on the Archive folder, bounded by the draft record's creation date and a sane result cap. Never enumerate the whole archive.
+2. `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on each candidate to read the body and the attachment list.
+3. `mcp__plugin_mail_outlook-bridge__outlook_download_attachments` for the messages whose attachment filename matches a pending draft record, saving to a temp dir for comparison.
+
+These tools come from the `mail` plugin's bundled outlook-bridge MCP. If they are absent from your tool list, `mail` is not installed: say so and ask the user to install it. Do NOT read from macOS Mail via AppleScript. It is a separate local store that is not synced with M365, so it silently returns stale or missing mail.
 
 - Analyze email body to classify intent (final delivery vs review request vs draft for feedback)
 - Only use attachments from "final delivery" emails
 
-**Priority 2 — Local file (fallback):** If PPTX still exists locally, compare SHA-256 hash against draft record.
+**Priority 2, Local file (fallback):** If PPTX still exists locally, compare SHA-256 hash against draft record.
 
-**Priority 3 — Sent Items (recent only):** Fall back to Sent Items for emails sent in the last few hours (user regularly empties Sent Items).
+**Priority 3, Sent Items (recent only):** Fall back to Sent Items for emails sent in the last few hours (user regularly empties Sent Items).
 
 Present findings and ask user to confirm before proceeding.
 </process>

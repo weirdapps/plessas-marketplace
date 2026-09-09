@@ -1,0 +1,163 @@
+name: Tests
+
+# The authoritative test gate. Until this existed, `pytest` ran in exactly one
+# place (sonarcloud.yml), whose purpose is static analysis and whose whole job
+# is gated on `!github.event.repository.private`. Flip this repo private for a
+# day and every Python test silently stops running; a quality gate is the wrong
+# thing to hang a test suite from. Nothing here is conditional on repo
+# visibility, on a secret, or on a token.
+#
+# The vitest suites had never run in CI at all: no workflow invoked `npm test`,
+# so the outbound-mail and auth-guard tests in plugins/mail/mcp-server had never
+# gated a merge either.
+
+"on":
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: pytest (Python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          # 3.12 is a floor, not a preference: numpy >= 2.5.1 (nbg-keynote,
+          # device-mockup) is itself `requires-python >=3.12`, so on 3.11
+          # `pip install -r` cannot resolve and the suites die at collection.
+          # Keep in step with pyproject.toml's target-version/python_version
+          # and with sonar-project.properties' sonar.python.version.
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          # --only-binary :all: throughout: refuses source distributions, so no
+          # dependency's setup.py executes during install. Every package these
+          # tools need (numpy, Pillow, python-pptx, lxml, PyYAML, defusedxml)
+          # publishes manylinux wheels, so nothing legitimate is excluded, and a
+          # package that stops shipping one fails here loudly rather than running
+          # arbitrary build code on the runner.
+          python -m pip install --only-binary :all: --upgrade pip
+          # No `pip install -e .`: pyproject.toml is tooling-only and declares
+          # no [project] table, so an editable install cannot work. The tools'
+          # dependencies live in per-tool requirements.txt files instead.
+          find plugins -name requirements.txt -not -path "*/node_modules/*" -print0 \
+            | xargs -0 -I{} pip install --only-binary :all: -r {}
+          pip install --only-binary :all: pytest pytest-cov
+
+      # No continue-on-error, no `|| true`, no if-guard. This step exists to be
+      # able to go red. Zero skips as of 2026-09-09. No test count recorded on
+      # purpose: it went 45 -> 87 -> 88 in a single afternoon, and a stale
+      # number in a comment is worse than no number.
+      #
+      # The skip assertion is not pedantry. The suites guard their imports with
+      # `pytest.importorskip` (17 call sites: pptx x11, defusedxml x2, yaml,
+      # PIL, numpy), so a dependency dropped from a requirements.txt turns into
+      # a silent green skip instead of a failure. Only numpy and PIL have a
+      # hard-import backstop, in nbg_keynote.py, which would error at
+      # collection and go red. pptx, yaml and defusedxml have none, so losing
+      # python-pptx would silently retire most of test_nbg_build.py while CI
+      # stayed green. Measured on 2026-09-09: dropping the device-mockup
+      # requirements gives "32 passed, 1 skipped" and exit 0, an entire suite
+      # gone with no signal. A suite that quietly stops running is the exact
+      # failure this workflow exists to remove. If you ever add a legitimate
+      # skip this fails loudly and you relax it deliberately, which is correct.
+      - name: Run pytest
+        run: |
+          set -euo pipefail
+          pytest plugins -q -rs | tee /tmp/pytest.out
+          if grep -qE '[0-9]+ skipped' /tmp/pytest.out; then
+            echo "::error::tests were skipped; a dependency is probably missing"
+            exit 1
+          fi
+
+  node:
+    name: vitest (${{ matrix.server }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Both servers report independently. A broken teams-bridge should not
+      # hide the outlook-bridge result, or the other way round.
+      fail-fast: false
+      matrix:
+        server: [mail, chat]
+    defaults:
+      run:
+        working-directory: plugins/${{ matrix.server }}/mcp-server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          # 20 is the floor both package.json files declare in `engines`.
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: plugins/${{ matrix.server }}/mcp-server/package-lock.json
+
+      - name: Install dependencies
+        env:
+          # Both servers depend on a GitHub `git+https` package
+          # (weirdapps/outlook-access, weirdapps/teams-access) that pulls
+          # Playwright in turn. Those repos are public, so an unauthenticated
+          # `npm ci` resolves them; downloading browsers to run unit tests that
+          # never open one is pure waste.
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+          # NOT --ignore-scripts, and this is deliberate rather than an oversight.
+          # Both bundled CLIs are `git+https` dependencies that build from source in
+          # their own `prepare` script, so suppressing lifecycle scripts would leave
+          # node_modules/<cli>/dist/cli.js absent and every MCP tool would fail at
+          # spawn. The scripts that run are from weirdapps/outlook-access and
+          # weirdapps/teams-access, both pinned to an exact commit SHA in
+          # package.json, which is the control that substitutes for it.
+        run: npm ci
+
+      # teams-bridge's `test` script carried `--passWithNoTests` from creation
+      # until 2026-09-09, so `npm test` exited 0 while verifying nothing. The
+      # flag is gone and the suite is real now, but the guard stays: a job that
+      # cannot tell "all tests pass" from "there are no tests" is a badge, not
+      # a gate, and this asserts it independently of whatever the package.json
+      # script happens to say next month.
+      # Scoped to tests/ deliberately, not the whole package. A repo-wide
+      # count would keep passing if tests/ were deleted and one stray
+      # *.test.ts happened to remain under src/, which is the exact
+      # "green for the wrong reason" this step exists to prevent. Both
+      # servers keep their suites in tests/; if that convention ever changes
+      # to colocated tests, change this with it, and it will fail loudly
+      # rather than quietly the day it does.
+      - name: Assert the suite is not empty
+        run: |
+          set -euo pipefail
+          count=$(find tests -type f \
+                    \( -name '*.test.ts' -o -name '*.spec.ts' \
+                       -o -name '*.test.js' -o -name '*.spec.js' \) \
+                    2>/dev/null | wc -l | tr -d ' ')
+          if [ "$count" -eq 0 ]; then
+            echo "::error::no test files under plugins/${{ matrix.server }}/mcp-server/tests/"
+            echo "Add a suite, or remove this matrix entry. Do not reintroduce --passWithNoTests."
+            exit 1
+          fi
+          echo "::notice::found $count test file(s)"
+
+      # Before the tests, not after: a type error gives a faster and far
+      # clearer failure than whatever it turns into at runtime.
+      #
+      # This is NOT `npm run build`. `build` and a bare `tsc --noEmit` both
+      # honour the base tsconfig's `include`, which covers `src/**` only, so
+      # type errors inside tests/ were invisible while vitest happily executed
+      # them. `typecheck` runs `tsc -p tsconfig.test.json`, a noEmit config
+      # that widens include to src + tests. It writes no dist/.
+      - name: Typecheck (src and tests)
+        run: npm run typecheck
+
+      - name: Run vitest
+        run: npm test

@@ -1,11 +1,11 @@
 ---
 description: "Compare drafted replies with actual responses to improve the style guide"
 argument-hint: "[--days N]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outlook-bridge__outlook_get_mail, mcp__plugin_mail_outlook-bridge__outlook_list_mail
 ---
 
 <objective>
-Standalone deep analysis of draft-vs-actual email comparison with a formal delta report and accuracy scoring. Use this for ad-hoc reviews or when you want a detailed report — the core learning loop already runs automatically at the start of every `/mail-review`.
+Standalone deep analysis of draft-vs-actual email comparison with a formal delta report and accuracy scoring. Use this for ad-hoc reviews or when you want a detailed report; the core learning loop already runs automatically at the start of every `/mail-review`.
 
 User request: $ARGUMENTS
 </objective>
@@ -20,10 +20,10 @@ Also optionally read `~/.claude/drafts/reviewed/` for historical reference.
 
 ### 2. Find Matching Sent Emails via outlook-bridge MCP
 
-Search Archive first (primary source — user regularly empties Sent Items, but all replies are CC'd to self and land in Archive). Use Sent Items only as a supplement for very recent emails (last 1-2 hours) that may not yet be in Archive.
+Search Archive first (primary source: the user regularly empties Sent Items, but all replies are CC'd to self and land in Archive). Use Sent Items only as a supplement for very recent emails (last 1-2 hours) that may not yet be in Archive.
 
 ```
-Tool: mcp__outlook-bridge__outlook_list_mail
+Tool: mcp__plugin_mail_outlook-bridge__outlook_list_mail
 Args: {
   "folder": "Archive",
   "top": 50,
@@ -34,11 +34,11 @@ Args: {
 Then for each candidate match, fetch the body:
 
 ```
-Tool: mcp__outlook-bridge__outlook_get_mail
+Tool: mcp__plugin_mail_outlook-bridge__outlook_get_mail
 Args: { "id": "<Id>", "body": "text" }
 ```
 
-- Filter the list result client-side to messages where `From.upn` matches the user's UPN
+- Filter the list result client-side to messages where `From.EmailAddress.Address` matches the user's own address, compared case-insensitively
 - Also call `outlook_list_mail` with `folder: "Sent Items"` for very recent emails (last 1-2 hours) not yet in Archive
 - Match by subject keywords from each pending draft
 - Match by approximate timestamp (within 72h of draft creation)
@@ -60,9 +60,9 @@ For each matched pair (draft vs actual), analyze:
 Classify each:
 
 - **SENT_AS_IS**: Draft sent unchanged (score: perfect)
-- **MODIFIED**: Altered tone/length/words (score: partial — learn from diff)
-- **REWRITTEN**: Substantially different (score: miss — analyze why)
-- **NOT_SENT**: No matching email found (score: triage error — should have been SKIP)
+- **MODIFIED**: Altered tone/length/words (score: partial, learn from diff)
+- **REWRITTEN**: Substantially different (score: miss, analyze why)
+- **NOT_SENT**: No matching email found (score: triage error, should have been SKIP)
 
 ### 4. Scan Organic Emails
 
@@ -88,15 +88,15 @@ For organic emails found in step 4, perform full style analysis:
 ### 5. Generate Delta Report
 
 ```
-STYLE DELTA REPORT — [date]
+STYLE DELTA REPORT: [date]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ACCURACY SCORE: X/10
 
 DRAFTS PROCESSED: N
   SENT_AS_IS:  X (perfect matches)
-  MODIFIED:    X (partial matches — learnings extracted)
-  REWRITTEN:   X (misses — significant learnings)
+  MODIFIED:    X (partial matches, learnings extracted)
+  REWRITTEN:   X (misses, significant learnings)
   NOT_SENT:    X (triage errors)
 
 PATTERNS LEARNED:
@@ -119,10 +119,10 @@ TRIAGE ACCURACY:
 **Before updating**, save a timestamped backup of the current style guide:
 
 ```bash
-cp plugins/mail/shared/style-guide.md ~/.claude/drafts/style-guide-backups/$(TZ='Europe/Athens' date '+%Y%m%d%H%M')_style-guide.md
+cp "${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md" ~/.claude/drafts/style-guide-backups/$(TZ='Europe/Athens' date '+%Y%m%d%H%M')_style-guide.md
 ```
 
-Update `shared/style-guide.md` with:
+Update `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` with:
 
 - New patterns discovered
 - Corrections to existing patterns
@@ -186,7 +186,7 @@ This builds a historical record of how drafting accuracy improves over time.
 /draft-review --recipient LASTNAME
 ```
 
-### Dry run — see report without updating style guide
+### Dry run: see report without updating style guide
 
 ```
 /draft-review --update false

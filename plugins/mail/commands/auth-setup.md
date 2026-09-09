@@ -1,31 +1,50 @@
 ---
-description: "First-run auth for the outlook-bridge MCP — sign in to M365, capture signature, ready in one command"
+description: "First-run auth for the outlook-bridge MCP: sign in to M365, capture signature, ready in one command"
 argument-hint: "[--force-reauth] [--skip-signature]"
-allowed-tools: Bash, Read, mcp__outlook-bridge__outlook_doctor, mcp__outlook-bridge__outlook_capture_signature
+allowed-tools: Bash, Read, mcp__plugin_mail_outlook-bridge__*
 ---
 
 # /mail:auth-setup
 
 One-command bootstrap for the `mail` plugin. Probes the bridge, drives Microsoft 365 OAuth via the bundled `outlook-cli` if needed, and captures the user's email signature for outgoing drafts.
 
-Replaces the legacy `installers/auth-wizard.sh` step. No global `npm link` required — uses the CLI bundled inside the MCP server's `node_modules`.
+Replaces the legacy `installers/auth-wizard.sh` step. No global `npm link` required; it uses the CLI bundled inside the MCP server's `node_modules`.
 
 ## Implementation
 
 Parse `$ARGUMENTS` for `--force-reauth` and `--skip-signature` flags.
 
-### Step 1 — Probe the bridge
+### Step 0: ensure the bundled MCP server is built
 
-Call `mcp__outlook-bridge__outlook_doctor` with no arguments. This also boots the MCP server, which on first run triggers `npm install` + `npm run build` inside `plugins/mail/mcp-server/` — guaranteeing the bundled `outlook-tool` CLI is present.
+The `outlook-bridge` server does not install itself on first use, because doing so inside the MCP
+startup handshake overruns Claude Code's timeout. Check and, if needed, build it once:
+
+```bash
+SERVER="${CLAUDE_PLUGIN_ROOT}/mcp-server"
+if [ ! -d "$SERVER/node_modules" ] || [ ! -f "$SERVER/dist/server.js" ]; then
+  (cd "$SERVER" && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci && npm run build)
+fi
+```
+
+This takes 30-60 seconds the first time and is instant afterwards. **Tell the user to restart
+Claude Code once it finishes**, because the MCP server is only started at session start; it will
+not pick up the new build in the current session.
+
+Re-run this step after any plugin update. An update installs into a new versioned directory,
+which starts empty.
+
+### Step 1: Probe the bridge
+
+Call `mcp__plugin_mail_outlook-bridge__outlook_doctor` with no arguments. Step 0 has already ensured the server is installed and built, so this boots it and reports its state. If the call fails because the server is not running, the Step 0 build has not been picked up yet: restart Claude Code and run this command again.
 
 Inspect the response:
 
 - `lastStartup.status === 'fail'` → STOP. The MCP itself is broken. Print the error and tell the user to read `mcp-server/.last-startup.json` or run `bash <plugin>/mcp-server/run.sh` manually. Do not proceed.
-- `cli.mode === 'path'` → WARN. The bridge is falling back to a global `outlook-cli` on PATH. Suggest the user run `(cd ~/.claude/plugins/marketplaces/plessas-marketplace/plugins/mail/mcp-server && npm install)` to switch to bundled mode, then re-run this command. Still proceed if user wants to keep going.
+- `cli.mode === 'path'` → WARN. The bridge is falling back to a global `outlook-cli` on PATH. Suggest the user run `(cd "${CLAUDE_PLUGIN_ROOT}/mcp-server" && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci && npm run build)` to switch to bundled mode, then re-run this command. Still proceed if user wants to keep going.
 - `auth.status === 'ok'` AND no `--force-reauth` flag → SKIP to Step 3 (signature). Print `outlook-cli already authenticated as <auth.account.upn> (<auth.hoursRemaining>h remaining)`.
 - Otherwise → continue to Step 2.
 
-### Step 2 — Drive OAuth
+### Step 2: Drive OAuth
 
 Resolve the SharePoint host. Priority order:
 
@@ -56,7 +75,7 @@ chmod 600 ~/.outlook-cli/config.json
 Find the bundled CLI and drive `login`:
 
 ```bash
-CLI="$HOME/.claude/plugins/marketplaces/plessas-marketplace/plugins/mail/mcp-server/node_modules/outlook-tool/dist/cli.js"
+CLI="${CLAUDE_PLUGIN_ROOT}/mcp-server/node_modules/outlook-tool/dist/cli.js"
 [ -f "$CLI" ] || { echo "Bundled CLI missing — run /mail:auth-setup again after the bridge finishes building."; exit 1; }
 
 node "$CLI" login --sharepoint-host "$HOST"
@@ -64,26 +83,26 @@ node "$CLI" login --sharepoint-host "$HOST"
 
 This opens a Playwright-driven browser window. The user signs in interactively; the token is captured to `~/.outlook-cli/`. Block until the command returns.
 
-Re-call `mcp__outlook-bridge__outlook_doctor`. If `auth.status` is still not `ok`, report the failure and stop — do not attempt signature capture against a broken auth.
+Re-call `mcp__plugin_mail_outlook-bridge__outlook_doctor`. If `auth.status` is still not `ok`, report the failure and stop; do not attempt signature capture against a broken auth.
 
-### Step 3 — Capture signature
+### Step 3: Capture signature
 
 Skip if `--skip-signature` was passed.
 
 If `~/.outlook-cli/signature.html` already exists (use Read or `[ -f ]`), report `Signature already present` and stop.
 
-Otherwise call `mcp__outlook-bridge__outlook_capture_signature` with no arguments. Report success or surface the error verbatim — signature capture is best-effort, never block on it.
+Otherwise call `mcp__plugin_mail_outlook-bridge__outlook_capture_signature` with no arguments. Report success or surface the error verbatim; signature capture is best-effort, never block on it.
 
-### Step 4 — Final report
+### Step 4: Final report
 
 Render a one-screen summary:
 
 ```
-mail plugin — auth setup complete
+mail plugin: auth setup complete
 
   MCP bridge   : <ok | warn>
   CLI install  : <bundled | path>  v<cliVersion>
-  Auth         : ok — <upn>  (<hoursRemaining>h remaining)
+  Auth         : ok, <upn>  (<hoursRemaining>h remaining)
   Signature    : <captured | already present | skipped | failed>
 
   Next: try /mail:inbox-briefing
@@ -92,8 +111,8 @@ mail plugin — auth setup complete
 ## Notes
 
 - **Idempotent**: re-running is safe. Default behavior skips already-completed steps. Pass `--force-reauth` to invalidate cached tokens and sign in fresh.
-- **No global install needed**: drives OAuth through the bundled CLI at `mcp-server/node_modules/outlook-tool/dist/cli.js`. If the user also wants a system-wide `outlook-cli` binary for ad-hoc terminal use, they can `npm install -g outlook-tool` separately — but it is not required for any plugin command.
+- **No global install needed**: drives OAuth through the bundled CLI at `mcp-server/node_modules/outlook-tool/dist/cli.js`. If the user also wants a system-wide `outlook-cli` binary for ad-hoc terminal use, they can `npm install -g outlook-tool` separately, but it is not required for any plugin command.
 - **Tenant persistence**: the SharePoint host is stored in `~/.outlook-cli/config.json` after first prompt; subsequent runs use it silently. Override at any time with `PLESSAS_SHAREPOINT_HOST=…` in the environment.
-- **Interactive OAuth**: `outlook-cli login` opens a real Chrome/Edge window via Playwright. This is intentional and not configurable — M365 auth requires an interactive sign-in. The user must complete sign-in in the browser; the slash command will block until they do.
+- **Interactive OAuth**: `outlook-cli login` opens a real Chrome/Edge window via Playwright. This is intentional and not configurable; M365 auth requires an interactive sign-in. The user must complete sign-in in the browser; the slash command will block until they do.
 - **Headless / SSH sessions** are not supported by Playwright's auth capture. Users on headless boxes must run this command on a machine with a GUI, then copy `~/.outlook-cli/` to the target machine.
 - This command replaces the `auth-wizard.sh` step from `installers/install.sh`. Once `/chat:auth-setup` ships too, the meta-installer can drop both its `install_cli_from_repo` block (CLIs are bundled) and `auth-wizard.sh` invocation (slash commands handle auth).

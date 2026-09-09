@@ -99,7 +99,7 @@ When comparing systemic banks in charts/tables, each bank **MUST** use its offic
 
 | Bank | Dimensions | Shape | Notes |
 |------|-----------|-------|-------|
-| NBG | 96x62px | **Oval** (1.55:1) | DO NOT resize to square — always preserve aspect ratio |
+| NBG | 96x62px | **Oval** (1.55:1) | DO NOT resize to square; always preserve aspect ratio |
 | Eurobank | 64x64px | Square | |
 | Piraeus Bank | 64x64px | Square | |
 | Alpha Bank | 64x64px | Square | |

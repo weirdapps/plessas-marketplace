@@ -2,9 +2,9 @@
 
 This document provides guidance on when to use PptxGenJS (JavaScript library) vs OOXML editing (direct XML manipulation) vs python-pptx (Python library).
 
-## CRITICAL RULE: Always Build From Scratch — Never Use NBG Templates
+## CRITICAL RULE: Always Build From Scratch, Never Use NBG Templates
 
-**Do NOT use `Presentation(template_path)` to inherit from NBG-Template-GR.pptx or any other template file.** Always create a blank presentation and add all elements manually:
+**Do NOT use `Presentation(template_path)` to inherit from any template file.** No template ships with this plugin, and the builder never opens one. Always create a blank presentation and add all elements manually:
 
 ```python
 # CORRECT — from scratch
@@ -25,12 +25,16 @@ const slide = pptx.addSlide();
 
 **What you add manually per slide**:
 
-- Title text box at standard position (0.36, 0.81)
+Every coordinate below is specified in [dimensions.md](dimensions.md). Read it there rather
+than from memory; this list is what to add, not where to put it.
+
+- Title text box ([Content Slide](dimensions.md#content-slide))
 - Eyebrow pill if needed (rounded rect #007B85 fill, 9pt white bold ALL CAPS)
-- NBG Greek logo image at bottom-left (0.374, 7.071, 0.822×0.236 for content; 0.374, 6.271, 2.191×0.630 for cover/dividers)
-- Page number at bottom-right (12.23, 7.16, 10pt #939793) — content slides only
+- NBG Greek logo image at bottom-left ([Logo Placement](dimensions.md#logo-placement-from-template))
+- Page number at bottom-right, 10pt #939793, content slides only
+  ([Page Number Placement](dimensions.md#page-number-placement))
 - Content shapes (charts, tables, text, cards, icons)
-- Back cover: centered NBG oval logo (5.44, 2.98, 2.45×1.54)
+- Back cover: centered NBG oval logo ([Back Cover Logo](dimensions.md#back-cover-logo---centered))
 
 This adds ~4 lines of code per slide but guarantees zero template artifacts.
 
@@ -76,7 +80,7 @@ pptx.layout = 'LAYOUT_WIDE';
 
 const slide = pptx.addSlide();
 slide.addText('Title', {
-  x: 0.37,
+  x: 0.374,
   y: 0.5,
   fontSize: 24,
   color: '003841',
@@ -211,11 +215,11 @@ Need a presentation?
 
 ### ⚠️ Setting `.top` on a placeholder can zero out its left/width
 
-When `python-pptx` sets `.top` on a placeholder shape, it creates an `<a:xfrm>` element in the slide XML. If the shape did **not** already have explicit `x` and `cx` values inherited at the slide level, python-pptx writes them as `0` — **overriding the layout's correct left/width with `left=0, width=0`**. Result: the text exists in the file but renders invisible (zero width, pushed to the left edge).
+When `python-pptx` sets `.top` on a placeholder shape, it creates an `<a:xfrm>` element in the slide XML. If the shape did **not** already have explicit `x` and `cx` values inherited at the slide level, python-pptx writes them as `0`, **overriding the layout's correct left/width with `left=0, width=0`**. Result: the text exists in the file but renders invisible (zero width, pushed to the left edge).
 
-**This affects any layout where you reposition placeholders programmatically** — divider subtitles are the canonical case (60pt titles wrap, you bump the subtitle down, subtitle disappears), but the same bug fires on any placeholder you `.top =` without first reading the layout-defined `x`/`cx`.
+**This affects any layout where you reposition placeholders programmatically**: divider subtitles are the canonical case (60pt titles wrap, you bump the subtitle down, subtitle disappears), but the same bug fires on any placeholder you `.top =` without first reading the layout-defined `x`/`cx`.
 
-**Fix**: use direct XML manipulation to set only `y`, while explicitly preserving the layout's `x` and `cx` values. Pattern (resynced 2026-05-24 from Tsopanakis's `pillar-presenter` skill — `github.com/thomastsop00/pillar-skills`):
+**Fix**: use direct XML manipulation to set only `y`, while explicitly preserving the layout's `x` and `cx` values. Pattern (resynced 2026-05-24 from Tsopanakis's `pillar-presenter` skill at `github.com/thomastsop00/pillar-skills`):
 
 ```python
 from pptx.util import Emu
@@ -254,7 +258,7 @@ def reposition_placeholder_y(shape, new_top_emu, preserve_left_emu, preserve_wid
     ext.set('cy', str(int(height_emu)))
 ```
 
-**Retroactive repair**: if you receive a deck where placeholders are already broken (left=0, width=0), call the same function — it overwrites the bad `<a:xfrm>` with correct values.
+**Retroactive repair**: if you receive a deck where placeholders are already broken (left=0, width=0), call the same function: it overwrites the bad `<a:xfrm>` with correct values.
 
 **Where this matters in NBG decks**:
 - Divider slides where the section title (60pt) wraps and shoves the subtitle off-canvas
