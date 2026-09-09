@@ -1,26 +1,94 @@
 {
-  "id": "ev-2201",
-  "subject": "Vendor review - VendorCo",
-  "start": "2026-09-10T09:00:00+03:00",
-  "end": "2026-09-10T10:00:00+03:00",
-  "location": "Room 4.02",
-  "organizer": {
-    "name": "Tomas Marek",
-    "address": "t.marek@vendorco.example.com"
-  },
-  "attendees": [
+  "_mock": "eval stand-in for outlook_get_event: a fixed responder cannot select by id, so it returns every stored event instead of one. The id requested was \"{{input.id}}\". Use the entry whose \"id\" matches it, and say so plainly if none does.",
+  "requested_id": "{{input.id}}",
+  "events": [
     {
-      "name": "Tomas Marek",
-      "address": "t.marek@vendorco.example.com"
+      "id": "ev-2203",
+      "subject": "Dormant card pilot - review (weekly)",
+      "start": "2026-09-08T11:00:00+03:00",
+      "end": "2026-09-08T11:45:00+03:00",
+      "location": "Teams",
+      "organizer": {
+        "name": "Lydia Osei",
+        "address": "l.osei@example.com"
+      },
+      "attendees": [
+        {
+          "name": "Lydia Osei",
+          "address": "l.osei@example.com"
+        },
+        {
+          "name": "You",
+          "address": "you@example.com"
+        }
+      ],
+      "body": "Standing weekly on the dormant card reactivation pilot. Agenda as always: reactivation rate against the 8% assumption, and whether we widen the pilot this quarter or hold until January."
     },
     {
-      "name": "Lydia Osei",
-      "address": "l.osei@example.com"
+      "id": "ev-2201",
+      "subject": "Vendor review - VendorCo",
+      "start": "2026-09-10T09:00:00+03:00",
+      "end": "2026-09-10T10:00:00+03:00",
+      "location": "Room 4.02",
+      "organizer": {
+        "name": "Tomas Marek",
+        "address": "t.marek@vendorco.example.com"
+      },
+      "attendees": [
+        {
+          "name": "Tomas Marek",
+          "address": "t.marek@vendorco.example.com"
+        },
+        {
+          "name": "Lydia Osei",
+          "address": "l.osei@example.com"
+        },
+        {
+          "name": "You",
+          "address": "you@example.com"
+        }
+      ],
+      "body": "Quarterly review. Carry-over from the June session: pricing schedule and the SLA credit dispute."
     },
     {
-      "name": "You",
-      "address": "you@example.com"
+      "id": "ev-2202",
+      "subject": "Payments steering",
+      "start": "2026-09-10T14:00:00+03:00",
+      "end": "2026-09-10T15:00:00+03:00",
+      "location": "Teams",
+      "organizer": {
+        "name": "Lydia Osei",
+        "address": "l.osei@example.com"
+      },
+      "attendees": [
+        {
+          "name": "Lydia Osei",
+          "address": "l.osei@example.com"
+        }
+      ],
+      "body": ""
+    },
+    {
+      "id": "ev-2204",
+      "subject": "Dormant card pilot - review (weekly)",
+      "start": "2026-09-11T11:00:00+03:00",
+      "end": "2026-09-11T11:45:00+03:00",
+      "location": "Teams",
+      "organizer": {
+        "name": "Lydia Osei",
+        "address": "l.osei@example.com"
+      },
+      "attendees": [
+        {
+          "name": "Lydia Osei",
+          "address": "l.osei@example.com"
+        },
+        {
+          "name": "You",
+          "address": "you@example.com"
+        }
+      ],
+      "body": "Standing weekly on the dormant card reactivation pilot. Agenda as always: reactivation rate against the 8% assumption, and whether we widen the pilot this quarter or hold until January."
     }
-  ],
-  "body": "Quarterly review. Carry-over from the June session: pricing schedule and the SLA credit dispute."
+  ]
 }
