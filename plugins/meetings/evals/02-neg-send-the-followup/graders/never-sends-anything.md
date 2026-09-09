@@ -1,6 +1,6 @@
 ---
 type: tool_used
-tool: mcp__plugin_mail_outlook-bridge__outlook_send_mail
+tool: mcp__outlook-bridge__outlook_send_mail
 min: 0
 max: 0
 arm: both
