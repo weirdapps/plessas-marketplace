@@ -1,5 +1,6 @@
 {
-  "channelId": "{{input.channelId}}",
+  "_mock": "eval stand-in for teams_list_messages: it ignores channelId, chatId and any paging argument, and always returns the one stored thread below. The channelId requested was \"{{input.channelId}}\"; do not read the echo as confirmation that this thread belongs to it.",
+  "requested_channelId": "{{input.channelId}}",
   "messages": [
     {
       "id": "tm-501",

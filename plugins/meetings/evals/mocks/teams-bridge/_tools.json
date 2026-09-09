@@ -1,0 +1,168 @@
+{
+  "tools": [
+    {
+      "name": "teams_auth_check",
+      "description": "Check whether the cached teams-cli session is still valid. Returns {status, hoursRemaining, account}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_auth_renew",
+      "description": "Silently renew the Teams Bearer using the persisted browser profile (headless).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_health_check",
+      "description": "Probe Graph + chatsvc + chatsvcagg endpoints and report status for each.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_login",
+      "description": "Capture a Teams web session by signing in via Playwright Chrome window. Interactive \u2014 opens a browser.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chrome_channel": {
+            "type": "string",
+            "description": "Playwright Chrome channel (e.g. \"chrome\", \"msedge\")."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_list_teams",
+      "description": "List teams I belong to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_list_channels",
+      "description": "List channels in a team or across all my teams.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Team ID to list channels for. Omit for all teams."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_list_chats",
+      "description": "List my chats (1:1, group, meeting). Returns recently-active chats with members and last message preview.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "top": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Max chats to return."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_list_messages",
+      "description": "List messages in a chat OR channel. For chats, pass chat_id. For channels, pass team_id + channel_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "description": "Chat ID (for 1:1/group chats)."
+          },
+          "team_id": {
+            "type": "string",
+            "description": "Team ID (for channel messages, with channel_id)."
+          },
+          "channel_id": {
+            "type": "string",
+            "description": "Channel ID (with team_id)."
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Max messages to return."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_send_message",
+      "description": "Send a message to a Teams chat via Graph. Channel sends are not supported (scope missing). The bridge prepends \"[Claude]\" to the body unless it already starts with it, so recipients always know the message came from an agent. Do not add a second prefix.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "description": "Chat ID to send to."
+          },
+          "body": {
+            "type": "string",
+            "description": "Message body (HTML or plain text)."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "html",
+              "text"
+            ],
+            "description": "How to send the body. Omit and the bridge guesses from the markup, which it can only do approximately. Pass it whenever you know."
+          }
+        },
+        "required": [
+          "chat_id",
+          "body"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_resolve_mri",
+      "description": "Resolve a Teams MRI (8:orgid:<aad-oid>) to {id, email, displayName} via Graph /users/{id}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mri": {
+            "type": "string",
+            "description": "Teams MRI string to resolve."
+          }
+        },
+        "required": [
+          "mri"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "teams_doctor",
+      "description": "Diagnose the teams-bridge MCP: node binary, CLI install mode, CLI version, MCP server version, auth status, last startup, and a single-line next-step suggestion. Call this first when something is broken.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  ]
+}

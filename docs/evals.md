@@ -242,3 +242,227 @@ with exit 2, and the overrun is bounded to a single agent run.
   `--no-scaffold`, and no case ships a `scaffold_script`. Keep it that way in CI.
 - **`results/` accumulates.** Each run writes a timestamped directory with an
   HTML report. Prune it; it is not source.
+
+---
+
+## Gotchas
+
+Each of these cost real money to discover. Verified against Claude Code 2.1.266
+on 2026-09-09 unless noted.
+
+### The plugin may not be loaded at all, and nothing on the surface says so
+
+`plugin validate --strict`, `plugin details` and the eval's own banner
+(`Plugin under test: "meetings" version "1.1.0" at ...`) all report a healthy
+plugin that the runtime went on to **disable**. They read the manifest; they do
+not observe the session.
+
+**The only thing that tells the truth is line 1 of `out/trace.jsonl`**, the
+`system/init` event. Check two fields:
+
+```bash
+python3 -c 'import json;o=json.loads(open("<temp>/out/trace.jsonl").readline());
+print(o["plugins"], o.get("plugin_errors"))'
+```
+
+`plugins: []` means the plugin did not load, and every "with" arm number in that
+run is a bare model. Read it on **every** run before reading any score.
+
+### A hard `dependencies` entry makes a plugin unevaluable in isolation
+
+The scaffold loads the target plugin and nothing else, and the sandbox replaces
+`HOME`, so user-scope installed plugins are invisible inside it. A
+`"dependencies": ["mail"]` in the manifest therefore can never be satisfied:
+
+```json
+{"plugin": "meetings@inline", "type": "dependency-unsatisfied",
+ "message": "Dependency \"mail\" is not installed ..."}
+```
+
+There is no `plugin eval` flag that adds a second plugin to the arm, and the one
+escape hatch that looks like it should work does not. A case may declare
+`plugins: [...]` naming extra plugin directories, but they are fenced:
+
+```
+plugins entry "../../../mail" resolves to .../plugins/mail, outside the
+containment root .../plugins/meetings (the enclosing plugin for a target inside
+one you control, else the directory you ran 'claude plugin eval' against).
+Only plugins under it can be loaded from case.yaml.
+```
+
+When the target *is* a plugin directory, the containment root is that plugin, so
+a sibling under `plugins/` can never be added. Relative, absolute and
+repo-rooted spellings all fail; the first three fail as "does not exist" and
+only a path that actually resolves reports the containment error.
+
+Note this also disables the plugin's skills, so its `tool_used: Skill` grader
+reports `Skill called 0x` while the score table still prints a plausible-looking
+number.
+
+**Do not "fix" this by deleting the `dependencies` entry.** That reads like the
+obvious unblock and it is the wrong trade. Per the plugin-dependencies reference,
+the key is not a load-time gate in production. It is what makes Claude Code
+resolve and install `mail` automatically when someone installs `meetings`, enable
+it transitively at the same scope, and refuse `claude plugin disable mail` while
+`meetings` still needs it (the error even prints the chained command to disable
+both in the right order). Removing it degrades every real install so that one
+harness can print a number.
+
+The supported way to satisfy a dependency from a local checkout is to pass both
+plugins on one command line:
+
+```bash
+claude --plugin-dir ./plugins/mail --plugin-dir ./plugins/meetings
+```
+
+"The local copy of the dependency satisfies your plugin's dependency entry, even
+when the entry names a marketplace." `claude plugin eval` does not expose
+`--plugin-dir`, so that route is open to a hand-driven session and closed to this
+harness.
+
+The honest status is therefore: **a plugin with a `dependencies` entry is not
+measurable by `claude plugin eval` today. That is a harness gap, not a defect in
+the plugin.** Keep the entry, keep the cases (they are correct, and they will
+measure the moment the harness can load a sibling), and do not read the 0.00 as a
+result.
+
+### Mocks are served in BOTH arms
+
+A mocked MCP server is registered as a standalone stand-in, independent of the
+plugin, and appears in the `without` arm too. So the ablation never measures
+"has tools versus has no tools", only the plugin's own components. Combined
+with the point above, a disabled plugin makes the two arms byte-identical and
+every Δ is sampling noise.
+
+Two consequences of the standalone registration:
+
+- **Inside the sandbox the mocked tools are named bare**, `mcp__<server>__<tool>`
+  (for example `mcp__outlook-bridge__outlook_list_mail`), not the
+  `mcp__plugin_<plugin>_<server>__<tool>` form a plugin-bundled server gets in a
+  normal session. That is what `system/init` lists and what the calls are logged
+  under. The runner has been seen resolving a grader's bare `tool:` both ways:
+  the 2026-09-09T00-26 `meetings` aggregate recorded it expanded to
+  `mcp__plugin_mail_outlook-bridge__outlook_send_mail`, later runs the same day
+  recorded it bare. An expanded name can never match a bare trace, and a
+  `min: 0, max: 0` guard that never matches passes silently. Do not assume a
+  passing guard fired: cross-check `out/mock-calls.jsonl`, which logs the tool
+  name and the input of every mock call actually made.
+- The runner prints `not granted (missing --allow-tools grant, or a malformed
+  entry): mcp__<server>__*` for the case's `allowed_tools` entry even though the
+  mocked tools are served anyway. Alarming, harmless.
+
+### `--runs`, and why `runsPerCase` in the JSON cannot be trusted
+
+`--runs` defaults to the case's `runs:` value, falling back to 3, so a case that
+says `runs: 1` runs **once** unless you override it. Always pass `--runs`
+explicitly.
+
+`aggregate-result.json` reports the count in a field called `runsPerCase`, and
+that field has been observed disagreeing with reality in both directions on
+cases whose frontmatter says `runs: 1`:
+
+| Invocation | `runsPerCase` | entries in `arms.with` |
+| --- | --- | --- |
+| 2026-09-09T00-26, cases 01/02 | 3 | 1 |
+| 2026-09-09 measurement, `--runs 3` | 1 | 3 |
+
+Count `len(arms.with)`. Never read `runsPerCase`.
+
+### `--case` takes `*` and nothing else
+
+`--case '0[35]*'` matches zero cases and reports exactly what a deliberately
+bogus glob reports:
+
+```
+No eval cases found matching --case "0[35]*" under .../plugins/meetings.
+```
+
+Character classes, braces and alternation are not honoured. For a subset, run
+one invocation per case, or use `--tag` (repeatable) if the tags separate them.
+
+### Always pass `--keep-temp`
+
+Without it the sandbox is deleted and all the CLI retains is `tracePath`,
+pointing at a directory that no longer exists. With it you get:
+
+- `out/trace.jsonl`, line 1 for plugin load state and the rest for the transcript
+- `out/mock-calls.jsonl`, one line per mock call with its **input arguments**,
+  the fastest way to see what the run actually asked each tool for
+- `out/mocks/`, the stand-in config that was generated
+
+Kept directories are sealed at mode `000`. Open with
+`chmod 700 <dir> <dir>/sealed`, and do not run `git` anywhere inside one.
+
+### `~/Downloads` does not exist for a grader
+
+The run's cwd is a sandboxed temp dir under a replaced `HOME`. A skill that
+writes to `~/Downloads/...` succeeds, into the sandbox's `HOME`, and a
+`file_exists` grader pointed at the real path finds nothing. Grade the write
+with `tool_used: Write` plus a `regex` over `target: trace` for the filename
+pattern, which is what `excel/03` does.
+
+### `tool_used: Skill` is an indicator, not a score
+
+Under `--ablation with-without` it is marked `with-only` and excluded from both
+arms, because the skill cannot fire in the arm without the plugin. Read its
+explanation string (`Skill called 0x`), never its contribution to the number,
+and never let it be a case's only grader. Every other grader type defaults to
+`arm: both` and **is** scored, including `llm`.
+
+### Environment: two exports, both mandatory
+
+```bash
+export CLAUDE_CODE_WALNUT_SPIRE=1
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/application_default_credentials.json"
+```
+
+The first un-gates the early-access command on a Vertex client; without it the
+command prints one line and exits 0. The second survives the sealed `HOME`,
+which is where `gcloud`'s ADC otherwise goes missing. Neither can live in a
+repo-local `.claude/settings.json`.
+
+---
+
+## Writing mocks that do not lie
+
+A `fixed` responder returns one canned body for **every** call. `{{input.<field>}}`
+interpolates a field of the call into that body, and that is the whole of its
+input-awareness: it cannot select a different record per id, folder or date
+range.
+
+The failure mode this creates is worse than returning nothing. Echoing
+`{{input.id}}` into a record that is *not* the requested one stamps the
+requested id onto someone else's message, and the run reads the wrong body
+believing it is the right one. `outlook_get_mail` did exactly that here: every
+call came back as the Anna Vidal audit mail wearing whatever id had been asked
+for.
+
+Two ways out:
+
+1. **Over-return, and say so.** Return the whole store and open the body with a
+   `_mock` field stating which arguments the stand-in ignores and what was
+   actually requested. The model filters client-side, and it can see that the
+   result is not a selection. Deterministic and free. This is what the
+   `meetings` mocks do, and a run was observed reading the disclosure and
+   correctly discounting the result.
+2. **`type: agent` in `mocks/<server>/_server.md`**, with `tools: [...]` and a
+   prose description of the fake world. An LLM plays the server and *can*
+   dispatch on input. It costs one model call per tool call (budget
+   `4 × max_turns`), and it can invent, which is fatal for any grader that tests
+   whether the run invented anything. Answers can be pinned into
+   `<eval dir>/.replay/` for determinism. A per-tool `<tool>.md` overrides
+   `_server.md` for that tool, so delete the file for any tool the agent should
+   answer.
+
+Also: **save `_tools.json`.** Without `mocks/<server>/_tools.json` the runner
+warns that the tools are `served with a permissive schema and no description`,
+so the model sees a name and nothing else. For a server in this repo you can
+capture the real `tools/list` with no credentials by driving
+`mcp-server/run.sh` over stdio with an `initialize` + `tools/list` exchange.
+
+**A mock is a fixture, and a fixture that contradicts the case is a broken
+test.** Before trusting a low score, check that the corpus actually contains
+what the prompt refers to: `meetings/05` tested tense ambiguity about a meeting
+that did not exist in the calendar, and `meetings/04` asked for the user's own
+sent mail from a store whose `outlook_list_folders` advertised a Sent Items
+folder that no tool could return anything from.
