@@ -155,11 +155,12 @@ class ValidationResult:
 
     `severity` defaults to "error", which is every check that predates the 2026
     executive-presentation set, so none of them changes behaviour. A "warning"
-    check reports without blocking the build. Three of the new checks are
-    warnings, each for a stated reason in its own docstring: a real
-    false-positive rate the check cannot design away, or a fix that does not
-    exist in this tree yet. A warning that could be an error is a bug; so is an
-    error that fires on every deck with no way to satisfy it.
+    check reports without blocking the build. Two of the new checks are
+    warnings, both for the same stated reason in their own docstrings: a real
+    false-positive rate the check cannot design away. Exhibit Sources was the
+    third and is now an error, because the tree gained the `content.source`
+    field and the renderer it needed. A warning that could be an error is a bug;
+    so is an error that fires on every deck with no way to satisfy it.
     """
 
     def __init__(
@@ -1478,16 +1479,22 @@ def check_competitor_banks(unpacked_dir: Path) -> ValidationResult:
     if not slides_dir.exists():
         return ValidationResult("Bank Branding", True, "No slides folder found")
 
-    # Detect which bank names appear in the presentation
+    # Detect which bank names appear in the presentation, source footnotes
+    # excluded. A source line is provenance, not a competitor mention: "Source:
+    # NBG MIS" says where the bank's own number came from. Counting it tips any
+    # deck that names one competitor in its body into a two-bank comparison and
+    # demands both brands' colours and logos, for a reason nobody reading the
+    # slide would find. Matched on SOURCE_PREFIX, this file's own definition of
+    # a source line, so the exclusion covers a hand-authored footnote as well as
+    # one nbg_build drew. Both it and _shape_texts are defined further down;
+    # module globals resolve when this runs, not when it is read.
     banks_found = set()
     for slide_file in slides_dir.glob("slide*.xml"):
-        tree = ET.parse(slide_file)
-        root = tree.getroot()
-        all_text = " ".join(
-            t.text.strip()
-            for t in root.findall(f".//{{{NAMESPACES['a']}}}t")
-            if t.text and t.text.strip()
-        ).lower()
+        root = ET.parse(slide_file).getroot()
+        # Per shape rather than per a:t, which is what makes the exclusion
+        # possible at all. _shape_texts walks p:sp and a:tc, so table cells are
+        # still read; the old flat a:t walk had no shape to attribute text to.
+        all_text = " ".join(t for t in _shape_texts(root) if not SOURCE_PREFIX.match(t)).lower()
         for alias, bank_key in BANK_ALIASES.items():
             if alias in all_text:
                 banks_found.add(bank_key)
@@ -1792,15 +1799,22 @@ def check_exhibit_sources(unpacked_dir: Path) -> ValidationResult:
     Exhibits are found structurally, not by shape name: a chart is a `c:chart`
     reference inside the slide's graphic frame, a table is an `a:tbl`.
 
-    SEVERITY IS WARNING, and this is the one place in this file where that is a
-    statement about the repo rather than about the rule. The rule deserves to
-    block. It cannot yet, for two reasons that both sit outside this tool: none
-    of the three shipped examples in `plugins/decks/examples/` carries source
-    data, and nbg_build has no renderer for a `content.source` field. An error
-    here would fail every build in the repo with no in-tree fix, and a check
-    that cannot be satisfied gets switched off rather than obeyed. Add the field
-    to the examples and the renderer to the builder, then change `severity`
-    below to "error".
+    SEVERITY IS ERROR. It was a warning until 2026-09-09, not because the rule
+    was soft but because nothing in this tree could satisfy it: no example
+    carried source data and nbg_build had no renderer for one. Both halves now
+    exist. A deck spec declares `content.source` on a chart or table slide and
+    `nbg_build._add_source_line` draws it as an 11pt footnote on the content
+    floor, so an unsourced exhibit is a fixable failure rather than a permanent
+    warning nobody reads.
+
+    What the examined count does and does not prove. An exhibit the builder
+    renders from a sourced spec passes here by construction, so a green tick on
+    a builder-made deck is weak evidence on its own. The check earns its keep on
+    decks that did not come from a spec: /redesign-deck and /polish-slides open
+    a PPTX somebody else made, and an undated or missing source in one of those
+    is exactly the defect. The three test_exhibit_sources_* cases in
+    test_nbg_build.py hold it falsifiable in both directions, and a zero
+    examined count still reports as unverified rather than clean.
     """
     slides_dir = unpacked_dir / "ppt" / "slides"
     if not slides_dir.exists():
@@ -1837,14 +1851,12 @@ def check_exhibit_sources(unpacked_dir: Path) -> ValidationResult:
             False,
             f"{len(problems)} of {examined} exhibit slide(s) unsourced or undated",
             problems[:10],
-            severity="warning",
         )
     return ValidationResult(
         "Exhibit Sources",
         True,
         f"{examined} exhibit slide(s), all carrying a dated source line",
         examined=examined,
-        severity="warning",
     )
 
 

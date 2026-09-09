@@ -44,8 +44,17 @@ done
 echo
 
 # MCP servers built?
-[ -f "$INSTALL_DIR/plugins/mail/mcp-server/dist/server.js" ] && check "outlook-bridge MCP built" "ok" || check "outlook-bridge MCP NOT built" "fail"
-[ -f "$INSTALL_DIR/plugins/chat/mcp-server/dist/server.js" ] && check "teams-bridge MCP built" "ok" || check "teams-bridge MCP NOT built" "fail"
+# Either artefact counts as built, and the bundle is now the normal one: run.sh prefers
+# bundle/server.mjs and only falls back to dist/. Checking dist/ alone reported "NOT built"
+# on a perfectly healthy fresh clone, because dist/ is gitignored and nothing rebuilds it.
+for _s in mail:outlook-bridge chat:teams-bridge; do
+  _dir="$INSTALL_DIR/plugins/${_s%%:*}/mcp-server"
+  if [ -f "$_dir/bundle/server.mjs" ] || [ -f "$_dir/dist/server.js" ]; then
+    check "${_s##*:} MCP built" "ok"
+  else
+    check "${_s##*:} MCP NOT built" "fail"
+  fi
+done
 
 echo
 

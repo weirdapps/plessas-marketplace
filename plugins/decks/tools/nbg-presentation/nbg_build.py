@@ -482,6 +482,120 @@ def _add_caption(slide, content, bumper):
     return top + CAPTION_SHIFT, height - CAPTION_SHIFT
 
 
+# The exhibit source footnote. Type is 11pt Aptos in Caption Gray #5A5F5A, per
+# brand-system/typography.md "Table Notes (footnote)" under Charts & Tables,
+# which is the row scoping a note attached to an exhibit; Standard #11 puts the
+# floor for "Footnotes, sources" at the same 11pt.
+#
+# Geometry: every exhibit body ends at 6.30" (1.3 + 5.0 with a bumper, 1.1 + 5.2
+# without, and a caption shifts both halves by the same 0.4"), and the content
+# floor is 6.85". The line sits in that band, so no exhibit gives up height for
+# its own provenance. At 0.25" tall it is also under the 0.3" threshold
+# check_content_safe_zones uses to exempt chrome, and below the 6.5" line
+# check_content_spacing uses to exclude the footer, so it is never mistaken for
+# the first content element on the slide.
+SOURCE_Y = 6.55
+SOURCE_H = 0.25
+SOURCE_SIZE = 11
+# What nbg_validate.SOURCE_PREFIX recognises, lowercased, so a spec that wrote
+# the whole sentence out is not handed a second "Source:". Only the colon form
+# is listed: the validator also takes a dash, and prepending to one of those
+# costs a doubled prefix rather than a failed check.
+SOURCE_PREFIXES = ("source:", "sources:", "πηγή:", "πηγές:")
+
+
+def _source_line(content):
+    """Compose `content.source` into a footnote string. None when there is none.
+
+    The canonical shape is a mapping, because check_exhibit_sources demands two
+    separate things of an exhibit footnote and naming them apart is what makes
+    the second one hard to forget:
+
+        source:
+          name: "NBG MIS"
+          as_of: "30 June 2026"
+          basis: "constant currency"   # optional definitional caveat
+
+    `name` and `as_of` are the two halves the check tests for: where the number
+    came from, and when it was true. `basis` is the third thing a real board
+    exhibit footnote carries, the caveat deciding whether two figures are
+    comparable at all, and it is optional.
+
+    A plain string is taken as the finished line, so a spec that writes the
+    sentence out by hand builds rather than raising AttributeError on `.get`.
+    """
+    source = content.get("source")
+    if not source:
+        return None
+
+    if isinstance(source, str):
+        text = source.strip()
+    else:
+        name = str(source.get("name") or "").strip()
+        as_of = str(source.get("as_of") or "").strip()
+        basis = str(source.get("basis") or "").strip()
+        if not name:
+            return None
+        text = f"{name}, as of {as_of}" if as_of else name
+        if basis:
+            text += f"; {basis}"
+
+    if not text:
+        return None
+    return text if text.lower().startswith(SOURCE_PREFIXES) else f"Source: {text}"
+
+
+def _add_source_line(slide, content):
+    """Draw the exhibit's source footnote. Raises on a source with no as_of.
+
+    An unsourced number in a board pack cannot be re-derived, cannot be
+    challenged in the room and cannot be defended to a supervisor afterwards, so
+    check_exhibit_sources fails the build on one. A missing `content.source` is
+    left to it: the warning below names the slide, which the validator's slide
+    number on its own does not, and the build then fails on the deck.
+
+    A `source` mapping that omits `as_of` is different, and it stops the build
+    here. Be strict where there is structure, lenient where there is only
+    rendered text: this function can see the mapping, so it can tell a missing
+    field from a badly worded sentence. The validator, reading a finished PPTX,
+    can only search the line for a four-digit year, which a year inside a
+    `basis` caveat ("restated for the 2025 segment change") satisfies without
+    dating anything. Tightening the validator instead would false-fail
+    hand-authored and third-party decks this builder never made, so the two
+    halves are deliberately asymmetric: airtight on the path that produces
+    almost every deck, a reasonable backstop on the ones it does not.
+
+    A plain-string `source` carries no structure to check and is taken as
+    written, on the same principle.
+    """
+    text = _source_line(content)
+    if not text:
+        print(
+            f"  WARNING: exhibit slide '{content.get('title', '')[:40]}' has no "
+            f"content.source, so nbg_validate.py will fail the build"
+        )
+        return
+
+    source = content.get("source")
+    if isinstance(source, dict) and not str(source.get("as_of") or "").strip():
+        raise ValueError(
+            f"exhibit slide {content.get('title', '')[:60]!r} declares content.source "
+            f"with no as_of date; a source that does not say when the figure was true "
+            f"is half a source"
+        )
+
+    _add_textbox(
+        slide,
+        GUTTER,
+        SOURCE_Y,
+        CONTENT_W,
+        SOURCE_H,
+        text,
+        font_size=SOURCE_SIZE,
+        color=RGBColor(0x5A, 0x5F, 0x5A),
+    )
+
+
 def _numeric_columns(header_row, body_rows):
     """Columns whose body cells are all numeric. Those get right-aligned."""
     width = max((len(r) for r in [header_row, *body_rows] if r), default=0)
@@ -546,6 +660,7 @@ def create_table_slide(prs, content, table_spec, page_number):
         )
 
     table_y, available = _add_caption(slide, content, bumper)
+    _add_source_line(slide, content)
 
     headers = list(table_spec.get("headers") or [])
     body_rows = [list(r) for r in (table_spec.get("rows") or [])]
@@ -647,6 +762,7 @@ def create_chart_slide(
         )
 
     body_y, body_h = _add_caption(slide, content, bumper)
+    _add_source_line(slide, content)
 
     # Build chart data
     chart_data = CategoryChartData()
@@ -748,6 +864,7 @@ def create_waterfall_slide(prs, content, page_number):
         )
 
     body_y, body_h = _add_caption(slide, content, bumper)
+    _add_source_line(slide, content)
 
     # Waterfall data: list of {label, value} items
     # First and last are totals, middle items are deltas
@@ -1465,6 +1582,12 @@ presentation:
           - "Second bullet point"
 
     - type: chart
+      content:
+        title: "Action title that tells the story"
+        source:            # required on every chart and table slide
+          name: "NBG MIS"
+          as_of: "30 June 2026"
+          basis: "constant currency"   # optional caveat
       chart:
         type: bar
         data:

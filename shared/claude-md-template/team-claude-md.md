@@ -92,7 +92,7 @@ textutil -convert rtf input.html -output /tmp/clip.rtf && osascript -e 'set the 
 ## NBG Terminology
 
 - **Direct reports** (in NBG context): the people who report directly to a given executive. Does NOT include Deputies.
-- **Leadership team**: All direct reports + Deputies + sector heads + υδντές.
+- **Leadership team**: All direct reports + Deputies + sector heads + υποδιευθυντές.
 - Deputies are part of the leadership team under their respective divisions, not direct reports.
 
 In Greek: use **"Εθνική Τράπεζα"** (NOT "Εθνική Τράπεζα της Ελλάδος"). In English: **"National Bank of Greece"**.
@@ -120,7 +120,10 @@ In Greek: use **"Εθνική Τράπεζα"** (NOT "Εθνική Τράπεζ�
 - **outlook-cli auth**: If a tool returns `auth_required`, run `outlook-cli login --sharepoint-host <your-tenant>.sharepoint.com`. The auth wizard prompts for your tenant on first run and persists it to `~/.outlook-cli/config.json`.
 - **outlook-cli concurrency**: For batch get-mail bursts, cap at concurrency=2 to avoid M365 ApplicationThrottled (HTTP 429).
 - **WebSearch**: works on current Claude models. Call the `WebSearch` tool directly. Do NOT spawn an `Agent` with a pinned `model:` as a workaround: an agent definition's `model:` takes precedence over the subagent model your organisation has configured, so pinning one can route the child to a model your deployment's region does not serve, and it will then produce nothing. Leave `model` unset so the configured default applies.
-- **LLM calls in code**: All LLM-invoking code MUST go through the local `claude` CLI via `subprocess.run(["claude", "--model", "sonnet", "--print"], input=prompt, ...)`, which routes via Vertex AI on NBG-managed machines (billed to NBG). NEVER add the `anthropic` Python SDK to dependencies, NEVER write `from anthropic import Anthropic`, NEVER `curl https://api.anthropic.com`. Default model: Sonnet (configurable). Mock `subprocess.run` in tests, not the SDK.
+- **LLM calls in code**: All LLM-invoking code MUST go through the local `claude` CLI via `subprocess.run(["claude", "--print"], input=prompt, ...)`, which routes via Vertex AI on NBG-managed machines (billed to NBG). NEVER add the `anthropic` Python SDK to dependencies, NEVER write `from anthropic import Anthropic`, NEVER `curl https://api.anthropic.com`. Do not pass `--model`: let the CLI use whatever model the deployment has configured. Naming one
+  here pins a template to a model that will be superseded, and on a Vertex or Bedrock setup a bare
+  alias can resolve to something the configured region does not serve, which fails silently.
+  Mock `subprocess.run` in tests, not the SDK.
 
 ---
 

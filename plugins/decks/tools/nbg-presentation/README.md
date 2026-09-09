@@ -82,6 +82,10 @@ slides:
     content:
       title: "Digital channel adoption"
       description: "Digital transaction share by segment"
+      source:
+        name: "NBG MIS"
+        as_of: "31 December 2025"
+        basis: "excludes cash advances"   # optional
     chart:
       type: bar          # bar | bar_stacked | bar_horizontal | line | doughnut | pie
       data:
@@ -95,6 +99,9 @@ slides:
   - type: tables/half_page
     content:
       title: "Key Metrics"
+      source:
+        name: "Published peer disclosures"
+        as_of: "31 December 2025"
     table:
       headers: ["Metric", "NBG", "Eurobank", "Piraeus", "Alpha"]
       rows:
@@ -107,6 +114,33 @@ slides:
 
 `content.description`, where present, renders as a 12pt caption under the title and pushes the body
 down; it is not decoration and it is not dropped.
+
+**`content.source` is required on every chart and table slide, and the build fails without it.** An
+unsourced number in a board pack cannot be re-derived, cannot be challenged in the room and cannot
+be defended to a supervisor afterwards, so `nbg_validate.py`'s Exhibit Sources check is an error
+rather than a warning. The field is a mapping:
+
+| Key | Required | What it carries |
+|---|---|---|
+| `name` | yes | Where the number came from |
+| `as_of` | yes | When it was true. A source without one is only half a source |
+| `basis` | no | The definitional caveat: constant currency, restated, scope |
+
+It renders as a single 11pt Caption Gray footnote on the content floor at y=6.55", below the
+exhibit, per `brand-system/typography.md` ("Table Notes (footnote)") and Standard #11's 11pt floor
+for sources. `source: "Source: NBG MIS, 30 June 2026"` is accepted as a plain string and taken as
+the finished line, but the mapping is the shape to write: it is what makes the as-of date hard to
+forget.
+
+**A `source` mapping with no `as_of` fails the build here, before the validator sees the deck.**
+The two halves are deliberately asymmetric. `nbg_build` can read the mapping, so it can tell a
+missing field from a badly worded sentence and is strict. `nbg_validate` reads a finished PPTX and
+can only search the rendered line for a four-digit year, which a year inside a `basis` caveat
+("restated for the 2025 change") satisfies without dating anything. Tightening the validator to
+match would false-fail hand-authored and third-party decks this builder never made, so it stays
+lenient on purpose: airtight on the path that produces almost every deck, a reasonable backstop on
+the ones it does not. A plain-string `source` carries no structure to check and is taken as written,
+on the same principle.
 
 Note on the example above: a slide that names two or more of the four Greek systemic banks trips the
 Bank Branding check unless each bank's official colour and logo are present. That check is doing its
@@ -190,20 +224,34 @@ File: quarterly-report.pptx
 ✓ Fonts: Fonts used: Aptos
 ✓ Logo: 2 media file(s) found (verify NBG logo manually)
 ✓ Back Cover: Last slide appears to be a plain back cover
-✓ Boundaries: 41 positioned element(s), all within slide boundaries
-✓ Contrast: 59 run(s) measured, all clear WCAG AA; 7 brand-mandated exception(s)
-✓ Decorative: 41 preset shape(s), none decorative
+✓ Boundaries: 44 positioned element(s), all within slide boundaries
+✓ Contrast: 62 run(s) measured, all clear WCAG AA; 7 brand-mandated exception(s)
+    - Slide 1: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 14.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
+    - Slide 10: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
+    - Slide 3: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
+    - Slide 4: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
+    - Slide 5: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
+✓ Decorative: 44 preset shape(s), none decorative
 ✓ Chart Types: 2 chart(s), no pie/doughnut
 ✓ Thank You Check: 11 slide(s) scanned, no "Thank You" text (correct)
-✓ Text Margins: 30 text box(es), all with zero margins
-✓ Safe Zones: 35 element(s) across 11 slides, all within safe zones
-✓ Font Sizes: 59 sized run(s) all meet minimum sizes. Sizes used: 9.0pt, 10.0pt, ...
+✓ Text Margins: 33 text box(es), all with zero margins
+✓ Safe Zones: 38 element(s) across 11 slides, all within safe zones
+✓ Font Sizes: 62 sized run(s) all meet minimum sizes. Sizes used: 9.0pt, 10.0pt, 11.0pt, 12.0pt, 14.0pt, 24.0pt, 36.0pt, 48.0pt, 60.0pt
 ✓ Content Spacing: 8 slide(s) with body content, all adequately spaced below the title
 ✓ Title Length: 6 title(s) all fit within the 80-char single-line limit
 ○ Bank Branding: 0 bank name(s) found, so no multi-bank comparison to check
+✓ Slide Titles: 10 slide(s) titled, all present and unique, 1 text-free slide(s) exempt
+✓ Exhibit Sources: 3 exhibit slide(s), all carrying a dated source line
+✓ Alt Text: 3 object(s) carry descriptive alt text, 11 brand logo(s) exempt as decorative
+✓ Zero Baseline: 1 bar/column value axis/axes, all based at zero, 1 non-bar chart(s) not subject to the rule
+✓ Number Formats: 11 currency amount(s), consistent notation and precision
+✓ AI Slop: 10 slide(s) scanned against 13 lexicon terms, none clustering 2+
+✓ Action Titles: 6 content title(s), all assertions within 15 words
 
 ==================================================
-Summary: 16 passed, 0 failed, 1 examined nothing
+Summary: 23 passed, 0 failed, 0 warning(s), 1 examined nothing
+No blocking failures; 1 check(s) marked with a circle examined nothing.
+==================================================
 ```
 
 Every check reports **how many candidate elements it looked at**, and a check that looked at none
@@ -215,8 +263,8 @@ away by printing `Sizes used:` with nothing after it.
 `Contrast` measures a real WCAG ratio for every run against the fill actually behind it: the
 nearest ancestor shape fill, then the slide background, then white. Chart data labels are measured
 against their series or point fill when the label sits on the mark, and against the slide
-background when it sits outside. Two colours are listed as brand-mandated exceptions rather than
-failures, with their measured ratios shown on every run: see `BRAND_CONTRAST_EXCEPTIONS`.
+background when it sits outside. One colour is listed as a brand-mandated exception rather than a
+failure, with its measured ratio shown on every run: see `BRAND_CONTRAST_EXCEPTIONS`.
 
 **Exit codes.** 0 clean, 1 a check failed, 2 the validator could not finish. `nbg_build.py` keeps
 those apart, so a validator that dies on a missing import is no longer indistinguishable from a

@@ -36,6 +36,10 @@ slides:
     content:
       title: "Mobile adoption growth outpaced all competitors in 2025"
       description: "Monthly Active Users (MAU) comparison across systemic banks"
+      source:
+        name: "NBG MIS and published peer disclosures"
+        as_of: "31 December 2025"
+        basis: "90-day active definition"
     chart:
       type: bar
       data:

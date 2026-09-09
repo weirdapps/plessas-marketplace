@@ -121,7 +121,7 @@ Use `nbg-logo-gr.png` (Greek `ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ`), never the English f
 - **Breathing room below titles**: first body element at y≥1.3" (title bottom is at 0.9").
 - **Fill the slide**: use 60–85% of safe area.
 
-`nbg_validate.py` (17 checks as of 2026-04-04) catches most of these programmatically. Its font check enforces the 10pt floor but still tolerates 8pt for text it detects as a footnote near the bottom of the slide, so it will not catch an undersized footnote. The renderer should get sizes right on the first pass rather than lean on the check.
+`nbg_validate.py` (24 checks as of 2026-09-09) catches most of these programmatically. Its font check enforces the 10pt floor but still tolerates 8pt for text it detects as a footnote near the bottom of the slide, so it will not catch an undersized footnote. The renderer should get sizes right on the first pass rather than lean on the check.
 
 ## 12. Tight rounded-rect corners
 
