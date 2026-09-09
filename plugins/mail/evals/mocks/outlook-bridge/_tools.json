@@ -1,0 +1,526 @@
+{
+  "tools": [
+    {
+      "name": "outlook_auth_check",
+      "description": "Check whether the cached outlook-cli session is still valid. Returns {status, hoursRemaining, account}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_list_mail",
+      "description": "List messages in a folder. Supports --since/--until/--all/--max for incremental sync.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folder": {
+            "type": "string",
+            "default": "Inbox"
+          },
+          "folderId": {
+            "type": "string"
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "since": {
+            "type": "string",
+            "description": "ISO-8601 UTC"
+          },
+          "until": {
+            "type": "string",
+            "description": "ISO-8601 UTC"
+          },
+          "all": {
+            "type": "boolean",
+            "default": false
+          },
+          "max": {
+            "type": "integer",
+            "default": 10000
+          },
+          "select": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_get_mail",
+      "description": "Retrieve a single message by Id with body + attachments metadata.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string",
+            "enum": [
+              "html",
+              "text",
+              "none"
+            ],
+            "default": "html"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_download_attachments",
+      "description": "Save attachments from a message to a directory. Use include_inline:true for inline images.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "out": {
+            "type": "string",
+            "description": "Absolute path to output directory"
+          },
+          "includeInline": {
+            "type": "boolean",
+            "default": false
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "id",
+          "out"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_list_calendar",
+      "description": "List calendar events in a date window. from/to accept ISO timestamps or expressions like \"now\", \"now + 14d\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "default": "now"
+          },
+          "to": {
+            "type": "string",
+            "default": "now + 7d"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_get_event",
+      "description": "Retrieve a single calendar event by Id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_list_folders",
+      "description": "List mail folders with TotalItemCount. Set recursive:true to walk the whole tree.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "recursive": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_find_folder",
+      "description": "Resolve a folder by display-name path (e.g. \"Inbox/Projects/Alpha\"). Returns folder Id or null.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_create_folder",
+      "description": "Create a folder by path. Idempotent when idempotent:true (no-op if it exists).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "createParents": {
+            "type": "boolean",
+            "default": true
+          },
+          "idempotent": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_move_mail",
+      "description": "Move messages to a folder. ids[] up to 20 per call. continue_on_error:true reports failures without aborting.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          },
+          "to": {
+            "type": "string",
+            "description": "Folder path, alias, or \"id:<raw>\""
+          },
+          "continueOnError": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "ids",
+          "to"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_send_mail",
+      "description": "Send a new email via outlook-cli. Default: creates draft + activates Outlook desktop. Set send_now:true to dispatch immediately. CC-self is ON by default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "TO recipients (one or more email addresses)"
+          },
+          "cc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bcc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1
+          },
+          "html_body": {
+            "type": "string",
+            "description": "HTML body content (preferred for Outlook). Inline OR via html_file."
+          },
+          "text_body": {
+            "type": "string",
+            "description": "Plain-text body content. Inline OR via text_file."
+          },
+          "html_file": {
+            "type": "string",
+            "description": "Path to HTML body file."
+          },
+          "text_file": {
+            "type": "string",
+            "description": "Path to text body file."
+          },
+          "attach": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "File paths to attach (combined cap 30 MB)."
+          },
+          "signature_file": {
+            "type": "string",
+            "description": "Override signature file path (default: ~/.outlook-cli/signature.html). Inline images auto-loaded from sibling signature-assets/ dir."
+          },
+          "no_signature": {
+            "type": "boolean",
+            "default": false,
+            "description": "Suppress automatic signature appending (default: signature ON)."
+          },
+          "no_cc_self": {
+            "type": "boolean",
+            "default": false,
+            "description": "Suppress automatic CC to authenticated user."
+          },
+          "no_save_sent": {
+            "type": "boolean",
+            "default": false
+          },
+          "send_now": {
+            "type": "boolean",
+            "default": false,
+            "description": "Skip draft + Outlook activation, send immediately."
+          },
+          "no_open": {
+            "type": "boolean",
+            "default": false,
+            "description": "Do not activate Outlook desktop after creating draft."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "to",
+          "subject"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_reply",
+      "description": "Reply to a message via outlook-cli. Default: creates draft (with auto-quoted original + signature) and activates Outlook desktop. Set send_now:true to dispatch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "html_body": {
+            "type": "string"
+          },
+          "text_body": {
+            "type": "string"
+          },
+          "html_file": {
+            "type": "string"
+          },
+          "text_file": {
+            "type": "string"
+          },
+          "signature_file": {
+            "type": "string"
+          },
+          "no_signature": {
+            "type": "boolean",
+            "default": false
+          },
+          "no_cc_self": {
+            "type": "boolean",
+            "default": false,
+            "description": "Suppress automatic CC to authenticated user (default: CC-self ON)."
+          },
+          "send_now": {
+            "type": "boolean",
+            "default": false
+          },
+          "no_open": {
+            "type": "boolean",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "message_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_reply_all",
+      "description": "Reply-all to a message via outlook-cli. Recipients (To+Cc) pre-populated by M365 from the original. Same draft-first default as outlook_reply.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "html_body": {
+            "type": "string"
+          },
+          "text_body": {
+            "type": "string"
+          },
+          "html_file": {
+            "type": "string"
+          },
+          "text_file": {
+            "type": "string"
+          },
+          "signature_file": {
+            "type": "string"
+          },
+          "no_signature": {
+            "type": "boolean",
+            "default": false
+          },
+          "no_cc_self": {
+            "type": "boolean",
+            "default": false,
+            "description": "Suppress automatic CC to authenticated user (default: CC-self ON)."
+          },
+          "send_now": {
+            "type": "boolean",
+            "default": false
+          },
+          "no_open": {
+            "type": "boolean",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "message_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_forward",
+      "description": "Forward a message via outlook-cli. M365 server auto-quotes the original. to[] is REQUIRED (forward target). Default: creates draft + activates Outlook.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Forward target(s). REQUIRED."
+          },
+          "cc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bcc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "html_body": {
+            "type": "string"
+          },
+          "text_body": {
+            "type": "string"
+          },
+          "html_file": {
+            "type": "string"
+          },
+          "text_file": {
+            "type": "string"
+          },
+          "signature_file": {
+            "type": "string"
+          },
+          "no_signature": {
+            "type": "boolean",
+            "default": false
+          },
+          "no_cc_self": {
+            "type": "boolean",
+            "default": false,
+            "description": "Suppress automatic CC to authenticated user."
+          },
+          "send_now": {
+            "type": "boolean",
+            "default": false
+          },
+          "no_open": {
+            "type": "boolean",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "message_id",
+          "to"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_capture_signature",
+      "description": "Extract email signature from a SentItems message and save to ~/.outlook-cli/signature.html (default). Heuristic: tries Outlook web wrappers first, falls back to last <hr> or pre-reply-marker block. Hand-edit the output file to refine if the heuristic captures too much.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from_message": {
+            "type": "string",
+            "description": "Override: source message id (default: latest in SentItems)"
+          },
+          "out": {
+            "type": "string",
+            "description": "Override output path (default: ~/.outlook-cli/signature.html)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "outlook_doctor",
+      "description": "Diagnose the outlook-bridge MCP: node binary, CLI install mode, CLI version, MCP server version, auth status, last startup, and a single-line next-step suggestion. Call this first when something is broken.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  ]
+}
