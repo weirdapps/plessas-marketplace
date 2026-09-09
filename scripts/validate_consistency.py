@@ -403,6 +403,58 @@ def check_plugin_versions() -> None:
             ok(f"{name}: version {own} agrees in both manifests")
 
 
+def check_plugin_dependencies() -> None:
+    """Declare inter-plugin dependencies in marketplace.json, never in
+    plugin.json.
+
+    Both spellings are supported and behave the same for a marketplace install,
+    but only the plugin.json copy travels into a `claude plugin eval` sandbox.
+    That sandbox loads the target directory as `<name>@inline` and nothing else,
+    so a manifest dependency can never be satisfied there: the plugin is
+    disabled with `dependency-unsatisfied`, `plugins: []`, and every `with` arm
+    silently degrades to a bare model while the score table still prints a
+    plausible number. `meetings` sat in that state and three eval cases reported
+    a meaningless Delta 0.00 before anyone noticed.
+
+    The marketplace entry keeps auto-install, transitive enable and the
+    disable guard for real users, and leaves nothing unsatisfiable in the
+    sandbox. See docs/evals.md."""
+    heading("Dependency declaration site")
+
+    mp_path = ROOT / ".claude-plugin" / "marketplace.json"
+    if not mp_path.exists():
+        return  # check_manifests already reported this
+
+    with open(mp_path) as f:
+        marketplace = json.load(f)
+    declared = {p["name"]: p.get("dependencies") or [] for p in marketplace.get("plugins", [])}
+
+    examined = 0
+    found = 0
+    for plugin_dir in _plugin_dirs():
+        pjson = plugin_dir / ".claude-plugin" / "plugin.json"
+        if not pjson.exists():
+            continue  # check_manifests already reported this
+        with open(pjson) as f:
+            data = json.load(f)
+        examined += 1
+        name = data.get("name", plugin_dir.name)
+        if data.get("dependencies"):
+            found += 1
+            error(
+                f"{name}: plugin.json declares 'dependencies'. Move it to the "
+                f"'{name}' entry in .claude-plugin/marketplace.json. A manifest "
+                f"dependency cannot be satisfied inside a plugin-eval sandbox, "
+                f"so the plugin loads as nothing and every measurement of it is "
+                f"a bare model."
+            )
+        elif declared.get(name):
+            ok(f"{name}: depends on {', '.join(declared[name])} via marketplace.json")
+
+    if found == 0:
+        ok(f"no plugin.json declares dependencies ({examined} manifests examined)")
+
+
 def check_command_frontmatter_fields() -> None:
     """description / argument-hint / allowed-tools.
 
@@ -619,6 +671,7 @@ def main() -> None:
 
     check_manifests()
     check_plugin_versions()
+    check_plugin_dependencies()
     check_command_files()
     check_command_frontmatter_yaml()
     check_command_frontmatter_fields()

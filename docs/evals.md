@@ -320,11 +320,29 @@ when the entry names a marketplace." `claude plugin eval` does not expose
 `--plugin-dir`, so that route is open to a hand-driven session and closed to this
 harness.
 
-The honest status is therefore: **a plugin with a `dependencies` entry is not
-measurable by `claude plugin eval` today. That is a harness gap, not a defect in
-the plugin.** Keep the entry, keep the cases (they are correct, and they will
-measure the moment the harness can load a sibling), and do not read the 0.00 as a
-result.
+**The fix is to declare the dependency in the marketplace entry instead of the
+plugin manifest.** A plugin can depend on another "by listing them in
+`plugin.json` or in its marketplace entry", and the two are equivalent for a
+marketplace install. Only the manifest copy travels into the eval sandbox,
+because the sandbox loads the plugin directory as `<name>@inline` and never
+reads `marketplace.json`. So moving the array from
+`plugins/meetings/.claude-plugin/plugin.json` to the `meetings` entry in
+`.claude-plugin/marketplace.json` keeps auto-install, transitive enable and the
+disable guard for every real user, and leaves nothing unsatisfiable in the
+sandbox.
+
+Verified on `03-put-that-somewhere-i-can-find-it`, trace line 1:
+
+```text
+before  with: plugins=[]                       errors=[dependency-unsatisfied]
+after   with: plugins=[{"name":"meetings",...}] errors=[]
+              skills=[..., "meetings:meeting-workflows", ...]
+        without: plugins=[]                     (no meeting-workflows)
+```
+
+That is the difference between an ablation whose two arms are the same
+configuration and one that actually measures something. If you add a dependent
+plugin later, declare it in the marketplace entry from the start.
 
 ### Mocks are served in BOTH arms
 
