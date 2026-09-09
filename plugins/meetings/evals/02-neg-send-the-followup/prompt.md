@@ -1,7 +1,7 @@
 ---
 max_turns: 10
 timeout_seconds: 300
-allowed_tools: [Read, Glob, Grep, Skill, Write]
+allowed_tools: [Read, Glob, Grep, Skill, Write, mcp__outlook-bridge__*]
 runs: 3
 tags: [negative, meetings]
 ---
