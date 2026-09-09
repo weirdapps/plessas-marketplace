@@ -36,6 +36,10 @@ slides:
     content:
       title: "Monthly transaction volume shows consistent growth trajectory"
       description: "Card transaction volume in EUR billions"
+      source:
+        name: "NBG MIS"
+        as_of: "31 December 2025"
+        basis: "cleared transactions, excludes cash advances"
     chart:
       type: line
       data:
@@ -49,6 +53,10 @@ slides:
   - type: table
     content:
       title: "Card P&L summary shows 15% net fee income growth"
+      source:
+        name: "NBG management accounts"
+        as_of: "31 December 2025"
+        basis: "constant scope, restated for the 2025 segment change"
     table:
       headers: ["Metric", "Q4 2024", "Q4 2025", "Change"]
       rows:
@@ -68,6 +76,9 @@ slides:
     content:
       title: "Digital channel adoption accelerated across all customer segments"
       description: "Digital transaction share by segment"
+      source:
+        name: "NBG MIS"
+        as_of: "31 December 2025"
     chart:
       type: bar
       data:

@@ -73,6 +73,10 @@ slides:
     content:
       title: "Chart Action Title"
       description: "Optional caption, rendered under the title"
+      source:                      # REQUIRED on chart and table slides
+        name: "NBG MIS"
+        as_of: "31 December 2025"
+        basis: "constant currency" # optional definitional caveat
     chart:
       type: bar          # bar | bar_stacked | bar_horizontal | line | doughnut | pie
       data:
@@ -86,6 +90,9 @@ slides:
   - type: table
     content:
       title: "Table Action Title"
+      source:
+        name: "NBG management accounts"
+        as_of: "31 December 2025"
     table:
       headers: ["Metric", "2025", "2026"]
       rows:
@@ -98,6 +105,14 @@ slides:
 `chart.data` is the contract. The builder reads `chart.type`, `chart.data.categories` and
 `chart.data.series`; a chart slide with no series prints a warning and leaves the plot area blank.
 
+`content.source` is the other contract, and unlike the one above it **blocks**: a chart or table
+slide without it fails `nbg_validate.py`'s Exhibit Sources check and the build exits non-zero. It
+needs `name` (where the number came from) and `as_of` (when it was true); `basis` is optional and
+carries the definitional caveat. Declaring a source and omitting `as_of` fails at build time, before
+the validator runs, because the builder can see the mapping and a half-source is a spec error. It
+renders as an 11pt footnote below the exhibit. The sources in the three examples are synthetic,
+written to show the shape.
+
 ## Slide Types
 
 | Type | Usage | Required Fields |
@@ -105,8 +120,8 @@ slides:
 | `cover` | Opening slide | title, subtitle, date |
 | `divider` | Section break | number, title |
 | `content` | Text with bullets | title, points |
-| `chart` | Data visualization | title, chart data |
-| `table` | Tabular data | title, table data |
+| `chart` | Data visualization | title, chart data, source |
+| `table` | Tabular data | title, table data, source |
 | `infographic` | Visual process/list | title, items (renders as bullets: there is no infographic layout yet) |
 | `back_cover` | Closing slide | (none) |
 

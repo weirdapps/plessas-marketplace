@@ -88,6 +88,10 @@ slides:
   - type: table
     content:
       title: "Total investment of EUR 120M over 3 years with 2.5x ROI"
+      source:
+        name: "NBG planning submission"
+        as_of: "31 January 2026"
+        basis: "budgeted spend, nominal terms"
     table:
       headers: ["Investment Area", "2026", "2027", "2028", "Total"]
       rows:

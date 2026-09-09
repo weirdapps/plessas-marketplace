@@ -128,8 +128,14 @@ zero-candidate pass as unverified.
 ## Key Dependencies
 
 - `mail` and `chat` bundle their own MCP servers (Node.js 20+, TypeScript). `mcp-server/dist/` is
-  gitignored, NOT committed: `installers/install.sh` builds it, and `run.sh` rebuilds on first MCP
-  call if `dist/server.js` is missing. Never commit `dist/`.
+  gitignored and NOT committed. Both servers now ship a committed single-file esbuild bundle at
+  `mcp-server/bundle/server.mjs` with the SDK inlined, and `run.sh` prefers it, which is why a cold
+  start is 0.09s rather than a 15-60s `npm ci` inside the MCP handshake. `run.sh` does NOT build:
+  if neither the bundle nor `dist/server.js` is present it fails fast with the exact command to
+  run, because installing inside the startup handshake overruns Claude Code's ~30s timeout.
+  `installers/install.sh` and the two `auth-setup` commands are what build. The bundle is kept
+  honest by a blocking `cmp` against a pinned-esbuild rebuild in `lint.yml`; never hand-edit it,
+  and never commit `dist/`.
 - `meetings` requires `mail`, declared machine-readably as `"dependencies": ["mail"]` in its
   `plugin.json`, so Claude Code installs `mail` with it. Note there are no OPTIONAL plugin
   dependencies: a declared dependency that is missing or disabled disables the dependent plugin,

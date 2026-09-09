@@ -667,17 +667,65 @@ def test_slide_titles_catch_a_missing_title(tmp_path):
 # ---------------------------------------------------------- exhibit sources
 
 
-def test_exhibit_sources_fire_on_the_shipped_deck_and_do_not_block(built_example):
-    """All three shipped examples carry unsourced exhibits. It reports, not blocks."""
+def test_exhibit_sources_pass_on_the_shipped_deck_and_now_block(built_example):
+    """The examples carry content.source, so the check is an error, not a warning."""
     import nbg_validate
 
     results = nbg_validate.validate_presentation(str(built_example))
     sources = _result(results, "Exhibit Sources")
+    assert sources.passed, sources.details
+    assert sources.severity == "error" and not sources.warned
+    # 2 charts and 1 table in quarterly-report.yaml. A zero here would mean the
+    # check found no exhibit to look at, which is not the same as clean.
+    assert sources.examined == 3, sources.message
+
+
+@pytest.mark.parametrize("name", EXAMPLE_NAMES)
+def test_every_shipped_example_sources_every_exhibit_slide(name):
+    """The severity flip is only safe while all three examples can satisfy it.
+
+    Read off the spec rather than the built deck: build_presentation already
+    raises on a failed check, so this is the cheap test that says WHICH slide
+    regressed when someone adds an exhibit to an example and forgets its source.
+    """
+    import yaml
+
+    spec = EXAMPLES_DIR / f"{name}.yaml"
+    if not spec.exists():
+        pytest.skip(f"{spec} not found")
+    outline = yaml.safe_load(spec.read_text(encoding="utf-8"))
+    presentation = outline.get("presentation") or {}
+    slides = presentation.get("slides") or outline.get("slides") or []
+
+    exhibits = [
+        s for s in slides if nbg_build._classify_slide(s) in ("chart", "table", "waterfall")
+    ]
+    assert exhibits, f"{name}: no exhibit slides, so this test proves nothing"
+    for slide in exhibits:
+        source = (slide.get("content") or {}).get("source")
+        title = (slide.get("content") or {}).get("title", "")
+        assert isinstance(source, dict), f"{name}: {title!r} has no content.source mapping"
+        assert source.get("name"), f"{name}: {title!r} names no source"
+        assert source.get("as_of"), f"{name}: {title!r} has no as_of date"
+
+
+def test_exhibit_sources_still_fail_a_deck_with_no_source_line(tmp_path):
+    """The check must stay falsifiable now that every example satisfies it."""
+
+    def build(prs):
+        nbg_build.create_chart_slide(
+            prs,
+            {"title": "Volume grew"},
+            1,
+            chart_type="bar",
+            categories=["Q1"],
+            series_list=[{"name": "2025", "values": [3]}],
+        )
+
+    sources = _check(_deck(tmp_path, "unsourced.pptx", build), "Exhibit Sources")
     assert not sources.passed
-    assert sources.warned and sources.severity == "warning"
+    assert sources.severity == "error" and not sources.warned
     assert any("no source line" in d for d in sources.details), sources.details
-    # A warning is not a failure: the build still passes.
-    assert nbg_validate.print_results(results, str(built_example)) is True
 
 
 def test_exhibit_sources_pass_with_a_dated_source_line(tmp_path):
@@ -718,6 +766,209 @@ def test_exhibit_sources_reject_a_source_with_no_as_of_date(tmp_path):
     assert any("no as-of date" in d for d in sources.details), sources.details
 
 
+# ------------------------------------------------- the content.source field
+
+
+def test_source_line_composes_name_date_and_caveat():
+    """The three halves of a board footnote, in the order a reader needs them."""
+    composed = nbg_build._source_line(
+        {"source": {"name": "NBG MIS", "as_of": "30 June 2026", "basis": "constant currency"}}
+    )
+    assert composed == "Source: NBG MIS, as of 30 June 2026; constant currency"
+
+
+def test_source_line_omits_an_absent_caveat_and_an_absent_date():
+    """The composer renders what it is given; _add_source_line is the gate.
+
+    An undated source never reaches a slide, because _add_source_line raises on
+    one. Keeping that check out of the composer is what lets it stay a pure
+    function of the mapping, testable without a Presentation.
+    """
+    assert (
+        nbg_build._source_line({"source": {"name": "NBG MIS", "as_of": "30 June 2026"}})
+        == "Source: NBG MIS, as of 30 June 2026"
+    )
+    assert nbg_build._source_line({"source": {"name": "NBG MIS"}}) == "Source: NBG MIS"
+
+
+def test_source_line_is_none_when_there_is_nothing_to_say():
+    for content in ({}, {"source": None}, {"source": ""}, {"source": {"as_of": "2026"}}):
+        assert nbg_build._source_line(content) is None, content
+
+
+def test_source_line_takes_a_plain_string_without_doubling_the_prefix():
+    """A spec that writes the sentence out must build, not raise on .get."""
+    assert (
+        nbg_build._source_line({"source": "NBG MIS, as of 30 June 2026"})
+        == "Source: NBG MIS, as of 30 June 2026"
+    )
+    assert (
+        nbg_build._source_line({"source": "Source: NBG MIS, 30 June 2026"})
+        == "Source: NBG MIS, 30 June 2026"
+    )
+    assert (
+        nbg_build._source_line({"source": "Πηγή: NBG MIS, 30 Ιουνίου 2026"})
+        == "Πηγή: NBG MIS, 30 Ιουνίου 2026"
+    )
+
+
+@pytest.mark.parametrize(
+    "renderer", ["create_chart_slide", "create_table_slide", "create_waterfall_slide"]
+)
+def test_every_exhibit_renderer_draws_the_source_at_the_brand_footnote_spec(tmp_path, renderer):
+    """11pt Caption Gray on the content floor, per typography.md and Standard #11."""
+    pytest.importorskip("pptx")
+    from pptx import Presentation
+    from pptx.util import Inches, Pt
+
+    content = {"title": "Volume grew", "source": {"name": "NBG MIS", "as_of": "30 June 2026"}}
+
+    def build(prs):
+        if renderer == "create_chart_slide":
+            nbg_build.create_chart_slide(
+                prs,
+                content,
+                1,
+                chart_type="bar",
+                categories=["Q1"],
+                series_list=[{"name": "2025", "values": [3]}],
+            )
+        elif renderer == "create_table_slide":
+            nbg_build.create_table_slide(prs, content, {"headers": ["A"], "rows": [["1"]]}, 1)
+        else:
+            nbg_build.create_waterfall_slide(
+                prs, {**content, "waterfall_items": [{"label": "Start", "value": 10}]}, 1
+            )
+
+    slide = Presentation(str(_deck(tmp_path, f"{renderer}.pptx", build))).slides[0]
+    texts = [s for s in slide.shapes if s.has_text_frame]
+    lines = [s for s in texts if s.text_frame.text.startswith("Source:")]
+    assert len(lines) == 1, [s.text_frame.text for s in texts]
+
+    box = lines[0]
+    assert box.text_frame.text == "Source: NBG MIS, as of 30 June 2026"
+    assert box.left == Inches(nbg_build.GUTTER)
+    assert box.top == Inches(nbg_build.SOURCE_Y)
+    # The content floor is 6.85"; the exhibit body above it always ends at 6.30".
+    assert box.top + box.height <= Inches(6.85)
+    font = box.text_frame.paragraphs[0].font
+    assert font.size == Pt(11)
+    assert font.color.rgb == nbg_build.RGBColor(0x5A, 0x5F, 0x5A)
+
+
+def test_exhibit_renderer_warns_when_the_source_is_missing(tmp_path, capsys):
+    """A warning the validator cannot give: it sees the deck, never the spec.
+
+    Absence is left to check_exhibit_sources, which fails the build on it. This
+    only names the slide, which a bare slide number does not.
+    """
+    pytest.importorskip("pptx")
+
+    def build(prs):
+        nbg_build.create_table_slide(
+            prs, {"title": "Unsourced"}, {"headers": ["A"], "rows": [["1"]]}, 1
+        )
+
+    _deck(tmp_path, "warned.pptx", build)
+    assert "has no content.source" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("as_of", [None, "", "   "])
+def test_exhibit_renderer_raises_on_a_source_with_no_as_of(tmp_path, as_of):
+    """Strict where there is structure. The validator cannot make this call.
+
+    check_exhibit_sources tests the as-of half by searching the rendered line
+    for a four-digit year, so the year inside this `basis` caveat satisfies it
+    and the deck would ship undated. The builder can see the mapping, so it is
+    the half that gets to be strict.
+    """
+    pytest.importorskip("pptx")
+    source = {"name": "NBG MIS", "basis": "restated for the 2025 change"}
+    if as_of is not None:
+        source["as_of"] = as_of
+
+    def build(prs):
+        nbg_build.create_table_slide(
+            prs,
+            {"title": "Undated", "source": source},
+            {"headers": ["A"], "rows": [["1"]]},
+            1,
+        )
+
+    with pytest.raises(ValueError, match="no as_of date"):
+        _deck(tmp_path, "undated-spec.pptx", build)
+
+
+def test_the_validator_stays_lenient_about_a_hand_written_source(tmp_path):
+    """Do not "fix" this into a strict date parse. Read _add_source_line first.
+
+    A deck reaching /redesign-deck or /polish-slides was not built from a spec,
+    so all the validator can see is the sentence somebody typed. A bare year is
+    the weakest form that still dates a figure and it must keep passing; the
+    strictness lives in the builder, where the structure is.
+    """
+
+    def build(prs):
+        slide = nbg_build.create_chart_slide(
+            prs,
+            {"title": "Volume grew"},
+            1,
+            chart_type="bar",
+            categories=["Q1"],
+            series_list=[{"name": "2025", "values": [3]}],
+        )
+        nbg_build._add_textbox(slide, 0.374, 6.55, 8, 0.25, "Source: NBG MIS, 2025", font_size=11)
+
+    sources = _check(_deck(tmp_path, "handwritten.pptx", build), "Exhibit Sources")
+    assert sources.passed, sources.details
+    assert sources.examined == 1
+
+
+# ------------------------------------------------------------ bank branding
+
+
+def _bank_deck(tmp_path, name, nbg_in_source):
+    """A chart slide naming Eurobank in its body, and NBG in one place or the other."""
+
+    def build(prs):
+        content = {
+            "title": "Eurobank overtook us on mobile",
+            "source": {"name": "NBG MIS", "as_of": "31 December 2025"} if nbg_in_source else None,
+        }
+        slide = nbg_build.create_chart_slide(
+            prs,
+            content,
+            1,
+            chart_type="bar",
+            categories=["Q1"],
+            series_list=[{"name": "2025", "values": [3]}],
+        )
+        if not nbg_in_source:
+            nbg_build._add_textbox(slide, 0.374, 1.4, 8, 0.3, "NBG trails on mobile")
+            nbg_build._add_textbox(
+                slide, 0.374, 6.55, 8, 0.25, "Source: internal MIS, 2025", font_size=11
+            )
+
+    return _deck(tmp_path, name, build)
+
+
+def test_bank_branding_does_not_count_a_source_footnote_as_a_competitor(tmp_path):
+    """ "Source: NBG MIS" is provenance, not a comparison. Counting it demanded
+    both banks' brand colours and logos on a slide that compares nothing.
+    """
+    banks = _check(_bank_deck(tmp_path, "sourced-bank.pptx", True), "Bank Branding")
+    assert banks.skipped, banks.message
+    assert "1 bank name(s) found" in banks.message
+
+
+def test_bank_branding_still_reads_bank_names_in_the_body(tmp_path):
+    """The exclusion must not blind the scan: same deck, NBG in the body."""
+    banks = _check(_bank_deck(tmp_path, "body-bank.pptx", False), "Bank Branding")
+    assert not banks.skipped, banks.message
+    assert not banks.passed, banks.message
+    assert any("Eurobank" in d for d in banks.details), banks.details
+
+
 # ----------------------------------------------------------------- alt text
 
 
@@ -733,7 +984,7 @@ def test_alt_text_catches_a_stripped_descr(tmp_path, built_example):
         built_example,
         tmp_path / "noalt.pptx",
         "ppt/slides/slide4.xml",
-        lambda x: re.sub(r'(name="Chart 3") descr="[^"]*"', r"\1", x),
+        lambda x: re.sub(r'(name="Chart \d+") descr="[^"]*"', r"\1", x),
     )
     alt = _check(out, "Alt Text")
     assert not alt.passed
@@ -746,7 +997,7 @@ def test_alt_text_rejects_a_filename_which_is_what_python_pptx_writes(tmp_path, 
         built_example,
         tmp_path / "filename.pptx",
         "ppt/slides/slide4.xml",
-        lambda x: re.sub(r'(name="Chart 3") descr="[^"]*"', r'\1 descr="chart-4.png"', x),
+        lambda x: re.sub(r'(name="Chart \d+") descr="[^"]*"', r'\1 descr="chart-4.png"', x),
     )
     alt = _check(out, "Alt Text")
     assert not alt.passed
@@ -759,7 +1010,7 @@ def test_alt_text_rejects_a_lead_in_and_a_duplicated_caption(tmp_path, built_exa
         tmp_path / "leadin.pptx",
         "ppt/slides/slide4.xml",
         lambda x: re.sub(
-            r'(name="Chart 3") descr="[^"]*"', r'\1 descr="Image of monthly volume"', x
+            r'(name="Chart \d+") descr="[^"]*"', r'\1 descr="Image of monthly volume"', x
         ),
     )
     alt = _check(lead_in, "Alt Text")
@@ -771,7 +1022,7 @@ def test_alt_text_rejects_a_lead_in_and_a_duplicated_caption(tmp_path, built_exa
         built_example,
         tmp_path / "dupcaption.pptx",
         "ppt/slides/slide4.xml",
-        lambda x: re.sub(r'(name="Chart 3") descr="[^"]*"', rf'\1 descr="{caption}"', x),
+        lambda x: re.sub(r'(name="Chart \d+") descr="[^"]*"', rf'\1 descr="{caption}"', x),
     )
     alt = _check(duplicate, "Alt Text")
     assert not alt.passed
