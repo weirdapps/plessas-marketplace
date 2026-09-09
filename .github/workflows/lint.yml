@@ -236,23 +236,21 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: npm ci
 
-      # NON-BLOCKING for exactly one real run, then flip it.
+      # BLOCKING. It shipped non-blocking for exactly one run, because the one
+      # thing nobody could test locally was this comparison: reproducibility was
+      # verified on macOS (three consecutive `npm run build:bundle` runs gave
+      # byte-identical output, mail 593040 bytes sha256 db4b6dc6..., chat 580276
+      # bytes sha256 439eda7a...) while CI rebuilds on ubuntu-latest and compares
+      # against bytes committed from macOS. That run happened on PR #94 (runs/34296559878)
+      # and both servers matched, so the guard now blocks. A guard left
+      # non-blocking past the thing it was waiting on becomes decoration.
       #
-      # Reproducibility is verified on macOS: three consecutive
-      # `npm run build:bundle` runs gave byte-identical output (mail 593040
-      # bytes sha256 db4b6dc6..., chat 580276 bytes sha256 439eda7a...). What is
-      # NOT verified is this comparison, because CI rebuilds on ubuntu-latest
-      # and compares against bytes committed from macOS, and that has never been
-      # run. Remove `continue-on-error` as soon as one real CI run confirms the
-      # cross-platform bytes match; leaving it is how a guard becomes decoration.
-      #
-      # If they ever do diverge, do NOT relax the comparison. The documented
+      # If the bytes ever do diverge, do NOT relax the comparison. The documented
       # fallback is to stamp the bundle with the exact @modelcontextprotocol/sdk
       # and esbuild versions it was built from and assert the stamp matches
       # package.json. That is weaker (it proves the declaration, not the code)
       # but it is platform-independent. Not implemented, on purpose.
       - name: Rebuild the bundle and compare with the committed bytes
-        continue-on-error: true
         run: |
           set -euo pipefail
           bundle=bundle/server.mjs
