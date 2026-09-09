@@ -455,6 +455,93 @@ def check_plugin_dependencies() -> None:
         ok(f"no plugin.json declares dependencies ({examined} manifests examined)")
 
 
+def check_eval_grader_tool_names() -> None:
+    """Eval graders name MCP tools BARE; commands name them NAMESPACED.
+
+    The two contexts genuinely disagree and both spellings are correct in
+    their own place. In production a plugin-bundled server is
+    `mcp__plugin_<plugin>_<server>__<tool>`, which is what `allowed-tools`
+    must say. Inside a `claude plugin eval` sandbox the mocks register as
+    standalone stand-ins, so the trace records the BARE
+    `mcp__<server>__<tool>` and a namespaced grader matches nothing.
+
+    Nothing caught that, because every MCP grader in the repo was
+    `min: 0, max: 0`. An absence assertion passes when it matches nothing,
+    so a grader naming an impossible tool reports a cheerful tick forever.
+    Five of them did: mail's never-sends and never-replies-all, chat's
+    never-posts, and both suites' negative-case equivalents. Those are the
+    guards asserting that a plugin does not mail or message real people,
+    and none of them had ever matched anything.
+
+    Proven, not inferred: mcp-matcher-control on meetings case 04 is a
+    `min: 1` grader on the bare spelling, and it passed 1x and 2x on the
+    run that motivated this check."""
+    heading("Eval grader tool namespacing")
+
+    examined = 0
+    found = 0
+    for plugin_dir in _plugin_dirs():
+        evals = plugin_dir / "evals"
+        if not evals.is_dir():
+            continue
+        for grader in sorted(evals.glob("*/graders/*.md")):
+            data, _body, _reason = _split_frontmatter(grader)
+            if not data:
+                continue
+            tool = str(data.get("tool", ""))
+            if not tool.startswith("mcp__"):
+                continue
+            examined += 1
+            if tool.startswith("mcp__plugin_"):
+                found += 1
+                bare = (
+                    "mcp__" + tool.split("__", 2)[1].split("_", 2)[-1] + "__" + tool.split("__")[-1]
+                )
+                error(
+                    f"{grader.relative_to(ROOT)}: grader names '{tool}'. Eval mocks "
+                    f"register as standalone stand-ins, so the trace records the bare "
+                    f"form and this matches nothing. Use '{bare}'. A min:0/max:0 guard "
+                    f"will pass anyway, which is how this stayed hidden."
+                )
+
+    if found == 0:
+        ok(f"all MCP graders use the bare form ({examined} examined)")
+
+
+def check_eval_absence_guards_have_a_control() -> None:
+    """A suite whose MCP graders are all `min: 0` has verified nothing.
+
+    An absence assertion cannot distinguish "the run correctly did not call
+    this" from "this name can never match". At least one `min >= 1` MCP
+    grader per suite proves the matcher resolves, and every absence guard
+    sharing that namespace then means something. Without one, a suite can
+    report `never sends` for its whole life while the matcher is broken."""
+    heading("Eval absence guards have a positive control")
+
+    for plugin_dir in _plugin_dirs():
+        evals = plugin_dir / "evals"
+        if not evals.is_dir():
+            continue
+        absence = 0
+        control = 0
+        for grader in sorted(evals.glob("*/graders/*.md")):
+            data, _body, _reason = _split_frontmatter(grader)
+            if not data or not str(data.get("tool", "")).startswith("mcp__"):
+                continue
+            if int(data.get("min", 0)) >= 1:
+                control += 1
+            else:
+                absence += 1
+        if absence and not control:
+            error(
+                f"{plugin_dir.name}: {absence} MCP absence guard(s) and no positive "
+                f"control. Add one `min: 1` grader on a tool the case certainly calls, "
+                f"or none of the absence guards can be shown to work."
+            )
+        elif absence or control:
+            ok(f"{plugin_dir.name}: {absence} absence guard(s), {control} positive control(s)")
+
+
 def check_command_frontmatter_fields() -> None:
     """description / argument-hint / allowed-tools.
 
@@ -672,6 +759,8 @@ def main() -> None:
     check_manifests()
     check_plugin_versions()
     check_plugin_dependencies()
+    check_eval_grader_tool_names()
+    check_eval_absence_guards_have_a_control()
     check_command_files()
     check_command_frontmatter_yaml()
     check_command_frontmatter_fields()
