@@ -81,7 +81,7 @@ jobs:
       # drifted, which is worth knowing.
       - name: Run tests with coverage
         if: steps.check-tests.outputs.has_tests == 'true'
-        run: pytest plugins --cov=plugins --cov-report=xml --cov-report=term-missing
+        run: pytest plugins scripts --cov=plugins --cov=scripts --cov-report=xml --cov-report=term-missing
 
       - name: Check for SonarCloud token
         id: check-sonar
