@@ -8,9 +8,33 @@ import { getResolvedCli } from '../subprocess.js';
 import { checkAuth } from '../auth-guard.js';
 import pkg from '../../package.json' with { type: 'json' };
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SERVER_ROOT = join(__dirname, '..', '..');
-const STATUS_FILE = join(SERVER_ROOT, '.last-startup.json');
+// The server is started from two different depths: dist/tools/doctor.js (the
+// tsc output) and bundle/server.mjs (the committed esbuild bundle). A fixed
+// join(__dirname, '..', '..') is correct for at most one of them. From the
+// bundle it resolved to plugins/<plugin>/ rather than the server root, and from
+// a copy of the bundle in a temp directory it produced the suggestion
+// "cd /private && npm install" and would have written .last-startup.json to a
+// path nothing reads. Walk up instead, and accept only the directory whose
+// package.json is this server's own, so a failure to find it is null rather
+// than a plausible-looking wrong path.
+export function findServerRoot(startDir: string): string | null {
+  let dir = startDir;
+  for (let hops = 0; hops < 8; hops++) {
+    try {
+      const found = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { name?: string };
+      if (found.name === pkg.name) return dir;
+    } catch {
+      // No package.json here, or it is unreadable or not JSON: keep walking.
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+const SERVER_ROOT = findServerRoot(dirname(fileURLToPath(import.meta.url)));
+const STATUS_FILE = SERVER_ROOT === null ? null : join(SERVER_ROOT, '.last-startup.json');
 
 function suggestedTenantHost(): string {
   const configPath = join(homedir(), '.outlook-cli', 'config.json');
@@ -33,6 +57,7 @@ interface LastStartup {
 }
 
 function readLastStartup(): LastStartup | null {
+  if (STATUS_FILE === null) return null;
   try {
     return JSON.parse(readFileSync(STATUS_FILE, 'utf8'));
   } catch {
@@ -45,6 +70,7 @@ function buildSuggestion(opts: {
   authStatus: string;
   lastStartupStatus: 'ok' | 'fail' | 'unknown';
   lastStartupError: string | null;
+  serverRoot: string | null;
 }): string {
   if (opts.lastStartupStatus === 'fail') {
     return `Last MCP startup FAILED: ${opts.lastStartupError ?? 'unknown'}. Check stderr from Claude or run 'bash mcp-server/run.sh' manually to see the error.`;
@@ -53,7 +79,10 @@ function buildSuggestion(opts: {
     // Keep this command identical in shape to the one run.sh prints. A bare
     // `npm install` here would pull several hundred MB of Playwright browsers
     // that the bundled CLI does not need at install time.
-    return `outlook-tool not bundled in mcp-server/node_modules. The MCP is using a global outlook-cli on PATH. To get the bundled (more robust) install, run: cd ${SERVER_ROOT} && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci`;
+    if (opts.serverRoot === null) {
+      return 'outlook-tool not bundled in mcp-server/node_modules. The MCP is using a global outlook-cli on PATH. To get the bundled (more robust) install, run PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci in the plugin\'s mcp-server directory (this server could not locate its own package root, so there is no path to print).';
+    }
+    return `outlook-tool not bundled in mcp-server/node_modules. The MCP is using a global outlook-cli on PATH. To get the bundled (more robust) install, run: cd ${opts.serverRoot} && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci`;
   }
   if (opts.authStatus === 'missing' || opts.authStatus === 'expired') {
     return `Auth missing/expired. Run: outlook-cli login --sharepoint-host ${suggestedTenantHost()}`;
@@ -87,12 +116,16 @@ export const doctorTool: Tool = {
       authStatus: auth.status,
       lastStartupStatus,
       lastStartupError: lastStartup?.error ?? null,
+      serverRoot: SERVER_ROOT,
     });
 
     return {
       mcpServer: { name: 'outlook-bridge', version: mcpVersion },
       node: { path: cli.nodeBin, version: process.version },
       cli: { mode: cli.mode, path: cli.path, version: cli.cliVersion },
+      // Reported so the anchor is visible rather than inferred: a wrong
+      // serverRoot is what made the old suggestion nonsense from a bundle.
+      serverRoot: SERVER_ROOT,
       auth,
       lastStartup,
       suggestion,

@@ -63,6 +63,21 @@ if [ "$NODE_MAJOR" -lt 20 ]; then
   exit 1
 fi
 
+# Prefer the committed single-file bundle. esbuild inlines the only npm package
+# either server imports at runtime (@modelcontextprotocol/sdk); everything else
+# it touches is a Node builtin, and the CLI is spawned as a subprocess rather
+# than imported. So this path needs no node_modules and no build step: measured
+# cold, with node_modules renamed away, it serves `initialize` in well under a
+# second, against the 15.5s `npm ci` the fallback below has to demand of the
+# user first. Rebuild it with `npm run build:bundle`; CI reruns that build and
+# compares the bytes (see the bundle-drift job in .github/workflows/lint.yml),
+# so an edit to src/ that is not rebuilt fails there rather than shipping.
+BUNDLE="$DIR/bundle/server.mjs"
+if [ -f "$BUNDLE" ]; then
+  write_status "ok" "null"
+  exec "$NODE_BIN" "$BUNDLE"
+fi
+
 NPM_BIN="$(dirname "$NODE_BIN")/npm"
 # Prefer a bare `npm` in the printed command when it is on the user's PATH; fall
 # back to the absolute path we resolved, which always works.
@@ -81,7 +96,8 @@ SAFE_DIR="$(printf '%s' "$DIR" | tr -d '\\"\n\r')"
 if [ ! -d "$DIR/node_modules" ]; then
   write_status "fail" "\"dependencies not installed. Run: cd $SAFE_DIR && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 $INSTALL_CMD && npm run build\""
   {
-    echo "outlook-bridge: FATAL: dependencies are not installed, so the server cannot start."
+    echo "outlook-bridge: FATAL: bundle/server.mjs is missing AND dependencies are not installed, so the server cannot start."
+    echo "  bundle/server.mjs is committed to the repo, so a checkout normally has it."
     echo "  Run this once (takes 30-60s), then restart Claude Code:"
     echo ""
     echo "    cd \"$DIR\" && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 $NPM_SHOW ${INSTALL_CMD#npm } && $NPM_SHOW run build"
@@ -93,7 +109,7 @@ fi
 if [ ! -f "$DIR/dist/server.js" ]; then
   write_status "fail" "\"server not built. Run: cd $SAFE_DIR && npm run build\""
   {
-    echo "outlook-bridge: FATAL: the server is not built, so there is nothing to run."
+    echo "outlook-bridge: FATAL: bundle/server.mjs is missing and dist/ is not built, so there is nothing to run."
     echo "  Dependencies are present, so this is quick. Run it, then restart Claude Code:"
     echo ""
     echo "    cd \"$DIR\" && $NPM_SHOW run build"

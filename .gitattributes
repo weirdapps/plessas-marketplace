@@ -26,3 +26,13 @@
 *.png  -text
 *.pdf  -text
 *.pptx -text
+
+# The two committed MCP bundles. Already covered by `* text=auto eol=lf` above,
+# which stores and checks them out LF on every platform, so this is not fixing a
+# breakage. It is here because .github/workflows/lint.yml rebuilds these two
+# files on ubuntu and compares them BYTE FOR BYTE against what was committed
+# from macOS. `-text` takes git's text/binary heuristic and any future change to
+# the rule above out of that comparison entirely, so a drift failure can only
+# ever mean the source and the artefact really disagree.
+plugins/mail/mcp-server/bundle/server.mjs -text
+plugins/chat/mcp-server/bundle/server.mjs -text

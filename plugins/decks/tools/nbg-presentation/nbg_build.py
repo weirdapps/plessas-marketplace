@@ -153,6 +153,46 @@ def _add_textbox(
     return txBox
 
 
+def _set_alt_text(shape, text):
+    """Write OOXML alt text onto a shape's non-visual properties (`descr`).
+
+    python-pptx exposes no API for this and seeds `descr` with the source
+    filename on pictures and with nothing at all on charts and tables, so every
+    deck this builder made shipped a chart a screen reader announces as "Chart
+    3". EN 301 549 adopts WCAG 2.1 AA for non-web documents; see Standard #22 in
+    presentation-style-guide.md for why the liability is the bank's.
+
+    The text must not restate the slide title. A reader who has the title read
+    to them and then hears it again as the chart description has learned
+    nothing, so the callers below describe the SHAPE of the data instead:
+    plot type, series names, category span.
+    """
+    cNvPr = shape._element.find(f".//{qn('p:cNvPr')}")
+    if cNvPr is not None:
+        cNvPr.set("descr", text)
+
+
+def _chart_alt_text(chart_type, categories, series_list):
+    """Alt text for a chart: what it plots, how many series, over what span."""
+    names = [str(s.get("name", "")).strip() for s in series_list]
+    named = ", ".join(n for n in names if n)
+    parts = [f"{chart_type.replace('_', ' ')} chart"]
+    parts.append(f"{len(series_list)} series" + (f" ({named})" if named else ""))
+    if categories:
+        span = f"{categories[0]} to {categories[-1]}" if len(categories) > 1 else str(categories[0])
+        parts.append(f"{len(categories)} categories, {span}")
+    return ". ".join(parts) + "."
+
+
+def _table_alt_text(headers, body_rows):
+    """Alt text for a table: its columns and how many rows of data it holds."""
+    named = ", ".join(str(h).strip() for h in headers if str(h).strip())
+    columns = f"{len(headers) or max((len(r) for r in body_rows), default=0)} columns"
+    if named:
+        columns += f" ({named})"
+    return f"Table. {columns}. {len(body_rows)} data rows."
+
+
 def _add_bumper_pill(slide, text, x=GUTTER, y=0.35):
     """Add bumper as a filled rounded-rect pill with white text (NBG pattern).
 
@@ -525,9 +565,11 @@ def create_table_slide(prs, content, table_spec, page_number):
         row_h = (available - header_h) / len(body_rows)
 
     total_h = header_h + row_h * len(body_rows)
-    table = slide.shapes.add_table(
+    table_frame = slide.shapes.add_table(
         n_rows, n_cols, Inches(GUTTER), Inches(table_y), Inches(CONTENT_W), Inches(total_h)
-    ).table
+    )
+    _set_alt_text(table_frame, _table_alt_text(headers, body_rows))
+    table = table_frame.table
     # The theme table style would repaint the header and band the rows over our
     # own fills; NBG carries both itself.
     table.first_row = False
@@ -645,6 +687,8 @@ def create_chart_slide(
         chart_data,
     )
 
+    _set_alt_text(chart_frame, _chart_alt_text(chart_type, categories, series_list))
+
     chart = chart_frame.chart
     _style_chart(chart)
 
@@ -755,6 +799,11 @@ def create_waterfall_slide(prs, content, page_number):
         Inches(CONTENT_W),
         Inches(chart_h),
         chart_data,
+    )
+
+    _set_alt_text(
+        chart_frame,
+        _chart_alt_text("waterfall", categories, [{"name": "Increase"}, {"name": "Decrease"}]),
     )
 
     chart = chart_frame.chart

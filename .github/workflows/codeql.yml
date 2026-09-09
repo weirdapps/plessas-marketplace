@@ -26,4 +26,16 @@ jobs:
       - uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9
         with:
           languages: ${{ matrix.language }}
+          # plugins/*/mcp-server/bundle/server.mjs is a ~580 KB esbuild output:
+          # generated, reviewed as a diff of its SOURCE, and rebuilt byte for
+          # byte by the bundle-drift job in lint.yml. Analysing it reports the
+          # vendored SDK's code as this repo's, and a finding there cannot be
+          # fixed here anyway. This is a `config:` on init, NOT a trigger-level
+          # paths-ignore: paths-ignore under `on.push` would only decide whether
+          # the workflow RUNS, so a PR touching only the bundle would skip
+          # CodeQL on everything else too, which is worse than not excluding it.
+          config: |
+            paths-ignore:
+              - "plugins/mail/mcp-server/bundle/**"
+              - "plugins/chat/mcp-server/bundle/**"
       - uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9

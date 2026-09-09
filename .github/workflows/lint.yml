@@ -194,3 +194,87 @@ jobs:
             exit 1
           fi
           echo "OK - all plugin manifests and the marketplace root validate."
+
+  bundle-drift:
+    name: mcp bundle matches source (${{ matrix.server }})
+    runs-on: ubuntu-latest
+
+    # Why this job exists. plugins/*/mcp-server/bundle/server.mjs is a committed
+    # esbuild output with @modelcontextprotocol/sdk INLINED, and run.sh prefers
+    # it over dist/. package.json still declares the SDK, so Dependabot will keep
+    # bumping the manifest while the artefact that actually executes never moves.
+    # Nothing else in this repo would notice: every Dependabot PR would go green
+    # while the shipped server ran an older SDK indefinitely, which on a public
+    # repo means a known-vulnerable version could sit in the artefact with no
+    # check pointing at it. Rebuilding and comparing bytes is the only thing that
+    # ties the declaration to the artefact.
+    #
+    # It catches the plainer failure too: an edit to src/ that nobody rebuilt.
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [mail, chat]
+    defaults:
+      run:
+        working-directory: plugins/${{ matrix.server }}/mcp-server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: plugins/${{ matrix.server }}/mcp-server/package-lock.json
+
+      # npm ci, not a bare esbuild install: the bundle inlines the SDK, so the
+      # rebuild has to see the same node_modules the committed bytes were built
+      # from. package-lock.json is what makes that the same tree.
+      # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD and the absence of --ignore-scripts are
+      # both for the same reason as in tests.yml; see the comments there.
+      - name: Install dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+
+      # NON-BLOCKING for exactly one real run, then flip it.
+      #
+      # Reproducibility is verified on macOS: three consecutive
+      # `npm run build:bundle` runs gave byte-identical output (mail 593040
+      # bytes sha256 db4b6dc6..., chat 580276 bytes sha256 439eda7a...). What is
+      # NOT verified is this comparison, because CI rebuilds on ubuntu-latest
+      # and compares against bytes committed from macOS, and that has never been
+      # run. Remove `continue-on-error` as soon as one real CI run confirms the
+      # cross-platform bytes match; leaving it is how a guard becomes decoration.
+      #
+      # If they ever do diverge, do NOT relax the comparison. The documented
+      # fallback is to stamp the bundle with the exact @modelcontextprotocol/sdk
+      # and esbuild versions it was built from and assert the stamp matches
+      # package.json. That is weaker (it proves the declaration, not the code)
+      # but it is platform-independent. Not implemented, on purpose.
+      - name: Rebuild the bundle and compare with the committed bytes
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          bundle=bundle/server.mjs
+          describe() {
+            printf '%s bytes, sha256 %s' \
+              "$(wc -c < "$1" | tr -d ' ')" \
+              "$(sha256sum "$1" | cut -d' ' -f1)"
+          }
+          # Distinguish "matches" from "there was nothing to compare". A bundle
+          # that got gitignored, or deleted, must fail here rather than pass by
+          # examining nothing.
+          git ls-files --error-unmatch "$bundle" > /dev/null
+          cp "$bundle" /tmp/committed.mjs
+          npm run build:bundle
+          if cmp -s /tmp/committed.mjs "$bundle"; then
+            echo "::notice::bundle matches source -- $(describe "$bundle")"
+            exit 0
+          fi
+          echo "::error::$bundle does not match a rebuild from src/ and" \
+               "package-lock.json. Run 'npm run build:bundle' in" \
+               "plugins/${{ matrix.server }}/mcp-server, then commit the result."
+          echo "committed $(describe /tmp/committed.mjs)"
+          echo "rebuilt   $(describe "$bundle")"
+          cmp /tmp/committed.mjs "$bundle" || true
+          exit 1

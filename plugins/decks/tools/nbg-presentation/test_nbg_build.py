@@ -577,3 +577,484 @@ def test_declared_namespaces_reads_every_prefix():
 
     found = dict(declared_namespaces(REAL_SLIDE_ROOT.encode("utf-8")))
     assert set(found) == {"a", "r", "p", "mc", "p14", "a14"}
+
+
+# ------------------------------------------ 2026 executive-presentation checks
+#
+# Every check below is break-tested: the fixture is deliberately violated, the
+# check is watched failing, and a passing variant proves the failure came from
+# the violation rather than from the check being broken. _patched_pptx refuses
+# an edit that changes nothing, so a break-test cannot silently prove nothing.
+
+
+def _deck(tmp_path, name, build):
+    """A minimal NBG-dimensioned deck, built by `build(prs)`."""
+    pytest.importorskip("pptx")
+    from pptx import Presentation
+
+    prs = Presentation()
+    prs.slide_width, prs.slide_height = nbg_build.SLIDE_WIDTH, nbg_build.SLIDE_HEIGHT
+    build(prs)
+    out = tmp_path / name
+    prs.save(str(out))
+    return out
+
+
+def _patched_pptx(source, dest, part, replace):
+    """Copy a pptx, rewriting one XML part through `replace`.
+
+    Asserts the rewrite actually changed the part. A break-test whose edit
+    silently missed is the same defect as a check that examined nothing: it
+    reports green having done no work.
+    """
+    with zipfile.ZipFile(source) as zf:
+        names = zf.namelist()
+        blobs = {n: zf.read(n) for n in names}
+
+    before = blobs[part].decode("utf-8")
+    after = replace(before)
+    assert after != before, f"{part}: the break-test edit changed nothing"
+    blobs[part] = after.encode("utf-8")
+
+    with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
+        for n in names:
+            zf.writestr(n, blobs[n])
+    return dest
+
+
+def _check(pptx_path, name):
+    import nbg_validate
+
+    return _result(nbg_validate.validate_presentation(str(pptx_path)), name)
+
+
+# ------------------------------------------------------------- slide titles
+
+
+def test_slide_titles_pass_on_a_shipped_deck(built_example):
+    titles = _check(built_example, "Slide Titles")
+    assert titles.passed, titles.details
+    assert titles.examined == 10, titles.message  # 11 slides, back cover is text-free
+
+
+def test_slide_titles_catch_a_duplicate(tmp_path):
+    """Two slides with one title cannot be told apart in minutes or in the room."""
+
+    def build(prs):
+        for page in (1, 2):
+            nbg_build.create_content_slide(
+                prs, {"title": "Cards performance held up", "points": ["a"]}, page
+            )
+
+    titles = _check(_deck(tmp_path, "dup.pptx", build), "Slide Titles")
+    assert not titles.passed
+    assert any("duplicates slide 1" in d for d in titles.details), titles.details
+
+
+def test_slide_titles_catch_a_missing_title(tmp_path):
+    """A body slide with bullets and no title fails; a text-free back cover does not."""
+
+    def build(prs):
+        nbg_build.create_content_slide(prs, {"points": ["a bullet, but no title"]}, 1)
+        nbg_build.create_back_cover_slide(prs)
+
+    titles = _check(_deck(tmp_path, "untitled.pptx", build), "Slide Titles")
+    assert not titles.passed
+    assert any("no title" in d for d in titles.details), titles.details
+    assert "1 text-free slide(s) exempt" in titles.message
+
+
+# ---------------------------------------------------------- exhibit sources
+
+
+def test_exhibit_sources_fire_on_the_shipped_deck_and_do_not_block(built_example):
+    """All three shipped examples carry unsourced exhibits. It reports, not blocks."""
+    import nbg_validate
+
+    results = nbg_validate.validate_presentation(str(built_example))
+    sources = _result(results, "Exhibit Sources")
+    assert not sources.passed
+    assert sources.warned and sources.severity == "warning"
+    assert any("no source line" in d for d in sources.details), sources.details
+    # A warning is not a failure: the build still passes.
+    assert nbg_validate.print_results(results, str(built_example)) is True
+
+
+def test_exhibit_sources_pass_with_a_dated_source_line(tmp_path):
+    def build(prs):
+        slide = nbg_build.create_chart_slide(
+            prs,
+            {"title": "Volume grew"},
+            1,
+            chart_type="bar",
+            categories=["Q1"],
+            series_list=[{"name": "2025", "values": [3]}],
+        )
+        nbg_build._add_textbox(
+            slide, 0.374, 6.5, 8, 0.25, "Source: NBG MIS, December 2025", font_size=11
+        )
+
+    sources = _check(_deck(tmp_path, "sourced.pptx", build), "Exhibit Sources")
+    assert sources.passed, sources.details
+    assert sources.examined == 1
+
+
+def test_exhibit_sources_reject_a_source_with_no_as_of_date(tmp_path):
+    """ "Source: NBG MIS" does not say whether the number is current."""
+
+    def build(prs):
+        slide = nbg_build.create_chart_slide(
+            prs,
+            {"title": "Volume grew"},
+            1,
+            chart_type="bar",
+            categories=["Q1"],
+            series_list=[{"name": "s", "values": [3]}],
+        )
+        nbg_build._add_textbox(slide, 0.374, 6.5, 8, 0.25, "Source: NBG MIS", font_size=11)
+
+    sources = _check(_deck(tmp_path, "undated.pptx", build), "Exhibit Sources")
+    assert not sources.passed
+    assert any("no as-of date" in d for d in sources.details), sources.details
+
+
+# ----------------------------------------------------------------- alt text
+
+
+def test_alt_text_passes_once_the_builder_describes_its_charts(built_example):
+    alt = _check(built_example, "Alt Text")
+    assert alt.passed, alt.details
+    assert alt.examined == 3, alt.message  # 2 charts + 1 table
+    assert "11 brand logo(s) exempt as decorative" in alt.message
+
+
+def test_alt_text_catches_a_stripped_descr(tmp_path, built_example):
+    out = _patched_pptx(
+        built_example,
+        tmp_path / "noalt.pptx",
+        "ppt/slides/slide4.xml",
+        lambda x: re.sub(r'(name="Chart 3") descr="[^"]*"', r"\1", x),
+    )
+    alt = _check(out, "Alt Text")
+    assert not alt.passed
+    assert any("has no alt text" in d for d in alt.details), alt.details
+
+
+def test_alt_text_rejects_a_filename_which_is_what_python_pptx_writes(tmp_path, built_example):
+    """descr="nbg-logo-gr.png" passes an emptiness test and describes nothing."""
+    out = _patched_pptx(
+        built_example,
+        tmp_path / "filename.pptx",
+        "ppt/slides/slide4.xml",
+        lambda x: re.sub(r'(name="Chart 3") descr="[^"]*"', r'\1 descr="chart-4.png"', x),
+    )
+    alt = _check(out, "Alt Text")
+    assert not alt.passed
+    assert any("is a filename or an autoname" in d for d in alt.details), alt.details
+
+
+def test_alt_text_rejects_a_lead_in_and_a_duplicated_caption(tmp_path, built_example):
+    lead_in = _patched_pptx(
+        built_example,
+        tmp_path / "leadin.pptx",
+        "ppt/slides/slide4.xml",
+        lambda x: re.sub(
+            r'(name="Chart 3") descr="[^"]*"', r'\1 descr="Image of monthly volume"', x
+        ),
+    )
+    alt = _check(lead_in, "Alt Text")
+    assert not alt.passed
+    assert any('opens with "image of"' in d for d in alt.details), alt.details
+
+    caption = "Monthly transaction volume shows consistent growth trajectory"
+    duplicate = _patched_pptx(
+        built_example,
+        tmp_path / "dupcaption.pptx",
+        "ppt/slides/slide4.xml",
+        lambda x: re.sub(r'(name="Chart 3") descr="[^"]*"', rf'\1 descr="{caption}"', x),
+    )
+    alt = _check(duplicate, "Alt Text")
+    assert not alt.passed
+    assert any("repeats a caption" in d for d in alt.details), alt.details
+
+
+# ------------------------------------------------------------ zero baseline
+
+
+def _bar_chart_part(pptx_path):
+    """The chart part holding the bar chart, so the test never hardcodes an index."""
+    with zipfile.ZipFile(pptx_path) as zf:
+        for name in sorted(n for n in zf.namelist() if CHART_PART.match(n)):
+            if b"barChart" in zf.read(name):
+                return name
+    raise AssertionError("no bar chart part found")
+
+
+def test_zero_baseline_passes_when_the_axis_is_automatic(built_example):
+    """nbg_build writes no c:min, so the axis auto-scales from zero."""
+    baseline = _check(built_example, "Zero Baseline")
+    assert baseline.passed, baseline.details
+    assert baseline.examined == 1, baseline.message
+
+
+def _truncate_value_axis(chart_xml, minimum="30"):
+    """Put an explicit c:min on the VALUE axis of a chart part.
+
+    It has to target `c:valAx` by hand, and the shape of the edit is not
+    obvious: the value axis nbg_build writes carries a SELF-CLOSED
+    `<c:scaling/>`, while the CATEGORY axis carries a populated
+    `<c:scaling><c:orientation val="minMax"/></c:scaling>`. The first version of
+    this break-test replaced the first populated scaling block in the part,
+    which is the category axis, where a minimum means nothing. The check
+    correctly stayed green and this test failed.
+
+    That is the argument for break-testing in one place: the edit was broken,
+    not the check, and only watching the check fail could say which.
+    """
+    head, sep, tail = chart_xml.partition("<c:valAx>")
+    assert sep, "chart part has no value axis"
+    if "<c:scaling/>" in tail:
+        tail = tail.replace("<c:scaling/>", f'<c:scaling><c:min val="{minimum}"/></c:scaling>', 1)
+    else:
+        tail = tail.replace("<c:scaling>", f'<c:scaling><c:min val="{minimum}"/>', 1)
+    return head + sep + tail
+
+
+def test_zero_baseline_catches_a_truncated_bar_axis(tmp_path, built_example):
+    out = _patched_pptx(
+        built_example,
+        tmp_path / "truncated.pptx",
+        _bar_chart_part(built_example),
+        _truncate_value_axis,
+    )
+    baseline = _check(out, "Zero Baseline")
+    assert not baseline.passed
+    assert any("starts at 30, not zero" in d for d in baseline.details), baseline.details
+
+
+def test_zero_baseline_leaves_a_truncated_line_chart_alone(tmp_path, built_example):
+    """A line chart encodes value as position, so a non-zero start is legitimate."""
+    with zipfile.ZipFile(built_example) as zf:
+        line_part = next(
+            n
+            for n in sorted(x for x in zf.namelist() if CHART_PART.match(x))
+            if b"lineChart" in zf.read(n)
+        )
+    out = _patched_pptx(built_example, tmp_path / "line.pptx", line_part, _truncate_value_axis)
+    baseline = _check(out, "Zero Baseline")
+    assert baseline.passed, baseline.details
+
+
+def test_zero_baseline_is_read_by_parsing_not_by_searching_the_text(built_example):
+    """The substring "c:min" is in c:minorTickMark on every chart this builder writes."""
+    with zipfile.ZipFile(built_example) as zf:
+        parts = [n for n in zf.namelist() if CHART_PART.match(n)]
+        assert parts
+        assert all(b"c:min" in zf.read(n) for n in parts), "the trap this check avoids is gone"
+    assert _check(built_example, "Zero Baseline").passed
+
+
+# ----------------------------------------------------------- number formats
+
+
+def test_number_formats_read_table_cells_not_only_shapes(built_example):
+    """A walk over p:sp alone saw 3 of the deck's 11 amounts: the table was invisible."""
+    numbers = _check(built_example, "Number Formats")
+    assert numbers.passed, numbers.details
+    assert numbers.examined == 11, numbers.message
+
+
+def test_number_formats_catch_raw_digits_beside_abbreviations(tmp_path):
+    def build(prs):
+        nbg_build.create_content_slide(
+            prs,
+            {"title": "Fee income by line", "points": ["EUR 1,250,000 interchange", "EUR 2.3M FX"]},
+            1,
+        )
+
+    numbers = _check(_deck(tmp_path, "mixed.pptx", build), "Number Formats")
+    assert not numbers.passed
+    assert numbers.warned
+    assert any("raw and abbreviated" in d for d in numbers.details), numbers.details
+
+
+def test_number_formats_catch_inconsistent_decimals_within_one_unit(tmp_path):
+    def build(prs):
+        nbg_build.create_content_slide(
+            prs, {"title": "Fee income by line", "points": ["EUR 2.3M", "EUR 4M", "EUR 11M"]}, 1
+        )
+
+    numbers = _check(_deck(tmp_path, "decimals.pptx", build), "Number Formats")
+    assert not numbers.passed
+    assert any("decimal precisions" in d for d in numbers.details), numbers.details
+
+
+def test_number_formats_do_not_flag_mixed_magnitudes_or_non_currency(tmp_path):
+    """EUR 12.5B beside EUR 42M is correct; 2026, page 3 and 18% are not currency."""
+
+    def build(prs):
+        nbg_build.create_content_slide(
+            prs,
+            {
+                "title": "Volume and fees",
+                "points": ["EUR 12.5B volume in 2026", "EUR 42M fees, up 18%", "850K downloads"],
+            },
+            1,
+        )
+
+    numbers = _check(_deck(tmp_path, "magnitudes.pptx", build), "Number Formats")
+    assert numbers.passed, numbers.details
+    assert numbers.examined == 2, numbers.message
+
+
+# ------------------------------------------------------------------ ai slop
+
+
+def test_ai_slop_passes_on_the_shipped_decks(built_example):
+    slop = _check(built_example, "AI Slop")
+    assert slop.passed, slop.details
+    assert slop.examined == 10, slop.message
+
+
+def test_ai_slop_fires_on_a_cluster(tmp_path):
+    def build(prs):
+        nbg_build.create_content_slide(
+            prs,
+            {
+                "title": "Our approach to payments",
+                "points": ["We leverage a seamless platform", "Studies show it works"],
+            },
+            1,
+        )
+
+    slop = _check(_deck(tmp_path, "slop.pptx", build), "AI Slop")
+    assert not slop.passed
+    assert any("'leverage'" in d and "'seamless'" in d for d in slop.details), slop.details
+
+
+def test_ai_slop_ignores_a_lone_hit(tmp_path):
+    """A single "robust" in a technical sentence is fine; flagging it trains people
+    to ignore the check."""
+
+    def build(prs):
+        nbg_build.create_content_slide(
+            prs, {"title": "Risk framework", "points": ["The model is robust to rate shocks"]}, 1
+        )
+
+    slop = _check(_deck(tmp_path, "lone.pptx", build), "AI Slop")
+    assert slop.passed, slop.details
+    assert slop.examined == 1
+
+
+def test_ai_slop_matches_through_a_curly_apostrophe(tmp_path):
+    def build(prs):
+        nbg_build.create_content_slide(
+            prs,
+            {
+                "title": "Market context",
+                "points": ["In today’s fast-paced world", "we must unlock value"],
+            },
+            1,
+        )
+
+    slop = _check(_deck(tmp_path, "curly.pptx", build), "AI Slop")
+    assert not slop.passed, slop.message
+
+
+# ------------------------------------------------------------ action titles
+
+
+def test_action_titles_pass_on_the_shipped_decks(built_example):
+    titles = _check(built_example, "Action Titles")
+    assert titles.passed, titles.details
+    assert titles.examined == 6, titles.message
+
+
+def test_action_titles_flag_a_topic_label(tmp_path):
+    def build(prs):
+        nbg_build.create_content_slide(prs, {"title": "Overview", "points": ["a"]}, 1)
+        nbg_build.create_content_slide(prs, {"title": "Q3 Results", "points": ["b"]}, 2)
+
+    titles = _check(_deck(tmp_path, "labels.pptx", build), "Action Titles")
+    assert not titles.passed
+    assert titles.warned
+    assert len(titles.details) == 2, titles.details
+    assert all("is a topic label" in d for d in titles.details), titles.details
+
+
+def test_action_titles_flag_an_overlong_title(tmp_path):
+    long_title = " ".join(["word"] * 16)
+
+    def build(prs):
+        nbg_build.create_content_slide(prs, {"title": long_title, "points": ["a"]}, 1)
+
+    titles = _check(_deck(tmp_path, "long.pptx", build), "Action Titles")
+    assert not titles.passed
+    assert any("runs 16 words" in d for d in titles.details), titles.details
+
+
+def test_action_titles_leave_divider_and_cover_titles_alone(tmp_path):
+    """A divider title is a noun phrase by Standard #3, so it is not a content title."""
+
+    def build(prs):
+        nbg_build.create_cover_slide(prs, {"title": "Overview"})
+        nbg_build.create_divider_slide(prs, {"number": "01", "title": "Recommendations"})
+
+    titles = _check(_deck(tmp_path, "chrome.pptx", build), "Action Titles")
+    assert titles.passed, titles.details
+    assert titles.examined == 0 and titles.skipped, titles.message
+
+
+# ------------------------------------------------------- the severity tier
+
+
+def test_a_warning_reports_without_blocking_and_is_never_counted_as_a_pass():
+    import nbg_validate
+
+    warning = nbg_validate.ValidationResult(
+        "W", False, "found something", ["a finding"], severity="warning"
+    )
+    error = nbg_validate.ValidationResult("E", False, "broke")
+    assert warning.warned and not warning.passed
+    assert not error.warned
+    assert nbg_validate.print_results([warning], "x") is True
+    assert nbg_validate.print_results([error], "x") is False
+
+
+def test_every_new_check_declares_what_it_examined_when_it_passes(built_example):
+    """The whole point of the rebuild: a pass with nothing measured is not a pass."""
+    import nbg_validate
+
+    new_checks = {
+        "Slide Titles",
+        "Exhibit Sources",
+        "Alt Text",
+        "Zero Baseline",
+        "Number Formats",
+        "AI Slop",
+        "Action Titles",
+    }
+    results = nbg_validate.validate_presentation(str(built_example))
+    names = {r.name for r in results}
+    assert new_checks <= names, new_checks - names
+    for result in results:
+        if result.name in new_checks and result.passed:
+            assert result.examined is not None, f"{result.name} passed without a count"
+
+
+@pytest.mark.parametrize("name", EXAMPLE_NAMES)
+def test_a_zero_candidate_pass_is_reported_as_unverified(tmp_path_factory, name):
+    """strategy-deck has no charts, so Zero Baseline must show a circle, not a tick."""
+    pytest.importorskip("pptx")
+    import nbg_validate
+
+    spec = EXAMPLES_DIR / f"{name}.yaml"
+    if not spec.exists():
+        pytest.skip(f"{spec} not found")
+    out = tmp_path_factory.mktemp(f"zero-{name}") / f"{name}.pptx"
+    nbg_build.build_presentation(spec, out)
+
+    results = nbg_validate.validate_presentation(str(out))
+    for result in results:
+        if result.passed and result.examined == 0:
+            assert result.skipped, f"{result.name} measured nothing and still read as a pass"
