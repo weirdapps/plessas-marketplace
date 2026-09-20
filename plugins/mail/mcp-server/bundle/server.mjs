@@ -16447,7 +16447,7 @@ var package_default = {
   type: "module",
   main: "dist/server.js",
   engines: {
-    node: ">=20"
+    node: ">=22.12.0"
   },
   scripts: {
     build: "tsc",
@@ -16458,7 +16458,7 @@ var package_default = {
   },
   dependencies: {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#c278600ccc54253c83fa8e353b5009081e05e1a0"
+    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#395296ce4efd4c8d07473758cef8b6f45cc2fba9"
   },
   devDependencies: {
     "@types/node": "~26.6.2",

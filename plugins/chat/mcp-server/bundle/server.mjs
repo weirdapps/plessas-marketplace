@@ -16105,7 +16105,7 @@ var package_default = {
   type: "module",
   main: "dist/server.js",
   engines: {
-    node: ">=20"
+    node: ">=22.12.0"
   },
   scripts: {
     build: "tsc",
@@ -16116,7 +16116,7 @@ var package_default = {
   },
   dependencies: {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#eb2beadea83000a16b01b09a6574e972c1d57405"
+    "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#8463e2421d6bc8ed07482817c8e2fb1ee9f7d086"
   },
   devDependencies: {
     "@types/node": "~26.6.2",

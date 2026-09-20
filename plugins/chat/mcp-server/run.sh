@@ -47,10 +47,17 @@ NODE_BIN="$(find_node)" || {
   exit 1
 }
 
-# Enforce the package.json engines floor. find_node prefers whatever `command -v
-# node` returns and otherwise takes the newest fnm/nvm dir by mtime, either of
-# which can be a Node 18. Without this check the server fails later with an
-# obscure syntax or API error instead of here.
+# Gate at 20, which is what the path THIS script prefers actually needs, and
+# deliberately not the package.json engines floor of >=22.12.0. The two differ
+# because the two start paths differ: the bundle below is built
+# --target=node20 and needs no node_modules, so it runs correctly on a Node 20;
+# the engines floor is set by the teams-cli dependency, which only matters on
+# the `npm ci` + dist/ fallback further down, where npm reports it itself.
+# Raising this gate to 22 would refuse a Node 20 user a bundle that would have
+# worked. find_node prefers whatever `command -v node` returns and otherwise
+# takes the newest fnm/nvm dir by mtime, either of which can be a Node 18;
+# without this check the server fails later with an obscure syntax or API
+# error instead of here.
 NODE_VERSION="$("$NODE_BIN" -v 2>/dev/null || true)"
 NODE_MAJOR="${NODE_VERSION#v}"
 NODE_MAJOR="${NODE_MAJOR%%.*}"
