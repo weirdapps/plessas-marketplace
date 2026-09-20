@@ -99,8 +99,18 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
         with:
-          # 20 is the floor both package.json files declare in `engines`.
-          node-version: '20'
+          # 22, not the `engines` floor of 20, and the gap is deliberate.
+          # vitest 5 declares `node: ^22.12.0 || ^24.0.0 || >=26.0.0`, so the
+          # suite cannot run on 20 at all. `engines` stays at >=20 because it
+          # describes the shipped server, not the test tooling: bundle/server.mjs
+          # is built `--target=node20` and still runs there. Node 20 went EOL in
+          # April 2026, so this tests a supported runtime rather than a dead one.
+          #
+          # The cost of the gap: a regression that only breaks on node 20 would
+          # no longer be caught here. If that ever matters, the fix is to raise
+          # `engines` to >=22 and the esbuild `--target` with it, not to pin this
+          # back to 20 and strand the test suite.
+          node-version: '22'
           cache: npm
           cache-dependency-path: plugins/${{ matrix.server }}/mcp-server/package-lock.json
 

@@ -222,7 +222,13 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
         with:
-          node-version: '20'
+          # 22 for the same reason as tests.yml: `npm ci` below installs the
+          # full dev tree, and vitest 5 declares `node: ^22.12.0 || ^24.0.0 ||
+          # >=26.0.0`. npm only warns on a bad `engines` rather than failing, so
+          # this job would probably still go green on 20 -- but it would be green
+          # because of an advisory-by-default, which is not a thing to depend on.
+          # esbuild and the comparison below are indifferent to the node version.
+          node-version: '22'
           cache: npm
           cache-dependency-path: plugins/${{ matrix.server }}/mcp-server/package-lock.json
 

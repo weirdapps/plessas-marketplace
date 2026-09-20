@@ -16461,10 +16461,10 @@ var package_default = {
     "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#c278600ccc54253c83fa8e353b5009081e05e1a0"
   },
   devDependencies: {
-    "@types/node": "~25.9.6",
+    "@types/node": "~26.6.2",
     esbuild: "0.28.2",
-    typescript: "~6.0.3",
-    vitest: "~4.1.11"
+    typescript: "~7.0.2",
+    vitest: "~5.0.1"
   }
 };
 
