@@ -14,31 +14,53 @@ updates:
         patterns:
           - "github/codeql-action*"
 
+  # Both bridge servers are grouped, and this is not cosmetic. Every bump to
+  # either directory changes bundle/server.mjs, because src/server.ts and
+  # src/tools/doctor.ts import the whole package.json for pkg.version and
+  # esbuild inlines the manifest, devDependencies included. So each PR here
+  # lands red on the bundle-drift job until somebody reruns
+  # `npm run build:bundle` and commits the result. Ungrouped, that is one
+  # manual rebuild PER PACKAGE: on 2026-09-20 a single @types/node patch cost
+  # two separate hand-fixed PRs, #105 and #107, for the same one-line change.
+  # Grouped, it is one rebuild per directory per week.
+  #
+  # Auto-merge still applies to these groups (allow_grouped defaults true), but
+  # it cannot land a stale bundle: the reusable polls this PR's own checks and
+  # bundle-drift is blocking, so a PR whose bundle was not rebuilt simply stays
+  # open.
+  #
+  # The `ignore` rules that used to sit on both of these entries are gone, and
+  # that is a deliberate reversal of 203f869 rather than an oversight. They
+  # ignored semver-major on typescript, @types/node and vitest, and the stated
+  # goal was to "block major auto-merge". `ignore` does not do that. It stops
+  # Dependabot OPENING the PR at all, so the majors were not gated, they were
+  # invisible -- which is exactly why those three sat on 6.0.3 / 25.9.x /
+  # 4.1.11 until they were moved by hand on 2026-09-20.
+  #
+  # The gate the commit actually wanted was added in that same commit and is
+  # still here: dependabot-auto-merge.yml sets `allow_major_in_group: false`,
+  # and the reusable's merge decision only ever sets merge=true for
+  # semver-patch, for semver-minor when allow_minor is on, and for a group that
+  # is not major. A major therefore falls through to merge=false whether it is
+  # grouped or not. Majors are visible and still require a human. Do not
+  # re-add the ignores: they only hide the work.
   - package-ecosystem: npm
     directory: /plugins/chat/mcp-server
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
+    groups:
+      bridge-toolchain:
+        patterns: ["*"]
 
   - package-ecosystem: npm
     directory: /plugins/mail/mcp-server
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
+    groups:
+      bridge-toolchain:
+        patterns: ["*"]
 
   - package-ecosystem: pip
     directory: /plugins/decks/tools/nbg-presentation
