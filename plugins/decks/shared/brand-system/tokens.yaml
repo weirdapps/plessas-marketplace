@@ -68,6 +68,9 @@ extended_palettes:
   pfm_categories: ["B99C34", "44C7B3", "905567", "8D7349", "19B4E2", "AC1D44",
                    "A1AC20", "4B7398", "9D4F16", "547723", "2C76BD", "D08239",
                    "658A8D", "525CBE", "26A567", "8681B1"]
+  # Systemic-bank brand colours for peer comparisons (presentation-qa 2H). The
+  # validator's Bank Branding check requires each plotted bank in its own colour.
+  peer_banks: {nbg: "007B85", eurobank: "DC2646", alpha: "0D488B", piraeus: "FFC02D"}
 
 # Colours that must not appear: retired greys, one-off tints, the python-pptx /
 # Office 2007 theme a deck inherits when nothing overrides it, and dark grounds.
