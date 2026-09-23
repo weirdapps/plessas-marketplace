@@ -17,10 +17,10 @@ User request: $ARGUMENTS
   `${CLAUDE_PLUGIN_ROOT}/agents/<agent>.md` and follow it, reading any `CLAUDE_PLUGIN_ROOT` or
   `CLAUDE_PLUGIN_DATA` placeholder in it as the same plugin and data folders this command uses.
 - Every tool runs as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`. The first call of a
-  tool prepares its environment and can take a minute. Exit 2 from any command means that
-  environment could not be prepared: tell the user the fix it printed. The storyline and the
-  outline checkpoint (steps 3 and 4) still run, since they need no build; stop before step 5 until
-  the fix is applied.
+  tool prepares its environment and can take a minute. Exit 2 from any command means it could not
+  run, most often because its environment could not be prepared: tell the user the message and the
+  fix it printed. The storyline and the outline checkpoint (steps 3 and 4) still run, since they
+  need no build; stop before step 5 until the fix is applied.
 - `deck.yaml` (format: `${CLAUDE_PLUGIN_ROOT}/tools/nbg-presentation/deck.schema.json`) is the only
   hand-off between stages. Pass paths, never payloads.
 - The builder renders the deck. Nobody writes PptxGenJS, python-pptx or OOXML, and the
@@ -57,9 +57,11 @@ material: <brief text, or a path>
 ### 2. Gather the material
 
 - Text in the request: the brief.
-- A `.pptx`, `.docx` or `.pdf` path:
+- A `.pptx` or `.pdf` path:
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<file>" > "<WORK>/source.md"`, and the material
-  is that file.
+  is that file. Pictures in a deck show there as `[image: ...]`; they are not carried over, so ask
+  for the image files of any the new deck must keep. A `.docx` cannot be extracted: ask the user to
+  save it as PDF, or to paste the text.
 - A `.yaml` deck spec (from `/excel:excel-to-deck` or the user): copy it to `<WORK>/deck.yaml` and
   run `check` on it. Skip step 3 unless check fails on anything other than missing sources; then
   dispatch the storyline architect with `mode: preserve` and the spec as the material.

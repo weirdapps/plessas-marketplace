@@ -12,8 +12,9 @@ User request: $ARGUMENTS
 </objective>
 
 <rules>
-- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment
-  could not be prepared: show the printed fix and stop.
+- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could
+  not run (most often its environment could not be prepared): show the message and fix it printed
+  and stop.
 - Every number and label comes from the user. Data needs a source and an as-of date: ask for them
   when the request lacks them, never invent one.
 - If the Agent tool is unavailable or denied, Read `${CLAUDE_PLUGIN_ROOT}/agents/<agent>.md` and do
@@ -51,12 +52,13 @@ User request: $ARGUMENTS
    bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" render "<WORK>/deck.pptx" "<WORK>/render"
    ```
 
-   Fix the spec and repeat on a check or build exit 1. Read the first slide's PNG in
-   `<WORK>/render` and confirm the numbers match the data, every label reads, and nothing is clipped.
-   Render exit 4 means fonts were substituted, so text fit is unconfirmed; exit 3 means LibreOffice
-   is missing: deliver without the PNG and say the slide was not visually checked.
+   Fix the spec and repeat on a check or build exit 1 (each error names the field and a fix). Read
+   `<WORK>/render/slide-01.png` and confirm the numbers match the data, every label reads, and
+   nothing is clipped. Render exit 4 means Aptos was substituted, so text fit is unconfirmed: say
+   so; exit 3 means LibreOffice is not installed: deliver without the PNG and say the slide was not
+   visually checked.
 
-4. **Deliver** to the output folder: `<deck id>.pptx` (the slide to paste into a deck), the first
-   slide's PNG as `<deck id>.png`, and on the diagram route the SVG as `<deck id>.svg`.
+4. **Deliver** to the output folder: `<deck id>.pptx` (the slide to paste into a deck),
+   `slide-01.png` as `<deck id>.png`, and on the diagram route the SVG as `<deck id>.svg`.
 
 </process>

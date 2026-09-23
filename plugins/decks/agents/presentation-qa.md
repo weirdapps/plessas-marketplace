@@ -28,20 +28,26 @@ by number when there is none.
 
 ```bash
 mkdir -p "<render>"
-bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json > "<render>/validate.json"
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json --strict > "<render>/validate.json"
 ```
 
-- Exit 0: every check passed. Exit 1: at least one check failed. Exit 2: the validator could not
-  run; Layer 1 is then unverified, the verdict is FAIL, and you say plainly that the validator did
-  not execute (quote its stderr). Never report brand compliance you did not measure.
-- Read `validate.json`. Its checks are the Layer 1 list: report them by the names it uses, with
-  the counts it gives. Do not keep your own list of checks and do not quote a fixed total.
-- Every failed check becomes a fix (see Fixes).
-- **A check that examined nothing is not a pass.** When a check reports zero candidates examined,
-  ask whether the deck contains what it measures (text for a font check, a chart or table for an
-  exhibit-source check, a bank name for the bank-branding check). If it does, the check did not
-  look: report it as unverified, and the verdict cannot be PASS. If the deck has none, note it and
-  move on.
+- Exit 0: no check failed. Exit 1: at least one check failed; with `--strict` that includes a
+  check every deck must pass (Fonts, Font Sizes, Slide Titles) that examined nothing. Exit 2: the
+  validator could not run (missing or corrupt file, not a `.pptx`, import error); Layer 1 is then
+  unverified, the verdict is FAIL, and you say plainly that the validator did not execute (quote
+  its stderr). Never report brand compliance you did not measure.
+- Read `validate.json`: `summary` holds the counts, and each entry of `checks` has `name`,
+  `status` (`pass`, `fail`, `warn` or `skipped`), `severity`, `examined`, `message` and `details`
+  (each with a 1-based `slide`, which is also that slide's position in `deck.yaml`, and a
+  `message`). These checks are the Layer 1 list: report them by these names and counts. Do not keep
+  your own list and do not quote a fixed total. What a check measures:
+  `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate --list-checks`.
+- Every `fail` becomes a fix, one per `details` entry (see Fixes). A `warn` does not fail Layer 1:
+  list it as an advisory fix and weigh it in Layer 2 (an Action Titles warning informs criterion A).
+- **A check that examined nothing is not a pass.** A `skipped` check passed having examined zero
+  candidates. If the deck contains what it measures (a chart or table for Exhibit Sources, a bank
+  name for Bank Branding), the check did not look: report it as unverified, and the verdict cannot
+  be PASS. If the deck has none, note it and move on.
 
 ## Layer 2: look at every slide
 
@@ -49,17 +55,21 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json > "<re
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" render "<pptx>" "<render>"
 ```
 
+It prints JSON: `pngs` (one file per slide, `slide-01.png` onwards), `slides`, `pdf`, `fonts` and
+`font_fallback`; on exit 2 or 3 it prints `error` and `fix` instead.
+
 - Exit 0: rendered with Aptos. Judge everything.
-- Exit 4: rendered, but fonts were substituted. Judge colour, layout and message, and say that
-  text-fit and wrapping judgements are unreliable because the render did not use Aptos.
-- Exit 3: LibreOffice is missing, so nothing can be rendered. Exit 2: the render failed (quote the
-  error). In both cases review the text only, from
+- Exit 4: rendered, but Aptos was substituted (`font_fallback: true`). Judge colour, layout and
+  message, and say that text-fit and wrapping judgements are unreliable because the render did not
+  use Aptos.
+- Exit 3: LibreOffice is not installed, so nothing can be rendered. Exit 2: the render failed. In
+  both cases quote `error` and `fix`, review the text only, from
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<pptx>"`, and the verdict can be at best
   UNVERIFIED: say that the slides were not visually verified and why.
 
-After a render (exit 0 or 4), Read EVERY slide PNG in `<render>`, in order. The number of PNGs must
-equal the slide count; name any slide that has no image. Judge each image, not the XML, against the
-criteria below. After a text-only review, judge what text can show (A, B, and bullet counts).
+After a render (exit 0 or 4), Read EVERY file in `pngs`, in order. Their number must equal
+`slides`; name any slide that has no image. Judge each image, not the XML, against the criteria
+below. After a text-only review, judge what text can show (A, B, and bullet counts).
 
 LibreOffice gets two things wrong, so never report them from the image alone: negative bar values
 drawn as positive bars (trust the data labels and the spec), and a faint drop shadow under a pill
@@ -85,6 +95,9 @@ or card (LibreOffice draws the theme shadow even where the deck switches it off)
 - Content fills roughly 60 to 85 per cent of the safe area: not two bullets floating at the top,
   not a cramped wall (Standard #2 item 7).
 - No more than 6 bullets on a slide and no bullet longer than 2 lines.
+- Type sizes against Standard #11's table: body 14 pt, card titles 16, labels and table cells 12,
+  sources 11, nothing under 10 except the 9 pt section pill. The validator enforces only the 10 and
+  11 pt floors, so judge the per-element minimums from the image.
 - No three consecutive slides with the same layout; a deck of 8 or more slides has at least one
   full-width visual.
 
@@ -96,7 +109,6 @@ or card (LibreOffice draws the theme shadow even where the deck switches it off)
 - Line charts have hollow circle markers (Standard #5); part-to-whole is a doughnut, never a pie.
 - Pill text sits inside its pill. Logo bottom-left on every slide except the back cover, which
   carries only the centred emblem; no page number on the cover, dividers or back cover.
-- No em dashes in slide text (Standard #7).
 
 **E. Structure**: cover first, back cover last, dividers (if any) in one consistent style, sources
 under every exhibit.

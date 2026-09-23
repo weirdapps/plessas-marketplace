@@ -33,7 +33,8 @@ PNG. The tool masks the screen with a flood fill, so the screenshot shows only i
    ```
 
    Exit 0: confirm the output file exists. Any other exit: return the tool's message verbatim
-   (exit 2 means the tool environment could not be prepared).
+   (exit 2 usually means the tool environment could not be prepared; the message says how to fix
+   it).
 
 ## Return
 

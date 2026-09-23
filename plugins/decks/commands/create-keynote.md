@@ -40,8 +40,9 @@ edit: keynote slides are flattened images and can only be regenerated from their
 - Output stem: `<folder>/<deck id>`, where folder is the one the user named, else `$HOME/Downloads`,
   always as an absolute path. The
   compositor writes `<stem>.pptx` and `<stem>.pdf`.
-- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment
-  could not be prepared: show the printed fix and stop.
+- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could
+  not run (most often its environment could not be prepared): show the message and fix it printed
+  and stop.
 
 ### 3. Storyline
 
@@ -64,7 +65,9 @@ slide choose one:
    occupies.
 
 Copy every image into `<WORK>/images/`, set `meta.assets: <WORK>/images` and give each slide
-`image: <file name>` and a `scrim` on the side the text sits.
+`image: <file name>` and a `scrim` on the side the text sits. While some photographs are still to
+come, validate and preview the layout with `--placeholder-images` (a flat dark stand-in under the
+same scrim); never build the final deck with it.
 
 ### 5. Finish the YAML
 
@@ -79,9 +82,12 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" keynote "<WORK>/keynote.yaml" --valida
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" keynote "<WORK>/keynote.yaml"
 ```
 
-`--validate` fails on missing notes, more than two charts and unreadable images; fix the YAML until
-it passes. Take contrast warnings from the build seriously: a photograph is too bright under a text
-block, so swap the image or move the text with `align`.
+`--validate` lays out every slide with the real fonts and fails on missing notes, more than two
+charts, missing or unreadable images, text past the right gutter or into the footer row, a cover
+title over two lines, overlapping text blocks and negative bar values; fix the YAML until it
+passes. It prints the font file behind each weight: if it fell back to Calibri or DejaVu, tell the
+user that Aptos is missing before you build. Take contrast warnings seriously on every text
+element: a photograph is too bright under it, so swap the image or move the text with `align`.
 
 ### 7. Review
 
@@ -92,9 +98,9 @@ Read `<stem>.pdf` and check every slide:
 - The Greek wordmark is on every slide.
 - No slide carries more than one idea, and every slide has a speaker note.
 
-Report both output paths. To change a slide, edit the YAML and re-render. `--slides N` re-renders
-only slide N and reuses the other frames by position, so use it only when no slide was added,
-removed or moved since the last full build; otherwise build everything again.
+Report both output paths. To change a slide, edit the YAML and re-render; `--slides N,M`
+re-renders those slides plus any slide whose spec, photograph or the compositor changed, and reuses
+every unchanged frame.
 
 </process>
 

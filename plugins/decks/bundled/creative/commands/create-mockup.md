@@ -30,7 +30,8 @@ User request: $ARGUMENTS
    bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup "<screenshot>" "<output>" --frame <key>
    ```
 
-   Exit 2 means the tool environment could not be prepared: show the printed fix and stop.
+   Exit 2 means the tool could not run (most often its environment could not be prepared): show
+   the message and fix it printed and stop.
 5. **Report** the output path and the frame used.
 
 </process>

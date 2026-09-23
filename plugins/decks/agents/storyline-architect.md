@@ -22,7 +22,8 @@ storyboard designer does) and you never render anything.
 
 1. `${CLAUDE_PLUGIN_ROOT}/tools/nbg-presentation/deck.schema.json`: the format you write. Field
    limits there are hard limits (title 80 characters, cover title 60, bumper 32, at most 8 points,
-   4 KPIs, 14 table rows).
+   4 KPIs, 14 table rows). Write its canonical keys only; legacy aliases such as
+   `recommended_visual` or `bar_chart` still build, but the builder warns on each.
 2. One worked spec: `${CLAUDE_PLUGIN_ROOT}/examples/executive-summary.yaml`.
 3. The preferences file when one is given. It holds this user's defaults (cover subtitle wording,
    title style, density, narrative framework). Follow it unless a numbered Standard in
@@ -93,9 +94,10 @@ storyboard designer does) and you never render anything.
   slide; every slide has `notes`, which carry the argument; the slide carries one sentence or one
   number. Map each message to an archetype: who is speaking (`cover`), one sentence (`statement`),
   one number (`hero-stat`), two numbers in tension (`duo-stat`), a comparison (`bars`, at most 2 per
-  deck and 7 bars each), three things someone did (`points`), the turn (`divider`), the line to
-  repeat (`closing`), the end (`back`). Leave images out (the command sources them) and list, per
-  slide, the photograph that would suit it. Validate with
+  deck and 7 bars each, no negative values: state a decline as a `hero-stat` with
+  `color: negative`), three things someone did (`points`), the turn (`divider`), the line to repeat
+  (`closing`), the end (`back`). Leave images out (the command sources them) and list, per slide,
+  the photograph that would suit it. Validate with
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" keynote <work>/keynote.yaml --validate` and fix until it
   passes, except for missing notes you cannot write from the material, which go into your summary as
   questions.
@@ -109,10 +111,11 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check <work>/deck.yaml
 ```
 
 - Exit 0: done.
-- Exit 1: fix every violation it names (each comes with a slide id and field path), then run it
-  again. The only violations you leave are missing sources on slides listed in `x-open-questions`.
-- Exit 2: the tool environment could not be prepared. Return anyway, with `check: not run` and
-  its message verbatim; the command reports it.
+- Exit 1: fix every error it prints (each line names the slide, its id, the field path and a
+  suggested fix), then run it again. The only errors you leave are missing sources on slides
+  listed in `x-open-questions`. Warnings do not fail the check; fix them when they are yours.
+- Exit 2: the check could not run (most often its environment could not be prepared). Return
+  anyway, with `check: not run` and its message verbatim; the command reports it.
 
 ## Return
 

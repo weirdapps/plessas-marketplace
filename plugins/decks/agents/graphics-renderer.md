@@ -31,9 +31,11 @@ fix is a change to `deck.yaml` followed by a rebuild.
    ```
 
    - Exit 0: the deck is built and passed the validator. Go to Return.
-   - Exit 1: spec or brand violations, each naming a slide id and a field or check. Fix them in
-     `deck.yaml` (rules below) and build again. At most 3 builds in total.
-   - Exit 2: the tool environment could not be prepared. Return its message verbatim.
+   - Exit 1: spec or brand violations, each naming a slide and a field or check. A spec error
+     stops the build before any file is written; a brand violation still writes the file. Fix them
+     in `deck.yaml` (rules below) and build again. At most 3 builds in total.
+   - Exit 2: the build could not run (its environment could not be prepared, the validator
+     crashed, or a file could not be written). Return its message verbatim.
 3. **Fix rules.** Fit and structure are yours; the message is not.
    - Too much text for its box or a limit: tighten wording, move detail into `notes`, or split the
      slide. Keep the claim of every title and every number.

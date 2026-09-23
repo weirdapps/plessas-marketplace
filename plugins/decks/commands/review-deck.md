@@ -17,17 +17,18 @@ User request: $ARGUMENTS
    one. A keynote built by `/decks:create-keynote` (dark, full-bleed picture slides) is outside this
    review: say so and stop.
 
-2. **Find its spec**, so fixes can name slide ids: if
-   `${CLAUDE_PLUGIN_DATA}/work/<file name without .pptx>/deck.yaml` exists, pass it; otherwise fixes
-   name slide numbers.
+2. **Find its spec**, so fixes can name slide ids: hash the file with `shasum -a 256 "<file>"`
+   (`sha256sum` where `shasum` is missing) and Grep the records in
+   `${CLAUDE_PLUGIN_DATA}/presentations/pending/` and `reviewed/` for that hex. A matching record's
+   `spec_path` is the spec; with no match, fixes name slide numbers.
 
 3. **Review.** Render folder: `${CLAUDE_PLUGIN_DATA}/work/review_<timestamp>/`, the timestamp from
    `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. Dispatch `decks:presentation-qa` with `pptx: <file>`, the
    spec or `none`, and `render: <that folder>`. If the Agent tool is unavailable or denied, Read
    `${CLAUDE_PLUGIN_ROOT}/agents/presentation-qa.md` and run the review yourself, reading any
    `CLAUDE_PLUGIN_ROOT` placeholder in it as this plugin's folder. Tools run as
-   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment could not be
-   prepared: show the printed fix and stop.
+   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could not run (most
+   often its environment could not be prepared): show the message and fix it printed and stop.
 
 4. **Report** what QA returned, in this order:
    - The verdict in one line: PASS, FAIL, or UNVERIFIED (validator clean, slides not visually

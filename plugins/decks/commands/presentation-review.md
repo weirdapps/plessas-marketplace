@@ -16,8 +16,9 @@ User request: $ARGUMENTS
 - Everything this command writes lives in `${CLAUDE_PLUGIN_DATA}`: the comparison records and
   `${CLAUDE_PLUGIN_DATA}/style-preferences.md`. Never write into the plugin folder; the shipped
   Standards change only through a deliberate commit.
-- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment
-  could not be prepared: show the printed fix and stop.
+- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could
+  not run (most often its environment could not be prepared): show the message and fix it printed
+  and stop.
 - Extract decks with `decks-py extract`, not the `document-skills:pptx` skill; if that skill loads
   anyway, the NBG Standards override its advice.
 </rules>
@@ -26,21 +27,23 @@ User request: $ARGUMENTS
 
 ### 1. Find the draft record
 
-Draft records are written by `decks-py record` when a deck ships, into
-`${CLAUDE_PLUGIN_DATA}/presentations/pending/`. Each names the delivered file, its hash, when it
-was built, and the deck spec it was built from. If there are none, say that there is no draft to
-compare against, and stop.
+Draft records are written by `decks-py record` when a deck ships: one YAML file per deck in
+`${CLAUDE_PLUGIN_DATA}/presentations/pending/`, with `id`, `created`, `status`, `topic`,
+`file_path`, `file_hash` (`sha256:<hex>`), `spec_path`, `slides` (`index`, `id`, `type`, `title`)
+and `spec`, a full snapshot of the deck spec it was built from. If there are none, say that there
+is no draft to compare against, and stop.
 
-- A path was given: match it to a record by file name (the deck id is the name without `.pptx`),
-  else list the pending records (date, title, file) and ask which one it finalises.
+- A path was given: match it to the record whose `file_path` has the same file name, else list
+  the pending records (`created`, `topic`, file) and ask which one it finalises.
 - No path given: look for the finalised version of each pending record, newest first:
-  1. The delivered file still exists and its hash differs from the record's: that is the edit.
+  1. The file at `file_path` still exists and its hash (`shasum -a 256`) differs from
+     `file_hash`: that is the edited deck.
   2. The mail plugin, when its tools are available: `mcp__plugin_mail_outlook-bridge__outlook_list_mail`
-     on Sent Items, then on any folder the user names, with `since` set to the record's build date
+     on Sent Items, then on any folder the user names, with `since` set to the record's `created`
      and `top: 25`; `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on messages whose `.pptx`
-     attachment name matches the record's slug; keep only messages that deliver the deck (not review
+     attachment name shares the record's slug; keep only messages that deliver the deck (not review
      requests); `mcp__plugin_mail_outlook-bridge__outlook_download_attachments` with
-     `out: ${CLAUDE_PLUGIN_DATA}/work/review_<deck id>/` (create it with `mkdir -p` first).
+     `out: ${CLAUDE_PLUGIN_DATA}/work/review_<record id>/` (create it with `mkdir -p` first).
   3. Otherwise ask for the path.
 
   Show what you found and ask the user to confirm before comparing.
@@ -51,7 +54,9 @@ compare against, and stop.
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<final.pptx>"
 ```
 
-Compare that with the record's spec, slide by slide: title rewrites, reordering, points added,
+The extract gives one `## Slide N: <title>` section per slide, with bullets, tables, charts as
+tables, `[image: ...]` markers and `Notes:`. Compare it with the record's `spec` and `slides`, slide
+by slide: title rewrites, reordering, points added,
 removed or reworded, slide type or chart type swaps, slides added or deleted, cover subtitle and
 speaker notes. Classify each slide:
 
@@ -65,13 +70,14 @@ speaker notes. Classify each slide:
 
 ### 3. Save the comparison
 
-Write `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/<deck id>.review.json` with the record id, both
-file paths and hashes, the date, the per-slide classes with before and after titles, and the
-patterns you saw. Then move the draft record from `pending/` to `reviewed/`.
+Write `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/<record id>.review.yaml` with the record id,
+both file paths and hashes, the date, the per-slide classes with before and after titles, and the
+patterns you saw. Then set the draft record's `status` to `reviewed` and move it from `pending/`
+to `reviewed/`.
 
 ### 4. Update the preferences
 
-Read every `*.review.json` in `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/`. A pattern becomes a
+Read every `*.review.yaml` in `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/`. A pattern becomes a
 preference only when it appears in 2 or more reviews. Write `${CLAUDE_PLUGIN_DATA}/style-preferences.md`
 in this shape, keeping the Defaults section the user writes by hand:
 

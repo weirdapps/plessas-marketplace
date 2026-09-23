@@ -38,7 +38,7 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 | detail the reader will look up | `table`, 14 rows at most |
 | parallel options, pillars or initiatives (2 to 6) | `cards`; mark the recommended option `recommended: true` |
 | a sequence, journey or plan (2 to 6 steps) | `process` |
-| two things side by side, or text arguing over an exhibit | `two_column` |
+| two things side by side, or text arguing over an exhibit | `two_column`; `split: 40/60` when text argues over an exhibit |
 | a screenshot, mockup, photo or diagram carries it | `image` |
 | an argument in a few points | `content` |
 | a layout none of the above can express | `custom`: positioned elements, last resort |
@@ -59,10 +59,12 @@ Decision rules:
 - **Dividers and contents**: optional; most NBG decks use neither. Keep them only in long decks
   with distinct sections.
 - **Two columns**: a column holding a chart, table or KPIs means the slide needs `content.source`.
-- **Custom**: geometry in inches inside the grid of
-  `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the gutter to the
-  right boundary, y from `body_top` to `body_bottom`), colours as token names from its `colors`,
-  text through type-scale `role`s. The builder and validator still enforce all of it.
+- **Custom**: a `content.title` like every slide, then elements with geometry in inches inside the
+  body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
+  gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from
+  its `colors`, text through type-scale `role`s. The builder and validator still enforce all of it.
+- **Canonical keys only.** Write the schema's keys. Legacy aliases (`recommended_visual`,
+  `bar_chart`, `toc`, `items`) still build, but the builder warns on each.
 - **Keynote**: if the brief meets all four entry criteria of Standard #21 (external or bank-wide
   audience, delivered live from a stage, projected large in a dark room, slides as backdrop), say
   so in your return. Do not restyle the deck.
@@ -108,8 +110,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check <deck>
 
 Fix every violation it names and run it again until it exits 0. Two exceptions you leave in place
 and report: a missing source the storyline listed in `x-open-questions`, and a planned
-`images/...` file that does not exist yet. Exit 2 means the tool environment could not be
-prepared: return with `check: not run` and its message verbatim.
+`images/...` file that does not exist yet. Exit 2 means the check could not run: return with
+`check: not run` and its message verbatim.
 
 ## Return
 

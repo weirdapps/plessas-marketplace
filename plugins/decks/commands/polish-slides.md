@@ -16,8 +16,9 @@ User request: $ARGUMENTS
   unavailable or denied, Read `${CLAUDE_PLUGIN_ROOT}/agents/<agent>.md` and do the stage yourself,
   reading any `CLAUDE_PLUGIN_ROOT` or `CLAUDE_PLUGIN_DATA` placeholder in it as the folders this
   command uses.
-- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment
-  could not be prepared: show the printed fix and stop.
+- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could
+  not run (most often its environment could not be prepared): show the message and fix it printed
+  and stop.
 - Only the builder writes a deck. Never edit a `.pptx` directly, never write python-pptx, PptxGenJS
   or OOXML, and never modify the user's file: a polish ships as a new file. The
   `document-skills:pptx` skill is not used here; if it loads anyway, the NBG Standards override its
@@ -33,14 +34,16 @@ User request: $ARGUMENTS
 1. **Find the deck.** It must be an existing `.pptx`. Pasted content with no deck is a new deck:
    run `/decks:create-presentation` with it instead.
 
-2. **Find its spec.** The plugin built this deck if
-   `${CLAUDE_PLUGIN_DATA}/work/<file name without .pptx>/deck.yaml` exists; call that folder OLD.
-   Compare the user's file with OLD's last build: `shasum -a 256 "<file>" "<OLD>/deck.pptx"`
-   (`sha256sum` where `shasum` is missing).
-   - Same hash: the spec route (3a).
-   - Different: the user edited the deck after it was built. Ask once: rebuild from the spec (their
-     manual edits are lost) or polish the edited file as a deck without a spec (3b).
-   - No spec: 3b.
+2. **Find its spec.** Every deck the plugin shipped has a record in
+   `${CLAUDE_PLUGIN_DATA}/presentations/pending/` or `reviewed/` (`*.yaml`, with `file_path`,
+   `file_hash` as `sha256:<hex>`, and `spec_path`). Hash the file with `shasum -a 256 "<file>"`
+   (`sha256sum` where `shasum` is missing) and Grep the records for that hex.
+   - A record matches: this is the deck exactly as shipped. Its `spec_path` is the spec, and the
+     folder holding it is OLD. Take the spec route (3a).
+   - No hash matches, but a record's `file_path` has this file's name: the user edited the deck
+     after it shipped. Ask once: rebuild from that record's spec (their manual edits are lost), or
+     polish the edited file as a deck without a spec (3b).
+   - Neither: 3b.
 
 3. **Review.** Create the polish's work folder, called WORK: a new deck id
    `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, the slug of the
