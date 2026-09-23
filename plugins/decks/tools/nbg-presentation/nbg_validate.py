@@ -10,7 +10,8 @@ Normally run through the launcher, which owns the Python environment:
 
 Exit codes (a contract with nbg_build.py and presentation-qa):
     0  no check failed; warnings and skipped checks may be present
-    1  at least one check failed (with --strict, also a skipped universal check)
+    1  at least one check failed (with --strict, also a skipped universal check or a
+       SmartArt diagram with no drawing part to read)
     2  the validator could not run: missing file, not a pptx, missing dependency
 
 Every brand value comes from shared/brand-system/tokens.yaml through nbg_tokens.py;
@@ -32,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import colorsys
+import copy
 import hashlib
 import io
 import json
@@ -78,6 +80,8 @@ NS = {
     "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
     "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
     "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
+    "dgm": "http://schemas.openxmlformats.org/drawingml/2006/diagram",
+    "dsp": "http://schemas.microsoft.com/office/drawing/2008/diagram",
 }
 A = "{" + NS["a"] + "}"
 P = "{" + NS["p"] + "}"
@@ -85,6 +89,8 @@ R = "{" + NS["r"] + "}"
 C = "{" + NS["c"] + "}"
 MC = "{" + NS["mc"] + "}"
 REL = "{" + NS["rel"] + "}"
+DGM = "{" + NS["dgm"] + "}"
+DSP = "{" + NS["dsp"] + "}"
 
 EMU = 914400
 POS_TOL = 0.05  # inches: placement tolerance for geometry matches
@@ -338,6 +344,9 @@ class Collector:
 
 
 # ------------------------------------------------------------------ package
+
+# Content the validator cannot see at all; --strict fails a deck that has any.
+SMARTART_UNREAD = "SmartArt diagram with no drawing part"
 
 MAX_MEMBERS = 5000
 MAX_PART_BYTES = 64 * 1024 * 1024
@@ -789,6 +798,16 @@ def _find_ph(root: Any, ph_type: str | None, ph_idx: str | None, *, by_idx: bool
     return None
 
 
+def _as_presentationml(tree: Any) -> Any:
+    """A copy of a SmartArt drawing's shape tree with dsp: renamed to p:. dsp:sp, dsp:spPr,
+    dsp:style and dsp:txBody mirror their p: counterparts, so the slide code reads them."""
+    tree = copy.deepcopy(tree)
+    for el in tree.iter():
+        if isinstance(el.tag, str) and el.tag.startswith(DSP):
+            el.tag = P + el.tag[len(DSP) :]
+    return tree
+
+
 def _shows_master_shapes(root: Any) -> bool:
     return root is not None and root.get("showMasterSp", "1") not in ("0", "false")
 
@@ -834,7 +853,36 @@ class Slide:
             if shape.is_placeholder:
                 self._inherit_placeholder(shape)
         self.inherited = self._background_graphics()
+        self.diagram_shapes, self.unread_diagrams = self._diagrams()
         self._frames: dict[int, Frame | None] = {}
+
+    def _diagrams(self) -> tuple[list[Shape], int]:
+        """The shapes of each SmartArt diagram's drawing part (what PowerPoint shows),
+        placed at the diagram's frame, and how many diagrams have no drawing part. The
+        drawing is found through the data part's dsp:dataModelExt, whose relId is a
+        relationship of the slide."""
+        pkg = self.deck.pkg
+        rels = pkg.rels(self.part)
+        shapes: list[Shape] = []
+        unread = 0
+        for frame in self.shapes:
+            ids = frame.el.find(f".//{DGM}relIds") if frame.kind == "graphicFrame" else None
+            if ids is None:
+                continue
+            data = pkg.xml(rels.get(ids.get(f"{R}dm", ""), ("", None))[1])
+            ext = data.find(f".//{DSP}dataModelExt") if data is not None else None
+            part = rels.get(ext.get("relId", ""), ("", None))[1] if ext is not None else None
+            drawing = pkg.xml(part)
+            tree = drawing.find(f"{DSP}spTree") if drawing is not None else None
+            if tree is None:
+                unread += 1
+                continue
+            origin = _Xform(ox=(frame.x or 0.0) * EMU, oy=(frame.y or 0.0) * EMU)
+            for shape in _flatten(_as_presentationml(tree), origin, 0, []):
+                shape.part = part
+                shape.name = shape.name or f"{frame.name} (SmartArt)"
+                shapes.append(shape)
+        return shapes, unread
 
     def _background_graphics(self) -> list[Shape]:
         """The layout's and master's non-placeholder shapes this slide renders, master
@@ -2079,13 +2127,17 @@ def _color_elements(root: Any) -> Iterator[Any]:
             stack.append(child)
 
 
-def _judged_shapes(deck: Deck) -> Iterator[tuple[Slide, Shape]]:
-    """Each slide's shapes, then the layout and master shapes it renders. An inherited
-    shape comes once, with the first slide that shows it: a band on the master is one
-    finding, not one per slide."""
+def _judged_shapes(deck: Deck, out: Collector) -> Iterator[tuple[Slide, Shape]]:
+    """Each slide's shapes, the shapes of its SmartArt drawings, then the layout and
+    master shapes it renders. An inherited shape comes once, with the first slide that
+    shows it: a band on the master is one finding, not one per slide. A diagram with no
+    drawing part to read is recorded as not examined."""
     seen: set[int] = set()
     for s in deck.slides:
+        if s.unread_diagrams:
+            out.skip(SMARTART_UNREAD, s.unread_diagrams)
         yield from ((s, shape) for shape in s.shapes)
+        yield from ((s, shape) for shape in s.diagram_shapes)
         for shape in s.inherited:
             if id(shape.el) not in seen:
                 seen.add(id(shape.el))
@@ -2098,7 +2150,7 @@ def _where(shape: Shape) -> str:
 
 
 def check_colors(deck: Deck, out: Collector) -> str:
-    for s, shape in _judged_shapes(deck):
+    for s, shape in _judged_shapes(deck, out):
         if shape.kind == "grpSp":
             continue
         where = _where(shape)
@@ -2165,7 +2217,7 @@ def check_fonts(deck: Deck, out: Collector) -> str:
                 f'"{resolved}" is not an NBG font; use {", ".join(b.fonts_allowed)} ({role} in {where})',
             )
 
-    for s, shape in _judged_shapes(deck):
+    for s, shape in _judged_shapes(deck, out):
         if shape.kind == "grpSp":
             continue
         for face, role in _typefaces(shape.el):
@@ -2197,7 +2249,7 @@ def check_font_sizes(deck: Deck, out: Collector) -> str:
     b = brand()
     sizes: set[float] = set()
     titles: dict[int, Title | None] = {}
-    for s, shape in _judged_shapes(deck):
+    for s, shape in _judged_shapes(deck, out):
         if shape.is_table:
             for tc in _cells(shape):
                 cell = _cell_frame(s, tc)
@@ -4051,6 +4103,8 @@ def exit_code(results: list[ValidationResult], strict: bool = False) -> int:
         r.status == "skipped" and CHECKS_BY_NAME.get(r.name, CHECKS[0]).universal for r in results
     ):
         return 1
+    if strict and any(SMARTART_UNREAD in r.not_examined for r in results):
+        return 1
     return 0
 
 
@@ -4189,7 +4243,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("deck", nargs="?", help="the .pptx to validate")
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument(
-        "--strict", action="store_true", help="a skipped check that applies to every deck fails"
+        "--strict",
+        action="store_true",
+        help="a skipped check that applies to every deck, or a SmartArt diagram with no drawing part, fails",
     )
     parser.add_argument(
         "--list-checks", action="store_true", help="print every check with its rule and source"

@@ -13,7 +13,7 @@ never a second copy of the brand: change a value in `tokens.yaml` and the gate f
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx                 # text report
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx --format json   # for agents and CI
-bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx --strict        # a skipped universal check fails
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx --strict        # a skipped universal check or an unreadable SmartArt fails
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate --list-checks --format json
 ```
 
@@ -26,7 +26,7 @@ breaks the light-mode rules on purpose; validate it with the keynote tool instea
 | Code | Meaning |
 |---|---|
 | 0 | No check failed. Warnings and skipped checks may be present. |
-| 1 | At least one check failed. With `--strict`, also a skipped check marked universal below. |
+| 1 | At least one check failed. With `--strict`, also a skipped check marked universal below, or a SmartArt diagram with no drawing part (content no check could read). |
 | 2 | The validator could not run: file missing, not a zip or not a PowerPoint package, a part over the size limits, a missing Python dependency, or a crash. Exit 2 is never a pass: Layer 1 did not execute. |
 
 ## Statuses and the meaning of "examined"
@@ -94,9 +94,9 @@ Sev: E = error (blocks), W = warning (reports). U = universal: applies to every 
 | Dimensions | Slide size is exactly 12192000 x 6858000 EMU (13.333 x 7.5 in, PowerPoint Widescreen), within 635 EMU. | dimensions.md; tokens `geometry.slide` | E | the `p:sldSz` element | U |
 | Theme | Theme colour slots are NBG colours and the major/minor fonts are Aptos or Aptos Display. | colors.md; tokens `colors`, `fonts` | W | theme colour slots and font slots | |
 | Background | Every slide's effective background (slide, else layout, else master) is white. | Standard #2 | E | slides | U |
-| Colors | Every colour in slide shapes (and the layout and master shapes a slide shows) and chart parts is in tokens.yaml, including theme (`schemeClr`) references and the outline or fill a shape takes from its `p:style`. A retired colour fails with its reason. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide, layout and master shapes and chart parts | U |
-| Fonts | Every typeface (text, symbol, bullet) in slides, the layout and master shapes they show, and charts is in `fonts.allowed`; `+mn`/`+mj` theme references are resolved; Aptos SemiBold is forbidden. | typography.md; tokens `fonts` | E | typeface references | U |
-| Font Sizes | Text is at least 10pt; sources and footnotes at least 11pt; only the header pill may be 9pt. Table cells, chart text and the text of layout and master shapes a slide shows included. | Standard #11; tokens `accessibility`, `type.source` | E | sized text runs in slide, layout and master shapes, table cells and chart parts | U |
+| Colors | Every colour in slide shapes (and the layout and master shapes a slide shows, and SmartArt drawings) and chart parts is in tokens.yaml, including theme (`schemeClr`) references and the outline or fill a shape takes from its `p:style`. A retired colour fails with its reason. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide, layout and master shapes and chart parts | U |
+| Fonts | Every typeface (text, symbol, bullet) in slides, the layout and master shapes they show, SmartArt drawings and charts is in `fonts.allowed`; `+mn`/`+mj` theme references are resolved; Aptos SemiBold is forbidden. | typography.md; tokens `fonts` | E | typeface references | U |
+| Font Sizes | Text is at least 10pt; sources and footnotes at least 11pt; only the header pill may be 9pt. Table cells, chart text, SmartArt text and the text of layout and master shapes a slide shows included. | Standard #11; tokens `accessibility`, `type.source` | E | sized text runs in slide, layout and master shapes, table cells and chart parts | U |
 | Contrast | Text meets WCAG AA against what is behind it: its own fill, else the topmost filled shape below it containing its centre, else the slide background. Muted grey `939793` (2.96:1 on white) is waived only for the page number (10pt or less at the page-number position) and chart axis labels, on white, as Standard #22 allows; the cover date is caption grey and gets no waiver. Bullet glyphs are not text runs. | Standard #22 | E | text runs with a resolvable colour and background | U |
 | Boundaries | No element extends past a slide edge (0.05 in tolerance). | dimensions.md | E | positioned shapes, pictures, charts, tables, connectors, group children | U |
 | Safe Zones | Content stays right of the 0.374 in gutter, left of the right boundary, above the 6.85 in footer line; sources and footnotes end by 6.5 in. | dimensions.md; tokens `geometry` | E | content elements (logo footprints and the page number excluded) | U |
@@ -165,6 +165,12 @@ Sizes, Logo and Back Cover read those shapes. A layout or master shape is judged
 the first slide that shows it, and its finding names the part (`on slideMaster1.xml`), since
 that is where it is fixed. Placeholders on a layout or master render only through a slide's
 own placeholder, so they are read as that placeholder's inherited properties instead.
+
+**SmartArt**: PowerPoint draws a diagram from its drawing part (`ppt/diagrams/drawingN.xml`,
+found through the data part's `dsp:dataModelExt`). Colors, Fonts and Font Sizes read the
+drawing's shapes as if they sat on the slide at the diagram's position; findings name the
+part. A diagram with no drawing part (some producers write only the data model) cannot be
+read by any check: it is reported under "not examined", and `--strict` fails the deck.
 
 **Package safety**: parts are read from the zip one at a time, never extracted, with limits
 on member count (5,000), part size (64 MB) and total size (1 GB). Every part parsed as XML,

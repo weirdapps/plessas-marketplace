@@ -61,6 +61,7 @@ LOGO = ASSETS / "nbg-logo-gr.png"
 EMBLEM = ASSETS / "nbg-back-cover-logo.png"
 ENGLISH_LOGO = ASSETS / "nbg-logo-fallback.png"
 BANK_LOGOS = ASSETS / "bank-logos"
+NS_A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 # Written as code points: a hook refuses literal em dashes in any file.
 EM_DASH = chr(0x2014)
 EN_DASH = chr(0x2013)
@@ -426,6 +427,69 @@ def background_graphic(prs, make, *, master=False):
     prs.part.drop_rel(last.rId)
     ids.remove(last)
     return el
+
+
+DGM_NS = "http://schemas.openxmlformats.org/drawingml/2006/diagram"
+DSP_NS = "http://schemas.microsoft.com/office/drawing/2008/diagram"
+
+
+def add_smartart(path, *, fill="007B85", color="FFFFFF", size=12, font="Aptos", drawing=True):
+    """Put a three-box SmartArt diagram on slide 2 of a saved deck. PowerPoint shows the
+    diagram's drawing part; drawing=False leaves it out, as some producers do."""
+    a = NS_A
+    boxes = "".join(
+        f'<dsp:sp modelId="{{00000000-0000-0000-0000-00000000000{i}}}">'
+        '<dsp:nvSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvSpPr/></dsp:nvSpPr>'
+        f'<dsp:spPr><a:xfrm><a:off x="{i * 2743200}" y="0"/><a:ext cx="2377440" cy="731520"/>'
+        '</a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+        f'<a:solidFill><a:srgbClr val="{fill}"/></a:solidFill></dsp:spPr>'
+        f'<dsp:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US" sz="{size * 100}">'
+        f'<a:solidFill><a:srgbClr val="{color}"/></a:solidFill><a:latin typeface="{font}"/>'
+        f"</a:rPr><a:t>{word}</a:t></a:r></a:p></dsp:txBody></dsp:sp>"
+        for i, word in enumerate(("Plan", "Build", "Run"))
+    )
+    ext = (
+        f'<dgm:extLst><a:ext uri="{DSP_NS}"><dsp:dataModelExt xmlns:dsp="{DSP_NS}" '
+        'relId="rIdDr"/></a:ext></dgm:extLst>'
+    )
+    parts = {
+        "ppt/diagrams/data1.xml": f'<dgm:dataModel xmlns:dgm="{DGM_NS}" xmlns:a="{a}">'
+        f"<dgm:ptLst/><dgm:cxnLst/>{ext if drawing else ''}</dgm:dataModel>"
+    }
+    rels = (
+        '<Relationship Id="rIdDm" Type="http://schemas.openxmlformats.org/officeDocument/'
+        '2006/relationships/diagramData" Target="../diagrams/data1.xml"/>'
+    )
+    if drawing:
+        parts["ppt/diagrams/drawing1.xml"] = (
+            f'<dsp:drawing xmlns:dsp="{DSP_NS}" xmlns:a="{a}"><dsp:spTree>'
+            '<dsp:nvGrpSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvGrpSpPr/></dsp:nvGrpSpPr>'
+            f"<dsp:grpSpPr/>{boxes}</dsp:spTree></dsp:drawing>"
+        )
+        rels += (
+            '<Relationship Id="rIdDr" Type="http://schemas.microsoft.com/office/2007/'
+            'relationships/diagramDrawing" Target="../diagrams/drawing1.xml"/>'
+        )
+    frame = (
+        '<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="300" name="Diagram 1" '
+        'descr="Three-step delivery process: plan, build, run"/><p:cNvGraphicFramePr/>'
+        '<p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="341986" y="4892040"/>'
+        '<a:ext cx="7680960" cy="731520"/></p:xfrm><a:graphic>'
+        f'<a:graphicData uri="{DGM_NS}"><dgm:relIds xmlns:dgm="{DGM_NS}" r:dm="rIdDm" '
+        'r:lo="rIdLo" r:qs="rIdQs" r:cs="rIdCs"/></a:graphicData></a:graphic></p:graphicFrame>'
+    )
+    with zipfile.ZipFile(path) as zf:
+        blobs = {n: zf.read(n) for n in zf.namelist()}
+    slide2, slide2_rels = "ppt/slides/slide2.xml", "ppt/slides/_rels/slide2.xml.rels"
+    blobs[slide2] = blobs[slide2].replace(b"</p:spTree>", frame.encode() + b"</p:spTree>", 1)
+    blobs[slide2_rels] = blobs[slide2_rels].replace(
+        b"</Relationships>", rels.encode() + b"</Relationships>"
+    )
+    blobs.update({n: v.encode() for n, v in parts.items()})
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for n, data in blobs.items():
+            zf.writestr(n, data)
+    return path
 
 
 def move_slide(prs, old_index, new_index):
@@ -1668,6 +1732,37 @@ def test_a_logo_on_the_layout_is_the_logo_of_each_slide_that_shows_it(tmp_path):
 def test_the_back_cover_shows_the_logo_on_its_layout(tmp_path):
     result = check(deck(tmp_path, lambda prs: background_graphic(prs, logo)), "Back Cover")
     assert result.status == "fail" and "besides the emblem" in details(result)
+
+
+def test_smartart_drawing_is_read_for_colours_fonts_and_sizes(tmp_path):
+    """VALIDATOR-CODE-6: a diagram's boxes and text were never read, so red fills and 8pt
+    Comic Sans inside SmartArt passed every check."""
+    path = add_smartart(deck(tmp_path), fill="FF0000", color="FFFF00", size=8, font="Comic Sans MS")
+    colors = check(path, "Colors")
+    assert colors.status == "fail" and "#FF0000" in details(colors)
+    assert "drawing1.xml" in details(colors)
+    fonts = check(path, "Fonts")
+    assert fonts.status == "fail" and "Comic Sans MS" in details(fonts)
+    sizes = check(path, "Font Sizes")
+    assert sizes.status == "fail" and "8pt" in details(sizes)
+
+
+def test_a_brand_smartart_diagram_passes_and_is_counted(tmp_path, golden):
+    before = check(golden, "Colors").examined
+    path = add_smartart(deck(tmp_path))
+    colors = check(path, "Colors")
+    assert colors.status == "pass" and colors.examined > before
+    assert check(path, "Fonts").status == "pass"
+    assert check(path, "Font Sizes").status == "pass"
+
+
+def test_smartart_without_a_drawing_part_is_unexamined_and_fails_strict(tmp_path):
+    path = add_smartart(deck(tmp_path), fill="FF0000", drawing=False)
+    results = nv.validate_presentation(str(path), only=["Colors", "Fonts", "Font Sizes"])
+    for r in results:
+        assert r.not_examined.get(nv.SMARTART_UNREAD) == 1, r.name
+    assert nv.exit_code(results) == 0
+    assert nv.exit_code(results, strict=True) == 1
 
 
 def test_bank_branding_reads_chart_categories(tmp_path):
