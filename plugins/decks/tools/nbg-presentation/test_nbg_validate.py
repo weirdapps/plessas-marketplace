@@ -2290,8 +2290,12 @@ def _xml_comment(n):
 
 
 def test_the_xml_limits_are_the_ones_the_builder_shares():
+    """The same numbers as the builder's tools/nbg_package.py pre-flight."""
+    assert nv.MAX_MEMBERS == 5000
+    assert nv.MAX_PART_BYTES == 64 * 2**20
     assert nv.MAX_XML_PART_BYTES == 16 * 2**20
     assert nv.MAX_XML_TOTAL_BYTES == 128 * 2**20
+    assert nv.MAX_XML_RATIO == 100
 
 
 def test_an_xml_part_over_16_mib_exits_2(tmp_path, golden, capsys):
@@ -2782,6 +2786,7 @@ def test_the_names_the_spec_checker_imports_stay_put():
     assert nv.alt_text_problem("Same text", ["same TEXT"])
     assert nv.dash_problem(f"a {EM_DASH} b") == ("error", "em dash")
     assert nv.dash_problem("a -- b") == ("error", "em dash")
+    assert nv.DOUBLE_HYPHEN == " -- " and nv.EM_DASH == EM_DASH
     assert nv.dash_problem(f"a {EN_DASH} b") == ("warning", "spaced en dash used as a dash")
     assert nv.dash_problem(f"2024{EN_DASH}2025") is None
 
