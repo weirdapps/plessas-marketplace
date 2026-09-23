@@ -94,10 +94,10 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 | `cover` | `content.title` | `subtitle`, `location`, `date` | Title on one line at 48pt (down to 44pt), subtitle 24pt below it, large logo |
 | `contents` | `content.sections[]` (`title`) | `content.title`, section `number`, `description` | Standard #18 list; unnumbered page when the deck is under 10 slides |
 | `divider` | `content.number`, `content.title` | | Number and title on one baseline, large logo |
-| `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit |
+| `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit; a sparse list grows toward 20pt until it fills 60% of the body (Standard #7) |
 | `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `bank_logos`, `alt_text` | One native chart |
 | `waterfall` | `content.title`, `content.source`, `chart.data.items[]` (`label`, `value`) | item `total`; first and last items are totals | A bridge; step labels above the bars |
-| `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align` | Header in dark teal, zebra rows, figures right-aligned |
+| `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align` | Header in dark teal, zebra rows, figures right-aligned; a short table's rows grow toward 60% of the body, to 0.55 in at most |
 | `kpi` | `content.title`, `content.source`, `kpis[]` (`value`, `label`) | `delta`, `sentiment: positive or negative or neutral` | 1 to 4 tiles |
 | `cards` | `content.title`, `cards[]` (`title`) | `layout: row or grid`, card `body`, `icon`, `number`, `highlight`, `recommended` | 2 to 6 cards; the recommended one gets a gold border and tab |
 | `process` | `content.title`, `steps[]` (`title`) | step `body`, `icon` | 2 to 6 teal step tiles joined by grey arrows, the title and body under each tile; an icon is drawn white in its tile |

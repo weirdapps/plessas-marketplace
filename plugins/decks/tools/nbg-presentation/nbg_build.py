@@ -628,14 +628,28 @@ def _bullet_height(items: list[tuple[str, int]], width: float, size: float) -> f
     return total
 
 
-def add_bullets(deck: Deck, slide: Any, points: list[Any], frame: Frame, rel: str) -> Any:
-    """Bullets with a cyan glyph and a hanging indent, schema order in every a:pPr."""
+def add_bullets(
+    deck: Deck, slide: Any, points: list[Any], frame: Frame, rel: str, *, grow: bool = False
+) -> Any:
+    """Bullets with a cyan glyph and a hanging indent, schema order in every a:pPr.
+    They shrink toward the body floor to fit; with grow, a sparse block also grows
+    toward body.max_size until it fills geometry.fill.min of the frame, never past
+    fill.max (Standard #7: E2E-OUTPUT-11)."""
     items = _points(points)
     body = nbg_tokens.get("type.body")
     size = float(body["size"])
     floor = float(body.get("min_size", size))
     while _bullet_height(items, frame.w, size) > frame.h and size > floor:
         size -= 1
+    if grow:
+        ceiling = float(body.get("max_size", size))
+        band = GEO["fill"]
+        while (
+            size < ceiling
+            and _bullet_height(items, frame.w, size) < float(band["min"]) * frame.h
+            and _bullet_height(items, frame.w, size + 1) <= float(band["max"]) * frame.h
+        ):
+            size += 1
     needed = _bullet_height(items, frame.w, size)
     if needed > frame.h:
         raise deck.fit(
@@ -1010,7 +1024,12 @@ def _cell_border(tcpr: Any) -> None:
         tcpr.insert(i, ln)
 
 
-def add_table(deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: str) -> Any:
+def add_table(
+    deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: str, *, grow: bool = False
+) -> Any:
+    """A native table, columns sized to their text. With grow, a short table's body
+    rows grow alike toward geometry.fill.min of the frame, to table.row_h_max at most
+    (Standard #7: E2E-OUTPUT-11)."""
     comp = COMP["table"]
     headers = [str(h) for h in spec.get("headers") or []]
     width = max([len(headers)] + [len(r) for r in spec["rows"]])
@@ -1066,6 +1085,12 @@ def add_table(deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: s
     header_h = row_height(headers, -1, float(comp["header_h"])) if any(headers) else 0.0
     body_hs = [row_height(r, i, float(comp["row_h"])) for i, r in enumerate(rows)]
     total = header_h + sum(body_hs)
+    target = float(GEO["fill"]["min"]) * frame.h
+    if grow and rows and total < target:
+        room = float(comp["row_h_max"]) - float(comp["row_h"])
+        extra = min(room, (target - total) / len(rows))
+        body_hs = [h + extra for h in body_hs]
+        total = header_h + sum(body_hs)
     if total > frame.h + 1e-6:
         raise deck.fit(
             rel,
@@ -1299,7 +1324,7 @@ def render_content(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
     frame = titled_frame(deck, slide, content)
-    add_bullets(deck, slide, content.get("points") or [], frame, "content.points")
+    add_bullets(deck, slide, content.get("points") or [], frame, "content.points", grow=True)
     draw_footer(deck, slide, content)
     return slide
 
@@ -1512,7 +1537,7 @@ def render_table(deck: Deck, spec: dict[str, Any]) -> Any:
     table = spec.get("table") or {}
     if not table.get("rows"):
         raise deck.fit("table.rows", "the table has no rows", "add rows")
-    add_table(deck, slide, table, frame, "table")
+    add_table(deck, slide, table, frame, "table", grow=True)
     draw_footer(deck, slide, content)
     return slide
 

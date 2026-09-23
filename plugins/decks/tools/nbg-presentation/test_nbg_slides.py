@@ -293,6 +293,44 @@ def _deleted_labels(ser):
     }
 
 
+def _bullet_sizes(out, number=2):
+    """The point sizes of every bulleted paragraph's runs on a slide."""
+    return {
+        float(rpr.get("sz")) / 100
+        for rpr in slide_xml(out, number).iter(f"{A}rPr")
+        if rpr.getparent().getparent().find(f"{A}pPr/{A}buChar") is not None
+    }
+
+
+def test_a_few_bullets_grow_toward_the_fill_band(build):
+    """E2E-OUTPUT-11: Standard #7 wants 60-85% of the body used and larger type where
+    there is room; three short bullets sat at 16pt in a fifth of the body."""
+    points = ["Cards grew", "Deposits held", "Fees rose"]
+    out = build(deck([{"type": "content", "content": {"title": "Three moved", "points": points}}]))
+    assert _bullet_sizes(out) == {20.0}
+
+
+def test_bullets_that_already_fill_the_body_keep_their_size(build):
+    points = [f"Point number {i} carries a few words" for i in range(1, 9)]
+    out = build(deck([{"type": "content", "content": {"title": "Eight moved", "points": points}}]))
+    assert _bullet_sizes(out) == {16.0}
+
+
+def test_a_short_table_grows_its_rows_toward_the_fill_band(build):
+    """E2E-OUTPUT-11: a three-row table kept 0.35 in rows in a five-inch body."""
+    slide = {
+        "type": "table",
+        "content": {"title": "Three products grew", "source": SOURCE},
+        "table": {
+            "headers": ["Product", "2025"],
+            "rows": [["Cards", 12], ["Loans", 8], ["Deposits", 5]],
+        },
+    }
+    out = build(deck([slide]))
+    heights = [inches(tr.get("h")) for tr in slide_xml(out, 2).iter(f"{A}tr")]
+    assert all(0.35 < h <= 0.55 + 1e-6 for h in heights[1:]), heights
+
+
 def test_a_stacked_segment_too_thin_for_its_label_drops_the_label(build):
     """E2E-OUTPUT-08: a 1% segment still got a 12pt label, which overprinted the
     labels of the segments either side."""

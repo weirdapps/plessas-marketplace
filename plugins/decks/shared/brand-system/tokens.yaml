@@ -143,7 +143,7 @@ type:
   title:              {size: 24, bold: false, color: dark_teal, max_chars: 80}
   section_title:      {size: 22, bold: false, color: dark_teal}   # Key Figures page header
   subtitle:           {size: 14, bold: false, color: caption_grey}   # the owner subtitle under a Key Figures header (layouts.md)
-  body:               {size: 16, min_size: 14, bold: false, color: body_text}
+  body:               {size: 16, min_size: 14, max_size: 20, bold: false, color: body_text}   # a sparse content slide grows toward max_size (Standard #7)
   body_dense:         {size: 14, bold: false, color: body_text}
   caption:            {size: 12, bold: false, color: caption_grey}
   source:             {size: 11, bold: false, color: caption_grey}
@@ -185,6 +185,7 @@ geometry:
   title: {y: 0.5, y_with_pill: 0.75, h: 0.4}
   body_top: 1.3              # Standard #11: first body element never above 1.3
   body_bottom: 6.5           # footnotes and sources end here (dimensions.md)
+  fill: {min: 0.6, max: 0.85}   # Standard #7: content uses 60-85% of the body; sparse bullets and table rows grow toward min, never past max
   caption: {h: 0.28, gap_below: 0.12}
   source_line: {h: 0.25, bottom: 6.5}
   logo_small: {x: 0.374, y: 7.071, w: 0.822, h: 0.236}
@@ -273,6 +274,7 @@ components:
     header_fill: dark_teal
     header_h: 0.4
     row_h: 0.35
+    row_h_max: 0.55          # a short table's rows grow toward geometry.fill.min, to this at most
     cell_inset: 0.08
     zebra_fill: zebra_tint
     numeric_align: right
