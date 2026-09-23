@@ -411,12 +411,12 @@ def test_the_validator_runs_in_utf8_mode(tmp_path, monkeypatch):
 def test_a_greek_bumper_is_capitalised_without_the_tonos(build):
     """BUILD-CODE-9: str.upper() keeps the tonos, a spelling error on every pill."""
     spec = deck(
-        [_content("Τα αποτελέσματα ξεπέρασαν τον στόχο", ["Ένα"], bumper="Κύρια ευρήματα")],
+        [_content("Τα αποτελέσματα ξεπέρασαν τον στόχο", ["Ένα"], bumper="Ευρήματα")],
         language="el",
     )
     out = build(spec)
     texts = [b[0] for b in shape_boxes(slide_xml(out, 2))]
-    assert "ΚΥΡΙΑ ΕΥΡΗΜΑΤΑ" in texts, texts
+    assert "ΕΥΡΗΜΑΤΑ" in texts, texts
 
 
 def test_a_greek_deck_gets_greek_boilerplate(build):

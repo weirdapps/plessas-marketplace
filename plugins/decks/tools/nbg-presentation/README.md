@@ -142,7 +142,7 @@ and a Greek deck.
 ## Greek decks
 
 `presentation.language: el` gives Greek boilerplate ("Περιεχόμενα", "Πηγή"), capitals
-without the tonos in the pill ("Κύρια ευρήματα" becomes "ΚΥΡΙΑ ΕΥΡΗΜΑΤΑ"), and `el-GR`
+without the tonos in the pill ("Ευρήματα" becomes "ΕΥΡΗΜΑΤΑ"), and `el-GR`
 on every run so PowerPoint proofs the text as Greek. Specs are always read as UTF-8.
 
 ## render
