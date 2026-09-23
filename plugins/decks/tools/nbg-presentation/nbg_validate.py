@@ -150,7 +150,6 @@ class Brand:
     logo_back: tuple[float, float, float, float]
     logo_aspect: float
     page_number: tuple[float, float, float, float]
-    cover_date: tuple[float, float, float, float]
     min_font: float
     pill_font: float
     source_font: float
@@ -189,7 +188,6 @@ def brand() -> Brand:
         logo_back=_box4(g["logo_back"]),
         logo_aspect=float(g["logo_aspect"]),
         page_number=_box4(g["page_number"]),
-        cover_date=_box4(nbg_tokens.get("components.cover.date")),
         min_font=float(nbg_tokens.get("accessibility.min_font_pt")),
         pill_font=float(nbg_tokens.get("accessibility.pill_font_pt")),
         source_font=float(
@@ -1655,6 +1653,13 @@ class Title:
 _STATEMENT_LAYOUTS = ("title", "secHead")
 
 
+def _explicit_size(tx_body: Any) -> bool:
+    """True when the slide's own text body sets a font size anywhere."""
+    if tx_body is None:
+        return False
+    return any(el.get("sz") for el in tx_body.iter() if _local(el.tag) in ("rPr", "defRPr"))
+
+
 def find_title(slide: Slide) -> Title | None:
     """The one title definition every title check uses.
 
@@ -1669,11 +1674,18 @@ def find_title(slide: Slide) -> Title | None:
         if shape.ph_type in _TITLE_TYPES:
             frame = slide.frame(shape)
             if frame is not None and frame.text.strip():
-                # A title placeholder's size comes from the template (44pt in the
-                # default one), so its role is read from its type and layout instead.
-                content = shape.ph_type == "title" and layout_type not in _STATEMENT_LAYOUTS
+                ph_size = frame.max_size() or 44.0
+                # A size written on the slide says what the title is: 24pt is an
+                # action title, 48pt a cover or divider title (nbg_build puts a title
+                # placeholder on every slide). A size inherited from the template
+                # (44pt in the default one) says nothing, so the role is then read
+                # from the placeholder type and the layout.
+                if _explicit_size(shape.tx_body):
+                    content = ph_size < STATEMENT_MIN_PT
+                else:
+                    content = shape.ph_type == "title" and layout_type not in _STATEMENT_LAYOUTS
                 text = " ".join(frame.text.split())
-                return Title(shape, frame, text, frame.max_size() or 44.0, "placeholder", content)
+                return Title(shape, frame, text, ph_size, "placeholder", content)
     header: list[tuple[float, float, float, Shape, Frame]] = []
     statement: list[tuple[float, float, float, Shape, Frame]] = []
     for shape, frame in slide.text_shapes():
@@ -1694,6 +1706,15 @@ def find_title(slide: Slide) -> Title | None:
             text = " ".join(frame.text.split())
             return Title(shape, frame, text, size, kind, size < STATEMENT_MIN_PT)
     return None
+
+
+def _is_cover(deck: Deck, slide: Slide) -> bool:
+    """Slide 1 of a multi-slide deck, unless it opens on a content slide: a one-slide
+    view (/create-infographic) or a deck without a cover gets no cover rules."""
+    if slide.position != 1 or len(deck.slides) < 2:
+        return False
+    title = find_title(slide)
+    return title is None or not title.is_content
 
 
 # ------------------------------------------------------------- shape helpers
@@ -2197,16 +2218,13 @@ def _background_under(slide: Slide, shape: Shape, slide_bg: str | None) -> tuple
 def _muted_waived(
     color: str, background: str | None, shape: Shape | None, size: float | None, axis: bool = False
 ) -> bool:
-    b = brand()
-    if color != b.muted or background != "FFFFFF":
+    """Muted grey on white (2.96:1) is sanctioned for page numbers and muted axis labels
+    only (Standard #22). The cover date is caption grey, so it gets no waiver."""
+    if color != brand().muted or background != "FFFFFF":
         return False
     if axis:
         return True
-    if shape is None:
-        return False
-    if _is_page_number(shape) and (size or 10) <= 10:
-        return True
-    return _spot_match(shape, b.cover_date, size=False) and (size or 14) <= 14
+    return shape is not None and _is_page_number(shape) and (size or 10) <= 10
 
 
 def check_contrast(deck: Deck, out: Collector) -> str:
@@ -2296,11 +2314,7 @@ def check_contrast(deck: Deck, out: Collector) -> str:
                 None,
                 axis,
             )
-    note = (
-        f"; {len(waived)} muted-grey page number, cover date or axis label run(s) waived"
-        if waived
-        else ""
-    )
+    note = f"; {len(waived)} muted-grey page number or axis label run(s) waived" if waived else ""
     if out.findings:
         return f"{len(out.findings)} run(s) below WCAG AA among {out.examined} measured{note}"
     return f"{out.examined} run(s) measured, all clear WCAG AA{note}"
@@ -2309,6 +2323,8 @@ def check_contrast(deck: Deck, out: Collector) -> str:
 def _txpr_style(
     ctx: ColorContext, tx_pr: Any, inherited: tuple[str | None, float | None, bool]
 ) -> tuple[str | None, float | None, bool]:
+    """(colour, size, bold) of a chart c:txPr or c:rich over `inherited`: paragraph
+    defaults first, then a run's own properties (a rich-text label's colour sits there)."""
     if tx_pr is None:
         return inherited
     color, size, bold = inherited
@@ -2320,7 +2336,6 @@ def _txpr_style(
             size = int(props.get("sz")) / 100
         if props.get("b") is not None:
             bold = props.get("b") in ("1", "true")
-        break
     return color, size, bold
 
 
@@ -2373,9 +2388,13 @@ def _chart_text_rows(
                     continue
                 idx = idx_el.get("val", "0")
                 overridden.add(idx)
-                if _flag(dlbl, "delete") or not (_shown(dlbl) or _shown(labels)):
+                rich = dlbl.find(f"{C}tx/{C}rich")  # custom label text, e.g. a signed delta
+                if _flag(dlbl, "delete") or not (
+                    _shown(dlbl) or _shown(labels) or rich is not None
+                ):
                     continue
-                point_style = _txpr_style(ctx, dlbl.find(f"{C}txPr"), style)
+                holder = dlbl.find(f"{C}txPr")
+                point_style = _txpr_style(ctx, holder if holder is not None else rich, style)
                 bg = (points.get(idx) or ser_color) if inside(dlbl, inside(labels)) else outside
                 rows.append((point_style, bg, f"series {name!r} label {int(idx) + 1}", False))
             if not _shown(labels):
@@ -2581,6 +2600,7 @@ def check_text_fit(deck: Deck, out: Collector) -> str:
     b = brand()
     m = deck.measurer
     for s in deck.slides:
+        cover = _is_cover(deck, s)
         extents: list[tuple[Shape, tuple[float, float, float, float]]] = []
         for shape, frame in s.text_shapes():
             if not shape.has_box:
@@ -2623,7 +2643,7 @@ def check_text_fit(deck: Deck, out: Collector) -> str:
                         s.position,
                         f'{label} unwrapped text runs past the {b.right}" boundary: "{snippet}"',
                     )
-            if s.position == 1 and len(deck.slides) > 1 and (frame.max_size() or 0) >= TITLE_MIN_PT:
+            if cover and (frame.max_size() or 0) >= TITLE_MIN_PT:
                 wrapped = [n for n in lay.lines if n > 1]
                 if wrapped:
                     out.add(
@@ -2771,9 +2791,7 @@ def check_logo(deck: Deck, out: Collector) -> str:
                 s.position,
                 f'the logo is {shape.w:.3f}" x {shape.h:.3f}"; the {spot_name} logo is {spot[2]}" x {spot[3]}" (Standard #17)',
             )
-        title = find_title(s) if s.position == 1 else None
-        cover = s.position == 1 and len(deck.slides) > 1 and (title is None or not title.is_content)
-        if cover and spot_name != "large":
+        if _is_cover(deck, s) and spot_name != "large":
             out.add(
                 s.position,
                 "slide 1 is the cover and carries the small logo; covers and dividers use the large logo (Standard #17)",
@@ -3145,7 +3163,13 @@ def check_chart_data(deck: Deck, out: Collector) -> str:
         if categorical and cats == 0:
             out.add(pos, f"chart {chart.stem} has no categories")
         pie_like = all(_local(p.tag) in (*PIE_TAGS, "doughnutChart") for p in _plots(chart))
-        count, what = (cats, "slices") if pie_like else (len(series), "series")
+        # Distinct names: an area-line chart draws each series twice (an areaChart fill
+        # and a lineChart stroke of the same name), which is one series to the reader.
+        names = {
+            name if name != "(unnamed)" else f"#{i}"
+            for i, name in enumerate(_series_name(ser) for ser in series)
+        }
+        count, what = (cats, "slices") if pie_like else (len(names), "series")
         if count > b.max_series_absolute:
             out.add(
                 pos,
@@ -3319,8 +3343,24 @@ ALT_TEXT_PLACEHOLDER = re.compile(
 )
 
 
+_DECORATIVE_EXT = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}"
+
+
+def _marked_decorative(shape: Shape) -> bool:
+    """PowerPoint's "Mark as decorative" (Office 2019+): a:ext with an adec:decorative child."""
+    nv = shape.c_nv_pr
+    if nv is None:
+        return False
+    for ext in nv.iter(f"{A}ext"):
+        if ext.get("uri", "").upper() == _DECORATIVE_EXT:
+            for child in ext:
+                if _local(child.tag) == "decorative" and child.get("val", "1") in ("1", "true"):
+                    return True
+    return False
+
+
 def check_alt_text(deck: Deck, out: Collector) -> str:
-    decorative = 0
+    decorative = marked = 0
     for s in deck.slides:
         captions = {fold(t) for t in _slide_texts(s)}
         for shape in s.shapes:
@@ -3328,6 +3368,9 @@ def check_alt_text(deck: Deck, out: Collector) -> str:
                 continue
             if shape.kind == "pic" and _is_logo_footprint(shape):
                 decorative += 1
+                continue
+            if shape.kind == "pic" and _marked_decorative(shape):
+                marked += 1
                 continue
             out.count()
             nv = shape.c_nv_pr
@@ -3351,6 +3394,8 @@ def check_alt_text(deck: Deck, out: Collector) -> str:
                     f'{name} alt text "{_snippet(alt)}" repeats a caption already on the slide',
                 )
     chrome = f", {decorative} brand logo(s) exempt as decorative" if decorative else ""
+    if marked:
+        chrome += f", {marked} picture(s) marked decorative in PowerPoint"
     if out.findings:
         return f"{len(out.findings)} of {out.examined} object(s) without usable alt text{chrome}"
     return f"{out.examined} object(s) carry descriptive alt text{chrome}"
@@ -3709,7 +3754,7 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Colors", check_colors, "error", "Every colour in slides and charts, including theme references and shape-style colours, is in tokens.yaml; retired colours fail with their reason.", "colors.md; tokens colors, retired_colors", "colour references in slide shapes and chart parts", True),
     CheckSpec("Fonts", check_fonts, "error", "Every typeface (text, symbol, bullet) in slides and charts is an allowed font; Aptos SemiBold is forbidden.", "typography.md; tokens fonts", "typeface references in slide shapes and chart parts", True),
     CheckSpec("Font Sizes", check_font_sizes, "error", "Text is 10pt or more; sources and footnotes 11pt or more; only the header pill may be 9pt.", "Standard #11; tokens accessibility, type.source", "sized text runs in shapes, table cells and chart parts", True),
-    CheckSpec("Contrast", check_contrast, "error", "Text meets WCAG AA against what is behind it; muted grey is waived only for page numbers, the cover date and axis labels on white.", "Standard #22", "text runs with a resolvable colour and background", True),
+    CheckSpec("Contrast", check_contrast, "error", "Text meets WCAG AA against what is behind it; muted grey is waived only for page numbers and axis labels on white.", "Standard #22", "text runs with a resolvable colour and background", True),
     CheckSpec("Boundaries", check_boundaries, "error", "No element extends past a slide edge.", "dimensions.md", "positioned shapes, pictures, charts, tables and connectors", True),
     CheckSpec("Safe Zones", check_safe_zones, "error", "Content stays between the 0.374in gutter and the right boundary, above the 6.85in footer line; sources end by 6.5in.", "dimensions.md; tokens geometry", "content elements (logo footprints and the page number excluded)", True),
     CheckSpec("Content Spacing", check_content_spacing, "error", "The first body element starts at 1.3in or lower and 0.15in or more below the title.", "Standard #11; tokens geometry.body_top", "slides with a content title and body content"),

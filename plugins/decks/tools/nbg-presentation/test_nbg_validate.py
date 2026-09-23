@@ -441,7 +441,7 @@ def golden_prs():
     text(s, 0.374, 1.39, 12.0, 1.0, COVER_TITLE, size=48, color="003841")
     text(s, 0.374, 2.49, 12.0, 0.8, "Cards | Digital | Direct", size=24, color="007B85")
     text(s, 0.374, 4.58, 8.0, 0.4, "Athens", size=14, color="003841")
-    text(s, 0.374, 4.97, 8.0, 0.4, "September 2026", size=14, color="939793")
+    text(s, 0.374, 4.97, 8.0, 0.4, "September 2026", size=14, color="5A5F5A")
     logo(s, "large")
 
     s = blank(prs)  # 2 content: pill, bullets, numbered badges
@@ -1130,14 +1130,26 @@ def test_a_deck_that_opens_on_a_content_slide_is_not_told_its_cover_needs_the_la
     assert "large logo" not in details(result)
 
 
-def test_the_muted_grey_waiver_covers_page_numbers_and_the_cover_date_only(tmp_path, golden):
-    """VALIDATOR-8 / BRAND-SSOT-10: the 939793 waiver applied to any text anywhere."""
-    assert check(golden, "Contrast").status == "pass"
+def test_the_muted_grey_waiver_covers_page_numbers_and_axis_labels_only(tmp_path, golden):
+    """VALIDATOR-8 / BRAND-SSOT-10: the 939793 waiver applied to any text anywhere.
+
+    The golden deck keeps 939793 on its page numbers and on the line chart's value axis,
+    both waived. Body copy and the cover date in 939793 are not: the cover date is
+    caption grey (lead's decision, 2026-09-23)."""
+    golden_contrast = check(golden, "Contrast")
+    assert golden_contrast.status == "pass" and "waived" in golden_contrast.message
     body = check(
         deck(tmp_path, _add(2, 0.374, 5.3, 6.0, 0.4, "Grey body copy", color="939793")), "Contrast"
     )
     assert body.status == "fail"
     assert "939793" in details(body) and "Slide 2" in details(body)
+
+    def grey_date(prs):
+        shape = shape_with_text(slide(prs, 1), "September 2026")
+        shape.text_frame.paragraphs[0].runs[0].font.color.rgb = RGBColor.from_string("939793")
+
+    date = check(deck(tmp_path, grey_date, name="date.pptx"), "Contrast")
+    assert date.status == "fail" and "Slide 1" in details(date)
 
 
 def test_a_pill_drawn_as_a_shape_plus_a_text_box_is_the_pill(tmp_path):
@@ -1489,12 +1501,15 @@ def test_a_year_ending_one_bullet_is_not_the_amount_of_the_next(tmp_path):
             5.2,
             8.0,
             1.0,
-            ["EUR 12.5B volume in 2026", "EUR 42M fees, up 18%"],
+            ["EUR 12.5B volume in 2026", "EUR 42M fees, up 18%", "850K downloads"],
         )
 
     result = check(deck(tmp_path, edit), "Number Formats")
     assert result.status == "pass", result.details
-    assert result.examined == 6  # the two bullets plus the golden table's four amounts
+    # The two currency bullets plus the golden table's four amounts. EUR 12.5B beside
+    # EUR 42M is correct (quantities three orders apart); 850K and 18% carry no
+    # currency marker, so they are not sampled.
+    assert result.examined == 6
 
 
 def test_text_margins_fail_on_any_violation(tmp_path):
@@ -1794,3 +1809,270 @@ def test_the_brand_comes_from_tokens_not_a_second_copy():
     assert not hasattr(nv, "NBG_GUIDELINES")
     assert nv.allowed_colors() == nbg_tokens.allowed_colors()
     assert "595959" not in nv.allowed_colors()
+
+
+# ------------------------------------------- what the rebuilt nbg_build writes
+
+
+def _placeholder_title(sld, content, *, x, y, w, h, size):
+    """A title placeholder with its own geometry and size, as nbg_build now writes one."""
+    ph = sld.shapes.title
+    ph.left, ph.top, ph.width, ph.height = inch(x), inch(y), inch(w), inch(h)
+    tf = ph.text_frame
+    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+    p = tf.paragraphs[0]
+    p.alignment = PP_ALIGN.LEFT
+    run = p.add_run()
+    run.text = content
+    run.font.size = Pt(size)
+    run.font.name = "Aptos"
+    run.font.color.rgb = RGBColor.from_string("003841")
+    return ph
+
+
+def test_title_placeholders_on_every_slide_take_their_role_from_their_size(tmp_path):
+    """nbg_build puts a title placeholder on the cover, the dividers and every body
+    slide. A 48pt placeholder is a cover or divider title (Standard #3 keeps its noun
+    phrase out of Action Titles); a 24pt one is an action title."""
+    prs = new_prs()
+    cover = prs.slides.add_slide(prs.slide_layouts[5])
+    _placeholder_title(cover, "Quarterly report", x=0.374, y=1.39, w=12.0, h=1.0, size=48)
+    divider = prs.slides.add_slide(prs.slide_layouts[5])
+    text(divider, 0.374, 2.84, 1.2, 1.0, "02", size=60, color="007B85")
+    _placeholder_title(divider, "Recommendations", x=1.574, y=2.84, w=9.5, h=1.0, size=48)
+    body = prs.slides.add_slide(prs.slide_layouts[5])
+    _placeholder_title(body, "Overview", x=0.374, y=0.5, w=12.585, h=0.4, size=24)
+    path = save(prs, tmp_path / "placeholders.pptx")
+    with nv.load_deck(path) as loaded:
+        found_titles = [nv.find_title(s) for s in loaded.slides]
+    assert [t.is_content if t else None for t in found_titles] == [False, False, True]
+    actions = check(path, "Action Titles")
+    assert actions.examined == 1
+    assert "Overview" in details(actions) and "Recommendations" not in details(actions)
+    style = check(path, "Title Style")
+    assert style.status == "pass", style.details  # the divider title follows its number
+
+
+def test_a_picture_marked_decorative_in_powerpoint_needs_no_alt_text(tmp_path):
+    def add(marked):
+        def edit(prs):
+            pic = slide(prs, 2).shapes.add_picture(
+                str(BANK_LOGOS / "eurobank.png"), inch(10), inch(5.3), inch(0.4), inch(0.4)
+            )
+            if marked:
+                c_nv_pr = pic._element.find(".//" + qn("p:cNvPr"))
+                ext = etree.SubElement(etree.SubElement(c_nv_pr, qn("a:extLst")), qn("a:ext"))
+                ext.set("uri", "{C183D7F6-B498-43B3-948B-1728B52AA6E4}")
+                flag = etree.SubElement(
+                    ext, "{http://schemas.microsoft.com/office/drawing/2017/decorative}decorative"
+                )
+                flag.set("val", "1")
+
+        return edit
+
+    marked = check(deck(tmp_path, add(True), name="marked.pptx"), "Alt Text")
+    assert marked.status == "pass" and "marked decorative" in marked.message
+    unmarked = check(deck(tmp_path, add(False), name="unmarked.pptx"), "Alt Text")
+    assert unmarked.status == "fail" and "filename" in details(unmarked)
+
+
+def _area_line(xml):
+    """Turn the golden line chart into nbg_build's area_line: an areaChart fill and a
+    lineChart stroke per series, in one plot area, sharing the axes."""
+    found = re.search(r"<c:lineChart>.*?</c:lineChart>", xml, re.S)
+    assert found, "no lineChart in the chart part"
+    line = found.group(0)
+    fills = []
+    for ser in re.findall(r"<c:ser>.*?</c:ser>", line, re.S):
+        ser = re.sub(r"<c:marker>.*?</c:marker>", "", ser, flags=re.S)
+        ser = re.sub(r"<c:smooth[^>]*/>", "", ser)
+        ser = re.sub(
+            r"<c:spPr>.*?</c:spPr>",
+            '<c:spPr><a:solidFill><a:srgbClr val="00ADBF"><a:alpha val="15000"/></a:srgbClr>'
+            "</a:solidFill><a:ln><a:noFill/></a:ln></c:spPr>",
+            ser,
+            count=1,
+            flags=re.S,
+        )
+        fills.append(ser)
+    axes = "".join(re.findall(r'<c:axId val="-?\d+"/>', line))
+    area = f'<c:areaChart><c:grouping val="standard"/><c:varyColors val="0"/>{"".join(fills)}{axes}</c:areaChart>'
+    return xml.replace(line, area + line, 1)
+
+
+def _four_series_line_chart(prs):
+    sld = slide(prs, 4)
+    remove(sld.shapes[1])
+    data = CategoryChartData()
+    data.categories = ["Q1", "Q2", "Q3", "Q4"]
+    colors = ("00ADBF", "003841", "007B85", "939793")
+    for i in range(4):
+        data.add_series(f"Segment {i + 1}", (1 + i, 2 + i, 3 + i, 4 + i))
+    frame = sld.shapes.add_chart(
+        XL_CHART_TYPE.LINE_MARKERS, inch(0.374), inch(1.3), inch(12.585), inch(4.8), data
+    )
+    chart = frame.chart
+    chart.has_legend = True
+    chart.legend.position = XL_LEGEND_POSITION.BOTTOM
+    chart.legend.font.size = Pt(12)
+    chart.legend.font.name = "Aptos"
+    _style_axes(chart, font="Aptos", value_visible=True, value_color="939793")
+    for ser, color in zip(chart.plots[0].series, colors, strict=True):
+        ser.smooth = False
+        ser.format.line.color.rgb = RGBColor.from_string(color)
+        ser.format.line.width = Pt(3.5)
+        ser.marker.style = XL_MARKER_STYLE.CIRCLE
+        ser.marker.size = 6
+        ser.marker.format.fill.solid()
+        ser.marker.format.fill.fore_color.rgb = RGBColor.from_string("FFFFFF")
+        ser.marker.format.line.color.rgb = RGBColor.from_string(color)
+    set_alt(frame, "Line chart of four segments by quarter, all rising.")
+
+
+def test_an_area_line_chart_counts_each_series_once(tmp_path):
+    """Four series drawn as area plus line are eight c:ser elements; counting elements
+    warned 'past 6 series' on a four-series chart."""
+    # Located by a series name: the replaced golden chart stays in the package as an
+    # orphan part, and the first part mentioning lineChart is that orphan.
+    path = deck(
+        tmp_path,
+        _four_series_line_chart,
+        patch={(lambda p: chart_part(p, b"Segment 1")): _area_line},
+    )
+    with zipfile.ZipFile(path) as zf:
+        assert zf.read(chart_part(path, b"Segment 1")).count(b"<c:ser>") == 8
+    found = results(path, only=["Chart Data", "Chart Styling", "Colors"])
+    for name, result in found.items():
+        assert result.status == "pass", (name, result.details)
+
+
+def test_a_rich_text_data_label_is_measured_by_its_own_run_colour(tmp_path):
+    """Waterfall labels are custom rich text (the signed delta), coloured on the run."""
+
+    def edit(prs):
+        sld = slide(prs, 3)
+        remove(sld.shapes[1])
+        label = bar_chart(sld).chart.plots[0].series[0].points[0].data_label
+        label.text_frame.text = "+0.1M"
+        run = label.text_frame.paragraphs[0].runs[0]
+        run.font.size = Pt(12)
+        run.font.bold = True
+        run.font.color.rgb = RGBColor.from_string("FFFFFF")
+        label.position = XL_LABEL_POSITION.OUTSIDE_END
+
+    result = check(deck(tmp_path, edit), "Contrast")
+    assert result.status == "fail"
+    assert "#FFFFFF on #FFFFFF" in details(result) and "label 1" in details(result)
+
+
+def test_a_one_slide_view_plus_back_cover_passes_every_check_even_strict(tmp_path):
+    """/create-infographic builds [one slide, back cover]: no cover and no contents is
+    not a violation, and slide 1 is not held to the cover rules when it is a body slide."""
+    prs = new_prs()
+    s = blank(prs)
+    title(s, TITLES[3])
+    bar_chart(s)
+    source(s)
+    logo(s, "small")
+    page_number(s, 1)
+    logo(blank(prs), "back")
+    found = nv.validate_presentation(str(save(prs, tmp_path / "view.pptx")))
+    bad = {r.name: r.details for r in found if r.status in ("fail", "warn")}
+    assert not bad, bad
+    assert nv.exit_code(found, strict=True) == 0
+
+
+# ------------------ validator tests that lived in test_nbg_build.py, ported here
+
+
+def test_exhibit_sources_reject_a_source_with_no_as_of_date(tmp_path):
+    """'Source: NBG MIS' does not say whether the number is current."""
+
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), "Source: NBG MIS")
+
+    result = check(deck(tmp_path, edit), "Exhibit Sources")
+    assert result.status == "fail" and "no as-of date" in details(result)
+
+
+@pytest.mark.parametrize(
+    ("alt", "expected"),
+    [
+        ("chart-4.png", "is a filename or an autoname"),  # what python-pptx writes
+        ("Image of monthly volume", 'opens with "image of"'),
+        (TITLES[3], "repeats a caption"),  # read out twice by a screen reader
+    ],
+)
+def test_alt_text_rejects_descriptions_that_describe_nothing(tmp_path, alt, expected):
+    result = check(deck(tmp_path, lambda prs: set_alt(slide(prs, 3).shapes[1], alt)), "Alt Text")
+    assert result.status == "fail" and expected in details(result)
+
+
+def test_zero_baseline_leaves_a_truncated_line_chart_alone(tmp_path):
+    """A line encodes value as position, so a non-zero start is legitimate."""
+    path = deck(tmp_path, patch={(lambda p: chart_part(p, b"lineChart")): _truncate_axis})
+    assert check(path, "Zero Baseline").status == "pass"
+
+
+def test_zero_baseline_is_read_by_parsing_not_by_searching_the_text(golden):
+    """'c:min' is also a substring of c:minorTickMark, on every chart python-pptx writes."""
+    with zipfile.ZipFile(golden) as zf:
+        assert b"c:minorTickMark" in zf.read(chart_part(golden, b"barChart"))
+    result = check(golden, "Zero Baseline")
+    assert result.status == "pass" and result.examined == 1
+
+
+def test_number_formats_catch_inconsistent_decimals_within_one_unit(tmp_path):
+    """'EUR 2.3M' beside the golden table's 'EUR 42M' reads as two confidence levels."""
+    path = deck(tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, "EUR 2.3M in new FX fees"))
+    result = check(path, "Number Formats")
+    assert result.status == "warn" and "decimal precisions" in details(result)
+
+
+def test_ai_slop_ignores_a_lone_hit_and_reads_through_a_curly_apostrophe(tmp_path):
+    lone = check(
+        deck(
+            tmp_path,
+            _add(2, 0.374, 5.3, 8.0, 0.4, "Card payments settle seamlessly"),
+            name="1.pptx",
+        ),
+        "AI Slop",
+    )
+    assert lone.status == "pass", lone.details
+    curly = f"In today{chr(0x2019)}s fast-paced world we must unlock value"
+    matched = check(deck(tmp_path, _add(2, 0.374, 5.3, 12.0, 0.4, curly), name="2.pptx"), "AI Slop")
+    assert matched.status == "warn", matched.message
+
+
+def test_slide_titles_catch_a_missing_title_and_exempt_the_text_free_back_cover(tmp_path):
+    path = deck(tmp_path, lambda prs: remove(shape_with_text(slide(prs, 4), TITLES[4])))
+    result = check(path, "Slide Titles")
+    assert result.status == "fail"
+    assert "Slide 4" in details(result) and "no title" in details(result)
+    assert "1 text-free slide(s) exempt" in result.message
+
+
+def test_bank_branding_counts_a_body_mention_without_calling_it_a_comparison(tmp_path):
+    """Only a chart that plots two or more banks has marks to colour."""
+    path = deck(tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, "Eurobank and NBG both grew mobile users"))
+    result = check(path, "Bank Branding")
+    assert result.status == "skipped" and "2 bank name(s) found" in result.message
+
+
+def test_print_results_returns_false_only_when_something_failed(capsys):
+    warning = nv.ValidationResult("W", False, "found", ["a finding"], severity="warning")
+    error = nv.ValidationResult("E", False, "broke")
+    empty = nv.ValidationResult("S", True, "nothing to look at", examined=0)
+    assert warning.warned and not warning.passed and warning.status == "warn"
+    assert empty.skipped and empty.status == "skipped"
+    assert nv.print_results([warning, empty], "x", color=False) is True
+    assert nv.print_results([error], "x", color=False) is False
+    assert "examined nothing" in capsys.readouterr().out
+
+
+def test_font_sizes_report_the_sizes_used(golden):
+    """It once walked a:rPr only and printed an empty 'Sizes used:'."""
+    result = check(golden, "Font Sizes")
+    used = result.message.split("Sizes used:", 1)[1]
+    assert "9.0pt" in used and "24.0pt" in used and "48.0pt" in used
