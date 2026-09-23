@@ -9,7 +9,9 @@
 ## How to Use Icons in Slides
 
 - Use icons to visually anchor bullet points, section headers, or callout boxes
-- Always tint icons to an NBG brand color; never leave them black on white unless on a dark background
+- Use them as drawn: duotone teal (`#087681` structure, `#13A4AD` accents) on transparent, for
+  white or light fills. There is no tint to apply; only a process step redraws its icon white on
+  its teal tile
 - Recommended sizes: **48px** for inline/bullet icons, **64–80px** for feature callout icons
 - Pair each icon with a short label or heading; never use icons without text context
 - Icons work best on cards and process steps: in a deck spec, `cards[].icon` or `steps[].icon`

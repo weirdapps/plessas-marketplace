@@ -10,7 +10,7 @@ Comprehensive library of NBG brand assets for presentations.
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Icons (PNG, legacy mono) | 338 | Brand icons in 20 categories |
+| Icons (PNG, duotone) | 338 | Brand icons in 20 categories, duotone teal on transparent |
 | Duotone icons (SVG) | 19 files | Official duotone style: library + functional + 17 themed sets |
 | Illustrations | 21 PNG, 1 PDF, 9 SVG splash | Digital app illustrations + splash set |
 | Logos | 10 PNG + 3 SVG | App icons and wordmarks + NBG/App/Go4more reference boards |
@@ -51,10 +51,9 @@ Comprehensive library of NBG brand assets for presentations.
 
 ### Icon Usage Rules
 
-1. **Always tint icons to NBG brand colors**
-   - Dark Teal `#003841` on light backgrounds
-   - White `#FFFFFF` on dark backgrounds
-   - NBG Teal `#007B85` for accent icons
+1. **Use them as they are**: the PNGs are already duotone teal (`#087681` structure, `#13A4AD`
+   accents) on transparent. Place them on white or a light fill. The deck spec has no tint for
+   card icons or free images; only a process step redraws its icon white on its teal tile.
 
 2. **Never use icons without text**: always pair with a label or heading
 
@@ -100,7 +99,7 @@ Need an icon?
     │
     ├─> Check assets/icons/ folders first
     │       │
-    │       ├─> Found suitable icon? → USE IT (apply NBG tint)
+    │       ├─> Found suitable icon? → USE IT (as it is, no tint)
     │       │
     │       └─> No match? → Use Icon Designer agent
     │
@@ -114,7 +113,7 @@ Need an icon?
 
 **Path:** `assets/icons-duotone/`
 
-The official NBG icon style is **duotone**: stroke-based teal outlines with accent details (`#087681` primary + `#13A4AD` accent). Prefer these for digital and product-styled slides and any new icon work.
+The official NBG icon style is **duotone**: stroke-based teal outlines with accent details (`#087681` primary + `#13A4AD` accent), the same style as the PNG set above.
 
 | Asset | What it is |
 |-------|-----------|
@@ -122,7 +121,11 @@ The official NBG icon style is **duotone**: stroke-based teal outlines with acce
 | `icons-functional-library.svg` | Mono functional UI icon set (`#162020`, 1.5 stroke) |
 | `sets/*.svg` | 17 themed sets: currency, device, social, QR, PFM, card and transaction states, progress, table statuses, bank and browser logos, product |
 
-**Rules:** duotone SVGs are already brand-colored, do NOT recolor to a single tint. To generate a new duotone icon, use `/create-icon` or the `icon-designer` agent (spec in `icons.md`). The legacy PNG set under `assets/icons/` stays available (solid mono), but duotone is the current standard.
+**These are reference sheets, not slide assets.** Each file holds several icons, often in light and
+dark variants side by side, so placing one on a slide places the whole sheet. Use them to find an
+icon and to calibrate a new one. For a slide, use a single PNG from `assets/icons/`, or generate one
+with `/create-icon` or the `icon-designer` agent (spec in `icons.md`). Never recolour a duotone
+icon to a single tint.
 
 ## Backgrounds
 
@@ -187,8 +190,8 @@ See `assets/illustrations/INDEX.md` for complete reference.
 | Filename | What it Is | Use On |
 |----------|-----------|--------|
 | `NBG.png` | NBG emblem only (oval) | Compact placements |
-| `National_Bank_of_Greece_Light.png` | Full wordmark, dark text | Light backgrounds |
-| `National_Bank_of_Greece_Light_dark.png` | Full wordmark, light text | Dark backgrounds |
+| `National_Bank_of_Greece_Light.png` | English wordmark, dark text | Never on slides (Standard #10); English-language material outside decks, light backgrounds |
+| `National_Bank_of_Greece_Light_dark.png` | English wordmark, light text | Never on slides (Standard #10); English-language material outside decks, dark backgrounds |
 | `Retail_Mobile_Banking.png` | Retail Mobile app icon | Light backgrounds |
 | `Retail_Mobile_Banking_dark.png` | Retail Mobile app icon | Dark backgrounds |
 | `Business_Mobile_Banking.png` | Business Mobile app icon | Dark backgrounds |
@@ -289,4 +292,4 @@ See `assets/screenshots/*/INDEX.md` for complete reference per product.
 | Security feature icon | Icon | `icons/security/Shield.png` |
 | Mobile app screenshot | Screenshot | `screenshots/retail-mobile/*.png` |
 | Next app feature | Screenshot | `screenshots/next-app/*.png` |
-| NBG branding | Logo | `logos/National_Bank_of_Greece_Light.png` |
+| NBG branding on a slide | Logo (the builder places it) | `nbg-logo-gr.png`, the Greek wordmark |

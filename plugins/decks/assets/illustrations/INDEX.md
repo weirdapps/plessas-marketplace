@@ -2,7 +2,7 @@
 
 **Base path:** `${CLAUDE_PLUGIN_ROOT}/assets/illustrations/` (a deck spec writes `illustrations/<file>`)
 **Total:** 22 illustrations (21 PNG + 1 PDF), plus a 9-piece SVG splash set in `splash/`
-**Format:** PNG with transparent background (RGBA), ~1125px wide
+**Format:** PNG with transparent background (RGBA), 800px wide (heights in the table)
 **Style:** Teal line-art on transparent/light background, consistent with NBG digital apps visual language
 
 ---
@@ -11,27 +11,27 @@
 
 | Filename | Dimensions | What it shows | Use when |
 |----------|-----------|---------------|----------|
-| `Account.png` | 1125×534 | Glassmorphic NBG account card with balance (masked) and NBG emblem | Account overview, balance display, account management slides |
-| `Application.png` | 1125×696 | 5 floating app-style tiles: calculator, coins+stack, credit card, bar chart, shield | Digital banking product suite, onboarding, feature overview |
-| `Application_Approved.png` | 1125×717 | Loan/financial document with coin stack + teal checkmark badge | Loan approval, successful application, positive outcome |
-| `Application_rejected.png` | 1125×717 | Same document with coin stack + red X badge | Loan rejection, failed application, error state |
-| `Appointment.png` | 1125×552 | Flat calendar illustration, slightly tilted | Scheduling, appointments, branch visits, calendar features |
-| `Approval.png` | 1125×540 | Stacked clipboard cards with teal checkmark | General approval, verification, sign-off, completed process |
-| `card.png` | 1125×666 | Single contactless bank card, vertical, glassmorphic teal outline | Card products, card issuance, virtual/physical card features |
-| `Gift.png` | 1125×906 | Gift box on glassmorphic tile with teal check + red X badges | Rewards, offers, promotions, bonus eligibility, accept/decline flows |
-| `go_for_more.png` | 1125×534 | "GO FOR MORE" logo inside a glassmorphic rounded-square tile | Go For More rewards program feature slides |
-| `Growth.png` | 1125×594 | Bar chart + rising line chart with upward arrow | Business growth, portfolio performance, increasing metrics, KPIs |
-| `insurance.png` | 1125×660 | Open umbrella with rain falling, full-width landscape | Insurance products, protection, coverage, risk management |
-| `investments.png` | 1125×552 | 3D-style bar chart with rising bars, glassmorphic render | Investment products, portfolio overview, market data |
-| `Investments_check.png` | 528×504 | Line+bar chart with prominent teal checkmark badge | Confirmed investment, portfolio verified, investment completion |
-| `Loan_application.png` | 1125×717 | Financial document with €€€ header and coin stack (no status badge) | Loan application in progress, pending review, apply for loan |
-| `moneybox.png` | 1125×648 | Open cardboard box with euro coins floating above it | Savings, deposits, money collection, piggy bank concept |
-| `notification.png` | 1125×630 | Two overlapping envelopes, glassmorphic teal | Notifications, email alerts, messages, push notifications |
-| `Tasks.png` | 1125×906 | Checklist card with 3 checked rows + large teal checkmark badge | Task completion, to-do lists, onboarding steps, compliance checklist |
-| `Teens_card.png` | 1125×906 | Vertical bank card with 2 teen avatar circles (boy + girl) | Teens/youth card product, family banking, under-18 accounts |
-| `Teens_card_horizotal.png` | 1125×696 | Horizontal bank card with same 2 teen avatars | Same as above; use when landscape orientation is needed |
-| `Transfer.png` | 1125×992 | Two phones exchanging euro symbol with arrows, IRIS logo visible | P2P transfers, IRIS payments, send/receive money, mobile payments |
-| `unfriend.png` | 1125×630 | Person silhouette with minus/remove badge, red outline | Remove beneficiary, unlink account, delete contact, negative action |
+| `Account.png` | 800×380 | Glassmorphic NBG account card with balance (masked) and NBG emblem | Account overview, balance display, account management slides |
+| `Application.png` | 800×495 | 5 floating app-style tiles: calculator, coins+stack, credit card, bar chart, shield | Digital banking product suite, onboarding, feature overview |
+| `Application_Approved.png` | 800×510 | Loan/financial document with coin stack + teal checkmark badge | Loan approval, successful application, positive outcome |
+| `Application_rejected.png` | 800×510 | Same document with coin stack + red X badge | Loan rejection, failed application, error state |
+| `Appointment.png` | 800×393 | Flat calendar illustration, slightly tilted | Scheduling, appointments, branch visits, calendar features |
+| `Approval.png` | 800×384 | Stacked clipboard cards with teal checkmark | General approval, verification, sign-off, completed process |
+| `card.png` | 800×474 | Single contactless bank card, vertical, glassmorphic teal outline | Card products, card issuance, virtual/physical card features |
+| `Gift.png` | 800×644 | Gift box on glassmorphic tile with teal check + red X badges | Rewards, offers, promotions, bonus eligibility, accept/decline flows |
+| `go_for_more.png` | 800×380 | "GO FOR MORE" logo inside a glassmorphic rounded-square tile | Go For More rewards program feature slides |
+| `Growth.png` | 800×420 | Bar chart + rising line chart with upward arrow | Business growth, portfolio performance, increasing metrics, KPIs |
+| `insurance.png` | 800×469 | Open umbrella with rain falling, full-width landscape | Insurance products, protection, coverage, risk management |
+| `investments.png` | 800×393 | 3D-style bar chart with rising bars, glassmorphic render | Investment products, portfolio overview, market data |
+| `Investments_check.png` | 800×764 | Line+bar chart with prominent teal checkmark badge | Confirmed investment, portfolio verified, investment completion |
+| `Loan_application.png` | 800×510 | Financial document with €€€ header and coin stack (no status badge) | Loan application in progress, pending review, apply for loan |
+| `moneybox.png` | 800×461 | Open cardboard box with euro coins floating above it | Savings, deposits, money collection, piggy bank concept |
+| `notification.png` | 800×448 | Two overlapping envelopes, glassmorphic teal | Notifications, email alerts, messages, push notifications |
+| `Tasks.png` | 800×644 | Checklist card with 3 checked rows + large teal checkmark badge | Task completion, to-do lists, onboarding steps, compliance checklist |
+| `Teens_card.png` | 800×644 | Vertical bank card with 2 teen avatar circles (boy + girl) | Teens/youth card product, family banking, under-18 accounts |
+| `Teens_card_horizotal.png` | 800×495 | Horizontal bank card with same 2 teen avatars | Same as above; use when landscape orientation is needed |
+| `Transfer.png` | 800×705 | Two phones exchanging euro symbol with arrows, IRIS logo visible | P2P transfers, IRIS payments, send/receive money, mobile payments |
+| `unfriend.png` | 800×448 | Person silhouette with minus/remove badge, red outline | Remove beneficiary, unlink account, delete contact, negative action |
 | `Wallet_virtual_card.pdf` | PDF | Virtual wallet card illustration | Virtual card, digital wallet; use only in PDF-compatible contexts |
 
 ---

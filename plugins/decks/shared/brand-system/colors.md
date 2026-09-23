@@ -39,7 +39,7 @@
 | `#00DFF8` | Bright Cyan | Feature accent: a mark or highlight, never a background, never text on white | Very High (365+) |
 | `#007B85` | NBG Teal | Brand color | Very High (814+) |
 | `#047A85` | Teal Variant | Legacy: allowed in existing decks, never picked for new work | High (188+) |
-| `#003841` | Dark Teal | Titles, icons | High (89+) |
+| `#003841` | Dark Teal | Titles, headings | High (89+) |
 | `#202020` | Dark Text | Body text, and dark text on any light fill | Medium |
 
 ### Extended Palette
@@ -250,7 +250,7 @@ palette in code loads it through `tools/nbg_tokens.py` (`color("teal")`, `chart_
 | **Unit chip (Key Figures header)** | fill `#003841` (Dark Teal), text white |
 | TOC description | `#5A5F5A` (Caption Gray) |
 | Page number | `#939793` (Medium Gray) |
-| Icons (legacy mono PNG set) | `#003841` (Dark Teal); the duotone SVG set keeps its own two teals (`icons.md`) |
+| Icons | As drawn: duotone `#087681` + `#13A4AD`, no tint (`icons.md`); a process step's icon is white on its teal tile |
 | **Status: OK** | `#008000` fill, white text, DIY status pills |
 | **Status: TBD** | `#CC9900` fill, `#202020` text, DIY status pills |
 | **Status: Warn** | `#CC0000` fill, white text, DIY status pills |
@@ -318,15 +318,12 @@ Cover layouts may have overlapping graphic elements. Rules:
 4. **Never use white or light colors** for cover text on white backgrounds
 5. **Always set explicit colors**: never rely on theme/inherited colors for covers
 
-### Icon Contrast (legacy mono PNG icons)
+### Icon Contrast
 
-| Background | Icon Color |
-|------------|------------|
-| Light (white, off-white) | Dark Teal `#003841` |
-| Dark (teal, dark teal) | White `#FFFFFF` |
-| Accent (for callouts) | NBG Teal `#007B85` |
-
-Duotone SVG icons keep their own two teals, or go off-white on dark fills (`icons.md`).
+The icon PNGs in `assets/icons/` and the duotone SVGs share one style: two teals, `#087681` and
+`#13A4AD`, drawn for white and light fills. Place them as they are; never recolour one to a single
+tint. The builder makes one change itself: a process step redraws its icon white on its teal tile.
+A new icon for a dark fill swaps both teals for off-white `#F5F8F6` (`icons.md`).
 
 ---
 
