@@ -475,8 +475,8 @@ def test_a_cover_title_or_subtitle_that_wraps_is_an_error(tmp_path):
     wrapped one: a warning here let check pass a deck the build then rejected."""
     long_title = "An extremely long cover title that no presenter should ever need"
     long_subtitle = (
-        "Retail Banking | Digital Channels | Cards | Payments | Direct Banking | Fraud Prevention"
-        " | Controls"
+        "First placeholder segment | Second placeholder segment | Third placeholder segment"
+        " | Fourth"
     )
     report = check(
         tmp_path,

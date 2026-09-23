@@ -948,12 +948,15 @@ def test_contents_that_cannot_fit_is_refused(build):
 # =============================================================== examples
 
 
-def test_no_example_cover_carries_a_divisions_unit_list():
+def test_no_example_cover_lists_an_organisation_in_its_subtitle():
     """E2E-SMOKE also-noticed / BRAND-SSOT-4: the quarterly-report cover listed one
-    division's internal units in a public repo."""
+    division's internal units in a public repo. The guard names nothing it guards
+    (SECURITY-PUBLIC-1): a unit list is a long pipe-separated subtitle, so no example
+    subtitle may have more than two parts (a unit and a period, say)."""
     for spec in EXAMPLES_DIR.glob("*.yaml"):
-        text = spec.read_text(encoding="utf-8")
-        assert "GoForMore" not in text and "SSB" not in text, spec.name
+        for slide in yaml.safe_load(spec.read_text(encoding="utf-8"))["slides"]:
+            subtitle = (slide.get("content") or {}).get("subtitle", "")
+            assert len(subtitle.split("|")) <= 2, f"{spec.name}: {subtitle}"
 
 
 def test_label_dark_candidate_is_pure_black():
