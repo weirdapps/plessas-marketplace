@@ -296,6 +296,27 @@ def test_asset_names_match_by_basename_or_relative_path(vc):
     assert vc.errors == []
 
 
+def test_an_index_may_name_a_file_relative_to_the_assets_root(vc):
+    d = _plugin(vc, "p")
+    _assets(
+        d,
+        ["icons/money/Loan.png", "nbg-logo-gr.png"],
+        "| `icons/money/Loan.png` | loan |\n| `assets/nbg-logo-gr.png` | logo |\n"
+        "| `icons/money/Gone.png` | missing |\n",
+    )
+    vc.check_asset_references()
+    assert len(vc.errors) == 1
+    assert "Gone.png" in vc.errors[0]
+
+
+def test_a_path_does_not_match_by_basename_alone(vc):
+    """`other/Loan.png` must not pass just because some Loan.png exists."""
+    d = _plugin(vc, "p")
+    _assets(d, ["icons/money/Loan.png"], "| `other/Loan.png` | wrong folder |\n")
+    vc.check_asset_references()
+    assert len(vc.errors) == 1
+
+
 def test_asset_library_names_resolve_against_the_assets_tree(vc):
     d = _plugin(vc, "p")
     _assets(d, ["logos/NBG.png"], "| `NBG.png` | emblem |\n", index_rel="logos/INDEX.md")

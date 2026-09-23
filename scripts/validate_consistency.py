@@ -417,17 +417,17 @@ ASSET_EXTENSIONS = (".png", ".svg", ".jpg", ".jpeg", ".gif", ".pdf")
 BACKTICKED_RE = re.compile(r"`([^`\n]+)`")
 
 
-def _asset_index_files() -> list[tuple[Path, Path]]:
-    """(document, directory its filenames are relative to) pairs."""
-    pairs: list[tuple[Path, Path]] = []
+def _asset_index_files() -> list[tuple[Path, Path, Path]]:
+    """(document, directory its bare filenames live under, the plugin's assets root)."""
+    triples: list[tuple[Path, Path, Path]] = []
     for plugin_dir in _plugin_dirs():
         assets = plugin_dir / "assets"
         for doc in _rglob(assets, "INDEX.md") + _rglob(assets, "README.md"):
-            pairs.append((doc, doc.parent))
+            triples.append((doc, doc.parent, assets))
         library = plugin_dir / "shared" / "brand-system" / "asset-library.md"
         if library.is_file() and assets.is_dir():
-            pairs.append((library, assets))
-    return pairs
+            triples.append((library, assets, assets))
+    return triples
 
 
 def check_asset_references() -> None:
@@ -435,15 +435,14 @@ def check_asset_references() -> None:
     names must exist. When the asset library moved to underscore filenames, about
     190 of these references kept the old spelling (spaces, a Greek capital Eta in
     `Ηourglass.png`), so an agent that trusted the index asked for files that did
-    not exist. A name matches a file by its path relative to the document's
-    folder, or by basename anywhere under it (the icon index lists per-category
-    tables of basenames)."""
+    not exist. A path matches a file relative to the document's folder or to the
+    plugin's assets root (`icons/money/Loan.png` inside the icon index); a bare
+    filename matches by basename anywhere under the document's folder (the icon
+    index lists per-category tables of basenames)."""
     heading("Asset references (INDEX.md, assets READMEs, asset-library.md)")
     examined = 0
-    for doc, base in _asset_index_files():
-        files = [p for p in base.rglob("*") if p.is_file()]
-        rel_paths = {str(p.relative_to(base)) for p in files}
-        basenames = {p.name for p in files}
+    for doc, base, assets in _asset_index_files():
+        basenames = {p.name for p in base.rglob("*") if p.is_file()}
         for lineno, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
             for m in BACKTICKED_RE.finditer(line):
                 name = m.group(1).strip()
@@ -451,9 +450,14 @@ def check_asset_references() -> None:
                     continue
                 examined += 1
                 name = name.removeprefix("./")
+                anchored = False
                 for prefix in ("plugins/decks/assets/", "assets/"):
-                    name = name.removeprefix(prefix)
-                if name in rel_paths or name in basenames:
+                    if name.startswith(prefix):
+                        name, anchored = name[len(prefix) :], True
+                if anchored or "/" in name:
+                    if (base / name).is_file() or (assets / name).is_file():
+                        continue
+                elif name in basenames:
                     continue
                 error(
                     f"{doc.relative_to(ROOT)}:{lineno}: `{m.group(1)}` names no file under {base.relative_to(ROOT)}/"
