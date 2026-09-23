@@ -185,7 +185,7 @@ read by any check: it is reported under "not examined", and `--strict` fails the
 **Package safety**: parts are read from the zip one at a time, never extracted, with limits
 on member count (5,000), part size (64 MB) and total size (1 GB). Every part parsed as XML,
 whatever its name or size, has tighter caps, because a parsed tree costs many times its
-text: 16 MB per part, 128 MB across the package, and a compression ratio of at most 500:1.
+text: 16 MB per part, 128 MB across the package, and a compression ratio of at most 100:1 (the highest real part seen is 42:1).
 XML is parsed with defusedxml. A deck over a limit exits 2.
 
 ## Adding a check

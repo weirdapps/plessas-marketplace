@@ -107,6 +107,7 @@ CLOSING_MAX_WORDS = 12
 # Written as code points: a repository hook refuses literal em dashes in any file.
 EM_DASH = chr(0x2014)
 EN_DASH = chr(0x2013)
+DOUBLE_HYPHEN = " -- "  # typed for an em dash, so held to the same rule
 _APOSTROPHES = str.maketrans({chr(0x2019): "'", chr(0x02BC): "'", chr(0x00B4): "'"})
 
 
@@ -354,7 +355,7 @@ MAX_TOTAL_BYTES = 1024 * 1024 * 1024
 # A parsed tree costs many times its text, so XML has its own, lower caps.
 MAX_XML_PART_BYTES = 16 * 1024 * 1024
 MAX_XML_TOTAL_BYTES = 128 * 1024 * 1024
-MAX_XML_RATIO = 500  # a zip bomb inflates an XML part thousands of times
+MAX_XML_RATIO = 100  # a zip bomb inflates XML thousands of times; real parts stay under 50
 
 
 class DeckError(Exception):
@@ -3456,7 +3457,7 @@ def dash_problem(text: str) -> tuple[str, str] | None:
     error; a spaced en dash used as a dash is a warning; "2024-2025" with an en dash
     is a range and fine.
     """
-    if EM_DASH in text or " -- " in text:
+    if EM_DASH in text or DOUBLE_HYPHEN in text:
         return "error", "em dash"
     if f" {EN_DASH} " in text:
         return "warning", "spaced en dash used as a dash"
