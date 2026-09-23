@@ -216,6 +216,9 @@ def test_kpi_tiles_carry_value_label_and_sentiment_coloured_delta(build):
     assert len(_shapes_with_fill(root, "F5F8F6")) == 3
     value = shape_by_text(root, "3.3M")
     assert value.find(".//a:rPr", NS).get("sz") == "5000"
+    caption = shape_by_text(root, "Active users").find(".//a:rPr", NS)
+    assert caption.get("sz") == "1600" and caption.get("b") == "0"
+    assert caption.find("a:solidFill/a:srgbClr", NS).get("val") == "5A5F5A"
     colours = {
         text: shape_by_text(root, text).find(".//a:rPr/a:solidFill/a:srgbClr", NS).get("val")
         for text in ("+8%", "+2 pts", "flat")
@@ -527,6 +530,13 @@ def test_build_raises_on_violations_and_on_a_validator_crash(tmp_path, monkeypat
     )
     with pytest.raises(RuntimeError, match="UNVALIDATED"):
         nbg_build.build_presentation(spec, tmp_path / "c.pptx")
+
+
+@pytest.mark.parametrize("name", sorted(p.stem for p in EXAMPLES_DIR.glob("*.yaml")))
+def test_every_example_passes_the_validator_it_ships_with(tmp_path, name):
+    """No stub: the real nbg_validate.py gates every example, as CI's render job and a
+    colleague's build do. A builder change the gate rejects fails here first."""
+    nbg_build.build_presentation(EXAMPLES_DIR / f"{name}.yaml", tmp_path / f"{name}.pptx")
 
 
 @pytest.mark.parametrize("name", sorted(p.stem for p in EXAMPLES_DIR.glob("*.yaml")))

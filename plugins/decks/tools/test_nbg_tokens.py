@@ -95,3 +95,26 @@ def test_content_width_is_derived_from_slide_and_gutter():
     assert g["content_w"] == pytest.approx(g["slide"]["w"] - 2 * g["gutter"], abs=0.002)
     assert g["right_boundary"] == pytest.approx(g["slide"]["w"] - g["gutter"], abs=0.002)
     assert g["slide"]["w_emu"] == 12192000 and g["slide"]["h_emu"] == 6858000
+
+
+def test_the_keynote_gutter_is_0_807_inches_on_the_canvas_the_compositor_renders():
+    """nbg_keynote.py renders at 2560x1440 (192 px per inch); the tokens said 1920x1080,
+    at which 155 px is 1.076", not the 0.807" gutter keynote.md specifies."""
+    keynote = nbg_tokens.get("keynote")
+    assert keynote["canvas_px"] == {"w": 2560, "h": 1440}
+    px_per_inch = keynote["canvas_px"]["w"] / nbg_tokens.get("geometry.slide.w")
+    assert keynote["gutter_px"] / px_per_inch == pytest.approx(0.807, abs=0.001)
+
+
+def test_label_text_takes_caption_grey_and_only_the_page_number_is_muted():
+    """Standard #22: #939793 (2.96:1) is for page numbers and muted axis labels, never
+    label text, so the cover date and the KPI caption take caption grey."""
+    assert nbg_tokens.type_style("cover_date")["color"] == nbg_tokens.color("caption_grey")
+    assert nbg_tokens.type_style("kpi_label") == {
+        "size": 16,
+        "bold": False,
+        "color": nbg_tokens.color("caption_grey"),
+    }
+    muted = nbg_tokens.color("muted_grey")
+    text_roles = [r for r in nbg_tokens.load()["type"] if r != "page_number"]
+    assert [r for r in text_roles if nbg_tokens.type_style(r)["color"] == muted] == []

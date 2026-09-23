@@ -221,6 +221,21 @@ def test_cover_title_and_subtitle_never_collide(build):
     assert run_sizes(shape_by_text(root, "Retail Banking | Digital Channels")) == {24.0}
 
 
+def test_the_cover_date_is_caption_grey_not_the_page_number_grey(build):
+    """Standard #22: #939793 is 2.96:1 on white and sanctioned for page numbers only.
+    A 14pt date is text, so it takes caption grey #5A5F5A (the lead's token decision);
+    the validator's Contrast check failed every example's cover on it."""
+    spec = {
+        "slides": [
+            {"type": "cover", "content": {"title": "Digital Banking Review", "date": "March 2026"}},
+            {"type": "back_cover"},
+        ]
+    }
+    root = slide_xml(build(spec), 1)
+    run = shape_by_text(root, "March 2026").find(".//a:rPr", NS)
+    assert run.find("a:solidFill/a:srgbClr", NS).get("val") == "5A5F5A"
+
+
 # =============================================================== BUILD-CODE-12
 
 

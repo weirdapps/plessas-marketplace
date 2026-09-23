@@ -29,7 +29,7 @@ colors:
   # Text and greys: one grey per role (colors.md "Grey hierarchy")
   body_text: "202020"      # body text AND dark text on any light fill (Standard #22)
   caption_grey: "5A5F5A"   # captions, sources, footnotes, TOC descriptions, table notes
-  muted_grey: "939793"     # page numbers, cover date, process arrows; never body or label text
+  muted_grey: "939793"     # page numbers, process arrows, line-chart value axis; never body or label text
   light_grey: "BEC1BE"     # dividers, card borders, axis lines, hairlines
 
   # Tints and component fills
@@ -104,7 +104,7 @@ type:
   cover_title:        {size: 48, min_size: 44, bold: false, color: dark_teal}
   cover_subtitle:     {size: 24, bold: false, color: teal}
   cover_location:     {size: 14, bold: false, color: dark_teal}
-  cover_date:         {size: 14, bold: false, color: muted_grey}
+  cover_date:         {size: 14, bold: false, color: caption_grey}   # label text: never muted_grey (Standard #22)
   contents_header:    {size: 24, bold: false, color: dark_teal}
   contents_number:    {size: 18, bold: false, color: teal}
   contents_title:     {size: 16, bold: false, color: dark_teal}
@@ -119,7 +119,7 @@ type:
   source:             {size: 11, bold: false, color: caption_grey}
   footnote:           {size: 11, bold: false, color: caption_grey}
   kpi_value:          {size: 50, min_size: 32, bold: true, color: teal}   # shrinks to fit a 4-up row
-  kpi_label:          {size: 14, bold: false, color: body_text}
+  kpi_label:          {size: 16, bold: false, color: caption_grey}   # the Key Figures caption under the value
   kpi_delta:          {size: 14, bold: true, color: body_text}   # colour by sentiment: components.kpi.delta
   step_number:        {size: 18, bold: false, color: teal}       # process step "01", like a contents number
   recommended_tab:    {size: 11, bold: true, color: body_text, caps: true}   # layouts.md: 202020 on gold
@@ -202,8 +202,7 @@ components:
   card:
     fill: off_white
     radius_in: 0.04          # Standard #12
-    metric_border: {color: light_grey, width_pt: 1}
-    highlight_fill: highlight_tint
+    highlight_fill: highlight_tint   # a highlighted card changes its fill; only the recommended card has a border
     recommended: {fill: gold_tint, border: gold, border_pt: 1.5}
     recommended_tab: {fill: gold, h: 0.26, pad_x: 0.12}   # text: type.recommended_tab
     shadow: false            # no shadows on any shape (brand-system README)
@@ -260,8 +259,8 @@ charts:
   time_series_default: area_line   # Standard #2.8: never a bare line for a time series
 
 keynote:
-  gutter_px: 155             # 0.807" at 1920 px wide
-  canvas_px: {w: 1920, h: 1080}
+  gutter_px: 155             # 155 px = 0.807 in at 2560 px wide (192 px per inch)
+  canvas_px: {w: 2560, h: 1440}
   dark:
     ink: "FFFFFF"
     ink_2: "DFE6E6"
