@@ -137,6 +137,29 @@ def test_bars_hide_the_value_axis_and_label_outside_in_dark_teal(build):
     assert labels.find(".//a:defRPr/a:solidFill/a:srgbClr", NS).get("val") == "003841"
 
 
+def test_the_chart_unit_is_shown_once_in_the_caption_or_above_the_chart(build):
+    """DOCS-ACCURACY-3: chart.unit was documented, and used by the excel hand-off, but
+    the builder never read it: the unit disappeared from every chart."""
+    with_caption = _chart_slide("bar", unit="EUR m")
+    with_caption["content"]["description"] = "Fee income by quarter"
+    bare = _chart_slide("bar", unit="EUR m")
+    bare["content"]["title"] = "A second bar chart"
+    already = _chart_slide("bar", unit="EUR m")
+    already["content"] = {**already["content"], "title": "A third", "description": "Fees, EUR m"}
+    column = {
+        "type": "two_column",
+        "content": {"title": "Text beside a chart", "source": SOURCE},
+        "left": {"kind": "bullets", "points": ["One"]},
+        "right": {"kind": "chart", "chart": _chart_slide("bar", unit="EUR m")["chart"]},
+    }
+    out = build(deck([with_caption, bare, already, column]))
+    texts = [[b[0] for b in shape_boxes(slide_xml(out, n))] for n in (2, 3, 4, 5)]
+    assert "Fee income by quarter, EUR m" in texts[0]
+    assert "EUR m" in texts[1]
+    assert "Fees, EUR m" in texts[2] and "Fees, EUR m, EUR m" not in texts[2]
+    assert "EUR m" in texts[3]
+
+
 def test_highlight_category_paints_one_bar_in_the_accent(build):
     slide = _chart_slide(
         "bar", series=[{"name": "2026", "values": [3, 4]}], highlight_category="Q2"

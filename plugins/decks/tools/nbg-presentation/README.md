@@ -109,6 +109,10 @@ too, because one bank cannot be one colour there: make the banks the series inst
 A `highlight_category` on a bank chart is ignored with a warning.
 [`examples/peer-banks.yaml`](../../examples/peer-banks.yaml) shows every layout.
 
+`chart.unit` ("EUR m") joins the slide's caption ("Fee income by quarter, EUR m", or
+the caption itself when there is none), a column's heading, or a caption line above a
+chart that has neither; it is never repeated where the text already names it.
+
 Chart types: `bar`, `bar_stacked`, `bar_horizontal`, `line`, `area_line` (the default
 for a time series, Standard #2.8) and `doughnut` (there is no pie). Element kinds:
 `text`, `bullets`, `shape` (`rect`, `rounded_rect`, `oval`, `chevron`, `arrow_right`),

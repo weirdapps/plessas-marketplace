@@ -1295,11 +1295,37 @@ def _draw_bank_legend(deck: Deck, slide: Any, rows: list[list[_LegendEntry]], fr
         y += row_h + gap
 
 
-def draw_chart(deck: Deck, slide: Any, chart: dict[str, Any], frame: Frame, rel: str) -> Any:
+def _with_unit(text: str | None, unit: str | None) -> str | None:
+    """text followed by the chart's unit, unless it names the unit already."""
+    if not unit:
+        return text
+    if not text:
+        return str(unit)
+    return text if str(unit).casefold() in text.casefold() else f"{text}, {unit}"
+
+
+def draw_chart(
+    deck: Deck,
+    slide: Any,
+    chart: dict[str, Any],
+    frame: Frame,
+    rel: str,
+    *,
+    unit_shown: bool = False,
+) -> Any:
     """One native chart in frame. A peer-bank comparison (tokens.yaml banks) also gets
     its logos: under or beside the bars when the banks are a bar chart's categories,
-    otherwise in a legend row of swatch, logo and name that replaces the chart's own."""
+    otherwise in a legend row of swatch, logo and name that replaces the chart's own.
+    chart.unit, unless a caption or heading already carries it, is a caption line above
+    the chart (DOCS-ACCURACY-3: the unit used to vanish)."""
     _require_series(deck, chart, rel)
+    unit = chart.get("unit")
+    if unit and not unit_shown:
+        cs = style("caption")
+        line = text_height(1, cs) + 0.02
+        add_text(slide, (frame.x, frame.y, frame.w, line), str(unit), cs, deck.lang)
+        gap = float(GEO["caption"]["gap_below"])
+        frame = Frame(frame.x, frame.y + line + gap, frame.w, frame.h - line - gap)
     alt = chart.get("alt_text")
     plan = nbg_spec.bank_plan(chart)
     if plan is None or chart.get("bank_logos") is False:
@@ -1332,11 +1358,19 @@ def draw_chart(deck: Deck, slide: Any, chart: dict[str, Any], frame: Frame, rel:
     return shape
 
 
+def _content_with_unit(content: dict[str, Any], chart: dict[str, Any]) -> dict[str, Any]:
+    """The slide's caption carries the chart's unit ("Fee income by quarter, EUR m")."""
+    if not chart.get("unit"):
+        return content
+    return {**content, "description": _with_unit(content.get("description"), chart["unit"])}
+
+
 def render_chart(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
-    frame = titled_frame(deck, slide, content)
-    draw_chart(deck, slide, spec.get("chart") or {}, frame, "chart")
+    chart = spec.get("chart") or {}
+    frame = titled_frame(deck, slide, _content_with_unit(content, chart))
+    draw_chart(deck, slide, chart, frame, "chart", unit_shown=True)
     draw_footer(deck, slide, content)
     return slide
 
@@ -1344,8 +1378,8 @@ def render_chart(deck: Deck, spec: dict[str, Any]) -> Any:
 def render_waterfall(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
-    frame = titled_frame(deck, slide, content)
     chart = spec.get("chart") or {}
+    frame = titled_frame(deck, slide, _content_with_unit(content, chart))
     items = (chart.get("data") or {}).get("items") or []
     if len(items) < 2:
         raise deck.fit(
@@ -1717,6 +1751,9 @@ def _image_block(deck: Deck, slide: Any, image: dict[str, Any], frame: Frame, re
 
 def _column(deck: Deck, slide: Any, column: dict[str, Any], frame: Frame, rel: str) -> None:
     heading = column.get("heading")
+    unit = (column.get("chart") or {}).get("unit") if column["kind"] == "chart" else None
+    if heading and unit:
+        heading = _with_unit(str(heading), unit)  # the heading carries the chart's unit
     if heading:
         hs = style("card_title")
         hh = text_height(len(lines_of(str(heading), frame.w, hs)), hs)
@@ -1729,7 +1766,7 @@ def _column(deck: Deck, slide: Any, column: dict[str, Any], frame: Frame, rel: s
     elif kind == "text":
         add_paragraph_block(deck, slide, str(column["text"]), frame, f"{rel}.text")
     elif kind == "chart":
-        draw_chart(deck, slide, column["chart"], frame, f"{rel}.chart")
+        draw_chart(deck, slide, column["chart"], frame, f"{rel}.chart", unit_shown=bool(heading))
     elif kind == "table":
         add_table(deck, slide, column["table"], frame, f"{rel}.table")
     elif kind == "image":
