@@ -3039,6 +3039,34 @@ def check_em_dashes(deck: Deck, out: Collector) -> str:
     return f"{out.examined} text item(s) in slides and charts, no em dashes"
 
 
+# Words that end in a period without ending a sentence: Greek number and list
+# abbreviations, and company suffixes. Folded, so "δισ." matches "ΔΙΣ.".
+_ABBREVIATIONS = frozenset(
+    fold(a)
+    for a in (
+        "χιλ.",
+        "εκ.",
+        "εκατ.",
+        "δισ.",
+        "τρισ.",
+        "κ.λπ.",
+        "π.χ.",
+        "Α.Ε.",
+        "etc.",
+        "Inc.",
+        "Ltd.",
+        "S.A.",
+    )
+)
+
+
+def _closing_period(title: str) -> bool:
+    text = title.rstrip()
+    if not text.endswith(".") or text.endswith("..."):
+        return False
+    return fold(text.rsplit(None, 1)[-1]) not in _ABBREVIATIONS
+
+
 def check_title_style(deck: Deck, out: Collector) -> str:
     b = brand()
     for s in deck.slides:
@@ -3068,7 +3096,7 @@ def check_title_style(deck: Deck, out: Collector) -> str:
                     s.position,
                     f'title starts at {left:.3f}", not the {b.gutter}" gutter (Standard #15)',
                 )
-        if title.text.rstrip().endswith(".") and not title.text.rstrip().endswith("..."):
+        if _closing_period(title.text):
             out.add(
                 s.position,
                 f'title "{_snippet(title.text)}" ends with a period (brand-system README)',
@@ -3140,8 +3168,8 @@ ACTION_TITLE_MAX_WORDS = 15
 
 
 def check_action_titles(deck: Deck, out: Collector) -> str:
-    """Warning by design: the owner once preferred a noun-phrase title in writing
-    (presentation-style-guide.md Part 2), so this reports and never blocks."""
+    """Warning by design: a noun-phrase title is sometimes a deliberate choice (a
+    product name, a programme name), so this reports and never blocks."""
     for s in deck.slides:
         title = find_title(s)
         if title is None or not title.is_content:

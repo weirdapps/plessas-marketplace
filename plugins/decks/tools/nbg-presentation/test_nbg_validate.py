@@ -2066,6 +2066,26 @@ def test_greek_thanking_forms_are_a_thank_you(tmp_path, words):
     assert result.status == "fail" and words in details(result)
 
 
+@pytest.mark.parametrize(
+    "ending",
+    ["στα €4,2 δισ.", "στα €120 εκατ.", "πάνω από 750 χιλ.", "στα €2,3 εκ."],
+)
+def test_a_greek_number_abbreviation_is_not_a_closing_period(tmp_path, ending):
+    """E2E-OUTPUT-09: 'δισ.' ends an abbreviation, not a sentence."""
+    result = check(
+        deck(tmp_path, _retitle(3, f"Τα έσοδα από κάρτες έφτασαν {ending}")), "Title Style"
+    )
+    assert result.status == "pass", result.details
+
+
+def test_no_shipped_rule_is_justified_by_one_persons_preference():
+    """SECURITY-PUBLIC-6: a public validator states design reasons, not whose taste
+    they were, and cites numbered Standards, not the removed Part 2."""
+    for path in (SCRIPT, HERE / "VALIDATOR.md"):
+        text = path.read_text(encoding="utf-8")
+        assert not re.search(r"\bthe owner\b|\bPart 2\b", text), path.name
+
+
 def test_the_names_the_spec_checker_imports_stay_put():
     """nbg_spec imports these so `check` and this gate agree; renaming one breaks it."""
     assert nv.SOURCE_AS_OF.search("30 June 2026") and nv.SOURCE_AS_OF.search("9M25")
