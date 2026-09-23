@@ -86,7 +86,7 @@ Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill, 1pt `#B
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | KPI big number | Aptos | **50pt** | **#007B85** (NBG Teal) | **Bold** |
-| KPI caption | Aptos | **16pt** | **#5A5F5A** (Caption Gray) | Regular |
+| KPI caption | Aptos | **14pt** | **#202020** (Dark Text) | Regular |
 
 Examples of KPI big-number text (typical NBG executive deck): `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`.
 

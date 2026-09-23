@@ -231,7 +231,7 @@ KPI cards are metric cards: the 1pt light-grey border and no shadow (`tokens.yam
 | Element | Position (within card) | Font | Size | Color | Weight | Align |
 |---|---|---|---|---|---|---|
 | Big number | (card_x, 2.65, 3.5, 1.0) | Aptos | **50pt** | `#007B85` | **Bold** | Center |
-| Caption | (card_x + 0.30, 3.85, 2.9, 0.8) | Aptos | **16pt** | `#5A5F5A` | Regular | Center |
+| Caption | (card_x + 0.30, 3.85, 2.9, 0.8) | Aptos | **14pt** | `#202020` | Regular | Center |
 
 **Page header** (above the cards):
 

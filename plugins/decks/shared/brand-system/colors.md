@@ -242,7 +242,8 @@ palette in code loads it through `tools/nbg_tokens.py` (`color("teal")`, `chart_
 | Subtle elements | `#939793` (Medium Gray) |
 | **KPI card background** | `#F5F8F6` (Off-white) |
 | **KPI big number** | `#007B85` (NBG Teal), **50pt Aptos BOLD** |
-| **KPI caption / owner subtitle** | `#5A5F5A` (Caption Gray), the NBG executive signature |
+| **KPI caption** | `#202020` (Dark Text), 14pt under the big number |
+| **Owner subtitle** | `#5A5F5A` (Caption Gray), the NBG executive signature |
 | **Unit chip (Key Figures header)** | fill `#003841` (Dark Teal), text white |
 | TOC description | `#5A5F5A` (Caption Gray) |
 | Page number | `#939793` (Medium Gray) |

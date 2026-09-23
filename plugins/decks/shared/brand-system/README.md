@@ -63,7 +63,7 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 | Card title | 16pt | 003841 | Bold |
 | Card body | 14pt | 202020 | Regular |
 | KPI big number | **50pt** | **007B85** | **Bold** |
-| KPI caption | **16pt** | **5A5F5A** | Regular |
+| KPI caption | **14pt** | **202020** | Regular |
 | Owner subtitle | **14pt** | **5A5F5A** | Regular |
 | Caption | 12pt | 5A5F5A | Regular |
 | Source / footnote | 11pt | 5A5F5A | Regular |
