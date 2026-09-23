@@ -480,6 +480,82 @@ def test_stacked_labels_left_off_thin_segments_are_a_warning_naming_them(tmp_pat
     assert found and "'Other' in Q1" in found[0].message and "'Other' in Q2" in found[0].message
 
 
+def _svg(tmp_path, name, text='<text x="20" y="40" font-size="12">Stage one</text>'):
+    """An infographic drawn the infographic-specialist way: 12 x 4.8 in, in points."""
+    (tmp_path / name).write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 864 345.6">'
+        f'<rect width="864" height="345.6" fill="#FFFFFF"/>{text}</svg>',
+        encoding="utf-8",
+    )
+    return name
+
+
+def _svg_slide(name, w):
+    element = {
+        "kind": "image",
+        "path": name,
+        "alt_text": "A four-stage funnel from application to approval",
+        "x": 0.374,
+        "y": 1.4,
+        "w": w,
+        "h": round(w / 2.5, 4),
+    }
+    return {
+        "type": "custom",
+        "content": {"title": "The funnel narrows at approval"},
+        "elements": [element],
+    }
+
+
+@pytest.mark.parametrize(
+    ("w", "level", "printed"), [(6.0, "error", "6.0pt"), (10.8, "warning", "10.8pt")]
+)
+def test_svg_text_that_prints_small_in_its_slot_is_flagged(tmp_path, w, level, printed):
+    """PROMPTS-CONTRACTS-04: an infographic drawn for 12 x 4.8 in with 12pt labels was
+    shrunk into whatever frame the slide left, taking its labels under the 10pt floor
+    where the validator, which cannot read text inside a picture, never saw them."""
+    report = check(tmp_path, deck([_svg_slide(_svg(tmp_path, "funnel.svg"), w)]))
+    items = report.errors if level == "error" else report.warnings
+    found = [i for i in items if i.path == "slides[1].elements[0].path"]
+    assert found, [i.format() for i in report.issues]
+    assert printed in found[0].message
+    assert f"size_in [{w:.2f}, {w / 2.5:.2f}]" in found[0].fix
+
+
+def test_svg_text_at_the_size_it_was_drawn_for_passes(tmp_path):
+    report = check(tmp_path, deck([_svg_slide(_svg(tmp_path, "funnel.svg"), 12.0)]))
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        '<text font-size="9px">a</text>',
+        '<text style="fill:#202020;font-size: 9px">a</text>',
+        '<style>.label { font-size: 9px }</style><text class="label">a</text>',
+        '<g font-size="6.75pt"><text>a</text></g>',
+    ],
+)
+def test_every_way_an_svg_sets_its_text_size_is_read(tmp_path, text):
+    import nbg_build as build
+
+    assert build.svg_text_size(tmp_path / _svg(tmp_path, "t.svg", text)) == (9.0, 864.0)
+
+
+def test_an_svg_without_text_has_no_text_size(tmp_path):
+    import nbg_build as build
+
+    assert build.svg_text_size(tmp_path / _svg(tmp_path, "t.svg", "")) is None
+
+
+def test_check_json_reports_every_image_slot(tmp_path):
+    """So the pipeline can draw an infographic at its real slot (size_in) first time."""
+    report = check(tmp_path, deck([_svg_slide(_svg(tmp_path, "funnel.svg"), 12.0)]))
+    assert report.as_dict()["image_slots"] == [
+        {"slide": 2, "id": None, "path": "slides[1].elements[0]", "w": 12.0, "h": 4.8}
+    ]
+
+
 def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     spec = deck(
         [

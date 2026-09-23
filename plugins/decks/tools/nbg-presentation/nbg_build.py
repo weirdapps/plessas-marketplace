@@ -208,6 +208,7 @@ class Deck:
     warnings: list[Issue] = field(default_factory=list)
     errors: list[Issue] = field(default_factory=list)
     require_title: bool = True
+    slots: list[dict[str, Any]] | None = None  # each image's slot, when check asks
 
     def path(self, rel: str = "") -> str:
         head = f"{self.base}[{self.index}]"
@@ -756,6 +757,94 @@ def _image_stream(
     return stream, size, vector
 
 
+_CSS_UNIT = r"(px|pt|pc|in|cm|mm|em|rem|%)?"
+_CSS_FONT_SIZE = re.compile(rf"font-size\s*:\s*([0-9.]+)\s*{_CSS_UNIT}", re.IGNORECASE)
+_SVG_LENGTH = re.compile(rf"^\s*([0-9.]+)\s*{_CSS_UNIT}\s*$", re.IGNORECASE)
+# CSS px per unit; em and % read against the 16px default.
+_PX_PER = {
+    "": 1.0,
+    "px": 1.0,
+    "pt": 4 / 3,
+    "pc": 16.0,
+    "in": 96.0,
+    "cm": 96 / 2.54,
+    "mm": 96 / 25.4,
+    "em": 16.0,
+    "rem": 16.0,
+    "%": 0.16,
+}
+
+
+def _css_px(number: str, unit: str | None) -> float:
+    try:
+        return float(number) * _PX_PER[(unit or "").lower()]
+    except ValueError:
+        return 0.0
+
+
+def svg_text_size(path: Path) -> tuple[float, float] | None:
+    """(the smallest font size an SVG sets, the SVG's width), both in its own user
+    units, or None when it draws no text or its width cannot be read. The size may
+    sit in a font-size attribute, a style attribute or a <style> sheet; text with
+    none takes the 16px default."""
+    import defusedxml.ElementTree as ET
+
+    try:
+        root = ET.parse(str(path)).getroot()
+    except Exception:  # noqa: BLE001 - an unreadable SVG is reported where it is decoded
+        return None
+    sizes: list[float] = []
+    has_text = False
+    for el in root.iter():
+        tag = str(el.tag).rsplit("}", 1)[-1]
+        has_text = has_text or tag in ("text", "tspan", "textPath")
+        found = _SVG_LENGTH.match(el.get("font-size") or "")
+        if found:
+            sizes.append(_css_px(*found.groups()))
+        for css in (el.get("style") or "", (el.text or "") if tag == "style" else ""):
+            sizes += [_css_px(*m.groups()) for m in _CSS_FONT_SIZE.finditer(css)]
+    view_box = (root.get("viewBox") or "").replace(",", " ").split()
+    if len(view_box) == 4:
+        width = float(view_box[2])
+    else:
+        found = _SVG_LENGTH.match(root.get("width") or "")
+        width = _css_px(*found.groups()) if found else 0.0
+    if not has_text or width <= 0:
+        return None
+    return min((s for s in sizes if s > 0), default=16.0), width
+
+
+def _check_svg_text(deck: Deck, raw: str, drawn_w: float, slot: Frame, rel: str) -> None:
+    """The size an SVG's smallest text prints at, drawn drawn_w inches wide. The
+    validator cannot read text inside a picture, so this is the only gate on it
+    (PROMPTS-CONTRACTS-04: an infographic shrunk into a smaller slot took its 12pt
+    labels under the 10pt floor unseen)."""
+    path = nbg_spec.resolve_asset(raw, deck.spec_dir)
+    measured = svg_text_size(path) if path is not None else None
+    if measured is None:
+        return
+    units, width = measured
+    printed = units * drawn_w * 72 / width
+    floor = float(nbg_tokens.get("accessibility.min_font_pt"))
+    label = float(COMP["image"]["svg_label_min_pt"])
+    where = f"in its {slot.w:.2f} x {slot.h:.2f} in slot"
+    size_in = f"size_in [{slot.w:.2f}, {slot.h:.2f}]"
+    if printed < floor - 0.05:
+        raise deck.fit(
+            rel,
+            f"the SVG's smallest text would print at {printed:.1f}pt {where}, under the "
+            f"{floor:g}pt floor, and the validator cannot read text inside a picture",
+            f"redraw it at {size_in} with text of {label:g}pt or more, or give it more room",
+        )
+    if printed < label - 0.05:
+        deck.warn(
+            rel,
+            f"the SVG's smallest text prints at {printed:.1f}pt {where}, under the "
+            f"{label:g}pt its labels need",
+            f"redraw it at {size_in}",
+        )
+
+
 def _tinted(deck: Deck, stream: Any, colour: str, rel: str) -> Any:
     """The icon's shape in one colour: every pixel `colour`, the original alpha kept.
     Only a picture with transparency has a shape to keep; an opaque one is left as is."""
@@ -799,6 +888,22 @@ def add_image(
     if tint:
         stream = _tinted(deck, stream, tint, rel)
     aspect = px_w / px_h if px_h else 1.0
+    if deck.slots is not None and rel.endswith(".path"):
+        sid = deck.slide_spec.get("id")
+        deck.slots.append(
+            {
+                "slide": deck.index + 1,
+                "id": sid if isinstance(sid, str) else None,
+                "path": deck.path(rel[: -len(".path")]),
+                "w": round(frame.w, 2),
+                "h": round(frame.h, 2),
+            }
+        )
+    if vector:
+        drawn_w = (
+            max(frame.w, frame.h * aspect) if fit == "cover" else min(frame.w, frame.h * aspect)
+        )
+        _check_svg_text(deck, raw, drawn_w, frame, rel)
     dpi = float(COMP["image"]["min_dpi"])
     if not vector:
         needed = (
@@ -2033,15 +2138,25 @@ def _core_properties(prs: Any, spec: dict[str, Any], lang: str) -> None:
 
 
 def render(
-    spec: dict[str, Any], spec_dir: Path, *, skip: set[int] | None = None
+    spec: dict[str, Any],
+    spec_dir: Path,
+    *,
+    skip: set[int] | None = None,
+    slots: list[dict[str, Any]] | None = None,
 ) -> tuple[Any, list[Issue], list[Issue]]:
     """Lay out every slide. Returns (presentation, errors, warnings); a slide whose
-    content cannot fit becomes an error naming it, and the other slides still render."""
+    content cannot fit becomes an error naming it, and the other slides still render.
+    slots, when given, receives each image's slot (slide, path, w, h in inches)."""
     lang = nbg_spec.language(spec)
     prs = new_presentation()
     slides = nbg_spec.slide_list(spec)
     deck = Deck(
-        prs=prs, lang=lang, spec_dir=spec_dir, total=len(slides), base=nbg_spec.slides_path(spec)
+        prs=prs,
+        lang=lang,
+        spec_dir=spec_dir,
+        total=len(slides),
+        base=nbg_spec.slides_path(spec),
+        slots=slots,
     )
     errors: list[Issue] = []
     for index, slide_spec in enumerate(slides):
@@ -2097,7 +2212,9 @@ def check(spec_path: Path | str) -> Report:
     report = nbg_spec.check_file(spec_path)
     if report.spec is None or any(i.slide is None for i in report.errors):
         return report
-    _, errors, warnings = render(report.spec, report.spec_path.parent, skip=report.error_slides())
+    _, errors, warnings = render(
+        report.spec, report.spec_path.parent, skip=report.error_slides(), slots=report.slots
+    )
     report.issues += errors + warnings
     return report
 

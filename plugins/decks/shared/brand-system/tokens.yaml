@@ -268,6 +268,7 @@ components:
   image:
     caption_gap: 0.1
     min_dpi: 150             # a raster is never enlarged past this; below it, check warns and it stays at this size
+    svg_label_min_pt: 12     # an SVG's smallest text as placed: under this check warns, under accessibility.min_font_pt it errors
   table:
     header_fill: dark_teal
     header_h: 0.4

@@ -49,8 +49,13 @@ ERROR slide 4 (S04, chart) slides[3].chart.data.series[0].values: 3 value(s) for
 {"spec": "/abs/deck.yaml", "ok": false,
  "errors": [{"slide": 4, "id": "S04", "type": "chart", "path": "slides[3].chart.data.series[0].values",
              "message": "3 value(s) for 4 categories", "fix": "give one value per category (null for a gap)"}],
- "warnings": []}
+ "warnings": [],
+ "image_slots": [{"slide": 8, "id": "S08", "path": "slides[7].image", "w": 12.59, "h": 4.87}]}
 ```
+
+`image_slots` lists the box, in inches, that each image gets on a slide that laid out
+cleanly: pass it as `size_in` when an infographic is drawn for that slide, so it is placed
+at the size it was drawn for.
 
 Errors stop a build: a schema violation, a missing source on an exhibit, series that
 do not match their categories, a missing image, a custom element outside the body
@@ -139,7 +144,9 @@ against the spec's folder first, then the plugin's `assets/` folder, so
 150 DPI (`components.image.min_dpi`): one too small for its slot is drawn at that
 size, centred, and check warns with the width it needs. Prefer an SVG for a large
 slot; the library's 800 px illustrations reach 5.3 in at most, while
-`illustrations/splash/*.svg` scale to any size.
+`illustrations/splash/*.svg` scale to any size. An SVG with text is measured as placed,
+because the validator cannot read text inside a picture: its smallest text under 10pt
+is a check error, under 12pt a warning, and both name the `size_in` to redraw it at.
 
 Legacy names (`thankyou`, `toc`, `bar_chart`, `pie_chart`, `charts/pie_single`,
 `covers/*`, `infographic`, `hyper_title`, `paragraphs`, `items`, `waterfall_items`,

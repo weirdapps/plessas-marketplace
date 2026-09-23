@@ -112,6 +112,9 @@ class Report:
     spec_path: Path
     spec: dict[str, Any] | None = None
     issues: list[Issue] = field(default_factory=list)
+    # Each image's slot from the dry run (slide, id, path, w, h in inches), so the
+    # pipeline can draw an infographic at the size it will be placed (size_in).
+    slots: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def errors(self) -> list[Issue]:
@@ -134,6 +137,7 @@ class Report:
             "ok": self.ok,
             "errors": [i.as_dict() for i in self.errors],
             "warnings": [i.as_dict() for i in self.warnings],
+            "image_slots": self.slots,
         }
 
     def format_text(self) -> str:
