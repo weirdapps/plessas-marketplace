@@ -82,7 +82,11 @@ if [ "$MODE" = "ci" ]; then
   # Exclude self + auto-generated lockfiles at any depth (lockfiles contain SHAs / hashes that
   # collide with the 9-digit-ID regex but carry no PII risk).
   # User-cleared public showcase assets (maintainer confirmed 2026-06-08): the
-  # decks screenshot library is public-safe. Narrowed to the .png files: the
+  # decks screenshot library is public-safe. Re-confirmed 2026-09-24 after a
+  # review found checksum-valid IBANs, user IDs and phone numbers in the pixels,
+  # and a product name that the private denylist then listed: the account data
+  # is synthetic demo data, and the product name is public. The decks mockups/
+  # folder is covered by the same decision. Narrowed to the .png files: the
   # subtree holds 117 PNGs and 5 INDEX.md, and excluding the whole prefix meant
   # the five TEXT files were exempt from every check. The PNGs are the only part
   # that needs skipping and grep would drop them anyway under

@@ -317,6 +317,23 @@ def test_a_path_does_not_match_by_basename_alone(vc):
     assert len(vc.errors) == 1
 
 
+def test_an_assets_tree_with_nothing_examined_is_an_error(vc):
+    """ "Found nothing" and "did not look" must differ: an index that stops quoting
+    filenames in backticks leaves the check nothing to examine."""
+    d = _plugin(vc, "p")
+    _assets(d, ["icons/basics/Arrow_left.png"], "| Arrow_left.png | back |\n")
+    vc.check_asset_references()
+    assert len(vc.errors) == 1
+    assert "0 filenames were examined" in vc.errors[0]
+
+
+def test_an_anchored_asset_name_resolves(vc):
+    d = _plugin(vc, "p")
+    _assets(d, ["logos/NBG.png"], "| `${CLAUDE_PLUGIN_ROOT}/assets/logos/NBG.png` | emblem |\n")
+    vc.check_asset_references()
+    assert vc.errors == []
+
+
 def test_asset_library_names_resolve_against_the_assets_tree(vc):
     d = _plugin(vc, "p")
     _assets(d, ["logos/NBG.png"], "| `NBG.png` | emblem |\n", index_rel="logos/INDEX.md")

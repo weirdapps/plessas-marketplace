@@ -8,7 +8,7 @@ archived `communications-marketplace` (2026-05-30).
 
 | Plugin | Commands | Purpose |
 |--------|----------|---------|
-| `decks` | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/review-deck`, `/presentation-review`, `/create-keynote` | Agents around ONE deterministic renderer: storyline-architect writes a deck spec (`tools/nbg-presentation/deck.schema.json`), storyboard-designer refines it, `nbg_build.py` renders it, presentation-qa reads the validator report and every rendered slide. All Python tools run through `bin/decks-py`; brand values live in `shared/brand-system/tokens.yaml`. Contracts: `plugins/decks/ARCHITECTURE.md`. `/create-keynote` is the one dark full-bleed exception (Standard #21), rendered by `tools/nbg-keynote/` for stage talks only. |
+| `decks` | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/review-deck`, `/presentation-review`, `/create-keynote` | Agents around ONE deterministic renderer: storyline-architect writes a deck spec (`tools/nbg-presentation/deck.schema.json`), storyboard-designer refines it, graphics-renderer runs `nbg_build.py` on it and fixes the spec until the build is clean (at most 3 builds), presentation-qa reads the validator report and every rendered slide. All Python tools run through `bin/decks-py`; brand values live in `shared/brand-system/tokens.yaml`. Contracts: `plugins/decks/ARCHITECTURE.md`. `/create-keynote` is the one dark full-bleed exception (Standard #21), rendered by `tools/nbg-keynote/` for stage talks only. |
 | `mail` | `/inbox-briefing`, `/mail-review`, `/send-mail`, `/triage-inbox`, `/reply`, `/draft-review`, `/archive-thread`, `/decisions`, `/forward`, `/folder-tree`, `/mail-doctor`, `/style-rollback`, `/style-stats`, `/style-sync`, `/auth-setup` | Outlook command center. Bundles `outlook-bridge` MCP (Node.js server in `mcp-server/`). Two agents: `email-handler` and `triage-engine`. |
 | `meetings` | `/meeting-prep`, `/meeting-debrief` | Calendar-aware briefings with attendee dossiers; post-meeting decision and action capture. Depends on `mail` plugin's bundled MCP for calendar access. Agent: `meeting-intelligence`. |
 | `chat` | `/chat-inbox`, `/chat-reply`, `/chat-summarize`, `/chat-channel-digest`, `/chat-doctor`, `/auth-setup` | Microsoft Teams reader and reply. Bundles `teams-bridge` MCP (Node.js server in `mcp-server/`). |
@@ -126,7 +126,8 @@ from documentation. They are the failure modes most likely to recur.
   user's project.** Install copies only `plugins/<name>/` into the version cache, so a prompt
   path like `shared/brand-system/README.md` resolves against whatever folder the user is in,
   and a repo-root file (the old `shared/brand-system/` mirror) is unreachable. Anchor every
-  plugin path with `${CLAUDE_PLUGIN_ROOT}`; `validate_consistency.py` now rejects bare ones.
+  plugin path with `${CLAUDE_PLUGIN_ROOT}`; `validate_consistency.py` now rejects bare ones in
+  agent, command and skill files (shared docs and READMEs are not scanned).
   Testing from the repo root hides this defect completely, which is how the decks QA gate
   pointed at a `.venv` that existed nowhere for months.
 - **The plugin directory is replaced at every version bump.** Anything a plugin writes for a

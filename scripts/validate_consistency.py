@@ -449,7 +449,7 @@ def check_asset_references() -> None:
                 if "*" in name or not name.lower().endswith(ASSET_EXTENSIONS):
                     continue
                 examined += 1
-                name = name.removeprefix("./")
+                name = name.removeprefix("${CLAUDE_PLUGIN_ROOT}/").removeprefix("./")
                 anchored = False
                 for prefix in ("plugins/decks/assets/", "assets/"):
                     if name.startswith(prefix):
@@ -464,8 +464,12 @@ def check_asset_references() -> None:
                 )
     if examined:
         ok(f"asset references: {examined} filename(s) examined")
+    elif any((d / "assets").is_dir() for d in _plugin_dirs()):
+        # An assets/ tree with nothing examined means the indexes stopped quoting
+        # filenames the way this check reads them: "did not look", not "clean".
+        error("asset references: an assets/ folder exists but 0 filenames were examined")
     else:
-        warn("asset references: no asset filenames found to examine")
+        warn("asset references: no plugin has an assets/ folder to examine")
 
 
 def check_plugin_versions() -> None:

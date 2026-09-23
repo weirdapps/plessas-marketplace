@@ -233,19 +233,40 @@ if ($found -eq 0) {
 # runs the plugin from its version-keyed cache copy, where no venv ever existed.
 # Every failure here warns and continues: the decks Python tools are optional,
 # the install is not.
-$bashCmd = Get-Command bash -ErrorAction SilentlyContinue
-if ($PythonOk -and $bashCmd) {
+# Find Git Bash the way Claude Code does. A bare `bash` on PATH is often
+# C:\Windows\System32\bash.exe, the WSL launcher, which cannot run this setup.
+function Find-GitBash {
+    if ($env:CLAUDE_CODE_GIT_BASH_PATH -and (Test-Path $env:CLAUDE_CODE_GIT_BASH_PATH)) {
+        return $env:CLAUDE_CODE_GIT_BASH_PATH
+    }
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if ($git) {
+        # ...\Git\cmd\git.exe or ...\Git\bin\git.exe -> ...\Git\bin\bash.exe
+        $gitRoot = Split-Path (Split-Path $git.Source -Parent) -Parent
+        $candidate = Join-Path $gitRoot 'bin\bash.exe'
+        if (Test-Path $candidate) { return $candidate }
+    }
+    foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, "$env:LOCALAPPDATA\Programs")) {
+        if (-not $root) { continue }
+        $candidate = Join-Path $root 'Git\bin\bash.exe'
+        if (Test-Path $candidate) { return $candidate }
+    }
+    return $null
+}
+
+$gitBash = Find-GitBash
+if ($PythonOk -and $gitBash) {
     Write-Host ''
     Write-Host 'Preparing the decks Python environments...'
     $launcher = Join-Path $InstallDir 'plugins\decks\bin\decks-py'
-    if (Invoke-Native 'decks-py setup' $bashCmd.Source @($launcher, 'setup') -AllowFailure) {
+    if (Invoke-Native 'decks-py setup' $gitBash @($launcher, 'setup') -AllowFailure) {
         Write-Ok 'decks Python environments ready'
     } else {
         Write-Warn 'decks-py setup failed (output above). The decks tools will retry on first use.'
     }
 } elseif ($PythonOk) {
     Write-Host ''
-    Write-Warn 'bash (Git for Windows) not found, so the decks Python environments were not prepared. Claude Code needs Git Bash anyway; they build on first use once it is installed.'
+    Write-Warn 'Git Bash not found (set CLAUDE_CODE_GIT_BASH_PATH if it is installed somewhere unusual), so the decks Python environments were not prepared. They build on first use.'
 } else {
     Write-Host ''
     Write-Warn 'Skipping the decks Python environments (see the Python line above). They build on first use once Python 3.12+ is installed; everything else installs normally.'

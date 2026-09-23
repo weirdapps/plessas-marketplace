@@ -214,7 +214,7 @@ All six plugins work standalone. These optional pieces add richer context when p
 
 ## Brand notes
 
-- **`decks`** ships NBG branding out of the box: `plugins/decks/assets/` (logos, templates, colour palette), `plugins/decks/shared/brand-system/`, and agent prompts referencing NBG colour hex codes and font stacks. The pipeline itself (storyline, storyboard, renderer, QA) is brand-agnostic. No PowerPoint template is bundled: the builder draws every slide from scratch, so there is nothing to swap. To retarget, update `plugins/decks/shared/brand-system/` and do a project-wide rename of `NBG` to your brand.
+- **`decks`** ships NBG branding out of the box: `plugins/decks/assets/` (logos, illustrations, icons, screenshots) and `plugins/decks/shared/brand-system/`, whose `tokens.yaml` holds every colour, type size and geometry value the builder draws and the validator checks. The pipeline itself (storyline, storyboard, build, QA) is brand-agnostic. No PowerPoint template is bundled: the builder draws every slide from scratch, so there is nothing to swap. To retarget, edit `tokens.yaml` and the brand-system docs, swap the logos, and do a project-wide rename of `NBG` to your brand.
 - **`mail`**, **`meetings`**, **`chat`**, **`excel`**, and **`docs`** are fully brand-agnostic. They ship with sensible defaults you can override in your global `CLAUDE.md`.
 
 ## Development and testing
@@ -236,8 +236,11 @@ bash installers/pii-gauntlet.sh --mode=doctor
 claude plugin validate . --strict
 for p in plugins/*/; do claude plugin validate "$p" --strict; done
 
-# Python tools:
-pytest plugins -q
+# Python tools (plugins/ and scripts/, including the built-deck OOXML schema test):
+pytest plugins scripts -q
+
+# The decks tools through their launcher, as CI's render job runs them:
+bash plugins/decks/bin/decks-py doctor
 
 # Bundled MCP servers:
 (cd plugins/mail/mcp-server && npm ci && npm run typecheck && npm test)
@@ -251,7 +254,7 @@ suites; `sonarcloud.yml` also runs pytest, but only to produce `coverage.xml` fo
 
 | Workflow | Trigger | Enforces |
 |----------|---------|----------|
-| `tests.yml` | push / PR to master | `pytest plugins` on Python 3.12, and `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 20. Unconditional: no visibility gate, no token gate, no `continue-on-error`. Also asserts each server's `tests/` directory is non-empty, so a suite can never pass by being absent |
+| `tests.yml` | push / PR to master | `pytest plugins scripts` on Python 3.12 (fails on any skip); a render job that builds every `decks` example through `bin/decks-py`, renders it with LibreOffice (one PNG per slide) and runs the keynote and mockup tools through the same launcher; and `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 22. Unconditional: no visibility gate, no token gate, no `continue-on-error`. Also asserts each server's `tests/` directory is non-empty, so a suite can never pass by being absent |
 | `lint.yml` | push / PR to master | The full `.pre-commit-config.yaml` hook set (ruff, ruff-format, mypy, gitleaks, yamllint, markdownlint, hygiene), plus `claude plugin validate --strict` on all six plugins and the marketplace root |
 | `validate-plugins.yml` | push / PR to master | `marketplace.json` is valid JSON, every plugin has `plugin.json` and a README, every command file at any depth has YAML frontmatter, `scripts/validate_consistency.py` passes |
 | `pii-check.yml` | push / PR | No personal data in git-tracked file contents or filenames (runs `installers/pii-gauntlet.sh --mode=ci`) |
