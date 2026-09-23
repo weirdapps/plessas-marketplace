@@ -99,8 +99,11 @@ belongs in their style preferences (`${CLAUDE_PLUGIN_DATA}/style-preferences.md`
 |---------|------|------|-------|----------|
 | "Contents" Header | Aptos | **24pt** Regular | #003841 | 0.374", 0.40" |
 | Section Number | Aptos | **18pt** Regular | #007B85 | 0.374", y (see below) |
-| Section Title | Aptos | **16pt** Regular | #003841 | 1.10", y |
-| Description | Aptos | **12pt** Regular | #5A5F5A | 1.10", y + 0.35" |
+| Section Title | Aptos | **16pt** Regular | #003841 | 1.174", y |
+| Description | Aptos | **12pt** Regular | #5A5F5A | 1.174", y + 0.35" |
+
+The title column starts at 1.174": the 0.374" gutter plus the 0.8" number column
+(`tokens.yaml` `components.contents.number_w`).
 
 ### Spacing
 
@@ -202,7 +205,7 @@ Light background card placed in the right margin of a chart slide for a key call
 | Property | Value |
 |----------|-------|
 | Background | `#F5F8F6` |
-| Border | 1pt `#BEC1BE` |
+| Border | None (only the recommended card carries one) |
 | Corners | Tight, radius 0.04" (Standard #12) |
 | Size | 1.40" × 0.80" (typical) |
 
@@ -218,13 +221,13 @@ Used for "Key Figures" slides, observed 30+ times across NBG executive reference
 **Slide composition** (3 cards, equal-width, centered):
 
 ```
-Card 1: Rounded rect at (1.01, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04"
-Card 2: Rounded rect at (4.92, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04"
-Card 3: Rounded rect at (8.81, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04"
+Card 1: Rounded rect at (1.01, 2.15, 3.5, 3.0)   fill = #F5F8F6, no border, radius 0.04"
+Card 2: Rounded rect at (4.92, 2.15, 3.5, 3.0)   fill = #F5F8F6, no border, radius 0.04"
+Card 3: Rounded rect at (8.81, 2.15, 3.5, 3.0)   fill = #F5F8F6, no border, radius 0.04"
 ```
 
-KPI cards are metric cards: the 1pt light-grey border and no shadow (`tokens.yaml`
-`components.card`).
+KPI cards are their `#F5F8F6` fill alone: no border, no shadow. The only bordered card on any
+slide is the recommended option (gold, below); a highlighted card changes its fill to `#CBFAFF`.
 
 **Inside each card** (offsets relative to card x):
 
@@ -305,10 +308,10 @@ sanctioned edge stripe, because it carries meaning tied to the legend.
 
 | Part | Spec |
 |---|---|
-| Tile | `#F5F8F6` fill, 1pt `#BEC1BE` border, tight corners, no shadow (a metric card) |
+| Tile | `#F5F8F6` fill, no border, no shadow, tight corners (a metric card) |
 | Value | 50pt Bold `#007B85` (`type.kpi_value`); tiles under about 2" tall use the inline KPI callout (18pt) instead |
 | Caption | The metric label under the value, per the Key Figures card above |
-| Delta (optional) | Signed (`+0.5` / `-0.5`), negative in `#AA0028`, positive in `#202020`: the corporate green `#73AF3C` is 2.65:1 on white and never carries text |
+| Delta (optional) | Signed (`+0.5` / `-0.5`), 14pt Bold: positive `#007B85`, negative `#AA0028`, neutral `#202020` (`components.kpi.delta`); the corporate green `#73AF3C` is 2.65:1 on white and never carries text |
 
 ### Warning flag: these are the risks
 

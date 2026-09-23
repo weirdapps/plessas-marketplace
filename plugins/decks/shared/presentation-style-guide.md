@@ -121,7 +121,7 @@ Use `nbg-logo-gr.png` (Greek `ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ`), never the English f
 - **Breathing room below titles**: first body element at y≥1.3" (the title box ends at 0.9", or 1.15" under a section pill).
 - **Fill the slide**: use 60–85% of safe area.
 
-`nbg_validate.py` checks these programmatically; its checks are listed in `tools/nbg-presentation/README.md`. The builder gets sizes right on the first pass rather than leaning on the check.
+`nbg_validate.py` enforces the floor exactly: 10pt for every run on slides, charts and tables, 11pt for sources and footnotes, and only the section pill at 9pt. The per-element minimums above the floor (14, 16, 12pt) are a QA judgement, not a validator check. Its checks are listed in `tools/nbg-presentation/VALIDATOR.md` and by `decks-py validate --list-checks`. The builder gets sizes right on the first pass rather than leaning on the check.
 
 ## 12. Tight rounded-rect corners
 
@@ -188,7 +188,7 @@ Bold is reserved for elements that need to pop **within** the body, not for titl
 - Status pills text (white Bold on filled background)
 - Inline emphasis within paragraph text where genuinely needed
 
-In code: every title-class textbox is created Regular (`bold=False`, or no bold at all), which is what `tokens.yaml` `type.*.bold` says for every title role. Code-review checklist: grep the builder for `bold=True` and confirm none of the matches are on a title element.
+In code: every title-class textbox is created Regular (`bold=False`, or no bold at all), which is what `tokens.yaml` `type.*.bold` says for every title role. The validator's Title Style check fails a bold title, and a title whose text does not start on the 0.374" gutter (a divider title beside its number and a title beside a unit chip are exempt); a closing period is a warning.
 
 Regular weight at the large title sizes (24–48pt) reads as confident and modern; bold at the same sizes reads as shouting. The NBG executive aesthetic is restraint.
 
@@ -220,7 +220,7 @@ The contents page is a quiet wayfinder, not a feature slide. Conventions:
 - **DO NOT include page references** (`p. 3`, `p. 5`, etc.). The contents page communicates the shape of the deck, not navigation hints.
 - **DO NOT add separator lines, rules, or boxes between rows**. Whitespace alone separates rows.
 - **DO NOT add bullets, dots, or arrows in front of numbers**. The number itself is the marker.
-- **Small NBG logo bottom-left** (per Standard #17), no page number on the contents page itself if the deck is short; otherwise it gets one like any content slide.
+- **Small NBG logo bottom-left** (per Standard #17), no page number on the contents page itself if the deck is short (under 10 slides, `tokens.yaml` `components.contents.page_number_from_slides`); otherwise it gets one like any content slide.
 
 The contents page is a moment of pause, not a heatmap. If it looks designed, it is over-designed.
 

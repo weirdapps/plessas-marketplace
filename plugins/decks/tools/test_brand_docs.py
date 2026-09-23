@@ -350,12 +350,16 @@ def test_retired_colour_table_matches_the_tokens_both_ways():
 
 
 def test_card_backgrounds_quote_the_component_tokens():
+    """Cards are their fill alone; only the recommended option carries a border
+    (lead's decision, 2026-09-23: KPI tiles and plain cards have no border)."""
     card = tok("components.card")
     heading = "Card Backgrounds"
     metric = row("colors.md", heading, "Metric card (KPI tile)")
     assert hexes(metric["Background"]) == [hex_of(card["fill"])]
-    assert hexes(metric["Border"]) == [hex_of(card["metric_border"]["color"])]
-    assert num(metric["Border"]) == card["metric_border"]["width_pt"]
+    for r in table_rows("colors.md", heading):
+        if clean(r["Card Type"]) != "Recommended-option card":
+            assert clean(r["Border"]) == "None", r
+    assert not card["shadow"]
     assert hexes(row("colors.md", heading, "Highlight card")["Background"]) == [
         hex_of(card["highlight_fill"])
     ]
@@ -599,6 +603,26 @@ def test_dimensions_grids_are_derived_from_gutter_width_and_gap():
     assert num(three["col3"]["x"]) + num(three["col3"]["w"]) == pytest.approx(right, abs=0.001)
     full = yaml_block("dimensions.md", "Full Width Content", "full_width")
     assert num(full["x"]) == gutter and num(full["w"]) == width
+
+
+def test_layouts_contents_slide_quotes_the_tokens():
+    """layouts.md put the title column at 1.10in; the builder draws it at the gutter
+    plus the number column, 1.174in."""
+    c = tok("components.contents")
+    heading = "Contents / TOC Slide"
+    header = row("layouts.md", heading, '"Contents" Header')
+    assert nums(header["Position"]) == [c["header"]["x"], c["header"]["y"]]
+    number = row("layouts.md", heading, "Section Number")
+    assert num(number["Position"]) == tok("geometry.gutter")
+    title_x = tok("geometry.gutter") + c["number_w"]
+    for label in ("Section Title", "Description"):
+        assert num(row("layouts.md", heading, label)["Position"]) == pytest.approx(
+            title_x, abs=0.001
+        )
+    spacing = section("layouts.md", "Contents / TOC Slide")
+    first = next(ln for ln in spacing.splitlines() if "First item Y" in ln)
+    step = next(ln for ln in spacing.splitlines() if "Vertical spacing" in ln)
+    assert num(first) == c["first_row_y"] and num(step) == c["row_step"]
 
 
 # ---------------------------------------------------------------- charts

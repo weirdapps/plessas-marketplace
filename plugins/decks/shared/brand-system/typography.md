@@ -84,7 +84,7 @@ the specified values; the per-element floors they must clear live in
 
 ### Metric Cards (KPIs): NBG executive signature pattern
 
-Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill, 1pt `#BEC1BE` border, tight corners). Observed 30+ times across reference decks.
+Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill, no border, no shadow, tight corners). Observed 30+ times across reference decks.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
@@ -179,7 +179,8 @@ bullet:
   unicode: "2022"
   font: "Arial"
   color: "#00ADBF"   # Cyan (see colors.md)
-  indent: 0.25"      # hanging: the text starts 0.25" in, wrapped lines align with it
+  indent: 0.25"      # hanging, per level: the text starts 0.25" in per level, wrapped lines align with it
+  character_l2: "–"  # level 2 uses an en dash (U+2013), same font and colour
 ```
 
 ## Number Formatting

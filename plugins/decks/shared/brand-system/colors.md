@@ -84,7 +84,7 @@ Three greys, three jobs. Do NOT introduce others (`#666666`, `#595959`, `#5B5B69
 |------|------|
 | `#5A5F5A` | Captions, subtitles, owner lines, TOC teasers, table notes, sources, footnotes; the secondary-text grey |
 | `#939793` | Page numbers, cover date, process-flow arrows, subtle UI marks, "partner/them" ownership coding (always with a label: against `#007B85` it is only 1.70:1) |
-| `#BEC1BE` | Dividers, card borders, hairlines, axis lines |
+| `#BEC1BE` | Dividers, hairlines, axis lines |
 
 Body text is `#202020` (never a grey).
 
@@ -209,11 +209,14 @@ directly (Standard #22).
 
 | Card Type | Background | Border |
 |-----------|------------|--------|
-| Metric card (KPI tile) | `#F5F8F6` | 1pt `#BEC1BE` |
+| Metric card (KPI tile) | `#F5F8F6` | None |
 | Info card | `#F5F8F6` | None |
 | Highlight card | `#CBFAFF` | None |
 | Callout / takeaway strip | `#E6F5F6` | None |
 | Recommended-option card | `#FBF3E4` | 1.5pt `#D9A757` (gold) |
+
+Only the recommended option carries a border. Every other card, KPI tiles included, is its fill
+alone: no border, no shadow.
 
 **Tint hierarchy**: `#F5F8F6` = default card; `#E6F5F6` = soft pale-teal takeaway/callout strip (the bottom "bottom line" bar); `#CBFAFF` = stronger cyan highlight card; `#FBF3E4` + gold border = the recommended option (see Recommended-option highlight above). Pick `#E6F5F6` for takeaway strips consistently; do not drift to `#EAF4F5` or other one-off tints.
 
