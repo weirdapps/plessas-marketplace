@@ -29,6 +29,10 @@ MIN_PY_MINOR=12
 STALE_DAYS=30
 # A uv.toml or pyproject in the caller's folder must not reshape a shared tool env.
 export UV_NO_CONFIG=1
+# Python's UTF-8 mode for every tool: on Windows a piped stdout otherwise takes the
+# ANSI code page, and printing a check mark or Greek text raised 'charmap' after the
+# work had succeeded, exiting 1, which reads as "brand violations".
+export PYTHONUTF8=1
 
 die() {
   echo "decks-py: $*" >&2
