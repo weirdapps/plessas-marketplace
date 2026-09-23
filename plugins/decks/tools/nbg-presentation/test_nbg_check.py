@@ -44,6 +44,61 @@ def test_the_catalog_and_the_schema_name_the_same_types():
     assert set(nbg_build.RENDERERS) == set(slide_enum)
 
 
+def test_every_role_the_schema_allows_resolves_in_the_tokens():
+    """PROMPTS-CONTRACTS-01 / DOCS-ACCURACY-2: role 'subtitle' was schema-valid with no
+    type.subtitle token, so check and build crashed on it with a traceback."""
+    import nbg_tokens
+
+    schema = json.loads((HERE / "deck.schema.json").read_text(encoding="utf-8"))
+    for role in schema["$defs"]["element"]["properties"]["role"]["enum"]:
+        style = nbg_tokens.type_style(role)
+        assert style["size"] >= 10, role
+
+
+def test_a_custom_subtitle_element_checks_and_builds(tmp_path, monkeypatch):
+    from testkit import passing_validator
+
+    spec = deck(
+        [
+            {
+                "type": "custom",
+                "content": {"title": "Key figures for the unit"},
+                "elements": [
+                    {
+                        "kind": "text",
+                        "role": "subtitle",
+                        "text": "Head of unit",
+                        "x": 0.374,
+                        "y": 1.4,
+                        "w": 4.0,
+                        "h": 0.4,
+                    }
+                ],
+            }
+        ]
+    )
+    assert check(tmp_path, spec).ok
+    passing_validator(monkeypatch, nbg_build)
+    nbg_build.build_presentation(write_spec(tmp_path, spec, "sub.yaml"), tmp_path / "sub.pptx")
+
+
+def test_a_crash_on_one_slide_exits_2_naming_that_slide(tmp_path, monkeypatch, capsys):
+    """Any exception a slide raises is a builder defect: exit 2 ("could not run") with
+    the slide named, never a bare traceback that exits 1 as if the spec were wrong."""
+    path = write_spec(tmp_path, deck([_content()]), "crash.yaml")
+
+    def boom(_deck, _spec):
+        raise KeyError("no such token")
+
+    monkeypatch.setitem(nbg_build.RENDERERS, "content", boom)
+    for argv in ([str(path), "--check"], [str(path), str(tmp_path / "crash.pptx")]):
+        with pytest.raises(SystemExit) as exc:
+            nbg_build.main(argv)
+        assert exc.value.code == 2, argv
+        err = capsys.readouterr().err
+        assert "slide 2" in err and "KeyError" in err, err
+
+
 # ---------------------------------------------------------------- aliases
 
 

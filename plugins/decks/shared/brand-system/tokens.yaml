@@ -142,6 +142,7 @@ type:
   divider_title:      {size: 48, bold: false, color: dark_teal}
   title:              {size: 24, bold: false, color: dark_teal, max_chars: 80}
   section_title:      {size: 22, bold: false, color: dark_teal}   # Key Figures page header
+  subtitle:           {size: 14, bold: false, color: caption_grey}   # the owner subtitle under a Key Figures header (layouts.md)
   body:               {size: 16, min_size: 14, bold: false, color: body_text}
   body_dense:         {size: 14, bold: false, color: body_text}
   caption:            {size: 12, bold: false, color: caption_grey}

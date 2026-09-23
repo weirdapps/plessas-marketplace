@@ -165,6 +165,11 @@ class FitError(ValueError):
         self.fix = fix
 
 
+class SlideCrash(RuntimeError):
+    """A slide raised something the builder did not expect: a builder defect, so the
+    CLI exits 2 (could not run), naming the slide, rather than blaming the spec."""
+
+
 class SpecInvalid(ValueError):
     """The spec failed its check; nothing was written."""
 
@@ -871,9 +876,9 @@ def _cell_text(value: Any, lang: str = "en") -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
-        return localise_number(f"{int(value):,}", lang)
+        return str(localise_number(f"{int(value):,}", lang))
     if isinstance(value, int | float):
-        return localise_number(f"{value:,}", lang)
+        return str(localise_number(f"{value:,}", lang))
     return str(value)
 
 
@@ -1971,10 +1976,10 @@ def render(
                 )
             )
             continue
+        sid = slide_spec.get("id")
         try:
             slide = renderer(deck, slide_spec)
         except FitError as e:
-            sid = slide_spec.get("id")
             errors.append(
                 Issue(
                     "error",
@@ -1987,6 +1992,15 @@ def render(
                 )
             )
             continue
+        except (CannotRun, SlideCrash):
+            raise
+        except Exception as e:  # noqa: BLE001 - anything else is a builder defect on this slide
+            label = ", ".join(str(p) for p in (sid, slide_spec.get("type")) if p)
+            raise SlideCrash(
+                f"slide {index + 1} ({label}): the builder failed on this slide with "
+                f"{type(e).__name__}: {e}. The spec passed its schema, so this is a builder "
+                "defect: report it with the spec"
+            ) from e
         notes = slide_spec.get("notes")
         if notes:
             slide.notes_slide.notes_text_frame.text = str(notes)
@@ -2183,8 +2197,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.check:
         try:
             report = check(args.spec)
-        except CannotRun as e:
-            print(f"nbg_build.py: {e}", file=sys.stderr)
+        except (CannotRun, RuntimeError) as e:
+            print(f"nbg_build.py could not run: {e}", file=sys.stderr)
+            sys.exit(2)
+        except Exception as e:  # noqa: BLE001 - a crash is "could not run", never "spec wrong"
+            print(f"nbg_build.py could not run: {type(e).__name__}: {e}", file=sys.stderr)
             sys.exit(2)
         _print_report(report, args.format, sys.stdout)
         sys.exit(0 if report.ok else 1)
@@ -2205,6 +2222,9 @@ def main(argv: list[str] | None = None) -> None:
     except ValueError as e:
         print(f"\nError: {e}", file=sys.stderr)
         sys.exit(1)
+    except Exception as e:  # noqa: BLE001 - a crash is "could not run", never "spec wrong"
+        print(f"\nnbg_build.py could not run: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(2)
     sys.exit(0)
 
 
