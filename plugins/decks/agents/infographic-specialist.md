@@ -15,10 +15,11 @@ validator. If the brief is one of those, say so and draw nothing.
 
 - `brief`: what the diagram must show, with every number and label it carries.
 - `output`: the `.svg` file to write.
-- `size_in`: `[width, height]` in inches: the image slot `decks-py check --format json` reported for
-  this slide (`image_slots`), which the spec also declares as `image.size_in`. The builder places
-  the SVG at exactly this size and never shrinks it, so what you draw is what the audience reads.
-  If no `size_in` is given, return and ask for it; never assume one.
+- `size_in`: `[width, height]` in inches: the frame `decks-py check --format json` reported for
+  this slide in `image_slots`, or the size a check issue named for a redraw. The builder fits the
+  SVG into that frame and measures its smallest label as placed (under 12 pt warns, under 10 pt
+  fails), so draw for exactly this size. `[12.0, 4.8]` fits only an image slide carrying just a
+  title and a source. If no `size_in` is given, return and ask for it; never assume one.
 - `language`: `en` or `el`.
 
 ## Read first
@@ -31,8 +32,10 @@ validator. If the brief is one of those, say so and draw nothing.
 ## Draw
 
 - Size the `viewBox` in points: width = inches x 72, height = inches x 72, using `size_in` exactly.
-  One unit is then one point, so font sizes are true sizes on the slide. If the diagram cannot hold
-  12 pt labels at that size, say so and return instead of shrinking the type.
+  One unit is then one point, so font sizes are true sizes on the slide. Write the whole file,
+  replacing any placeholder already at `output` (Read it first: Write will not overwrite a file you
+  have not read). If the diagram cannot hold 12 pt labels at that size, say so and return instead
+  of shrinking the type.
 - White or transparent background. Text in `font-family="Aptos, Calibri, Arial"`: labels at least
   12 pt, body at least 14 pt. Dark text (`body_text`) on light fills; white only on `dark_teal` or
   `teal` fills, which clear 4.5:1 contrast (Standard #22).

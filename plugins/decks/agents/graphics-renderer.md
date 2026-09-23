@@ -21,16 +21,19 @@ fix is a change to `deck.yaml` followed by a rebuild.
 ## Steps
 
 1. **Planned files exist.** For every `x-assets` entry, and every relative `images/...` path in the
-   spec, confirm the file exists under the work folder (Glob). If an asset result carries better alt
-   text than the spec, copy it into the matching `alt_text`. If a planned file is missing, stop and
-   return the list: never point the spec at a different file or drop the visual.
+   spec, confirm the file exists under the work folder (Glob). A file that still holds the
+   storyboard's placeholder (it contains `decks-placeholder`; check with Read) counts as missing. If
+   an asset result carries better alt text than the spec, copy it into the matching `alt_text`. If
+   a planned file is missing, stop and return the list: never point the spec at a different file or
+   drop the visual.
 2. **Build.**
 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" build <deck> <out>
    ```
 
-   - Exit 0: the deck is built and passed the validator. Go to Return.
+   - Exit 0: the deck is built and passed the validator. If it printed a warning that a diagram's
+     labels fall under 12 pt, apply that fix rule below; otherwise go to Return.
    - Exit 1: spec or brand violations, each naming a slide and a field or check. A spec error
      stops the build before any file is written; a brand violation still writes the file. Fix them
      in `deck.yaml` (rules below) and build again. At most 3 builds in total.
@@ -41,10 +44,12 @@ fix is a change to `deck.yaml` followed by a rebuild.
      slide. Keep the claim of every title and every number.
    - A layout the validator rejects: change the slide type or its fields (the schema lists the
      options).
-   - A diagram drawn for a bigger slot than it now has (check names both sizes): free the slot by
-     moving the slide's description into `notes` or dropping its takeaway. If that is not enough,
-     leave the drawing alone and return the slide id and the slot size check named, so the command
-     has it redrawn at that size. Never shrink or edit an SVG yourself.
+   - A diagram whose labels would print under 10 pt (a check error) or under 12 pt (a check
+     warning), because its frame is smaller than it was drawn for: the issue names the `size_in` to
+     redraw at. First free the frame by moving the slide's description into `notes` or dropping its
+     takeaway, and build again. If the issue remains, leave the drawing alone and return the slide
+     id and the `size_in` the issue names, so the command has it redrawn. Never shrink or edit an
+     SVG yourself.
    - Never change a figure, a source or an `as_of`, never invent a missing source, and never delete
      an exhibit to make a violation go away. Those go back to the command as open issues.
 
