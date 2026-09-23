@@ -219,7 +219,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" record deck.pptx deck.yaml --data "${C
 ```
 
 Writes `<data>/presentations/pending/<YYYYMMDDHHMM>_<slug>.yaml` and prints
-`{"record": <path>, "id": <id>, "slides": <n>}`. The record:
+`{"record": <path>, "id": <id>, "slides": <n>}`. `--data` must be an absolute folder: an
+empty value (an unset `CLAUDE_PLUGIN_DATA`) or a relative one exits 2 instead of
+writing the deck's spec into the current folder. The record:
 
 | Key | Value |
 |---|---|

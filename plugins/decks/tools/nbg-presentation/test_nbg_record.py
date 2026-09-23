@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import nbg_record
+import pytest
 import yaml
 from testkit import write_spec
 
@@ -99,6 +100,20 @@ def test_the_cli_prints_the_record_path_as_json(tmp_path, capsys):
     body = json.loads(capsys.readouterr().out)
     assert set(body) == {"record", "id", "slides"}
     assert Path(body["record"]).is_file() and body["slides"] == 3
+
+
+@pytest.mark.parametrize("data", ["", "  ", "relative/data"])
+def test_an_empty_or_relative_data_folder_exits_2_naming_the_variable(
+    tmp_path, monkeypatch, capsys, data
+):
+    """SECURITY-PUBLIC-4: an empty --data (an unset ${CLAUDE_PLUGIN_DATA}) wrote the whole
+    deck, figures and absolute paths included, into whatever folder was current."""
+    pptx, spec = _deck(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    assert nbg_record.main([str(pptx), str(spec), "--data", data]) == 2
+    assert "CLAUDE_PLUGIN_DATA" in capsys.readouterr().err
+    assert not (tmp_path / "presentations").exists()
+    assert not (tmp_path / "relative").exists()
 
 
 def test_a_missing_deck_or_a_broken_spec_exits_2(tmp_path, capsys):
