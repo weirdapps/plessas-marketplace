@@ -307,6 +307,35 @@ def test_cards_mark_the_recommended_option_with_a_gold_tab(build):
     assert "RECOMMENDED" in [b[0] for b in shape_boxes(root)]
 
 
+def test_cards_are_as_tall_as_their_content_and_the_grid_sits_mid_body(build):
+    """Short text sat in cards stretched to the full body height, most of each card
+    empty (lead's visual review, strategy-deck slide 5). Cards take their content's
+    height, never under components.card.min_h, and the grid is centred in the body."""
+    import nbg_tokens
+
+    slide = {
+        "type": "cards",
+        "content": {"title": "Four pillars, one line each"},
+        "layout": "grid",
+        "cards": [
+            {"title": t, "body": "One short line."} for t in ("Mobile", "Data", "Open", "Cloud")
+        ],
+    }
+    root = slide_xml(build(deck([slide])), 2)
+    cards = _shapes_with_fill(root, "F5F8F6")
+    assert len(cards) == 4
+    boxes = []
+    for card in cards:
+        off, ext = card.find(".//a:xfrm/a:off", NS), card.find(".//a:xfrm/a:ext", NS)
+        boxes.append((inches(off.get("y")), inches(ext.get("cy"))))
+    heights = {round(h, 3) for _, h in boxes}
+    assert len(heights) == 1, "every card in the grid is one height"
+    height = heights.pop()
+    assert nbg_tokens.get("components.card.min_h") - 0.001 <= height < 2.0
+    top, bottom = min(y for y, _ in boxes), max(y + h for y, h in boxes)
+    assert top - 1.3 == pytest.approx(6.5 - bottom, abs=0.02), "the grid is centred in the body"
+
+
 def test_a_numbered_card_gets_an_oval_badge(build):
     slide = {
         "type": "cards",

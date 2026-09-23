@@ -238,6 +238,7 @@ components:
     pad: 0.25                # inset of the title, body and icon from the card edge
     icon: 0.6                # icon box, square
     gap: 0.1                 # between icon, title and body
+    min_h: 1.5               # cards take their content's height, never less; the grid centres in the body
   badge:
     shape: oval
     size_in: 0.28

@@ -1452,14 +1452,39 @@ def render_cards(deck: Deck, spec: dict[str, Any]) -> Any:
     offset = float(comp["recommended_tab"]["h"]) / 2 if has_tab else 0.0
     gap = GRID_GAP
     card_w = (frame.w - gap * (cols - 1)) / cols
-    card_h = (frame.h - offset - gap * (rows - 1)) / rows
     pad = float(comp["pad"])
     inner = card_w - 2 * pad
-    ts = style("card_title")
+    ts, bs = style("card_title"), style("card_body")
+    inner_gap = float(comp["gap"])
+
+    def content_h(card: dict[str, Any]) -> float:
+        h = 2 * pad + text_height(len(lines_of(str(card["title"]), inner, ts)), ts)
+        if card.get("number") is not None:
+            h += float(COMP["badge"]["size_in"]) + inner_gap
+        elif card.get("icon"):
+            h += float(comp["icon"]) + inner_gap
+        if card.get("body"):
+            body = lines_of(str(card["body"]), inner, bs)
+            h += inner_gap + text_height(len(body), bs, BODY_SPACING)
+        return h
+
+    # One height for every card, from the fullest one (never under min_h), and the
+    # grid centred in the body: short text no longer sits in a stretched card.
+    room = (frame.h - offset - gap * (rows - 1)) / rows
+    needs = [content_h(c) for c in cards]
+    card_h = max(float(comp["min_h"]), max(needs))
+    if card_h > room + 1e-6:
+        worst = needs.index(max(needs))
+        raise deck.fit(
+            f"cards[{worst}].body",
+            f"card {worst + 1} needs {max(needs):.2f} in; each card has {room:.2f} in",
+            "shorten it, use fewer cards, or change the layout (14pt is the floor)",
+        )
+    top = frame.y + (frame.h - (offset + rows * card_h + gap * (rows - 1))) / 2
     for i, card in enumerate(cards):
         r, c = divmod(i, cols)
         x = frame.x + c * (card_w + gap)
-        y = frame.y + offset + r * (card_h + gap)
+        y = top + offset + r * (card_h + gap)
         fill, border, border_pt = comp["fill"], None, 1.0
         if card.get("recommended"):
             rec = comp["recommended"]
