@@ -86,7 +86,7 @@ pytest plugins scripts -q
 `uv run` form above is the reliable invocation. `scripts/skill-trigger-probe.sh` measures
 natural-language routing across the six router skills, spawns real `claude` calls, and is
 **not** wired into CI. Its case 2 is nondeterministic (four runs on identical input gave
-three fails and one pass), so treat 16/17 as the score and do not read a single run as a
+three fails and one pass), so treat 18/19 as the score and do not read a single run as a
 regression or an improvement.
 
 ## Facts about Claude Code this repo has been burned by
