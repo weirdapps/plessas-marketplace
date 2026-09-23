@@ -13,7 +13,7 @@ never a second copy of the brand: change a value in `tokens.yaml` and the gate f
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx                 # text report
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx --format json   # for agents and CI
-bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx --strict        # a skipped universal check fails
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx --strict        # a skipped universal check or an unreadable SmartArt fails
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate --list-checks --format json
 ```
 
@@ -26,7 +26,7 @@ breaks the light-mode rules on purpose; validate it with the keynote tool instea
 | Code | Meaning |
 |---|---|
 | 0 | No check failed. Warnings and skipped checks may be present. |
-| 1 | At least one check failed. With `--strict`, also a skipped check marked universal below. |
+| 1 | At least one check failed. With `--strict`, also a skipped check marked universal below, or a SmartArt diagram with no drawing part (content no check could read). |
 | 2 | The validator could not run: file missing, not a zip or not a PowerPoint package, a part over the size limits, a missing Python dependency, or a crash. Exit 2 is never a pass: Layer 1 did not execute. |
 
 ## Statuses and the meaning of "examined"
@@ -94,32 +94,32 @@ Sev: E = error (blocks), W = warning (reports). U = universal: applies to every 
 | Dimensions | Slide size is exactly 12192000 x 6858000 EMU (13.333 x 7.5 in, PowerPoint Widescreen), within 635 EMU. | dimensions.md; tokens `geometry.slide` | E | the `p:sldSz` element | U |
 | Theme | Theme colour slots are NBG colours and the major/minor fonts are Aptos or Aptos Display. | colors.md; tokens `colors`, `fonts` | W | theme colour slots and font slots | |
 | Background | Every slide's effective background (slide, else layout, else master) is white. | Standard #2 | E | slides | U |
-| Colors | Every colour in slide shapes and chart parts is in tokens.yaml, including theme (`schemeClr`) references and the outline or fill a shape takes from its `p:style`. A retired colour fails with its reason. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide shapes and chart parts | U |
-| Fonts | Every typeface (text, symbol, bullet) in slides and charts is in `fonts.allowed`; `+mn`/`+mj` theme references are resolved; Aptos SemiBold is forbidden. | typography.md; tokens `fonts` | E | typeface references | U |
-| Font Sizes | Text is at least 10pt; sources and footnotes at least 11pt; only the header pill may be 9pt. Table cells and chart text included. | Standard #11; tokens `accessibility`, `type.source` | E | sized text runs in shapes, table cells and chart parts | U |
-| Contrast | Text meets WCAG AA against what is behind it: its own fill, else the topmost filled shape below it containing its centre, else the slide background. Muted grey `939793` (2.96:1 on white) is waived only for the page number (10pt or less at the page-number position) and chart axis labels, on white, as Standard #22 allows; the cover date is caption grey and gets no waiver. Bullet glyphs are not text runs. | Standard #22 | E | text runs with a resolvable colour and background | U |
+| Colors | Every colour in slide shapes (and the layout and master shapes a slide shows, and SmartArt drawings) and chart parts is in tokens.yaml, including theme (`schemeClr`) references, the outline or fill a shape takes from its `p:style`, the fill and text colour a table cell takes from its table style, and the group fill a shape takes through `a:grpFill`. Every colour form resolves: `srgbClr`, `schemeClr` through the clrMap, `sysClr`, `scrgbClr`, `hslClr` and every `prstClr` name, then lumMod/lumOff and (in linear light, as PowerPoint mixes them) tint and shade. A retired colour fails with its reason. A colour that cannot be resolved is not examined, never counted as passing. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide, layout and master shapes and chart parts | U |
+| Fonts | Every font text is drawn in is in `fonts.allowed`: the typeface each run resolves to (its own, else inherited through list styles, placeholders and the deck default, else the theme's minor font) in slides, table cells, the layout and master shapes they show and SmartArt drawings; every symbol and bullet font; every font a chart names, and the theme's minor font for a chart that names none. Aptos SemiBold is forbidden. | typography.md; tokens `fonts` | E | text runs, symbol and bullet fonts, chart fonts | U |
+| Font Sizes | Text is at least 10pt; sources and footnotes at least 11pt; only the header pill may be 9pt. Table cells, chart text, SmartArt text and the text of layout and master shapes a slide shows included. | Standard #11; tokens `accessibility`, `type.source` | E | sized text runs in slide, layout and master shapes, table cells and chart parts | U |
+| Contrast | Text meets WCAG AA against what is behind it: its own fill, else the topmost filled shape below it containing its centre, else the slide background. A table cell's text and fill come from the cell, else from the table style. Muted grey `939793` (2.96:1 on white) is waived only for the page number (10pt or less at the page-number position) and chart axis labels, on white, as Standard #22 allows; the cover date is caption grey and gets no waiver. Bullet glyphs are not text runs. | Standard #22 | E | text runs with a resolvable colour and background | U |
 | Boundaries | No element extends past a slide edge (0.05 in tolerance). | dimensions.md | E | positioned shapes, pictures, charts, tables, connectors, group children | U |
 | Safe Zones | Content stays right of the 0.374 in gutter, left of the right boundary, above the 6.85 in footer line; sources and footnotes end by 6.5 in. | dimensions.md; tokens `geometry` | E | content elements (logo footprints and the page number excluded) | U |
 | Content Spacing | The first body element starts at 1.3 in or lower (`geometry.body_top`) and at least 0.15 in below the title's measured bottom, with or without a pill. | Standard #11 | E | slides with a content title and body content | |
-| Text Fit | Measured text fits its box (half a line of slack when unfilled); unwrapped text fits its filled shape (the pill); cover title and subtitle stay on one line; the measured text of two boxes does not overlap; a table whose rows grow to fit their text stays above the footer. | Standards #11, #13; dimensions.md | E | text frames and tables | U |
+| Text Fit | Measured text fits its box (half a line of slack when unfilled); unwrapped text fits its filled shape (the pill); cover title and subtitle stay on one line; the measured text of two boxes does not overlap; no opaque filled shape drawn later (on top) covers measured text, since it hides it (a fill with transparency does not count); a table whose rows grow to fit their text stays above the footer. | Standards #11, #13; dimensions.md | E | text frames and tables | U |
 | Text Margins | Unfilled text boxes have zero margins on all four sides (0.02 in tolerance). Filled shapes pad on purpose and are exempt. | dimensions.md (Text Box Rules) | E | unfilled text boxes carrying text | |
-| Logo | Every slide but the last carries the Greek wordmark at the small or large logo position, unstretched (within 3% of the image's own aspect) and at the brand size; the cover (slide 1) uses the large logo; the English fallback fails. | Standards #4, #10, #17 | E | slides other than the last | U |
-| Back Cover | The last slide holds only the centred oval emblem: no text, no page number, no empty text box, no corner logo, no other picture. | Standard #19 | E | the last slide in presentation order | U |
-| Thank You Check | No thank-you, closing or Q&A slide. Unambiguous phrases (thank you, thanks but not "thanks to", any questions, merci, ευχαριστούμε) count anywhere on a candidate; "Q&A" and "Ερωτήσεις" count only as the slide's title or largest text. Matching is accent- and case-folded. | Standard #19; layouts.md | E | the last two slides and slides of 12 words or fewer | |
+| Logo | Every slide but the last carries the Greek wordmark at the small or large logo position (placed on the slide, or on the layout or master it shows), unstretched (within 3% of the image's own aspect) and at the brand size; the cover (slide 1) uses the large logo; the English fallback fails. | Standards #4, #10, #17 | E | slides other than the last | U |
+| Back Cover | The last slide holds only the centred oval emblem: no text, no page number, no empty text box, no corner logo, no other picture, counting the layout and master shapes it shows. | Standard #19 | E | the last slide in presentation order | U |
+| Thank You Check | No thank-you, closing or Q&A slide. Unambiguous phrases (thank you, thanks but not "thanks to", any questions, merci, and the Greek verb forms ευχαριστώ and ευχαριστούμε, never ευχάριστη, ευχαριστημένοι or ευχαρίστηση) count anywhere on a candidate; "Q&A" and "Ερωτήσεις" count only as the slide's title or largest text. Matching is accent- and case-folded. | Standard #19; layouts.md | E | the last two slides and slides of 12 words or fewer | |
 | Decorative | No decorative presets (stars, hearts, moons, clouds, suns, lightning, irregular seals). An ellipse is decorative only when it carries no text, exceeds 0.5 in on a side and carries no icon; numbered badges, triangles, chevrons and arrows pass. | Standards #3, #19 | E | preset-geometry shapes | |
 | Shadows | No shape or chart draws a shadow, including one inherited from a theme effect style through `p:style/a:effectRef` when `spPr` sets no effect list. | brand-system README; tokens `components.card.shadow` | E | shapes and charts | U |
 | Em Dashes | No em dash (or " -- ") in slide or chart text. A spaced en dash is a warning; a range like 2024-2025 with an en dash is fine. | Standard #7 | E | text items in slides and charts | U |
 | Title Style | Titles are Regular weight; a title's text starts on the 0.374 in gutter (box x plus left margin, 0.01 in tolerance) unless it sits beside a gutter-anchored element on the same row (a divider number, a unit pill); a closing period is a warning. | Standards #15, #16; brand-system README | E | slides with a title | U |
 | Title Length | A content title fits one line: at most `type.title.max_chars` characters. | Standard #11; tokens `type.title` | E | slides with a content title | |
 | Slide Titles | Every slide carrying text has a title, and no two titles are the same (accent- and case-folded). | presentation-qa | E | slides carrying text | U |
-| Action Titles | A content title states a finding: not a topic label, at most 15 words. Warning because the owner has preferred a noun phrase in writing. | presentation-qa 2A | W | slides with a content title | |
+| Action Titles | A content title states a finding: not a topic label, at most 15 words. Warning because a noun-phrase title is sometimes a deliberate choice. | presentation-qa 2A | W | slides with a content title | |
 | Chart Types | No `pieChart`, `pie3DChart` or `ofPieChart`; part-to-whole is a doughnut. | charts.md | E | chart parts | |
 | Chart Data | Every chart has series and categories; more than `charts.max_series` (6) series warns, more than `charts.max_series_absolute` (8) fails. Pie-like charts count slices. | Standard #22; tokens `charts` | E | chart parts | |
 | Chart Styling | Line and area series carry an explicit line colour (`c:spPr/a:ln`), area series an explicit fill; a series or point left automatic must resolve to an NBG theme accent; line markers are hollow circles, white fill with a series-colour ring (warning). | Standard #5; charts.md; tokens `charts.line` | E | chart series | |
-| Zero Baseline | Bar and column value axes start at zero. | keynote.md; charts.md | E | value axes of bar and column charts | |
+| Zero Baseline | Bar and column value axes include zero: an explicit minimum above zero or maximum below it fails, and so does an automatic axis on close values (the lowest bar over five sixths of the highest, or the mirror for negative bars), which PowerPoint draws without zero. Set the minimum to 0. | keynote.md; charts.md | E | value axes of bar and column charts | |
 | Exhibit Sources | Every slide with a chart or table carries a source line ("Source:", "Sources:", "Πηγή:", "Πηγές:", accent- and case-folded) with an as-of year or date. | `content.source` in deck.schema.json; presentation-qa | E | slides carrying a chart or table | |
 | Alt Text | Pictures, charts, tables and groups carry descriptive alt text: not empty, not a file name or autoname, not "image of...", not a caption already on the slide. The three brand logo placements are decorative and exempt. | Standard #22 (EN 301 549) | E | top-level pictures, graphic frames and groups | |
-| Bank Branding | A chart whose categories or series names include two or more of NBG, Eurobank, Alpha, Piraeus colours each bank's point or series in its brand colour (`extended_palettes.peer_banks`), and the slide carries one logo picture per plotted bank, unstretched. Running text counts only full names ("Alpha Bank"), so "alpha release" is not a bank. | presentation-qa 2H; tokens `extended_palettes.peer_banks` | E | charts plotting two or more banks | |
+| Bank Branding | A chart whose categories or series names include two or more of the banks in tokens `banks` colours each bank's point or series in its brand colour (`extended_palettes.peer_banks`), and the slide carries each plotted bank's own logo, unstretched. A picture is a bank's logo when it is that bank's `banks.<id>.logo` asset, or names the bank in its alt text or name and keeps the asset's aspect ratio; any other picture counts for no bank. Chart labels match `names` and `label_aliases`; running text matches `names` only, so "alpha release" is not a bank. | presentation-qa 2H; tokens `banks`, `extended_palettes.peer_banks` | E | charts plotting two or more banks | |
 | Number Formats | One currency notation per deck (raw digits or abbreviated) and one decimal precision per unit. Greek separators (1.250.000, 2,3) and suffixes (χιλ., εκ., δισ.) are understood. | typography.md | W | currency amounts in slide text | |
 | AI Slop | No slide clusters two or more AI-register phrases. Phrases, not words: "leverage ratio", "robust capital base" and "unlock the card" are banking language. | presentation-qa (tone) | W | slides carrying text | |
 | Official Name | The bank is «Εθνική Τράπεζα», never «Εθνική Τράπεζα της Ελλάδος». | writing style | W | slides carrying text | |
@@ -158,9 +158,35 @@ for ASCII, Greek and common punctuation, which gives the same widths, so a lapto
 runner without Aptos agree. `DECKS_FONT_DIRS` (path-separated) replaces the search list. The
 check's message says which measurer ran.
 
+**Layout and master shapes**: a slide renders the non-placeholder shapes of its layout
+and master behind its own, unless it sets `showMasterSp="0"` (Hide Background Graphics),
+which hides both, or its layout sets it, which hides the master's. Colors, Fonts, Font
+Sizes, Logo and Back Cover read those shapes. A layout or master shape is judged once, at
+the first slide that shows it, and its finding names the part (`on slideMaster1.xml`), since
+that is where it is fixed. Placeholders on a layout or master render only through a slide's
+own placeholder, so they are read as that placeholder's inherited properties instead.
+
+**Table styles**: a table cell takes its fill and text colour from the table's style
+unless it sets its own. The style is the deck's own definition in `ppt/tableStyles.xml`
+(an inline `a:tableStyle`, or the list's default when the table names none), else one of the
+built-in styles python-pptx decks name by GUID alone: No Style (with or without grid) and
+Medium Style 2 Accent 1, PowerPoint's default table, which in the NBG theme puts white text
+on cyan. Parts layer in PowerPoint's order (whole table, banded rows and columns, first and
+last column, first and last row, corner cells), honouring the table's `firstRow`,
+`bandRow` and related flags. Colors and Contrast read the result. A cell whose colours
+would come from any other style is reported under "not examined".
+
+**SmartArt**: PowerPoint draws a diagram from its drawing part (`ppt/diagrams/drawingN.xml`,
+found through the data part's `dsp:dataModelExt`). Colors, Fonts and Font Sizes read the
+drawing's shapes as if they sat on the slide at the diagram's position; findings name the
+part. A diagram with no drawing part (some producers write only the data model) cannot be
+read by any check: it is reported under "not examined", and `--strict` fails the deck.
+
 **Package safety**: parts are read from the zip one at a time, never extracted, with limits
-on member count, part size, total size and XML compression ratio, and XML is parsed with
-defusedxml. A deck over a limit exits 2.
+on member count (5,000), part size (64 MB) and total size (1 GB). Every part parsed as XML,
+whatever its name or size, has tighter caps, because a parsed tree costs many times its
+text: 16 MB per part, 128 MB across the package, and a compression ratio of at most 500:1.
+XML is parsed with defusedxml. A deck over a limit exits 2.
 
 ## Adding a check
 

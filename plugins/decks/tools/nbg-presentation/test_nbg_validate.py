@@ -43,8 +43,9 @@ from pptx.enum.chart import (  # noqa: E402
     XL_LEGEND_POSITION,
     XL_MARKER_STYLE,
 )
-from pptx.enum.shapes import MSO_SHAPE  # noqa: E402
+from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE  # noqa: E402
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN  # noqa: E402
+from pptx.opc.constants import RELATIONSHIP_TYPE as RT  # noqa: E402
 from pptx.oxml.ns import qn  # noqa: E402
 from pptx.util import Emu, Pt  # noqa: E402
 
@@ -60,6 +61,7 @@ LOGO = ASSETS / "nbg-logo-gr.png"
 EMBLEM = ASSETS / "nbg-back-cover-logo.png"
 ENGLISH_LOGO = ASSETS / "nbg-logo-fallback.png"
 BANK_LOGOS = ASSETS / "bank-logos"
+NS_A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 # Written as code points: a hook refuses literal em dashes in any file.
 EM_DASH = chr(0x2014)
 EN_DASH = chr(0x2013)
@@ -285,6 +287,7 @@ def bar_chart(
     font="Aptos",
     label_size=12,
     styled=True,
+    zero_based=True,
     chart_type=XL_CHART_TYPE.COLUMN_CLUSTERED,
     alt="Column chart of mobile users by quarter of 2025, rising from 2.9M to 3.3M.",
 ):
@@ -303,6 +306,10 @@ def bar_chart(
     plot = chart.plots[0]
     if chart_type not in (XL_CHART_TYPE.PIE, XL_CHART_TYPE.DOUGHNUT):
         _style_axes(chart, font=font, value_visible=False)
+        if zero_based:
+            # As nbg_build does: an automatic axis on close values (2.9 to 3.3) starts
+            # above zero in PowerPoint and truncates every bar (E2E-OUTPUT-01).
+            chart.value_axis.minimum_scale = 0
     else:
         chart.font.name = font
         chart.font.size = Pt(12)
@@ -401,6 +408,88 @@ def shape_with_text(sld, prefix):
         if sh.has_text_frame and sh.text_frame.text.startswith(prefix):
             return sh
     raise AssertionError(f"no shape starting {prefix!r}")
+
+
+def background_graphic(prs, make, *, master=False):
+    """Draw a shape with make(scratch slide) and move it onto the Blank layout every
+    golden slide uses, or onto the slide master: a background graphic that each slide
+    showing it renders. python-pptx cannot add shapes to a layout directly."""
+    scratch = prs.slides.add_slide(prs.slide_layouts[6])
+    el = make(scratch)._element
+    owner = prs.slide_master if master else prs.slide_layouts[6]
+    blip = el.find(".//" + qn("a:blip"))
+    if blip is not None:
+        image = scratch.part.related_part(blip.get(qn("r:embed")))
+        blip.set(qn("r:embed"), owner.part.relate_to(image, RT.IMAGE))
+    owner.shapes._spTree.append(el)
+    ids = prs.slides._sldIdLst
+    last = list(ids)[-1]
+    prs.part.drop_rel(last.rId)
+    ids.remove(last)
+    return el
+
+
+DGM_NS = "http://schemas.openxmlformats.org/drawingml/2006/diagram"
+DSP_NS = "http://schemas.microsoft.com/office/drawing/2008/diagram"
+
+
+def add_smartart(path, *, fill="007B85", color="FFFFFF", size=12, font="Aptos", drawing=True):
+    """Put a three-box SmartArt diagram on slide 2 of a saved deck. PowerPoint shows the
+    diagram's drawing part; drawing=False leaves it out, as some producers do."""
+    a = NS_A
+    boxes = "".join(
+        f'<dsp:sp modelId="{{00000000-0000-0000-0000-00000000000{i}}}">'
+        '<dsp:nvSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvSpPr/></dsp:nvSpPr>'
+        f'<dsp:spPr><a:xfrm><a:off x="{i * 2743200}" y="0"/><a:ext cx="2377440" cy="731520"/>'
+        '</a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+        f'<a:solidFill><a:srgbClr val="{fill}"/></a:solidFill></dsp:spPr>'
+        f'<dsp:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US" sz="{size * 100}">'
+        f'<a:solidFill><a:srgbClr val="{color}"/></a:solidFill><a:latin typeface="{font}"/>'
+        f"</a:rPr><a:t>{word}</a:t></a:r></a:p></dsp:txBody></dsp:sp>"
+        for i, word in enumerate(("Plan", "Build", "Run"))
+    )
+    ext = (
+        f'<dgm:extLst><a:ext uri="{DSP_NS}"><dsp:dataModelExt xmlns:dsp="{DSP_NS}" '
+        'relId="rIdDr"/></a:ext></dgm:extLst>'
+    )
+    parts = {
+        "ppt/diagrams/data1.xml": f'<dgm:dataModel xmlns:dgm="{DGM_NS}" xmlns:a="{a}">'
+        f"<dgm:ptLst/><dgm:cxnLst/>{ext if drawing else ''}</dgm:dataModel>"
+    }
+    rels = (
+        '<Relationship Id="rIdDm" Type="http://schemas.openxmlformats.org/officeDocument/'
+        '2006/relationships/diagramData" Target="../diagrams/data1.xml"/>'
+    )
+    if drawing:
+        parts["ppt/diagrams/drawing1.xml"] = (
+            f'<dsp:drawing xmlns:dsp="{DSP_NS}" xmlns:a="{a}"><dsp:spTree>'
+            '<dsp:nvGrpSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvGrpSpPr/></dsp:nvGrpSpPr>'
+            f"<dsp:grpSpPr/>{boxes}</dsp:spTree></dsp:drawing>"
+        )
+        rels += (
+            '<Relationship Id="rIdDr" Type="http://schemas.microsoft.com/office/2007/'
+            'relationships/diagramDrawing" Target="../diagrams/drawing1.xml"/>'
+        )
+    frame = (
+        '<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="300" name="Diagram 1" '
+        'descr="Three-step delivery process: plan, build, run"/><p:cNvGraphicFramePr/>'
+        '<p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="341986" y="4892040"/>'
+        '<a:ext cx="7680960" cy="731520"/></p:xfrm><a:graphic>'
+        f'<a:graphicData uri="{DGM_NS}"><dgm:relIds xmlns:dgm="{DGM_NS}" r:dm="rIdDm" '
+        'r:lo="rIdLo" r:qs="rIdQs" r:cs="rIdCs"/></a:graphicData></a:graphic></p:graphicFrame>'
+    )
+    with zipfile.ZipFile(path) as zf:
+        blobs = {n: zf.read(n) for n in zf.namelist()}
+    slide2, slide2_rels = "ppt/slides/slide2.xml", "ppt/slides/_rels/slide2.xml.rels"
+    blobs[slide2] = blobs[slide2].replace(b"</p:spTree>", frame.encode() + b"</p:spTree>", 1)
+    blobs[slide2_rels] = blobs[slide2_rels].replace(
+        b"</Relationships>", rels.encode() + b"</Relationships>"
+    )
+    blobs.update({n: v.encode() for n, v in parts.items()})
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for n, data in blobs.items():
+            zf.writestr(n, data)
+    return path
 
 
 def move_slide(prs, old_index, new_index):
@@ -669,8 +758,11 @@ def _shadow_patch(xml):
 
 
 def _truncate_axis(xml):
+    """Give the value axis an explicit minimum of 30 (replacing a zero minimum)."""
     head, sep, tail = xml.partition("<c:valAx>")
-    if "<c:scaling/>" in tail:
+    if re.search(r'<c:min val="[^"]*"/>', tail.split("</c:valAx>", 1)[0]):
+        tail = re.sub(r'<c:min val="[^"]*"/>', '<c:min val="30"/>', tail, count=1)
+    elif "<c:scaling/>" in tail:
         tail = tail.replace("<c:scaling/>", '<c:scaling><c:min val="30"/></c:scaling>', 1)
     else:
         tail = tail.replace("<c:scaling>", '<c:scaling><c:min val="30"/>', 1)
@@ -695,7 +787,17 @@ def _replace_bar_chart(**kwargs):
     return edit
 
 
-def _bank_slide(prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", "Piraeus")):
+BANK_FILES = {
+    "nbg": "nbg.png",
+    "eurobank": "eurobank.png",
+    "alpha": "alpha-bank.png",
+    "piraeus": "piraeus-bank.png",
+}
+
+
+def _bank_slide(
+    prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", "Piraeus"), pictures=None
+):
     sld = blank(prs)
     title(sld, "NBG leads peers on mobile adoption")
     keys = ("nbg", "eurobank", "alpha", "piraeus")
@@ -708,13 +810,13 @@ def _bank_slide(prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", 
         alt="Column chart of active mobile users by bank: NBG 62%, Eurobank 55%, Alpha 51%, Piraeus 49%.",
     )
     if logos:
-        files = ("nbg.png", "eurobank.png", "alpha-bank.png", "piraeus-bank.png")
-        for i, name in enumerate(files):
-            w = 0.542 if name == "nbg.png" else 0.35  # 96x62 and 64x64 at a 0.35" height
+        if pictures is None:
+            pictures = [(BANK_LOGOS / BANK_FILES[k], f"{k.title()} logo") for k in keys]
+        for i, (path, alt) in enumerate(pictures):
             pic = sld.shapes.add_picture(
-                str(BANK_LOGOS / name), inch(1.6 + i * 3.1), inch(5.45), inch(w), inch(0.35)
+                str(path), inch(1.6 + i * 3.1), inch(5.45), height=inch(0.35)
             )
-            set_alt(pic, f"{keys[i].title()} logo")
+            set_alt(pic, alt)
     source(sld, "Source: bank annual reports, 2025")
     logo(sld, "small")
     page_number(sld, len(prs.slides))
@@ -722,9 +824,11 @@ def _bank_slide(prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", 
     return sld
 
 
-def _bank_case(tmp_path, *, colored=True, logos=True):
+def _bank_case(tmp_path, *, colored=True, logos=True, pictures=None):
     return deck(
-        tmp_path, lambda prs: _bank_slide(prs, colored=colored, logos=logos), name="banks.pptx"
+        tmp_path,
+        lambda prs: _bank_slide(prs, colored=colored, logos=logos, pictures=pictures),
+        name="banks.pptx",
     )
 
 
@@ -1557,6 +1661,361 @@ def test_the_old_bullet_child_order_is_an_ooxml_error(tmp_path):
     assert result.status == "fail" and "a:pPr" in details(result)
 
 
+def _master_band(prs):
+    background_graphic(prs, lambda s: box(s, 0, 7.3, 13.333, 0.2, "4F81BD"), master=True)
+
+
+def test_an_off_palette_band_on_the_master_fails_colors_once(tmp_path):
+    """VALIDATOR-CODE-9: layout and master shapes were never read, so an off-palette band
+    on the master passed on every slide that showed it."""
+    result = check(deck(tmp_path, _master_band), "Colors")
+    assert result.status == "fail"
+    assert "4F81BD" in details(result) and "slideMaster1.xml" in details(result)
+    assert len(result.details) == 1, "judged once, not once per slide that shows it"
+
+
+def test_a_layout_that_hides_master_shapes_hides_the_band(tmp_path):
+    def edit(prs):
+        _master_band(prs)
+        prs.slide_layouts[6]._element.set("showMasterSp", "0")
+
+    assert check(deck(tmp_path, edit), "Colors").status == "pass"
+
+
+def test_hide_background_graphics_on_every_slide_hides_the_layout_band(tmp_path):
+    def edit(prs):
+        background_graphic(prs, lambda s: box(s, 0, 7.3, 13.333, 0.2, "4F81BD"))
+        for sld in prs.slides:
+            sld._element.set("showMasterSp", "0")
+
+    assert check(deck(tmp_path, edit), "Colors").status == "pass"
+
+
+def test_layout_text_is_held_to_the_font_and_size_rules(tmp_path):
+    def edit(prs):
+        background_graphic(
+            prs,
+            lambda s: text(s, 0.374, 7.0, 4.0, 0.3, "Confidential", size=8, font="Comic Sans MS"),
+        )
+
+    path = deck(tmp_path, edit)
+    fonts = check(path, "Fonts")
+    assert fonts.status == "fail" and "Comic Sans MS" in details(fonts)
+    assert "slideLayout" in details(fonts)
+    sizes = check(path, "Font Sizes")
+    assert sizes.status == "fail" and "8pt" in details(sizes)
+
+
+def _drop_pictures(sld):
+    for shape in list(sld.shapes):
+        if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+            shape._element.getparent().remove(shape._element)
+
+
+def test_a_logo_on_the_layout_is_the_logo_of_each_slide_that_shows_it(tmp_path):
+    """A logo placed once on the layout failed Logo on every slide that rendered it."""
+
+    def edit(prs):
+        slides = list(prs.slides)
+        for sld in slides[1:-1]:
+            _drop_pictures(sld)
+        background_graphic(prs, lambda s: logo(s, "small"))
+        for sld in (slides[0], slides[-1]):
+            sld._element.set("showMasterSp", "0")
+
+    path = deck(tmp_path, edit)
+    result = check(path, "Logo")
+    assert result.status == "pass", result.details
+    assert check(path, "Back Cover").status == "pass"
+
+
+def test_the_back_cover_shows_the_logo_on_its_layout(tmp_path):
+    result = check(deck(tmp_path, lambda prs: background_graphic(prs, logo)), "Back Cover")
+    assert result.status == "fail" and "besides the emblem" in details(result)
+
+
+def test_smartart_drawing_is_read_for_colours_fonts_and_sizes(tmp_path):
+    """VALIDATOR-CODE-6: a diagram's boxes and text were never read, so red fills and 8pt
+    Comic Sans inside SmartArt passed every check."""
+    path = add_smartart(deck(tmp_path), fill="FF0000", color="FFFF00", size=8, font="Comic Sans MS")
+    colors = check(path, "Colors")
+    assert colors.status == "fail" and "#FF0000" in details(colors)
+    assert "drawing1.xml" in details(colors)
+    fonts = check(path, "Fonts")
+    assert fonts.status == "fail" and "Comic Sans MS" in details(fonts)
+    sizes = check(path, "Font Sizes")
+    assert sizes.status == "fail" and "8pt" in details(sizes)
+
+
+def test_a_brand_smartart_diagram_passes_and_is_counted(tmp_path, golden):
+    before = check(golden, "Colors").examined
+    path = add_smartart(deck(tmp_path))
+    colors = check(path, "Colors")
+    assert colors.status == "pass" and colors.examined > before
+    assert check(path, "Fonts").status == "pass"
+    assert check(path, "Font Sizes").status == "pass"
+
+
+def test_smartart_without_a_drawing_part_is_unexamined_and_fails_strict(tmp_path):
+    path = add_smartart(deck(tmp_path), fill="FF0000", drawing=False)
+    results = nv.validate_presentation(str(path), only=["Colors", "Fonts", "Font Sizes"])
+    for r in results:
+        assert r.not_examined.get(nv.SMARTART_UNREAD) == 1, r.name
+    assert nv.exit_code(results) == 0
+    assert nv.exit_code(results, strict=True) == 1
+
+
+NO_STYLE_TABLE = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"  # No Style, No Grid
+CUSTOM_TABLE = "{0B5E1C3A-5D2B-4C3E-9A11-7C1D2E3F4A5B}"
+
+
+def _styled_table(prs, *, style=None):
+    """Swap slide 5's table for one that leaves colour to its table style: no cell fills,
+    no run colours, the header row and banding flags python-pptx turns on."""
+    sld = slide(prs, 5)
+    remove(next(sh for sh in sld.shapes if sh.has_table))
+    frame = sld.shapes.add_table(3, 2, inch(0.374), inch(1.3), inch(6.0), inch(1.2))
+    if style is not None:
+        frame._element.find(".//" + qn("a:tableStyleId")).text = style
+    for r in range(3):
+        for c in range(2):
+            run = frame.table.cell(r, c).text_frame.paragraphs[0].add_run()
+            run.text = f"Line {r}{c}"
+            run.font.size = Pt(12)
+            run.font.name = "Aptos"
+    set_alt(frame, "Table of fee lines by year.")
+
+
+def _table_styles(header_fill):
+    header = (
+        f'<a:firstRow><a:tcTxStyle b="on"><a:schemeClr val="lt1"/></a:tcTxStyle>'
+        f"<a:tcStyle><a:fill><a:solidFill>{header_fill}</a:solidFill></a:fill></a:tcStyle>"
+        "</a:firstRow>"
+    )
+    style = (
+        f'<a:tblStyle styleId="{CUSTOM_TABLE}" styleName="House">'
+        '<a:wholeTbl><a:tcTxStyle><a:schemeClr val="dk1"/></a:tcTxStyle></a:wholeTbl>'
+        f"{header}</a:tblStyle>"
+    )
+    return lambda xml: re.sub(
+        r"<a:tblStyleLst([^>]*?)\s*/>", rf"<a:tblStyleLst\1>{style}</a:tblStyleLst>", xml
+    )
+
+
+def test_the_default_table_style_colours_are_measured(tmp_path):
+    """VALIDATOR-CODE-8: PowerPoint's default table (Medium Style 2, Accent 1) puts white
+    bold text on accent 1, cyan in the NBG theme, at about 2.2:1; with no cell fills
+    written, both Contrast and Colors passed it."""
+    path = deck(tmp_path, _styled_table)
+    contrast = check(path, "Contrast")
+    assert contrast.status == "fail" and "#FFFFFF on #00ADBF" in details(contrast)
+    colors = check(path, "Colors")
+    assert colors.status == "fail" and "fill from its table style" in details(colors)
+
+
+def test_a_table_with_no_style_is_plain_text_on_the_slide(tmp_path):
+    path = deck(tmp_path, lambda prs: _styled_table(prs, style=NO_STYLE_TABLE))
+    assert check(path, "Contrast").status == "pass"
+    assert check(path, "Colors").status == "pass"
+
+
+def test_a_style_defined_in_the_deck_is_read_from_table_styles_xml(tmp_path):
+    teal = _table_styles('<a:srgbClr val="007B85"/>')
+    ok = deck(
+        tmp_path,
+        lambda prs: _styled_table(prs, style=CUSTOM_TABLE),
+        patch={"ppt/tableStyles.xml": teal},
+    )
+    assert check(ok, "Contrast").status == "pass"
+    assert check(ok, "Colors").status == "pass"
+    bright = _table_styles('<a:schemeClr val="accent6"/>')
+    bad = deck(
+        tmp_path,
+        lambda prs: _styled_table(prs, style=CUSTOM_TABLE),
+        name="bright.pptx",
+        patch={"ppt/tableStyles.xml": bright},
+    )
+    result = check(bad, "Contrast")
+    assert result.status == "fail" and "#FFFFFF on #00DFF8" in details(result)
+
+
+def test_an_unknown_table_style_is_not_examined(tmp_path):
+    unknown = "{11111111-2222-3333-4444-555555555555}"
+    path = deck(tmp_path, lambda prs: _styled_table(prs, style=unknown))
+    for name in ("Contrast", "Colors"):
+        result = check(path, name)
+        assert result.not_examined.get(nv.TABLE_STYLE_UNREAD, 0) >= 6, (name, result.not_examined)
+
+
+@pytest.mark.parametrize(
+    ("flags", "cell", "parts"),
+    [
+        ({"firstRow", "bandRow"}, (0, 0), ["wholeTbl", "firstRow"]),
+        ({"firstRow", "bandRow"}, (1, 0), ["wholeTbl", "band1H"]),
+        ({"firstRow", "bandRow"}, (2, 1), ["wholeTbl", "band2H"]),
+        ({"bandRow"}, (0, 0), ["wholeTbl", "band1H"]),
+        ({"firstRow", "firstCol"}, (0, 0), ["wholeTbl", "firstCol", "firstRow", "nwCell"]),
+        ({"lastRow", "bandRow", "firstRow"}, (3, 0), ["wholeTbl", "lastRow"]),
+        ({"firstCol", "bandRow"}, (1, 0), ["wholeTbl", "band2H", "firstCol"]),
+    ],
+)
+def test_table_style_parts_layer_in_powerpoint_order(flags, cell, parts):
+    assert nv._style_parts(flags, *cell, rows=4, cols=2) == parts
+
+
+def _grouped(prs, group_fill, *, child_fill="grp"):
+    """A group on slide 2 whose one child takes the group's fill (a:grpFill) or its own."""
+    sld = slide(prs, 2)
+    grp = sld.shapes.add_group_shape()
+    child = box(grp, 9.0, 5.3, 1.0, 0.4, "007B85")
+    child.name = "Child"
+    grp_sp_pr = grp._element.find(qn("p:grpSpPr"))
+    fill = etree.SubElement(grp_sp_pr, qn("a:solidFill"))
+    etree.SubElement(fill, qn("a:srgbClr")).set("val", group_fill)
+    if child_fill == "grp":
+        sp_pr = child._element.spPr
+        sp_pr.replace(sp_pr.find(qn("a:solidFill")), etree.Element(qn("a:grpFill")))
+
+
+def test_a_child_painted_with_its_groups_fill_is_judged(tmp_path):
+    """VALIDATOR-CODE-7: Colors skipped groups, so a:grpFill hid the colour that shows."""
+    result = check(deck(tmp_path, lambda prs: _grouped(prs, "FF0000")), "Colors")
+    assert result.status == "fail" and "#FF0000" in details(result)
+    assert "group fill" in details(result)
+
+
+def test_a_group_fill_no_child_uses_is_not_drawn(tmp_path):
+    path = deck(tmp_path, lambda prs: _grouped(prs, "FF0000", child_fill="own"))
+    assert check(path, "Colors").status == "pass"
+
+
+def _run_color(position, color_xml):
+    """Slide `position` gains a text box whose run colour is `color_xml`."""
+
+    def edit(prs):
+        shape = text(slide(prs, position), 9.0, 5.3, 3.0, 0.3, "Delivered", size=12)
+        r_pr = shape._element.find(".//" + qn("a:rPr"))
+        fill = r_pr.find(qn("a:solidFill"))
+        fill.remove(fill[0])
+        fill.append(etree.fromstring(color_xml))
+
+    return edit
+
+
+@pytest.mark.parametrize(
+    ("color_xml", "hex_"),
+    [
+        (f'<a:hslClr xmlns:a="{NS_A}" hue="0" sat="100000" lum="50000"/>', "FF0000"),
+        (f'<a:prstClr xmlns:a="{NS_A}" val="dkGreen"/>', "006400"),
+        (f'<a:prstClr xmlns:a="{NS_A}" val="medVioletRed"/>', "C71585"),
+    ],
+)
+def test_hsl_and_every_preset_colour_are_judged(tmp_path, color_xml, hex_):
+    """hslClr and the presets outside a 12-name table passed as 'all NBG colours'."""
+    result = check(deck(tmp_path, _run_color(2, color_xml)), "Colors")
+    assert result.status == "fail" and f"#{hex_}" in details(result)
+
+
+def test_an_hsl_white_is_an_nbg_colour(tmp_path):
+    white = f'<a:hslClr xmlns:a="{NS_A}" hue="0" sat="0" lum="100000"/>'
+    assert check(deck(tmp_path, _run_color(2, white)), "Colors").status == "pass"
+
+
+def test_an_unresolvable_colour_is_not_counted_as_examined(tmp_path, golden):
+    before = check(golden, "Colors").examined
+    bad = f'<a:schemeClr xmlns:a="{NS_A}" val="accent9"/>'
+    result = check(deck(tmp_path, _run_color(2, bad)), "Colors")
+    assert result.examined == before
+    assert result.not_examined == {"unresolvable colour reference": 1}
+
+
+def test_tint_and_shade_work_in_linear_light_as_powerpoint_does():
+    """PowerPoint draws Medium Style 2 Accent 1 on the Office theme's 4F81BD with bands
+    D0D8E8 (tint 40%) and E9EDF4 (tint 20%); a plain sRGB mix gives B9CDE5 and DCE6F2."""
+
+    def tinted(mod, val):
+        el = etree.fromstring(
+            f'<a:srgbClr xmlns:a="{NS_A}" val="4F81BD"><a:{mod} val="{val}"/></a:srgbClr>'
+        )
+        return nv._apply_modifiers("4F81BD", el)
+
+    assert tinted("tint", 40000) == "D0D8E8"
+    assert tinted("tint", 20000) == "E9EDF4"
+    assert tinted("shade", 100000) == "4F81BD"
+
+
+def _comic_minor(xml):
+    return re.sub(r'(<a:minorFont>\s*<a:latin typeface=")[^"]*"', r'\1Comic Sans MS"', xml)
+
+
+def _theme_font_run(prs):
+    """Slide 2 gains a run with no typeface of its own: it draws in the theme's minor font."""
+    shape = text(slide(prs, 2), 9.0, 5.3, 3.0, 0.3, "Delivered", size=12)
+    r_pr = shape._element.find(".//" + qn("a:rPr"))
+    r_pr.remove(r_pr.find(qn("a:latin")))
+
+
+def test_text_in_a_non_brand_theme_font_fails_fonts(tmp_path):
+    """VALIDATOR-CODE-4: only explicit a:latin was read, so text drawn in the theme's font,
+    how PowerPoint stores most text, never reached the error-level check."""
+    path = deck(tmp_path, _theme_font_run, patch={"ppt/theme/theme1.xml": _comic_minor})
+    result = check(path, "Fonts")
+    assert result.status == "fail" and "Comic Sans MS" in details(result)
+
+
+def test_text_in_the_nbg_theme_font_passes_fonts(tmp_path):
+    assert check(deck(tmp_path, _theme_font_run), "Fonts").status == "pass"
+
+
+def test_chart_text_with_no_font_of_its_own_is_in_the_theme_font(tmp_path):
+    def edit(prs):
+        chart = next(sh for sh in slide(prs, 3).shapes if sh.has_chart).chart
+        tx_pr = chart._chartSpace.find(qn("c:txPr"))
+        tx_pr.getparent().remove(tx_pr)
+
+    path = deck(tmp_path, edit, patch={"ppt/theme/theme1.xml": _comic_minor})
+    result = check(path, "Fonts")
+    assert result.status == "fail" and "Comic Sans MS" in details(result)
+    assert "chart" in details(result)
+
+
+def _covered(*, on_top=True, alpha=None):
+    """Slide 2 gains a text box and a filled card over the same spot, drawn after the text
+    (hiding it) or before it (a card behind its text)."""
+
+    def edit(prs):
+        sld = slide(prs, 2)
+
+        def card():
+            shape = box(sld, 9.0, 5.2, 3.0, 0.5, "003841")
+            if alpha is not None:
+                clr = shape._element.spPr.find(qn("a:solidFill"))[0]
+                etree.SubElement(clr, qn("a:alpha")).set("val", str(alpha))
+
+        if not on_top:
+            card()
+        text(sld, 9.1, 5.3, 2.8, 0.3, "Delivered in June", size=12, color="FFFFFF")
+        if on_top:
+            card()
+
+    return edit
+
+
+def test_text_under_an_opaque_shape_drawn_on_top_fails_text_fit(tmp_path):
+    """VALIDATOR-CODE-12: a filled shape later in z-order hides the text under it, and
+    every check passed it."""
+    result = check(deck(tmp_path, _covered()), "Text Fit")
+    assert result.status == "fail" and "hidden under" in details(result)
+
+
+def test_a_card_behind_its_text_hides_nothing(tmp_path):
+    assert check(deck(tmp_path, _covered(on_top=False)), "Text Fit").status == "pass"
+
+
+def test_a_see_through_shape_on_top_hides_nothing(tmp_path):
+    assert check(deck(tmp_path, _covered(alpha=30000)), "Text Fit").status == "pass"
+
+
 def test_bank_branding_reads_chart_categories(tmp_path):
     """E2E-SMOKE-9: a four-bank chart passed as 'examined nothing'."""
     result = check(_bank_case(tmp_path, colored=False), "Bank Branding")
@@ -1568,6 +2027,80 @@ def test_bank_branding_reads_chart_categories(tmp_path):
 def test_bank_branding_wants_one_logo_per_plotted_bank(tmp_path):
     result = check(_bank_case(tmp_path, logos=False), "Bank Branding")
     assert result.status == "fail" and "logo" in details(result)
+
+
+def _png(path, w, h):
+    from PIL import Image
+
+    Image.new("RGB", (w, h), (0, 123, 133)).save(path)
+    return path
+
+
+def test_any_picture_is_not_a_bank_logo(tmp_path):
+    """VALIDATOR-CODE-10: four icons beside a four-bank chart counted as four logos."""
+    icon = _png(tmp_path / "icon.png", 64, 64)
+    result = check(_bank_case(tmp_path, pictures=[(icon, "Growth icon")] * 4), "Bank Branding")
+    assert result.status == "fail"
+    assert "no logo for NBG, Eurobank, Alpha Bank, Piraeus Bank" in details(result)
+
+
+def test_two_logos_of_one_bank_leave_another_bank_without_one(tmp_path):
+    files = ("nbg.png", "eurobank.png", "alpha-bank.png", "alpha-bank.png")
+    pictures = [(BANK_LOGOS / f, "Bank logo") for f in files]
+    result = check(_bank_case(tmp_path, pictures=pictures), "Bank Branding")
+    assert result.status == "fail"
+    assert "no logo for Piraeus Bank" in details(result)
+
+
+def test_a_redrawn_logo_counts_when_it_names_its_bank_and_keeps_the_shape(tmp_path):
+    """Not the shipped file, so no hash match: the alt text names the bank and the image
+    keeps the asset's aspect ratio. A picture of another shape is not that logo."""
+    from PIL import Image
+
+    sharp = tmp_path / "eurobank-large.png"
+    with Image.open(BANK_LOGOS / "eurobank.png") as img:
+        img.convert("RGB").resize((256, 256)).save(sharp)
+    wide = _png(tmp_path / "eurobank-wide.png", 256, 128)
+
+    def pictures(eurobank):
+        return [
+            (BANK_LOGOS / "nbg.png", "NBG logo"),
+            (eurobank, "Eurobank logo"),
+            (BANK_LOGOS / "alpha-bank.png", "Alpha Bank logo"),
+            (BANK_LOGOS / "piraeus-bank.png", "Piraeus Bank logo"),
+        ]
+
+    assert check(_bank_case(tmp_path, pictures=pictures(sharp)), "Bank Branding").status == "pass"
+    result = check(_bank_case(tmp_path, pictures=pictures(wide)), "Bank Branding")
+    assert result.status == "fail" and "no logo for Eurobank" in details(result)
+
+
+def test_bank_names_come_from_tokens(tmp_path, monkeypatch):
+    """The builder and the gate read one list: a label alias added to tokens.yaml makes
+    a bank to the validator as well."""
+    real = nv.nbg_tokens.get
+
+    def get(path):
+        value = real(path)
+        if path == "banks":
+            value = {key: dict(bank) for key, bank in value.items()}
+            value["eurobank"]["label_aliases"] = ["EFG"]
+        return value
+
+    monkeypatch.setattr(nv.nbg_tokens, "get", get)
+    nv._bank_table.cache_clear()
+    try:
+        path = deck(
+            tmp_path,
+            lambda prs: _bank_slide(
+                prs, colored=True, logos=True, categories=("NBG", "EFG", "Sector", "Market")
+            ),
+            name="efg.pptx",
+        )
+        result = check(path, "Bank Branding")
+    finally:
+        nv._bank_table.cache_clear()
+    assert result.status == "pass" and result.examined == 1, result.message
 
 
 def test_bank_branding_ignores_a_source_footnote(tmp_path):
@@ -1743,6 +2276,60 @@ def test_exit_codes(tmp_path, golden):
     junk = tmp_path / "junk.pptx"
     junk.write_bytes(b"this is not a zip file")
     assert _run(junk).returncode == 2
+
+
+def _zip(path, members, compress_type=zipfile.ZIP_DEFLATED):
+    with zipfile.ZipFile(path, "w", compress_type) as zf:
+        for name, data in members.items():
+            zf.writestr(name, data)
+    return path
+
+
+def _xml_comment(n):
+    return b"<r><!--" + b"x" * n + b"--></r>"
+
+
+def test_the_xml_limits_are_the_ones_the_builder_shares():
+    assert nv.MAX_XML_PART_BYTES == 16 * 2**20
+    assert nv.MAX_XML_TOTAL_BYTES == 128 * 2**20
+
+
+def test_an_xml_part_over_16_mib_exits_2(tmp_path, golden, capsys):
+    """VALIDATOR-CODE-11: a 64 MiB XML part was allowed, and a parsed tree costs many
+    times its text (three such parts took 4.3 GB). Stored, so no ratio test fires."""
+    path = tmp_path / "big.pptx"
+    with zipfile.ZipFile(golden) as zf:
+        blobs = {n: zf.read(n) for n in zf.namelist()}
+    part = "ppt/slides/slide1.xml"
+    blobs[part] = blobs[part].replace(b"</p:sld>", b"<!--" + b"x" * (17 * 2**20) + b"--></p:sld>")
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for n, data in blobs.items():
+            zf.writestr(n, data, compress_type=zipfile.ZIP_STORED if n == part else None)
+    assert nv.main([str(path)]) == 2
+    assert "16 MB" in capsys.readouterr().err
+
+
+def test_every_parsed_part_gets_the_ratio_test_whatever_its_size_or_name(tmp_path):
+    """The ratio test ran only on .xml/.rels parts over 1 MiB."""
+    small = nv.Package(_zip(tmp_path / "small.zip", {"small.xml": _xml_comment(900 * 1024)}))
+    with pytest.raises(nv.DeckError, match="zip bomb"):
+        small.xml("small.xml")
+    odd = nv.Package(_zip(tmp_path / "odd.zip", {"slide.bin": _xml_comment(2 * 2**20)}))
+    with pytest.raises(nv.DeckError, match="zip bomb"):
+        odd.xml("slide.bin")
+    plain = nv.Package(_zip(tmp_path / "plain.zip", {"ok.xml": b"<r><a/><b/></r>"}))
+    assert plain.xml("ok.xml") is not None
+
+
+def test_parsed_xml_is_capped_across_the_package(tmp_path, monkeypatch):
+    monkeypatch.setattr(nv, "MAX_XML_TOTAL_BYTES", 2**20)
+    parts = {f"p{i}.xml": _xml_comment(400 * 1024) for i in range(3)}
+    pkg = nv.Package(_zip(tmp_path / "many.zip", parts, zipfile.ZIP_STORED))
+    pkg.xml("p0.xml")
+    pkg.xml("p1.xml")
+    pkg.xml("p0.xml")  # a part already parsed costs nothing more
+    with pytest.raises(nv.DeckError, match="of XML"):
+        pkg.xml("p2.xml")
 
 
 def test_a_missing_dependency_exits_2_not_1(tmp_path, golden):
@@ -2014,6 +2601,189 @@ def test_a_one_slide_view_plus_back_cover_passes_every_check_even_strict(tmp_pat
     bad = {r.name: r.details for r in found if r.status in ("fail", "warn")}
     assert not bad, bad
     assert nv.exit_code(found, strict=True) == 0
+
+
+# ------------------------------------------------- verification pass, round 2
+
+APOS = chr(0x2019)
+
+
+@pytest.mark.parametrize(
+    "as_of",
+    ["FY25", "FY 25", "1Q26", "Q2'26", f"Q2{APOS}26", "Q3 26", "9M25", "1H26", "H1 '26", "H2 26"],
+)
+def test_period_style_as_of_values_date_a_source(tmp_path, as_of):
+    """VALIDATOR-CODE-5: the schema accepts '9M25' or 'Q2'26' as as_of; the gate did not."""
+
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), f"Source: NBG MIS, {as_of}")
+
+    result = check(deck(tmp_path, edit), "Exhibit Sources")
+    assert result.status == "pass", result.details
+
+
+@pytest.mark.parametrize("as_of", ["H1", "FY", "Q3", "latest", "9M"])
+def test_a_period_without_a_year_still_dates_nothing(tmp_path, as_of):
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), f"Source: NBG MIS, {as_of}")
+
+    result = check(deck(tmp_path, edit), "Exhibit Sources")
+    assert result.status == "fail" and "no as-of date" in details(result)
+
+
+@pytest.mark.parametrize(
+    "words",
+    [
+        "Μια ευχάριστη έκπληξη στις πωλήσεις",  # pleasant
+        "Οι πελάτες είναι ευχαριστημένοι",  # satisfied
+        "Η ευχαρίστηση του πελάτη ανέβηκε",  # satisfaction
+    ],
+)
+def test_ordinary_greek_eucharist_words_are_not_a_thank_you(tmp_path, words):
+    """VALIDATOR-CODE-1: ευχαριστ\\w* matched 'pleasant' and 'satisfied' on a closing slide."""
+    result = check(deck(tmp_path, _add(5, 0.374, 3.0, 8.0, 0.4, words)), "Thank You Check")
+    assert result.status == "pass", result.details
+
+
+@pytest.mark.parametrize("words", ["Ευχαριστώ", "Σας ευχαριστούμε πολύ", "ΕΥΧΑΡΙΣΤΟΥΜΕ"])
+def test_greek_thanking_forms_are_a_thank_you(tmp_path, words):
+    result = check(deck(tmp_path, _add(5, 0.374, 3.0, 8.0, 0.6, words, size=28)), "Thank You Check")
+    assert result.status == "fail" and words in details(result)
+
+
+@pytest.mark.parametrize(
+    "ending",
+    ["στα €4,2 δισ.", "στα €120 εκατ.", "πάνω από 750 χιλ.", "στα €2,3 εκ."],
+)
+def test_a_greek_number_abbreviation_is_not_a_closing_period(tmp_path, ending):
+    """E2E-OUTPUT-09: 'δισ.' ends an abbreviation, not a sentence."""
+    result = check(
+        deck(tmp_path, _retitle(3, f"Τα έσοδα από κάρτες έφτασαν {ending}")), "Title Style"
+    )
+    assert result.status == "pass", result.details
+
+
+def test_no_shipped_rule_is_justified_by_one_persons_preference():
+    """SECURITY-PUBLIC-6: a public validator states design reasons, not whose taste
+    they were, and cites numbered Standards, not the removed Part 2."""
+    for path in (SCRIPT, HERE / "VALIDATOR.md"):
+        text = path.read_text(encoding="utf-8")
+        assert not re.search(r"\bthe owner\b|\bPart 2\b", text), path.name
+
+
+@pytest.mark.parametrize("fmt", ["text", "json"])
+def test_a_windows_code_page_console_does_not_crash_the_report(tmp_path, fmt):
+    """VALIDATOR-CODE-3: on cp1252 the ✓ and Greek text raised UnicodeEncodeError after
+    validating, and the crash exited 1, the 'a check failed' code, with empty JSON."""
+    path = deck(tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, "Εθνική Τράπεζα της Ελλάδος"))
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252:strict"}
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), str(path), "--format", fmt], capture_output=True, env=env
+    )
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")  # only a warning
+    out = proc.stdout.decode("utf-8")
+    if fmt == "json":
+        report = json.loads(out)
+        official = next(c for c in report["checks"] if c["name"] == "Official Name")
+        assert official["status"] == "warn" and "Εθνική" in official["details"][0]["message"]
+    else:
+        assert "Official Name" in out
+
+
+def test_a_failure_while_printing_exits_2_not_1(tmp_path, monkeypatch, golden):
+    """The report is part of running: if it cannot be written, the deck is unvalidated."""
+
+    def broken(*args, **kwargs):
+        raise OSError("stdout is gone")
+
+    monkeypatch.setattr(nv, "print_results", broken)
+    assert nv.main([str(golden)]) == 2
+
+
+def _style_colored_text(fill):
+    """An autoshape whose text takes its colour from p:style fontRef (lt1, white), with
+    no colour on the run: how PowerPoint writes text typed into a shape."""
+
+    def edit(prs):
+        shape = box(slide(prs, 2), 7.0, 5.2, 3.0, 0.6, fill)
+        run = shape.text_frame.paragraphs[0].add_run()
+        run.text = "Delivered on time"
+        run.font.size = Pt(14)
+        run.font.name = "Aptos"
+
+    return edit
+
+
+def test_shape_style_text_colour_outranks_the_deck_default(tmp_path):
+    """VALIDATOR-CODE-2: fontRef ranked below the deck default (black), so white text on
+    a teal shape failed and invisible white text on an off-white shape passed."""
+    teal = check(deck(tmp_path, _style_colored_text("007B85"), name="teal.pptx"), "Contrast")
+    assert teal.status == "pass", teal.details
+    light = check(deck(tmp_path, _style_colored_text("F5F8F6"), name="light.pptx"), "Contrast")
+    assert light.status == "fail" and "#FFFFFF on #F5F8F6" in details(light)
+
+
+def test_close_bar_values_on_an_automatic_axis_fail(tmp_path):
+    """E2E-OUTPUT-01: with no c:min, PowerPoint starts the axis for 2.9..3.3 near 2.7, so
+    every bar is truncated; the check passed because it only read an explicit minimum."""
+    result = check(deck(tmp_path, _replace_bar_chart(zero_based=False)), "Zero Baseline")
+    assert result.status == "fail"
+    assert "automatic" in details(result) and "Slide 3" in details(result)
+
+
+def test_spread_bar_values_on_an_automatic_axis_start_at_zero(tmp_path):
+    """PowerPoint puts zero on an automatic axis when the data spread is wide (the
+    lowest value under five sixths of the highest), so that chart is fine."""
+    spread = _replace_bar_chart(zero_based=False, series=(("Users (M)", (1.2, 2.0, 2.9, 3.3)),))
+    result = check(deck(tmp_path, spread), "Zero Baseline")
+    assert result.status == "pass", result.details
+
+
+def test_negative_bars_need_zero_at_the_top(tmp_path):
+    """All-negative close values truncate at the top; an explicit negative minimum is
+    fine (the old check failed any non-zero minimum, including -120 on negative data)."""
+    close = (("Net outflow (EUR M)", (-100, -104, -102, -98)),)
+    auto = check(
+        deck(tmp_path, _replace_bar_chart(zero_based=False, series=close), name="a.pptx"),
+        "Zero Baseline",
+    )
+    assert auto.status == "fail"
+
+    def floor_below(xml):
+        head, sep, tail = xml.partition("<c:valAx>")
+        return (
+            head
+            + sep
+            + re.sub(
+                r"<c:scaling/>",
+                '<c:scaling><c:max val="0"/><c:min val="-120"/></c:scaling>',
+                tail,
+                count=1,
+            )
+        )
+
+    path = deck(
+        tmp_path,
+        _replace_bar_chart(zero_based=False, series=close),
+        name="b.pptx",
+        patch={(lambda p: chart_part(p, b"Net outflow")): floor_below},
+    )
+    assert check(path, "Zero Baseline").status == "pass"
+
+
+def test_the_names_the_spec_checker_imports_stay_put():
+    """nbg_spec imports these so `check` and this gate agree; renaming one breaks it."""
+    assert nv.SOURCE_AS_OF.search("30 June 2026") and nv.SOURCE_AS_OF.search("9M25")
+    assert nv.SOURCE_PREFIX.match(nv.fold("ΠΗΓΗ: ΤτΕ"))
+    assert nv.ALT_TEXT_PLACEHOLDER.match("chart-4.png") and nv.ALT_TEXT_LEAD_IN.match("Image of x")
+    assert nv.alt_text_problem("Chart 3") and nv.alt_text_problem("Volume rose 12% in 2025") is None
+    assert nv.alt_text_problem("Same text", ["same TEXT"])
+    assert nv.dash_problem(f"a {EM_DASH} b") == ("error", "em dash")
+    assert nv.dash_problem("a -- b") == ("error", "em dash")
+    assert nv.dash_problem(f"a {EN_DASH} b") == ("warning", "spaced en dash used as a dash")
+    assert nv.dash_problem(f"2024{EN_DASH}2025") is None
 
 
 # ------------------ validator tests that lived in test_nbg_build.py, ported here
