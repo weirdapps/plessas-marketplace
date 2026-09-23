@@ -38,8 +38,9 @@ edit: keynote slides are flattened images and can only be regenerated from their
   suffix), work folder WORK = `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` with an `images/` folder
   (`mkdir -p`).
 - Output stem: `<folder>/<deck id>`, where folder is the one the user named, else `$HOME/Downloads`,
-  always as an absolute path. The
-  compositor writes `<stem>.pptx` and `<stem>.pdf`.
+  always as an absolute path. The compositor writes `<stem>.pptx`, `<stem>.pdf` and a
+  `<stem>_frames/` folder beside them: every slide as a full-size JPEG plus a hidden `.cache/` that
+  lets `--slides` re-render only what changed. The frames are working files, not a deliverable.
 - Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could
   not run (most often its environment could not be prepared): show the message and fix it printed
   and stop.
@@ -98,7 +99,9 @@ Read `<stem>.pdf` and check every slide:
 - The Greek wordmark is on every slide.
 - No slide carries more than one idea, and every slide has a speaker note.
 
-Report both output paths. To change a slide, edit the YAML and re-render; `--slides N,M`
+Report both output paths, and tell the user `<stem>_frames/` can be deleted once the talk is final:
+it holds full-size copies of every slide, photographs included, and only speeds up later
+re-renders. To change a slide, edit the YAML and re-render; `--slides N,M`
 re-renders those slides plus any slide whose spec, photograph or the compositor changed, and reuses
 every unchanged frame.
 

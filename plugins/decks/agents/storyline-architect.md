@@ -26,8 +26,10 @@ storyboard designer does) and you never render anything.
    `recommended_visual` or `bar_chart` still build, but the builder warns on each.
 2. One worked spec: `${CLAUDE_PLUGIN_ROOT}/examples/executive-summary.yaml`.
 3. The preferences file when one is given. It holds this user's defaults (cover subtitle wording,
-   title style, density, narrative framework). Follow it unless a numbered Standard in
-   `${CLAUDE_PLUGIN_ROOT}/shared/presentation-style-guide.md` says otherwise.
+   title style, density, narrative framework) and learned rows. Follow its Defaults and its
+   `medium` and `high` rows, and lean toward its `hint` rows where the choice is otherwise open,
+   unless a numbered Standard in `${CLAUDE_PLUGIN_ROOT}/shared/presentation-style-guide.md` says
+   otherwise.
 
 ## What you write
 

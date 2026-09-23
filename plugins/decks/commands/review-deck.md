@@ -18,9 +18,11 @@ User request: $ARGUMENTS
    review: say so and stop.
 
 2. **Find its spec**, so fixes can name slide ids: hash the file with `shasum -a 256 "<file>"`
-   (`sha256sum` where `shasum` is missing) and Grep the records in
-   `${CLAUDE_PLUGIN_DATA}/presentations/pending/` and `reviewed/` for that hex. A matching record's
-   `spec_path` is the spec; with no match, fixes name slide numbers.
+   (`sha256sum` where `shasum` is missing) and Grep the draft records in
+   `${CLAUDE_PLUGIN_DATA}/presentations/pending/` and `reviewed/` (every `*.yaml` except
+   `*.review.yaml`) for a `file_hash:` line holding that hex. A match means the deck is exactly as
+   the plugin shipped it, and that record's `spec_path` is the spec. With no match (the deck was
+   edited after it shipped, or the plugin never built it), fixes name slide numbers.
 
 3. **Review.** Render folder: `${CLAUDE_PLUGIN_DATA}/work/review_<timestamp>/`, the timestamp from
    `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. Dispatch `decks:presentation-qa` with `pptx: <file>`, the

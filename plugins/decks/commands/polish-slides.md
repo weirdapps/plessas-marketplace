@@ -34,13 +34,16 @@ User request: $ARGUMENTS
 1. **Find the deck.** It must be an existing `.pptx`. Pasted content with no deck is a new deck:
    run `/decks:create-presentation` with it instead.
 
-2. **Find its spec.** Every deck the plugin shipped has a record in
-   `${CLAUDE_PLUGIN_DATA}/presentations/pending/` or `reviewed/` (`*.yaml`, with `file_path`,
-   `file_hash` as `sha256:<hex>`, and `spec_path`). Hash the file with `shasum -a 256 "<file>"`
-   (`sha256sum` where `shasum` is missing) and Grep the records for that hex.
-   - A record matches: this is the deck exactly as shipped. Its `spec_path` is the spec, and the
-     folder holding it is OLD. Take the spec route (3a).
-   - No hash matches, but a record's `file_path` has this file's name: the user edited the deck
+2. **Find its spec.** Every deck the plugin shipped has a draft record in
+   `${CLAUDE_PLUGIN_DATA}/presentations/pending/` or `reviewed/`: a `*.yaml` file with `file_path`,
+   `file_hash` (`sha256:<hex>`, the deck as shipped) and `spec_path`. The `*.review.yaml` files next
+   to them are comparisons written by `/decks:presentation-review`; they are never draft records.
+   Hash the file with `shasum -a 256 "<file>"` (`sha256sum` where `shasum` is missing) and Grep the
+   draft records for a `file_hash:` line holding that hex.
+   - A draft record matches: this is the deck exactly as shipped. Its `spec_path` is the spec, and
+     the folder holding it is OLD. Take the spec route (3a).
+   - No draft record matches, but the hex appears in a `*.review.yaml` (the hash of a deck the user
+     finalised), or a draft record's `file_path` has this file's name: the user edited the deck
      after it shipped. Ask once: rebuild from that record's spec (their manual edits are lost), or
      polish the edited file as a deck without a spec (3b).
    - Neither: 3b.
@@ -48,8 +51,8 @@ User request: $ARGUMENTS
 3. **Review.** Create the polish's work folder, called WORK: a new deck id
    `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, the slug of the
    original name), then `mkdir -p "${CLAUDE_PLUGIN_DATA}/work/<new deck id>/images"`. On the spec
-   route, copy the spec and its files in first: `cp "<OLD>/deck.yaml" "<WORK>/"` and
-   `cp -R "<OLD>/images/." "<WORK>/images/"` (never OLD's old renders).
+   route, copy the spec and every file it references in first, keeping their relative paths:
+   `cp -R "<OLD>/." "<WORK>/"`, then `rm -rf "<WORK>/qa"` so no old render is reused.
    Dispatch `decks:presentation-qa` with `pptx: <the user's file>`, `deck: <WORK>/deck.yaml` on the
    spec route (else `none`) and `render: <WORK>/qa/0`. A PASS means there is nothing to polish: say
    so and stop.

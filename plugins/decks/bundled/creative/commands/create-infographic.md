@@ -37,10 +37,14 @@ User request: $ARGUMENTS
      `area_line` for a trend, `doughnut` for part of a whole), a `waterfall`, `kpi` tiles, `cards`,
      `process` steps or a `table`. Give it an action title that states the insight and its
      `content.source`.
-   - **Diagram**: a funnel, timeline, matrix, hierarchy or cycle that no slide type expresses.
-     Dispatch `decks:infographic-specialist` with the brief, `output: <WORK>/images/<slug>.svg` and
-     `size_in: [12.0, 4.8]`. The visual's slide is then an `image` slide pointing at
-     `images/<slug>.svg`, with the alt text the agent returned and an action title.
+   - **Diagram**: a funnel, timeline, matrix, hierarchy or cycle that no slide type expresses. The
+     visual's slide is an `image` slide with an action title, `path: images/<slug>.svg` and an alt
+     text from the brief. Before the file exists, run
+     `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check "<WORK>/deck.yaml" --format json` and read its
+     `image_slots` entry for that slide: write its `w` and `h`, rounded down to 2 decimals, as
+     `image.size_in`. Then dispatch `decks:infographic-specialist` with the brief,
+     `output: <WORK>/images/<slug>.svg` and that `size_in`, and replace the alt text with the one it
+     returns.
    - **Generated illustration**, only when the user explicitly asks for an AI-generated image and
      `Skill(manage-nano-banana:manage-nano-banana)` is available: decorative imagery only, never a
      number or a data label, on a white background with the teal palette from

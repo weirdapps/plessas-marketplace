@@ -32,7 +32,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json --stri
 ```
 
 - Exit 0: no check failed. Exit 1: at least one check failed; with `--strict` that includes a
-  check every deck must pass (Fonts, Font Sizes, Slide Titles) that examined nothing. Exit 2: the
+  check every deck must pass (Fonts, Font Sizes, Slide Titles) that examined nothing, or a SmartArt
+  diagram with no drawing part to read. Exit 2: the
   validator could not run (missing or corrupt file, not a `.pptx`, import error); Layer 1 is then
   unverified, the verdict is FAIL, and you say plainly that the validator did not execute (quote
   its stderr). Never report brand compliance you did not measure.
@@ -44,6 +45,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json --stri
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate --list-checks`.
 - Every `fail` becomes a fix, one per `details` entry (see Fixes). A `warn` does not fail Layer 1:
   list it as an advisory fix and weigh it in Layer 2 (an Action Titles warning informs criterion A).
+- A `not_examined` entry counts content a check could not read. `"SmartArt diagram with no drawing
+  part"` (under Colors, Fonts and Font Sizes) fails `--strict`: the fix is to re-save the deck in
+  PowerPoint, which writes that part, or to rebuild the slide as a `process` or `cards` slide.
 - **A check that examined nothing is not a pass.** A `skipped` check examined zero candidates:
   report every one as unverified. If the deck contains what it measures (a chart or table for
   Exhibit Sources, bank names in a chart for Bank Branding), the check did not look and the verdict

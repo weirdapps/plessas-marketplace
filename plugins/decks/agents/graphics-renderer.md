@@ -41,6 +41,10 @@ fix is a change to `deck.yaml` followed by a rebuild.
      slide. Keep the claim of every title and every number.
    - A layout the validator rejects: change the slide type or its fields (the schema lists the
      options).
+   - A diagram drawn for a bigger slot than it now has (check names both sizes): free the slot by
+     moving the slide's description into `notes` or dropping its takeaway. If that is not enough,
+     leave the drawing alone and return the slide id and the slot size check named, so the command
+     has it redrawn at that size. Never shrink or edit an SVG yourself.
    - Never change a figure, a source or an `as_of`, never invent a missing source, and never delete
      an exhibit to make a violation go away. Those go back to the command as open issues.
 
