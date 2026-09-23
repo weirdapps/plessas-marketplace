@@ -41,7 +41,7 @@ validator. If the brief is one of those, say so and draw nothing.
 - Every number and label comes from the brief. Add nothing. If the data contradicts the shape (a
   funnel stage larger than the stage before it), stop and say so instead of drawing.
 - Colour is never the only signal: every segment, stage or state carries its label in words.
-- No em dashes in any label (Standard #7).
+- No em dashes and no typed ` -- ` in any label (Standard #7).
 
 ## Return
 
@@ -50,5 +50,5 @@ Write the file to `output`, then return only:
 ```text
 diagram: <output>
 size_in: [<w>, <h>]
-alt_text: <one sentence stating what the diagram shows, with its key numbers>
+alt_text: <one sentence stating what the diagram shows, with its key numbers; not the slide title, not "Image of ...">
 ```

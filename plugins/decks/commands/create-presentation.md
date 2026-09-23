@@ -91,8 +91,9 @@ returns the read-through, open questions and the check result.
 Show the user the read-through (id, type, action title per slide) and every open question in one
 message, and wait for agreement. Skip the wait only if the user already said the outline is agreed
 or asked you not to stop; open questions are asked either way, because the builder refuses an
-exhibit without a source. Apply the answers to `deck.yaml` (fill `content.source`, remove the
-answered `x-open-questions`), then:
+exhibit without a source. Apply the answers to `deck.yaml` (fill `content.source`, with `as_of`
+as a full date or a separate four-digit year such as `Q2 2026` or `FY 2025`; remove the answered
+`x-open-questions`), then:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check "<WORK>/deck.yaml"
