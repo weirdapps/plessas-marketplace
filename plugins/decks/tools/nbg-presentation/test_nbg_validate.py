@@ -2614,7 +2614,23 @@ APOS = chr(0x2019)
 
 @pytest.mark.parametrize(
     "as_of",
-    ["FY25", "FY 25", "1Q26", "Q2'26", f"Q2{APOS}26", "Q3 26", "9M25", "1H26", "H1 '26", "H2 26"],
+    [
+        "FY25",
+        "FY 25",
+        "1Q26",
+        "Q2'26",
+        f"Q2{APOS}26",
+        "Q3 26",
+        "9M25",
+        "1H26",
+        "H1 '26",
+        "H2 26",
+        "FY2025",
+        "CY2026",
+        "3Q2025",
+        "9M2025",
+        "1H2025",
+    ],
 )
 def test_period_style_as_of_values_date_a_source(tmp_path, as_of):
     """VALIDATOR-CODE-5: the schema accepts '9M25' or 'Q2'26' as as_of; the gate did not."""
@@ -2878,6 +2894,18 @@ def test_print_results_returns_false_only_when_something_failed(capsys):
     assert nv.print_results([warning, empty], "x", color=False) is True
     assert nv.print_results([error], "x", color=False) is False
     assert "examined nothing" in capsys.readouterr().out
+
+
+def test_the_summary_says_examined_nothing_only_of_skipped_checks(capsys):
+    """'0 skipped (examined nothing)' read like a finding on a deck where every check looked."""
+    looked = nv.ValidationResult("P", True, "fine", examined=3)
+    empty = nv.ValidationResult("S", True, "nothing to look at", examined=0)
+    nv.print_results([looked], "x", color=False)
+    summary_line = next(ln for ln in capsys.readouterr().out.splitlines() if "Summary:" in ln)
+    assert summary_line.endswith("0 skipped"), summary_line
+    nv.print_results([looked, empty], "x", color=False)
+    summary_line = next(ln for ln in capsys.readouterr().out.splitlines() if "Summary:" in ln)
+    assert summary_line.endswith("1 skipped (examined nothing)"), summary_line
 
 
 def test_font_sizes_report_the_sizes_used(golden):
