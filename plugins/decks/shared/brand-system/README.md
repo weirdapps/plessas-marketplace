@@ -30,7 +30,7 @@ aspect_ratio: 16:9
 | Dark Text | `202020` | Body text, and dark text on any light fill (Standard #22) |
 | Caption Grey | `5A5F5A` | Captions, sources, footnotes, TOC descriptions, table notes |
 | Muted Grey | `939793` | Page numbers, cover date, process arrows; never body or label text |
-| Light Grey | `BEC1BE` | Dividers, card borders, axis lines, hairlines |
+| Light Grey | `BEC1BE` | Dividers, axis lines, hairlines |
 | White | `FFFFFF` | **ALWAYS** for slide backgrounds |
 | Off-white | `F5F8F6` | Default card and KPI-card fill |
 

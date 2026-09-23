@@ -84,7 +84,7 @@ the specified values; the per-element floors they must clear live in
 
 ### Metric Cards (KPIs): NBG executive signature pattern
 
-Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill, 1pt `#BEC1BE` border, tight corners). Observed 30+ times across reference decks.
+Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill, no border, no shadow, tight corners). Observed 30+ times across reference decks.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|

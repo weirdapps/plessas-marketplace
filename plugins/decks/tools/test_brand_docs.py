@@ -350,12 +350,16 @@ def test_retired_colour_table_matches_the_tokens_both_ways():
 
 
 def test_card_backgrounds_quote_the_component_tokens():
+    """Cards are their fill alone; only the recommended option carries a border
+    (lead's decision, 2026-09-23: KPI tiles and plain cards have no border)."""
     card = tok("components.card")
     heading = "Card Backgrounds"
     metric = row("colors.md", heading, "Metric card (KPI tile)")
     assert hexes(metric["Background"]) == [hex_of(card["fill"])]
-    assert hexes(metric["Border"]) == [hex_of(card["metric_border"]["color"])]
-    assert num(metric["Border"]) == card["metric_border"]["width_pt"]
+    for r in table_rows("colors.md", heading):
+        if clean(r["Card Type"]) != "Recommended-option card":
+            assert clean(r["Border"]) == "None", r
+    assert not card["shadow"]
     assert hexes(row("colors.md", heading, "Highlight card")["Background"]) == [
         hex_of(card["highlight_fill"])
     ]
