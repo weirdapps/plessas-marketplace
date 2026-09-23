@@ -350,6 +350,49 @@ def test_custom_elements_must_stay_inside_the_body_area(tmp_path):
     assert paths == ["slides[1].elements[1]", "slides[1].elements[2]"]
 
 
+def test_custom_elements_must_clear_the_real_caption_and_takeaway_strip(tmp_path):
+    """E2E-OUTPUT-04: check measured elements against the fixed 1.3 and 6.5 in lines,
+    so the caption under the title and the takeaway strip overprinted elements it had
+    accepted. The body a custom slide really has starts under its caption and ends
+    above its takeaway strip and source line."""
+    spec = deck(
+        [
+            {
+                "type": "custom",
+                "content": {
+                    "title": "Positioned under a caption",
+                    "description": "A caption under the title takes the top of the body",
+                    "takeaway": "And a takeaway strip takes the bottom",
+                },
+                "elements": [
+                    {
+                        "kind": "text",
+                        "text": "under the caption",
+                        "x": 0.374,
+                        "y": 1.3,
+                        "w": 4,
+                        "h": 0.5,
+                    },
+                    {"kind": "text", "text": "fine", "x": 0.374, "y": 2.5, "w": 4, "h": 0.5},
+                    {
+                        "kind": "text",
+                        "text": "under the strip",
+                        "x": 0.374,
+                        "y": 5.9,
+                        "w": 4,
+                        "h": 0.5,
+                    },
+                ],
+            }
+        ]
+    )
+    errors = check(tmp_path, spec).errors
+    assert [i.path for i in errors] == ["slides[1].elements[0]", "slides[1].elements[2]"], [
+        i.format() for i in errors
+    ]
+    assert "caption" in errors[0].message and "takeaway" in errors[1].message
+
+
 def test_a_colour_must_be_a_token_name(tmp_path):
     spec = deck(
         [

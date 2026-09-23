@@ -1841,8 +1841,26 @@ def _element(deck: Deck, slide: Any, el: dict[str, Any], rel: str) -> None:
 def render_custom(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
-    draw_header(deck, slide, content)
+    top = draw_header(deck, slide, content)
+    bottom = body_bottom(content)
+    above = "the title and its caption" if content.get("description") else "the title"
+    below = "the takeaway strip" if content.get("takeaway") else "the source line"
+    slack = 0.02  # rounding in the header geometry; an overprint is tenths of an inch
     for e, el in enumerate(spec["elements"]):
+        # E2E-OUTPUT-04: the body a custom slide really has, not the fixed 1.3-6.5 in.
+        y, h = float(el["y"]), float(el["h"])
+        if y < top - slack:
+            deck.error(
+                f"elements[{e}]",
+                f"the element starts at y {y:.2f} in, under {above}, which end at {top:.2f} in",
+                f"move it to y {top:.2f} or lower",
+            )
+        if y + h > bottom + slack:
+            deck.error(
+                f"elements[{e}]",
+                f"the element ends at {y + h:.2f} in, over {below}, which starts at {bottom:.2f} in",
+                f"end it by {bottom:.2f} in",
+            )
         _element(deck, slide, el, f"elements[{e}]")
     draw_footer(deck, slide, content)
     return slide
