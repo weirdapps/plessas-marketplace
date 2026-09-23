@@ -1,122 +1,115 @@
 ---
-description: "Create a dark full-bleed NBG keynote for a stage talk (Standard #21)"
-argument-hint: "[talk topic, audience, and venue]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, Skill(manage-nano-banana)
+description: "Create a dark full-bleed NBG keynote for a talk delivered live from a stage (Standard #21); not for board, committee or working decks"
+argument-hint: "[talk topic, audience and venue]"
+allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, Skill(manage-nano-banana:manage-nano-banana)
 ---
 
 <objective>
-Build an NBG **keynote**: a dark, cinematic, full-bleed deck for a talk delivered live from a stage.
+Build an NBG keynote: a dark, cinematic, full-bleed deck for a talk delivered live from a stage.
 
 User request: $ARGUMENTS
 </objective>
 
 <critical>
-This is NOT the command for normal decks. Keynote mode is **Standard #21**, the single sanctioned
-exception to the light-mode NBG format, and it is fenced. Check the entry criteria FIRST. If the
-deck does not qualify, stop and use `/create-presentation` instead.
+This is NOT the command for normal decks. Keynote mode is Standard #21, the single sanctioned
+exception to the light NBG format, and it is fenced. Check the entry criteria first. If the deck
+does not qualify, stop and use `/decks:create-presentation`.
 </critical>
 
 <process>
 
-### Step 1: Gate on the entry criteria (do this before anything else)
+### 1. Gate on the entry criteria
 
-Read `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/keynote.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/keynote.md`. All four must hold:
 
-All four must hold:
-
-1. Audience is **external or bank-wide**: conference, town hall, industry panel. NOT a committee,
+1. The audience is external or bank-wide: conference, town hall, industry panel. Not a committee,
    board or ExCo working session.
-2. **Delivered live from a stage by a speaker.** Not read alone, not circulated as a document.
-3. **Projected large, in a darkened room.**
-4. The slides are the **backdrop, not the record**: the argument lives in the speaker notes.
+2. It is delivered live from a stage by a speaker, not read alone or circulated as a document.
+3. It is projected large, in a darkened room.
+4. The slides are the backdrop, not the record: the argument lives in the speaker notes.
 
-If any of these is unclear from `$ARGUMENTS`, ask. If any fails, say so plainly and switch to
-`/create-presentation`. Never for ExCo, board, credit committee, or a deck someone else will edit:
-keynote slides are flattened images and can only be regenerated from their YAML.
+If any is unclear from the request, ask. If any fails, say so plainly and switch to
+`/decks:create-presentation`. Never for ExCo, board, credit committee or a deck someone else will
+edit: keynote slides are flattened images and can only be regenerated from their YAML.
 
-### Step 2: Storyline
+### 2. Set up
 
-Dispatch `decks:storyline-architect` with the brief, telling it this is a **spoken keynote**:
+- Deck id `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`; no version
+  suffix), work folder WORK = `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` with an `images/` folder
+  (`mkdir -p`).
+- Output stem: `<folder>/<deck id>`, where folder is the one the user named, else `$HOME/Downloads`,
+  always as an absolute path. The
+  compositor writes `<stem>.pptx` and `<stem>.pdf`.
+- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could
+  not run (most often its environment could not be prepared): show the message and fix it printed
+  and stop.
 
-- Roughly 12-18 slides. One idea per slide, nothing more.
-- The arc: cover → the consensus → the challenger or the evidence → the complication → the reality
-  → the turn (divider) → two or three moves → the moat or the payoff → closing line → back cover.
-- Every slide needs a **spoken note**, and the note carries the argument. The slide carries at most
-  one sentence or one number.
-- Action titles throughout. No bullets except on a single `points` slide.
-- No em-dashes. No invented NBG names or figures; every number needs a source.
+### 3. Storyline
 
-### Step 3: Choose an archetype per slide
+Dispatch `decks:storyline-architect` with `mode: keynote`, `work: <WORK>`, the brief, and the talk's
+language. It writes and validates `<WORK>/keynote.yaml` and returns a photograph suggestion per
+slide and any notes it could not write from the brief. If the Agent tool is unavailable or denied,
+Read `${CLAUDE_PLUGIN_ROOT}/agents/storyline-architect.md` and do its keynote mode yourself, reading
+any `CLAUDE_PLUGIN_ROOT` placeholder in it as this plugin's folder.
 
-Map each message to one of the nine archetypes in `keynote.md`:
+### 4. Imagery
 
-| The slide needs to say | Archetype |
-|---|---|
-| who is speaking, about what | `cover` |
-| one sentence and nothing else | `statement` |
-| one number carries the slide | `hero-stat` |
-| two numbers in tension | `duo-stat` |
-| a comparison across categories | `bars` (max 2 in the deck, max 7 bars) |
-| three things a regulator or market did | `points` |
-| the talk turns here | `divider` |
-| the line to repeat afterwards | `closing` |
-| the end | `back` |
+Keynote photography is cinematic, dark and blue-teal graded: night cityscapes, architecture, close
+detail, interiors with practical lights. Never stock-smiling people, never bright daylight. For each
+slide choose one:
 
-### Step 4: Imagery
+1. A photograph the user already has.
+2. No photograph: leave `image` out and the compositor paints the house gradient.
+3. A generated frame through `Skill(manage-nano-banana:manage-nano-banana)`, when that skill is
+   available: dark, blue-teal graded, cinematic, 16:9, with negative space on the side the text
+   occupies.
 
-Keynote photography is cinematic, dark, and blue-teal graded: night cityscapes, architecture,
-close detail, interiors with practical lights. Never stock-smiling people, never bright daylight.
+Copy every image into `<WORK>/images/`, set `meta.assets: <WORK>/images` and give each slide
+`image: <file name>` and a `scrim` on the side the text sits. While some photographs are still to
+come, validate and preview the layout with `--placeholder-images` (a flat dark stand-in under the
+same scrim); never build the final deck with it.
 
-Source it, in this order:
-1. Ask the user for photographs they already have.
-2. Generate with `Skill(manage-nano-banana)`: prompt for a dark, blue-teal-graded, cinematic frame
-   at 16:9 with negative space on the side the text will occupy.
+### 5. Finish the YAML
 
-Save images to a working directory under `~/Downloads`, never in the repo.
+Set `meta.output` to the output stem and `meta.language: el` for a Greek talk (kickers then drop
+the tonos in capitals). Quote any string containing a comma or a colon: inline flow maps split on
+commas.
 
-### Step 5: Write the YAML
-
-Start from `${CLAUDE_PLUGIN_ROOT}/tools/nbg-keynote/example.yaml`. Set `meta.language: el` for a
-Greek talk so the kickers drop the tonos in all-caps. Set `meta.output` to
-`~/Downloads/YYYYMMDDHHMM_<talk_name>`. Get the timestamp with
-`TZ='Europe/Athens' date '+%Y%m%d%H%M'`, never guess it, and never add a version suffix.
-
-Quote any string containing a comma or a colon. Inline flow maps split on commas.
-
-### Step 6: Validate, then build
+### 6. Validate, then build
 
 ```bash
-cd ${CLAUDE_PLUGIN_ROOT}/tools/nbg-keynote
-./.venv/bin/python3 nbg_keynote.py <spec>.yaml --validate   # fails on missing notes, >2 charts, bad images
-./.venv/bin/python3 nbg_keynote.py <spec>.yaml
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" keynote "<WORK>/keynote.yaml" --validate
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" keynote "<WORK>/keynote.yaml"
 ```
 
-The venv is built by `installers/install.sh`, the same way `tools/nbg-presentation/.venv` is. If
-`.venv/bin/python3` is missing, this plugin was not installed through the installer. Say so and stop.
-Do NOT fall back to a bare `python3`: it will not have Pillow, numpy, python-pptx or PyYAML, and on a
-PEP 668 system `pip install -r requirements.txt` fails outright with `externally-managed-environment`.
+`--validate` lays out every slide with the real fonts and fails on missing notes, more than two
+charts, missing or unreadable images, text past the right gutter or into the footer row, a cover
+title over two lines, overlapping text blocks and negative bar values; fix the YAML until it
+passes. It prints the font file behind each weight: if it fell back to Calibri or DejaVu, tell the
+user that Aptos is missing before you build. Take contrast warnings seriously on every text
+element: a photograph is too bright under it, so swap the image or move the text with `align`.
 
-The compositor writes both a `.pptx` and a `.pdf`. **Take contrast warnings seriously**: they mean
-a photograph is too bright under a text block; swap the image or move the text with `align`.
+### 7. Review
 
-### Step 7: Review
-
-Read the generated PDF back and check every slide:
+Read `<stem>.pdf` and check every slide:
 
 - Text sits clear of the imagery and reads at a glance.
-- Kickers, titles and footers align to the 155px gutter.
+- Kickers, titles and footers align to the 155 px gutter.
 - The Greek wordmark is on every slide.
-- No slide carries more than one idea.
-- Every slide has a speaker note.
+- No slide carries more than one idea, and every slide has a speaker note.
 
-Report both output paths. Offer to re-render individual slides with `--slides N`.
+Report both output paths. To change a slide, edit the YAML and re-render; `--slides N,M`
+re-renders those slides plus any slide whose spec, photograph or the compositor changed, and reuses
+every unchanged frame.
 
 </process>
 
 <constraints>
-- Read `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/keynote.md` before writing any YAML.
-- Never edit the generated PPTX by hand; change the YAML and re-render.
-- Never commit photographs or generated decks to the repo. Everything goes to `~/Downloads`.
+- Never edit the generated PPTX by hand; change the YAML and re-render. The
+  `document-skills:pptx` skill is not used here.
+- Never save photographs or generated decks inside a repository; they live in WORK and the output
+  folder.
 - Greek wordmark always, even on an English talk. There is no English NBG logo.
-- No em-dashes, no invented NBG names, no version suffixes in filenames.
+- No em dashes, no invented NBG names or figures (every number needs a source), no version
+  suffixes in file names.
 </constraints>

@@ -1,7 +1,7 @@
 ---
-description: "Extract key insights from an Excel workbook and prepare a deck brief for the decks plugin."
+description: "Turn an Excel workbook's key numbers into a deck spec (deck.yaml) and hand it to the decks plugin, which confirms the outline and builds the slides."
 argument-hint: "<file> [audience]"
-allowed-tools: Read, Write, Bash, Agent, Skill(document-skills:xlsx)
+allowed-tools: Read, Write, Bash, Agent, Skill(document-skills:xlsx), Skill(decks:create-presentation)
 ---
 
 # Excel to Deck
@@ -21,18 +21,41 @@ Bridge from data analysis to presentation creation.
    - Any anomalies or risks
    - A recommended narrative arc (what story does this data tell?)
 
-3. **Prepare a content brief** for the `decks` plugin:
-   - Title suggestion
-   - 5-8 slide outline with one key message per slide
-   - Data points for each slide (exact numbers, not vague)
-   - Chart recommendations per slide (bar, line, doughnut, never pie)
+3. **Find the provenance.** Every slide that shows numbers needs a source: the workbook's file name and sheet, and the period the figures describe (`as_of`, e.g. `YTD August 2026`). Take the period from the workbook itself (sheet names, headers, a date cell). If the workbook does not state it, ask the user; never guess one.
 
-4. **Write the brief to a file**: save it to `~/Downloads/YYYYMMDDHHMM_deck_brief_<workbook-slug>.md`, taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. Use these exact section headings so the brief is machine-readable: `## Title`, `## Audience`, `## Slide outline`, `## Data points`, `## Chart recommendations`.
+4. **Write the deck spec** to `$HOME/Downloads/YYYYMMDDHHMM_deck_spec_<workbook-slug>.yaml` (as an absolute path), taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. It is the decks plugin's input format (`deck.schema.json` in that plugin), in this shape:
 
-5. **Hand the path to the user**: this command does NOT invoke the `decks` plugin, and no automatic handoff exists. Print the next command for the user to run, quoting the file path, for example:
+   ```yaml
+   presentation:
+     title: "<deck title>"
+     audience: "<audience>"
+     purpose: "<why this deck exists>"
+     main_recommendation: "<the one-sentence answer>"
+     language: en            # el for a Greek deck
+   slides:
+     - {id: S01, type: cover, key_message: "<...>", content: {title: "<60 chars max>"}}
+     - id: S02
+       type: chart           # chart | table | kpi | content
+       key_message: "<the one thing this slide says>"
+       so_what: "<why the audience cares>"
+       content:
+         title: "<action title: a full sentence with the number, 80 chars max>"
+         source: {name: "<workbook.xlsx, sheet Summary>", as_of: "<period>"}
+       chart:
+         type: bar           # bar | bar_horizontal | bar_stacked | area_line (trends) | doughnut (never pie)
+         data:
+           categories: ["Issuing", "Acquiring"]
+           series: [{name: "YTD actual", values: [5.42, 4.71]}]
+         unit: "EUR m"
+     - {id: S09, type: back_cover}
+   ```
+
+   A `table` slide carries `table: {headers: [...], rows: [[...], ...]}` (14 rows at most), a `kpi` slide `kpis: [{value: "5.4m", label: "YTD issuing revenue"}]` (4 at most), a `content` slide `content.points` (3 to 6). Use 5-8 slides, one message each, exact numbers only. The spec carries no colours or fonts: the decks builder applies the brand.
+
+5. **Hand off to decks.** If `/decks:create-presentation` is available (the `decks` plugin is installed), invoke it through the Skill tool with the spec's absolute path and the audience. It checks the spec, confirms the outline with the user and builds the deck. If it is not available, tell the user to install the `decks` plugin and print the command to run once it is, quoting the path:
 
    ```
-   /create-presentation from the brief at ~/Downloads/202603211430_deck_brief_q1_revenue.md
+   /decks:create-presentation ~/Downloads/202603211430_deck_spec_q1_revenue.yaml
    ```
 
 ## Audience-aware formatting
@@ -44,5 +67,4 @@ Bridge from data analysis to presentation creation.
 ## NBG conventions
 
 - Currency: EUR
-- Chart colours: NBG palette (see the `decks` plugin's `shared/brand-system/`, present only when `decks` is installed)
-- Font: Aptos throughout
+- Language: the audience's language (`language: el` for Greek); pre-formatted KPI values in a Greek deck use the decimal comma (`5,4`)
