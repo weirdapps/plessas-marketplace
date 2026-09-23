@@ -347,6 +347,29 @@ def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     )
 
 
+def test_x_keys_carry_pipeline_notes_through_check_and_build_untouched(tmp_path, monkeypatch):
+    """The pipeline keeps its working notes in the spec: top-level x-open-questions,
+    slide-level x-assets. Neither is an error, a warning, or anything drawn."""
+    import zipfile
+
+    from testkit import passing_validator
+
+    spec = deck(
+        [{**_content(), "x-assets": {"icons": ["icons/money/Coins.png"], "why": "n/a"}}],
+        title="Notes travel",
+        **{"x-owner-notes": "internal"},
+    )
+    spec["x-open-questions"] = ["Is the Q2 figure final?"]
+    report = check(tmp_path, spec)
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+    passing_validator(monkeypatch, nbg_build)
+    out = tmp_path / "x.pptx"
+    nbg_build.build_presentation(write_spec(tmp_path, spec, "x.yaml"), out)
+    with zipfile.ZipFile(out) as zf:
+        xml = b"".join(zf.read(n) for n in zf.namelist() if n.startswith("ppt/slides/"))
+    assert b"Coins" not in xml and b"Q2 figure" not in xml and b"internal" not in xml
+
+
 def test_an_em_dash_in_slide_text_is_a_warning(tmp_path):
     report = check(tmp_path, deck([_content("Growth " + chr(0x2014) + " all of it")]))
     assert any("em dash" in i.message for i in report.warnings)
@@ -355,19 +378,27 @@ def test_an_em_dash_in_slide_text_is_a_warning(tmp_path):
 # ---------------------------------------------------------------- dry-run layout
 
 
-def test_a_cover_title_that_cannot_fit_is_an_error(tmp_path):
+def test_a_cover_title_or_subtitle_that_wraps_is_an_error(tmp_path):
+    """Standard #13 keeps each on one line, and the validator's Text Fit fails a
+    wrapped one: a warning here let check pass a deck the build then rejected."""
     long_title = "An extremely long cover title that no presenter should ever need"
+    long_subtitle = (
+        "Retail Banking | Digital Channels | Cards | Payments | Direct Banking | Fraud Prevention"
+        " | Controls"
+    )
     report = check(
         tmp_path,
         {
             "slides": [
-                {"type": "cover", "content": {"title": long_title[:60]}},
+                {"type": "cover", "content": {"title": long_title[:60], "subtitle": long_subtitle}},
                 {"type": "back_cover"},
             ]
         },
     )
-    wrapped = [i for i in report.warnings if i.path == "slides[0].content.title"]
-    assert wrapped and "Standard #13" in wrapped[0].fix
+    assert not report.ok
+    for field in ("title", "subtitle"):
+        wrapped = [i for i in report.errors if i.path == f"slides[0].content.{field}"]
+        assert wrapped and "Standard #13" in wrapped[0].fix, field
 
 
 def test_bullets_that_cannot_fit_at_14pt_are_refused(tmp_path):

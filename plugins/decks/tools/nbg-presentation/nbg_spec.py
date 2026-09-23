@@ -30,6 +30,7 @@ import json
 import math
 import re
 import sys
+import unicodedata
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -1048,6 +1049,83 @@ def _series_issues(series: list[Any], categories: list[Any], path: str, issues: 
             issues.error(where, "contains inf or nan", "use a real number or null")
 
 
+# ---------------------------------------------------------------- peer banks
+
+
+def fold(text: Any) -> str:
+    """Lower case with the accents removed (final sigma folds to sigma): how names match."""
+    decomposed = unicodedata.normalize("NFD", str(text))
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch)).casefold()
+
+
+@lru_cache(maxsize=1)
+def _bank_patterns() -> dict[str, re.Pattern[str]]:
+    patterns = {}
+    for key, bank in nbg_tokens.get("banks").items():
+        names = sorted((fold(a) for a in bank["aliases"]), key=len, reverse=True)
+        patterns[key] = re.compile("|".join(rf"\b{re.escape(n)}\b" for n in names))
+    return patterns
+
+
+def bank_of(label: Any) -> str | None:
+    """The tokens.yaml bank a chart label names, or None. A label naming two banks is
+    None too: it is a comparison written in words, not one bank's bar."""
+    folded = fold(label)
+    hits = [key for key, pattern in _bank_patterns().items() if pattern.search(folded)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def bank_plan(chart: Any) -> tuple[str, list[str | None]] | None:
+    """("series", the bank per series) or ("categories", the bank per category) when a
+    chart compares two or more banks, else None. Series win: a chart whose series are
+    banks is a comparison whatever its categories are."""
+    if not isinstance(chart, dict) or not isinstance(chart.get("data"), dict):
+        return None
+    series = chart["data"].get("series") or []
+    by_series = [bank_of(s.get("name", "")) if isinstance(s, dict) else None for s in series]
+    if len({b for b in by_series if b}) >= 2:
+        return "series", by_series
+    by_category = [bank_of(c) for c in chart["data"].get("categories") or []]
+    if len({b for b in by_category if b}) >= 2:
+        return "categories", by_category
+    return None
+
+
+BANK_CATEGORY_TYPES = ("bar", "bar_horizontal", "doughnut")
+
+
+def _bank_issues(chart: dict[str, Any], path: str, issues: Issues) -> None:
+    plan = bank_plan(chart)
+    if plan is None:
+        return
+    mode, _ = plan
+    series = chart["data"].get("series") or []
+    if mode == "categories" and len(series) > 1:
+        issues.error(
+            f"{path}.data.series",
+            f"banks as categories take one series, not {len(series)}: each bank is one colour",
+            "keep one series, or make the banks the series and the periods the categories",
+        )
+    elif mode == "categories" and chart.get("type") not in BANK_CATEGORY_TYPES:
+        issues.error(
+            f"{path}.type",
+            f"a {chart.get('type')} chart cannot compare banks across its categories",
+            "use bar or bar_horizontal (or doughnut for shares), or make the banks the series",
+        )
+    if chart.get("bank_logos") is False:
+        issues.warning(
+            f"{path}.bank_logos",
+            "the bank logos are switched off on a peer comparison",
+            "remove bank_logos: false; the validator's Bank Branding check wants one logo per bank",
+        )
+    if chart.get("highlight_category") is not None:
+        issues.warning(
+            f"{path}.highlight_category",
+            "ignored on a bank comparison: each bank takes its brand colour",
+            "remove highlight_category",
+        )
+
+
 def _chart_issues(chart: Any, path: str, issues: Issues) -> None:
     if not isinstance(chart, dict) or not isinstance(chart.get("data"), dict):
         return
@@ -1091,6 +1169,7 @@ def _chart_issues(chart: Any, path: str, issues: Issues) -> None:
             f"'{highlight}' is not one of the categories",
             f"use one of: {', '.join(str(c) for c in categories)}",
         )
+    _bank_issues(chart, path, issues)
 
 
 def _table_issues(table: Any, path: str, issues: Issues) -> None:

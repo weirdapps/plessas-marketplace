@@ -105,29 +105,41 @@ def _cloud_font_dirs(family: str) -> list[Path]:
     return [r / family for r in roots]
 
 
-def find_font_file(name: str) -> Path | None:
-    """A font file by name, in font_dirs() and one level of their subfolders.
-
-    Linux files fonts by family (/usr/share/fonts/truetype/dejavu/...), so a flat
-    lookup could never reach them; macOS and Windows keep them flat, so a direct hit
-    is tried first everywhere.
-    """
-    dirs = font_dirs()
-    for d in dirs:
-        p = d / name
-        if p.is_file():
-            return p
-    for d in dirs:
-        if not d.is_dir():
-            continue
+def _files_below(root: Path, depth: int) -> list[Path]:
+    """The files exactly `depth` folder levels below root; nothing where unreadable."""
+    level = [root]
+    for _ in range(depth):
+        below: list[Path] = []
+        for d in level:
+            try:
+                below += sorted(s for s in d.iterdir() if s.is_dir())
+            except OSError:
+                continue
+        level = below
+    files: list[Path] = []
+    for d in level:
         try:
-            subs = sorted(s for s in d.iterdir() if s.is_dir())
+            files += sorted(f for f in d.iterdir() if f.is_file())
         except OSError:
             continue
-        for sub in subs:
-            p = sub / name
-            if p.is_file():
-                return p
+    return files
+
+
+def find_font_file(name: str) -> Path | None:
+    """A font file by name, ignoring case, in font_dirs() and two levels below them.
+
+    Debian and Ubuntu file fonts by format and family (/usr/share/fonts/truetype/
+    dejavu/), two levels down, and Windows and Office spell the same file aptos.ttf or
+    Aptos.ttf, which a case-sensitive Linux file system tells apart. Every folder's
+    flat files come first, so the macOS and Windows folders hit before any nesting.
+    """
+    want = name.casefold()
+    dirs = font_dirs()
+    for depth in range(3):
+        for d in dirs:
+            for p in _files_below(d, depth):
+                if p.name.casefold() == want:
+                    return p
     return None
 
 

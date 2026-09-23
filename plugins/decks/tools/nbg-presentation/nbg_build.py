@@ -201,6 +201,7 @@ class Deck:
     index: int = 0
     slide_spec: dict[str, Any] = field(default_factory=dict)
     warnings: list[Issue] = field(default_factory=list)
+    errors: list[Issue] = field(default_factory=list)
     require_title: bool = True
 
     def path(self, rel: str = "") -> str:
@@ -222,6 +223,10 @@ class Deck:
 
     def warn(self, rel: str, message: str, fix: str = "") -> None:
         self.warnings.append(self.issue("warning", rel, message, fix))
+
+    def error(self, rel: str, message: str, fix: str = "") -> None:
+        """An error that leaves the slide drawable, so the rest of it is still checked."""
+        self.errors.append(self.issue("error", rel, message, fix))
 
     def fit(self, rel: str, message: str, fix: str) -> FitError:
         return FitError(self.path(rel), message, fix)
@@ -302,6 +307,12 @@ def lines_of(text: str, width: float, s: Style) -> list[str]:
 
 def text_height(n_lines: int, s: Style, spacing: float = 1.0) -> float:
     return float(n_lines * metrics().line_height(s.size, spacing))
+
+
+def _chars_that_fit(text: str, width: float, s: Style) -> int:
+    """Roughly how many of text's characters fit on one line, for a fix message."""
+    measured = metrics().width(text, s.size, s.bold)
+    return max(1, int(len(text) * width * FIT / measured)) if measured else len(text)
 
 
 def _strip_style(shape: Any) -> None:
@@ -728,6 +739,30 @@ def _image_stream(deck: Deck, raw: str, width_in: float, rel: str) -> tuple[Any,
     return stream, size
 
 
+def _tinted(deck: Deck, stream: Any, colour: str, rel: str) -> Any:
+    """The icon's shape in one colour: every pixel `colour`, the original alpha kept.
+    Only a picture with transparency has a shape to keep; an opaque one is left as is."""
+    from PIL import Image
+
+    with Image.open(stream) as img:
+        rgba = img.convert("RGBA")
+    alpha = rgba.getchannel("A")
+    if alpha.getextrema()[0] == 255:
+        deck.warn(
+            rel,
+            "the icon has no transparent background, so it cannot be drawn white",
+            "use an SVG or a transparent PNG",
+        )
+        stream.seek(0)
+        return stream
+    solid = Image.new("RGBA", rgba.size, "#" + colour)
+    solid.putalpha(alpha)
+    out = io.BytesIO()
+    solid.save(out, format="PNG")
+    out.seek(0)
+    return out
+
+
 def add_image(
     deck: Deck,
     slide: Any,
@@ -737,9 +772,13 @@ def add_image(
     alt: str,
     fit: str = "contain",
     rel: str = "image.path",
+    tint: str | None = None,
 ) -> Any:
-    """A picture inside frame: contain keeps all of it, cover fills the frame and crops."""
+    """A picture inside frame: contain keeps all of it, cover fills the frame and crops.
+    tint (a hex colour) redraws an icon's shape in that one colour."""
     stream, (px_w, px_h) = _image_stream(deck, raw, frame.w, rel)
+    if tint:
+        stream = _tinted(deck, stream, tint, rel)
     aspect = px_w / px_h if px_h else 1.0
     if fit == "cover":
         picture = slide.shapes.add_picture(
@@ -946,22 +985,16 @@ def render_cover(deck: Deck, spec: dict[str, Any]) -> Any:
     floor = float(base.get("min_size", size))
     box_w = float(comp["title"]["w"])
     s = style("cover_title", size=size)
-    # Standard #13: one line. Shrink from 48 to 44pt before wrapping at all.
+    # Standard #13: one line. Shrink from 48 to 44pt; past that, shorten.
     while len(lines_of(title, box_w, s)) > 1 and size > floor:
         size -= 1
         s = style("cover_title", size=size)
     lines = lines_of(title, box_w, s)
-    if len(lines) > 2:
-        raise deck.fit(
+    if len(lines) > 1:
+        deck.error(
             "content.title",
-            f"the cover title needs {len(lines)} lines",
-            "shorten it (Standard #13)",
-        )
-    if len(lines) == 2:
-        deck.warn(
-            "content.title",
-            f"the cover title wraps to two lines even at {floor:g}pt",
-            "Standard #13: shorten it to one line",
+            f"the cover title needs {len(lines)} lines even at {floor:g}pt",
+            f"Standard #13: shorten it to one line, about {_chars_that_fit(title, box_w, s)} characters",
         )
     title_h = text_height(len(lines), s, TITLE_SPACING) + 0.1
     title_y = float(comp["title"]["y"])
@@ -972,13 +1005,12 @@ def render_cover(deck: Deck, spec: dict[str, Any]) -> Any:
         ss = style("cover_subtitle")
         sw = float(comp["subtitle"]["w"])
         sub_lines = lines_of(str(subtitle), sw, ss)
-        if len(sub_lines) > 2:
-            raise deck.fit(
-                "content.subtitle", "the subtitle needs more than two lines", "shorten it"
-            )
-        if len(sub_lines) == 2:
-            deck.warn(
-                "content.subtitle", "the subtitle wraps to two lines", "Standard #13: one line"
+        if len(sub_lines) > 1:
+            deck.error(
+                "content.subtitle",
+                f"the subtitle needs {len(sub_lines)} lines at {ss.size:g}pt",
+                "Standard #13: shorten it to one line, about "
+                f"{_chars_that_fit(str(subtitle), sw, ss)} characters",
             )
         sub_h = text_height(len(sub_lines), ss) + 0.05
         add_text(slide, (GUTTER, cursor, sw, sub_h), str(subtitle), ss, deck.lang)
@@ -1126,13 +1158,127 @@ def _require_series(deck: Deck, chart: dict[str, Any], rel: str) -> None:
         )
 
 
+def _bank_alt(deck: Deck, bank: str) -> str:
+    name = str(nbg_chart.BANKS[bank]["name"])
+    return f"Λογότυπο {name}" if deck.lang == "el" else f"{name} logo"
+
+
+def _bank_logo(
+    deck: Deck, slide: Any, bank: str, centre: tuple[float, float], height: float
+) -> Any:
+    """A bank's logo at its own aspect (Standard #4), centred on `centre`."""
+    path = nbg_chart.logo_path(bank)
+    if not path.exists():
+        raise CannotRun(f"missing brand asset {path}; the plugin install is incomplete")
+    picture = slide.shapes.add_picture(str(path), 0, 0, height=Inches(height))
+    cx, cy = centre
+    picture.left = Inches(cx) - picture.width // 2
+    picture.top = Inches(cy - height / 2)
+    set_alt_text(picture, _bank_alt(deck, bank))
+    return picture
+
+
+@dataclass(frozen=True)
+class _LegendEntry:
+    label: str
+    colour: str
+    bank: str | None
+    width: float
+
+
+def _bank_legend_rows(
+    entries: list[tuple[str, str, str | None]], width: float
+) -> tuple[list[list[_LegendEntry]], float]:
+    """Legend entries (swatch, logo, name) packed into centred rows, and the band's height."""
+    cfg = COMP["bank_logos"]
+    logo_h, gap = float(cfg["h"]), float(cfg["gap"])
+    swatch, entry_gap = float(cfg["swatch"]), float(cfg["entry_gap"])
+    ls = style("chart_legend")
+    packed: list[list[_LegendEntry]] = [[]]
+    used = 0.0
+    for label, colour, bank in entries:
+        w = swatch + gap + metrics().width(label, ls.size, ls.bold) / FIT + 0.02
+        if bank:
+            w += nbg_chart.logo_width(bank, logo_h) + gap
+        need = w + (entry_gap if packed[-1] else 0.0)
+        if packed[-1] and used + need > width:
+            packed.append([])
+            used, need = 0.0, w
+        packed[-1].append(_LegendEntry(label, colour, bank, w))
+        used += need
+    row_h = max(logo_h, text_height(1, ls))
+    return packed, 2 * gap + len(packed) * row_h + (len(packed) - 1) * gap
+
+
+def _draw_bank_legend(deck: Deck, slide: Any, rows: list[list[_LegendEntry]], frame: Frame) -> None:
+    cfg = COMP["bank_logos"]
+    logo_h, gap = float(cfg["h"]), float(cfg["gap"])
+    swatch, entry_gap = float(cfg["swatch"]), float(cfg["entry_gap"])
+    ls = style("chart_legend")
+    th = text_height(1, ls)
+    row_h = max(logo_h, th)
+    y = frame.y + 2 * gap
+    for row in rows:
+        row_w = sum(e.width for e in row) + entry_gap * (len(row) - 1)
+        x = frame.x + (frame.w - row_w) / 2
+        mid = y + row_h / 2
+        for entry in row:
+            start = x
+            add_shape(slide, "rect", (x, mid - swatch / 2, swatch, swatch), fill=entry.colour)
+            x += swatch + gap
+            if entry.bank:
+                lw = nbg_chart.logo_width(entry.bank, logo_h)
+                _bank_logo(deck, slide, entry.bank, (x + lw / 2, mid), logo_h)
+                x += lw + gap
+            add_text(
+                slide, (x, mid - th / 2, start + entry.width - x, th), entry.label, ls, deck.lang
+            )
+            x = start + entry.width + entry_gap
+        y += row_h + gap
+
+
+def draw_chart(deck: Deck, slide: Any, chart: dict[str, Any], frame: Frame, rel: str) -> Any:
+    """One native chart in frame. A peer-bank comparison (tokens.yaml banks) also gets
+    its logos: under or beside the bars when the banks are a bar chart's categories,
+    otherwise in a legend row of swatch, logo and name that replaces the chart's own."""
+    _require_series(deck, chart, rel)
+    alt = chart.get("alt_text")
+    plan = nbg_spec.bank_plan(chart)
+    if plan is None or chart.get("bank_logos") is False:
+        return nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt)
+    mode, banks = plan
+    if mode == "categories" and chart["type"] in ("bar", "bar_horizontal"):
+        try:
+            layout = nbg_chart.axis_layout(chart, frame.box())
+        except ValueError as e:
+            raise deck.fit(rel, str(e), "give the chart more room, or compare fewer banks") from e
+        shape = nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt, layout=layout)
+        for bank, centre in zip(banks, layout.anchors, strict=True):
+            if bank:
+                _bank_logo(deck, slide, bank, centre, layout.logo_h)
+        return shape
+    series_colours, point_colours = nbg_chart.bank_colours(chart)
+    data = chart["data"]
+    if mode == "series":
+        labels, colours = [str(s["name"]) for s in data["series"]], series_colours
+    else:
+        labels, colours = [str(c) for c in data["categories"]], point_colours or series_colours
+    rows, band = _bank_legend_rows(list(zip(labels, colours, banks, strict=True)), frame.w)
+    chart_frame = Frame(frame.x, frame.y, frame.w, frame.h - band)
+    if chart_frame.h < 1.0:
+        raise deck.fit(
+            rel, "no room for the chart above its logo legend", "give the chart more room"
+        )
+    shape = nbg_chart.add_chart(slide, chart, chart_frame.box(), deck.lang, alt, legend=False)
+    _draw_bank_legend(deck, slide, rows, Frame(frame.x, chart_frame.bottom, frame.w, band))
+    return shape
+
+
 def render_chart(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
     frame = titled_frame(deck, slide, content)
-    chart = spec.get("chart") or {}
-    _require_series(deck, chart, "chart")
-    nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, chart.get("alt_text"))
+    draw_chart(deck, slide, spec.get("chart") or {}, frame, "chart")
     draw_footer(deck, slide, content)
     return slide
 
@@ -1185,8 +1331,38 @@ def _kpi_tiles(
         tile_w = (frame.w - gap * (n - 1)) / n
         tile_h = min(float(comp["h"]), frame.h)
     pad = float(comp["pad"])
+    inner = tile_w - 2 * pad
     value_base = nbg_tokens.get("type.kpi_value")
     ls = style("kpi_label")
+    # Standard #20, parallel comparison: one value size for the row (the largest that
+    # fits every tile) and the values and captions on shared lines.
+    size = float(value_base["size"])
+    floor = float(value_base["min_size"])
+    values = [str(k["value"]) for k in kpis]
+    while size > floor and any(metrics().width(v, size, True) > inner * FIT for v in values):
+        size -= 1
+    for i, value in enumerate(values):
+        if metrics().width(value, size, True) > inner * FIT:
+            raise deck.fit(
+                f"{rel}[{i}].value",
+                f"'{value}' does not fit its tile even at {size:g}pt",
+                "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
+            )
+    vs = style("kpi_value", size=size)
+    value_h = text_height(1, vs)
+    labels = [lines_of(str(k["label"]), inner, ls) for k in kpis]
+    delta_h = text_height(1, style("kpi_delta"))
+    stacks = [
+        value_h + 0.08 + text_height(len(lines), ls) + (0.06 + delta_h if k.get("delta") else 0.0)
+        for lines, k in zip(labels, kpis, strict=True)
+    ]
+    for i, stack in enumerate(stacks):
+        if stack > tile_h - 2 * pad + 1e-6:
+            raise deck.fit(
+                f"{rel}[{i}].label",
+                "the tile's value, label and delta do not fit",
+                "shorten the label",
+            )
     for i, kpi in enumerate(kpis):
         x = frame.x + (0 if vertical else i * (tile_w + gap))
         y = frame.y + (i * (tile_h + gap) if vertical else (frame.h - tile_h) / 2)
@@ -1197,34 +1373,14 @@ def _kpi_tiles(
             fill=comp["fill"],
             radius_in=float(comp["radius_in"]),
         )
-        inner = tile_w - 2 * pad
-        value = str(kpi["value"])
-        size = float(value_base["size"])
-        floor = float(value_base["min_size"])
-        while metrics().width(value, size, True) > inner * FIT and size > floor:
-            size -= 1
-        if metrics().width(value, size, True) > inner * FIT:
-            raise deck.fit(
-                f"{rel}[{i}].value",
-                f"'{value}' does not fit its tile even at {size:g}pt",
-                "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
-            )
-        vs = style("kpi_value", size=size)
+        value = values[i]
         label = str(kpi["label"])
-        label_lines = lines_of(label, inner, ls)
+        label_h = text_height(len(labels[i]), ls)
         delta = kpi.get("delta")
         sentiment = kpi.get("sentiment", "neutral")
         ds = style("kpi_delta", color=hexc(comp["delta"][sentiment]))
-        value_h = text_height(1, vs)
-        label_h = text_height(len(label_lines), ls)
-        delta_h = text_height(1, ds) if delta else 0.0
-        stack = value_h + 0.08 + label_h + (0.06 + delta_h if delta else 0.0)
-        if stack > tile_h - 2 * pad + 1e-6:
-            raise deck.fit(
-                f"{rel}[{i}].label",
-                "the tile's value, label and delta do not fit",
-                "shorten the label",
-            )
+        # A row shares the tallest tile's top line; a stacked column centres each tile.
+        stack = stacks[i] if vertical else max(stacks)
         cy = y + (tile_h - stack) / 2
         add_text(slide, (x + pad, cy, inner, value_h), value, vs, deck.lang, align="center")
         cy += value_h + 0.08
@@ -1364,61 +1520,86 @@ def render_cards(deck: Deck, spec: dict[str, Any]) -> Any:
 
 
 def render_process(deck: Deck, spec: dict[str, Any]) -> Any:
+    """Standard #20 process flow: a teal rounded-square tile per step holding its
+    number (or its icon, drawn white), the title and one line under the tile, and a
+    grey arrow from each tile to the next. The row is centred in the body."""
     slide = new_slide(deck)
     content = spec.get("content") or {}
     frame = titled_frame(deck, slide, content)
     steps = spec["steps"]
     comp = COMP["process"]
-    arrow = comp["arrow"]
+    tile_cfg, arrow = comp["tile"], comp["arrow"]
     n = len(steps)
     lane = float(arrow["w"]) + 2 * float(comp["gap"])
-    box_w = (frame.w - lane * (n - 1)) / n
-    box_h = min(frame.h, 3.4)
-    y = frame.y + (frame.h - box_h) / 2
-    pad = float(comp["pad"])
-    inner = box_w - 2 * pad
-    ns, ts = style("step_number"), style("card_title")
+    col_w = (frame.w - lane * (n - 1)) / n
+    tile = min(float(tile_cfg["size"]), col_w)
+    ns = style("step_number", color=hexc(tile_cfg["text_color"]))
+    ts, bs = style("card_title"), style("card_body")
+    titles = [lines_of(str(s["title"]), col_w, ts) for s in steps]
+    bodies = [lines_of(str(s["body"]), col_w, bs) if s.get("body") else [] for s in steps]
+    title_h = text_height(max(len(t) for t in titles), ts)
+    body_h = max(text_height(len(b), bs, BODY_SPACING) for b in bodies)
+    block = tile + float(comp["label_gap"]) + title_h
+    if body_h:
+        block += float(comp["text_gap"]) + body_h
+    if block > frame.h + 1e-6:
+        raise deck.fit(
+            "steps",
+            f"the steps need {block:.2f} in and the body has {frame.h:.2f} in",
+            "shorten the step text, or use fewer steps",
+        )
+    top = frame.y + (frame.h - block) / 2
     for i, step in enumerate(steps):
-        x = frame.x + i * (box_w + lane)
-        add_shape(
+        col_x = frame.x + i * (col_w + lane)
+        tile_x = col_x + (col_w - tile) / 2
+        shape = add_shape(
             slide,
             "rounded_rect",
-            (x, y, box_w, box_h),
-            fill=comp["fill"],
-            radius_in=float(comp["radius_in"]),
+            (tile_x, top, tile, tile),
+            fill=tile_cfg["fill"],
+            radius_in=float(tile_cfg["radius_in"]),
         )
-        cursor = y + pad
-        add_text(
-            slide, (x + pad, cursor, inner, text_height(1, ns)), str(i + 1).zfill(2), ns, deck.lang
-        )
-        cursor += text_height(1, ns) + 0.08
         if step.get("icon"):
-            icon = float(COMP["card"]["icon"])
+            icon = float(tile_cfg["icon"])
             add_image(
                 deck,
                 slide,
                 str(step["icon"]),
-                Frame(x + pad, cursor, icon, icon),
+                Frame(tile_x + (tile - icon) / 2, top + (tile - icon) / 2, icon, icon),
                 alt=_icon_alt(deck, str(step["title"])),
                 rel=f"steps[{i}].icon",
+                tint=hexc(tile_cfg["text_color"]),
             )
-            cursor += icon + 0.08
-        th = text_height(len(lines_of(str(step["title"]), inner, ts)), ts)
-        add_text(slide, (x + pad, cursor, inner, th + 0.02), str(step["title"]), ts, deck.lang)
-        cursor += th + 0.08
-        if step.get("body"):
-            room = y + box_h - pad - cursor
-            _card_body(
-                deck,
+        else:
+            _frame_basics(shape.text_frame, anchor="middle", wrap=False)
+            _write(shape.text_frame, str(i + 1).zfill(2), ns, deck.lang, align="center")
+        cursor = top + tile + float(comp["label_gap"])
+        th = text_height(len(titles[i]), ts)
+        add_text(
+            slide,
+            (col_x, cursor, col_w, th + 0.02),
+            str(step["title"]),
+            ts,
+            deck.lang,
+            align="center",
+        )
+        if bodies[i]:
+            cursor += title_h + float(comp["text_gap"])
+            bh = text_height(len(bodies[i]), bs, BODY_SPACING)
+            add_text(
                 slide,
+                (col_x, cursor, col_w, bh + 0.02),
                 str(step["body"]),
-                (x + pad, cursor, inner, room),
-                f"steps[{i}].body",
-                f"step {i + 1}'s text",
+                bs,
+                deck.lang,
+                align="center",
+                spacing=BODY_SPACING,
             )
         if i < n - 1:
-            ax = x + box_w + float(comp["gap"])
-            ay = y + box_h / 2 - float(arrow["h"]) / 2
+            gap_left = tile_x + tile
+            gap_right = col_x + col_w + lane + (col_w - tile) / 2
+            ax = (gap_left + gap_right) / 2 - float(arrow["w"]) / 2
+            ay = top + tile / 2 - float(arrow["h"]) / 2
             add_shape(
                 slide,
                 "arrow_right",
@@ -1463,10 +1644,7 @@ def _column(deck: Deck, slide: Any, column: dict[str, Any], frame: Frame, rel: s
     elif kind == "text":
         add_paragraph_block(deck, slide, str(column["text"]), frame, f"{rel}.text")
     elif kind == "chart":
-        _require_series(deck, column["chart"], f"{rel}.chart")
-        nbg_chart.add_chart(
-            slide, column["chart"], frame.box(), deck.lang, column["chart"].get("alt_text")
-        )
+        draw_chart(deck, slide, column["chart"], frame, f"{rel}.chart")
     elif kind == "table":
         add_table(deck, slide, column["table"], frame, f"{rel}.table")
     elif kind == "image":
@@ -1560,8 +1738,7 @@ def _element(deck: Deck, slide: Any, el: dict[str, Any], rel: str) -> None:
     elif kind == "image":
         add_image(deck, slide, str(el["path"]), frame, alt=str(el["alt_text"]), rel=f"{rel}.path")
     elif kind == "chart":
-        _require_series(deck, el["chart"], f"{rel}.chart")
-        nbg_chart.add_chart(slide, el["chart"], frame.box(), deck.lang, el["chart"].get("alt_text"))
+        draw_chart(deck, slide, el["chart"], frame, f"{rel}.chart")
     elif kind == "table":
         add_table(deck, slide, el["table"], frame, f"{rel}.table")
     elif kind == "line":
@@ -1755,7 +1932,7 @@ def render(
         if notes:
             slide.notes_slide.notes_text_frame.text = str(notes)
     _core_properties(prs, spec, lang)
-    return prs, errors, deck.warnings
+    return prs, sorted(errors + deck.errors, key=lambda i: i.slide or 0), deck.warnings
 
 
 def check(spec_path: Path | str) -> Report:

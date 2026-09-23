@@ -29,7 +29,7 @@ colors:
   # Text and greys: one grey per role (colors.md "Grey hierarchy")
   body_text: "202020"      # body text AND dark text on any light fill (Standard #22)
   caption_grey: "5A5F5A"   # captions, sources, footnotes, TOC descriptions, table notes
-  muted_grey: "939793"     # page numbers, cover date, process arrows; never body or label text
+  muted_grey: "939793"     # page numbers, process arrows, line-chart value axis; never body or label text
   light_grey: "BEC1BE"     # dividers, card borders, axis lines, hairlines
 
   # Tints and component fills
@@ -72,6 +72,33 @@ extended_palettes:
   # validator's Bank Branding check requires each plotted bank in its own colour.
   peer_banks: {nbg: "007B85", eurobank: "DC2646", alpha: "0D488B", piraeus: "FFC02D"}
 
+# The systemic banks, for peer comparisons (assets/bank-logos/README.md). When two or
+# more are a chart's categories or series, nbg_build draws each in its colour with its
+# logo. color must equal extended_palettes.peer_banks (a test holds them together);
+# logo is relative to assets/ and keeps its own aspect (NBG's oval mark is 1.55:1);
+# aliases are matched whole-word, ignoring case and accents, in English and Greek.
+banks:
+  nbg:
+    name: "NBG"
+    color: "007B85"
+    logo: "bank-logos/nbg.png"
+    aliases: ["NBG", "National Bank of Greece", "National Bank", "ΕΤΕ", "Εθνική Τράπεζα", "Εθνική"]
+  eurobank:
+    name: "Eurobank"
+    color: "DC2646"
+    logo: "bank-logos/eurobank.png"
+    aliases: ["Eurobank"]
+  alpha:
+    name: "Alpha Bank"
+    color: "0D488B"
+    logo: "bank-logos/alpha-bank.png"
+    aliases: ["Alpha Bank", "Alpha", "Άλφα"]
+  piraeus:
+    name: "Piraeus Bank"
+    color: "FFC02D"
+    logo: "bank-logos/piraeus-bank.png"
+    aliases: ["Piraeus Bank", "Piraeus", "Τράπεζα Πειραιώς", "Πειραιώς"]
+
 # Colours that must not appear: retired greys, one-off tints, the python-pptx /
 # Office 2007 theme a deck inherits when nothing overrides it, and dark grounds.
 retired_colors:
@@ -104,7 +131,7 @@ type:
   cover_title:        {size: 48, min_size: 44, bold: false, color: dark_teal}
   cover_subtitle:     {size: 24, bold: false, color: teal}
   cover_location:     {size: 14, bold: false, color: dark_teal}
-  cover_date:         {size: 14, bold: false, color: muted_grey}
+  cover_date:         {size: 14, bold: false, color: caption_grey}   # label text: never muted_grey (Standard #22)
   contents_header:    {size: 24, bold: false, color: dark_teal}
   contents_number:    {size: 18, bold: false, color: teal}
   contents_title:     {size: 16, bold: false, color: dark_teal}
@@ -119,7 +146,7 @@ type:
   source:             {size: 11, bold: false, color: caption_grey}
   footnote:           {size: 11, bold: false, color: caption_grey}
   kpi_value:          {size: 50, min_size: 32, bold: true, color: teal}   # shrinks to fit a 4-up row
-  kpi_label:          {size: 14, bold: false, color: body_text}
+  kpi_label:          {size: 16, bold: false, color: caption_grey}   # the Key Figures caption under the value
   kpi_delta:          {size: 14, bold: true, color: body_text}   # colour by sentiment: components.kpi.delta
   step_number:        {size: 18, bold: false, color: teal}       # process step "01", like a contents number
   recommended_tab:    {size: 11, bold: true, color: body_text, caps: true}   # layouts.md: 202020 on gold
@@ -202,8 +229,7 @@ components:
   card:
     fill: off_white
     radius_in: 0.04          # Standard #12
-    metric_border: {color: light_grey, width_pt: 1}
-    highlight_fill: highlight_tint
+    highlight_fill: highlight_tint   # a highlighted card changes its fill; only the recommended card has a border
     recommended: {fill: gold_tint, border: gold, border_pt: 1.5}
     recommended_tab: {fill: gold, h: 0.26, pad_x: 0.12}   # text: type.recommended_tab
     shadow: false            # no shadows on any shape (brand-system README)
@@ -221,12 +247,17 @@ components:
     h: 3.0                   # layouts.md Key Figures card; less when the body area is shorter
     pad: 0.25
     delta: {positive: teal, negative: alert, neutral: body_text}   # the delta text carries its sign: colour is never the only signal
-  process:
-    fill: off_white
-    radius_in: 0.04
+  process:                   # layouts.md Standard #20 process flow
+    tile: {size: 1.2, fill: teal, radius_in: 0.04, text_color: white, icon: 0.6}   # white on teal 5.03:1
     arrow: {w: 0.3, h: 0.35, color: muted_grey}
-    gap: 0.1                 # between a step box and an arrow
-    pad: 0.2
+    gap: 0.1                 # between a tile column and an arrow
+    label_gap: 0.15          # tile to the step title under it
+    text_gap: 0.08           # step title to its line
+  bank_logos:                # peer-bank charts: a logo under, beside, or in a legend row
+    h: 0.3                   # logo height; its width follows the file (Standard #4)
+    gap: 0.08                # logo to the axis labels, and between the parts of a legend entry
+    swatch: 0.14             # the legend row's colour square
+    entry_gap: 0.3           # between legend-row entries
   two_column:
     gap: 0.3                 # geometry.grid_gap
     heading_gap: 0.1
@@ -260,8 +291,8 @@ charts:
   time_series_default: area_line   # Standard #2.8: never a bare line for a time series
 
 keynote:
-  gutter_px: 155             # 0.807" at 1920 px wide
-  canvas_px: {w: 1920, h: 1080}
+  gutter_px: 155             # 155 px = 0.807 in at 2560 px wide (192 px per inch)
+  canvas_px: {w: 2560, h: 1440}
   dark:
     ink: "FFFFFF"
     ink_2: "DFE6E6"

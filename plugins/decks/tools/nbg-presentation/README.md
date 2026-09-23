@@ -56,9 +56,10 @@ Errors stop a build: a schema violation, a missing source on an exhibit, series 
 do not match their categories, a missing image, a custom element outside the body
 area, an unknown colour name, a deck that does not end on its back cover, duplicate
 titles, and anything that cannot fit (bullets that need more room than the body has
-at 14pt, a table taller than the body, a cover title that needs three lines).
-Warnings do not: a legacy name, an unquoted number or date, a title that wraps to two
-lines, more than six chart series, a waterfall total that does not add up, an em dash.
+at 14pt, a table taller than the body, a cover title or subtitle that does not stay on
+one line, Standard #13). Warnings do not: a legacy name, an unquoted number or date, a
+slide title that wraps to two lines, more than six chart series, a waterfall total that
+does not add up, an em dash.
 
 ## The deck spec
 
@@ -68,7 +69,10 @@ with a `slides:` list and optional `presentation:` metadata (`title`, `author`,
 take `id` (so QA findings can name it), `key_message`, `so_what` and `notes` (speaker
 notes). Titled slides put their text under `content`: `title` (an action title, one
 line), `bumper` (the section pill, shown in capitals), `description` (a 12pt caption),
-`takeaway` (the pale-teal strip) and `source`.
+`takeaway` (the pale-teal strip) and `source`. Keys starting `x-` (top level,
+`presentation`, or a slide, e.g. `x-open-questions`, `x-assets`) are working notes:
+check and build accept them silently and draw nothing from them. Slide N of the built
+deck is always `slides[N-1]`; the builder adds no slides of its own.
 
 `content.source` is required on every exhibit (chart, waterfall, table, kpi, and any
 two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders as
@@ -81,16 +85,27 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 | `contents` | `content.sections[]` (`title`) | `content.title`, section `number`, `description` | Standard #18 list; unnumbered page when the deck is under 10 slides |
 | `divider` | `content.number`, `content.title` | | Number and title on one baseline, large logo |
 | `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit |
-| `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `alt_text` | One native chart |
+| `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `bank_logos`, `alt_text` | One native chart |
 | `waterfall` | `content.title`, `content.source`, `chart.data.items[]` (`label`, `value`) | item `total`; first and last items are totals | A bridge; step labels above the bars |
 | `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align` | Header in dark teal, zebra rows, figures right-aligned |
 | `kpi` | `content.title`, `content.source`, `kpis[]` (`value`, `label`) | `delta`, `sentiment: positive or negative or neutral` | 1 to 4 tiles |
 | `cards` | `content.title`, `cards[]` (`title`) | `layout: row or grid`, card `body`, `icon`, `number`, `highlight`, `recommended` | 2 to 6 cards; the recommended one gets a gold border and tab |
-| `process` | `content.title`, `steps[]` (`title`) | step `body`, `icon` | 2 to 6 steps with arrows |
+| `process` | `content.title`, `steps[]` (`title`) | step `body`, `icon` | 2 to 6 teal step tiles joined by grey arrows, the title and body under each tile; an icon is drawn white in its tile |
 | `two_column` | `content.title`, `left`, `right` | `split: 50/50, 40/60 or 60/40`, column `heading` | Each column is `bullets`, `text`, `chart`, `table`, `image` or `kpis` |
 | `image` | `content.title`, `image.path`, `image.alt_text` | `fit: contain or cover`, `caption` | One picture |
 | `custom` | `content.title`, `elements[]` (`kind`, `x`, `y`, `w`, `h`) | per element: `text`, `points`, `shape`, `fill`, `border`, `text_color`, `role`, `size`, `path`, `chart`, `table` | Positioned elements inside the body area (x 0.374 to 12.959, y 1.3 to 6.5) |
 | `back_cover` | | | The centred oval emblem only |
+
+Peer-bank comparisons brand themselves. Name two or more of the systemic banks
+(`tokens.yaml` `banks`: NBG, Eurobank, Piraeus Bank, Alpha Bank, in English or Greek,
+any case or accents) as the categories of a one-series `bar`, `bar_horizontal` or
+`doughnut` chart, or as the series of any bar or line chart, and each bank takes its
+brand colour and its logo: under its bar, beside a horizontal bar, or in a legend row
+of swatch, logo and name that replaces the chart's own legend. `bank_logos: false`
+leaves the logos out (a warning; the validator's Bank Branding check fails it). Bank
+categories on a line chart or with more than one series are check errors, because one
+bank cannot be one colour there: make the banks the series instead. A
+`highlight_category` on a bank chart is ignored with a warning.
 
 Chart types: `bar`, `bar_stacked`, `bar_horizontal`, `line`, `area_line` (the default
 for a time series, Standard #2.8) and `doughnut` (there is no pie). Element kinds:
