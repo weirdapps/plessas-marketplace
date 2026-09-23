@@ -17,7 +17,7 @@ Everything except the `decks` brand assets is domain-neutral. If you work at a d
 
 Owner: [weirdapps](https://weirdapps.github.io/resume/). License: MIT.
 
-> **v2.2.0**. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace), archived 2026-05-30. Migration notes: [`docs/migration-from-communications-marketplace.md`](docs/migration-from-communications-marketplace.md).
+> **v2.2.1**. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace), archived 2026-05-30. Migration notes: [`docs/migration-from-communications-marketplace.md`](docs/migration-from-communications-marketplace.md).
 
 ## The six plugins
 
@@ -165,10 +165,11 @@ installers/
   lib/tenant-prompt.{sh,ps1}         # SharePoint host prompt used by auth-wizard
 scripts/
   validate_consistency.py            # manifest, command, prompt-path and asset-reference checks
+  check_version_bumps.py             # a changed plugin must raise its version
   ooxml-xsd/                         # ISO/IEC 29500 schemas the built-deck schema test validates against
 shared/                              # cross-plugin templates (email-style, claude-md)
 .github/workflows/                   # tests, lint, validate-plugins, pii-check, rename-guard,
-                                     # sonarcloud, codeql, dependabot-auto-merge
+                                     # version-bumps, sonarcloud, codeql, dependabot-auto-merge
 ```
 
 ### Natural-language triggering
@@ -225,6 +226,9 @@ All six plugins work standalone. These optional pieces add richer context when p
 # Needs pyyaml, which a stock python3 does not have:
 uv run --no-project --with pyyaml python scripts/validate_consistency.py --verbose
 
+# Every plugin you changed raised its version (compares your commits with master):
+python3 scripts/check_version_bumps.py origin/master
+
 # Scan for personal data (file contents AND tracked filenames):
 bash installers/pii-gauntlet.sh --mode=doctor
 
@@ -251,6 +255,7 @@ suites; `sonarcloud.yml` also runs pytest, but only to produce `coverage.xml` fo
 | `lint.yml` | push / PR to master | The full `.pre-commit-config.yaml` hook set (ruff, ruff-format, mypy, gitleaks, yamllint, markdownlint, hygiene), plus `claude plugin validate --strict` on all six plugins and the marketplace root |
 | `validate-plugins.yml` | push / PR to master | `marketplace.json` is valid JSON, every plugin has `plugin.json` and a README, every command file at any depth has YAML frontmatter, `scripts/validate_consistency.py` passes |
 | `pii-check.yml` | push / PR | No personal data in git-tracked file contents or filenames (runs `installers/pii-gauntlet.sh --mode=ci`) |
+| `version-bumps.yml` | push / PR to master | Every plugin with a changed file under `plugins/<name>/` raises its `version` in the same push or PR, so installed copies actually update (`scripts/check_version_bumps.py`) |
 | `rename-guard.yml` | push / PR | No stale slash-command names, every command at any depth declares `allowed-tools`, no deprecated tool aliases, no references to the pre-rename shared brand-system path |
 | `sonarcloud.yml` | push / PR | Static analysis and quality gate, and the coverage run that feeds it (public projects only) |
 | `codeql.yml` | push / PR / weekly Mon 06:00 UTC | Security scanning for Python and TypeScript / JavaScript |
@@ -263,7 +268,8 @@ stale. A plugin pinned to a version that never changes is **never updated**, how
 commits land behind it. So every release bumps `version` in both
 `plugins/<name>/.claude-plugin/plugin.json` and that plugin's entry in
 `.claude-plugin/marketplace.json`; `validate_consistency.py` fails the build when the two
-disagree, and `claude plugin tag` creates the matching `<name>--v<version>` git tag.
+disagree, `version-bumps.yml` fails any push or PR that changes a plugin's files without
+raising its version, and `claude plugin tag` creates the matching `<name>--v<version>` git tag.
 
 Auto-update is off by default for third-party marketplaces, so users pick up a release with
 `/plugin update` rather than automatically.
