@@ -2086,6 +2086,35 @@ def test_no_shipped_rule_is_justified_by_one_persons_preference():
         assert not re.search(r"\bthe owner\b|\bPart 2\b", text), path.name
 
 
+@pytest.mark.parametrize("fmt", ["text", "json"])
+def test_a_windows_code_page_console_does_not_crash_the_report(tmp_path, fmt):
+    """VALIDATOR-CODE-3: on cp1252 the ✓ and Greek text raised UnicodeEncodeError after
+    validating, and the crash exited 1, the 'a check failed' code, with empty JSON."""
+    path = deck(tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, "Εθνική Τράπεζα της Ελλάδος"))
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252:strict"}
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), str(path), "--format", fmt], capture_output=True, env=env
+    )
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")  # only a warning
+    out = proc.stdout.decode("utf-8")
+    if fmt == "json":
+        report = json.loads(out)
+        official = next(c for c in report["checks"] if c["name"] == "Official Name")
+        assert official["status"] == "warn" and "Εθνική" in official["details"][0]["message"]
+    else:
+        assert "Official Name" in out
+
+
+def test_a_failure_while_printing_exits_2_not_1(tmp_path, monkeypatch, golden):
+    """The report is part of running: if it cannot be written, the deck is unvalidated."""
+
+    def broken(*args, **kwargs):
+        raise OSError("stdout is gone")
+
+    monkeypatch.setattr(nv, "print_results", broken)
+    assert nv.main([str(golden)]) == 2
+
+
 def test_the_names_the_spec_checker_imports_stay_put():
     """nbg_spec imports these so `check` and this gate agree; renaming one breaks it."""
     assert nv.SOURCE_AS_OF.search("30 June 2026") and nv.SOURCE_AS_OF.search("9M25")

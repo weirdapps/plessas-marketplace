@@ -4032,6 +4032,7 @@ def main(argv: list[str] | None = None) -> int:
         "--list-checks", action="store_true", help="print every check with its rule and source"
     )
     args = parser.parse_args(argv)
+    _utf8_streams()
     if args.list_checks:
         list_checks(args.format)
         return 0
@@ -4040,6 +4041,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         results = validate_presentation(args.deck)
+        # Writing the report is part of running: a failure here leaves the deck
+        # unvalidated, which is exit 2, never the "a check failed" exit 1.
+        if args.format == "json":
+            report = report_json(args.deck, results, args.strict)
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+        else:
+            print_results(results, args.deck, strict=args.strict)
     except DeckError as e:
         print(f"nbg_validate: cannot validate: {e}", file=sys.stderr)
         return 2
@@ -4049,13 +4057,19 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    if args.format == "json":
-        print(
-            json.dumps(report_json(args.deck, results, args.strict), ensure_ascii=False, indent=2)
-        )
-    else:
-        print_results(results, args.deck, strict=args.strict)
     return exit_code(results, args.strict)
+
+
+def _utf8_streams() -> None:
+    """UTF-8 on stdout and stderr whatever the console's code page: a Windows cp1252 or
+    cp1253 console cannot encode the status marks or Greek slide text."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (OSError, ValueError):
+                pass
 
 
 if __name__ == "__main__":
