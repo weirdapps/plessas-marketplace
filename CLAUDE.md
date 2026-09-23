@@ -25,7 +25,7 @@ plugins/<name>/
   shared/                      # Brand assets, style guides loaded by commands
   mcp-server/                  # Bundled Node.js MCP server (mail, chat only)
 installers/                    # install.sh / install.ps1 + pii-gauntlet.sh
-scripts/                       # sync_brand_system.sh, validate_consistency.py
+scripts/                       # validate_consistency.py, ooxml-xsd/ (schemas for the built-deck test)
 shared/                        # Cross-plugin shared assets (brand-system, email-style-template)
 .claude-plugin/marketplace.json  # Top-level manifest listing all plugins
 ```

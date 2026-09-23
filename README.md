@@ -117,18 +117,21 @@ Bootstraps the `teams-bridge` MCP the same way. Drives `teams-cli login`, which 
 .claude-plugin/marketplace.json      # top-level manifest: name, version, plugins[]
 plugins/
   decks/
-    commands/                        # 5 deck commands + 3 creative commands (both paths are
+    commands/                        # 6 deck commands + 3 creative commands (both paths are
                                      # declared in plugin.json, because `commands` REPLACES the default scan)
-    agents/                          # 8 agents. `agents/` is the ONLY directory Claude Code
+    agents/                          # 7 agents. `agents/` is the ONLY directory Claude Code
                                      # auto-discovers, so every agent lives here: storyline-architect,
                                      # storyboard-designer, graphics-renderer, presentation-qa,
-                                     # nbg-presenter (orchestrator), icon-designer,
-                                     # infographic-specialist, device-mockup
+                                     # icon-designer, infographic-specialist, device-mockup
     skills/presentations/            # natural-language router
+    bin/decks-py                     # launcher: every Python tool runs in a cached per-tool environment
     bundled/creative/                # commands, tools and assets for the creative toolkit
-    tools/nbg-presentation/          # nbg_build.py, nbg_validate.py, chart/table injectors
-    shared/brand-system/             # colours, fonts, layouts, style guide
-    assets/                          # NBG template, logos, illustrations, icons, mockups
+    tools/nbg-presentation/          # nbg_build.py (the one renderer), nbg_validate.py, render,
+                                     # extract and record tools, deck.schema.json
+    tools/nbg-keynote/               # dark full-bleed keynote compositor (Standard #21)
+    shared/brand-system/             # tokens.yaml (the machine-readable brand) + brand docs
+    ARCHITECTURE.md                  # pipeline, contracts, where state lives
+    assets/                          # logos, illustrations, icons, screenshots
   mail/
     commands/                        # 15 slash commands (see table)
     agents/                          # email-handler, triage-engine
@@ -161,9 +164,9 @@ installers/
   pii-gauntlet.sh                    # PII scan (CI + local doctor modes)
   lib/tenant-prompt.{sh,ps1}         # SharePoint host prompt used by auth-wizard
 scripts/
-  validate_consistency.py            # manifest / command consistency checks
-  sync_brand_system.sh               # keeps decks brand assets in sync
-shared/                              # cross-plugin templates (email-style, brand-system)
+  validate_consistency.py            # manifest, command, prompt-path and asset-reference checks
+  ooxml-xsd/                         # ISO/IEC 29500 schemas the built-deck schema test validates against
+shared/                              # cross-plugin templates (email-style, claude-md)
 .github/workflows/                   # tests, lint, validate-plugins, pii-check, rename-guard,
                                      # sonarcloud, codeql, dependabot-auto-merge
 ```

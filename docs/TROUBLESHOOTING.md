@@ -294,7 +294,7 @@ Aptos handles Greek correctly. If you see boxes or squares in Word, your Word in
 
 ### docs: letterhead missing
 
-Default uses NBG branding from `shared/brand-system/`. Pass `--no-letterhead` to suppress for personal letters. To customise, edit `shared/brand-system/` files (advanced — talk to the maintainer).
+Expected: the `docs` plugin ships no letterhead assets and has no `--no-letterhead` flag. `/docs-letter` builds the sender block from your prompt, or from `~/.outlook-cli/signature.html` when that file exists.
 
 ---
 

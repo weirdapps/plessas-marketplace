@@ -192,3 +192,116 @@ def test_dependencies_in_the_marketplace_entry_is_accepted(vc):
     )
     vc.check_plugin_dependencies()
     assert vc.errors == []
+
+
+# --------------------------------------------------------------------------
+# check_plugin_relative_paths: prompts anchor plugin paths
+# --------------------------------------------------------------------------
+
+
+def _agent(plugin_dir, body, name="a.md"):
+    (plugin_dir / "agents").mkdir(exist_ok=True)
+    (plugin_dir / "shared").mkdir(exist_ok=True)
+    (plugin_dir / "agents" / name).write_text("---\nname: a\ndescription: d\n---\n" + body)
+
+
+@pytest.fixture
+def no_baseline(vc):
+    setattr(vc, "KNOWN_BARE_PATHS", frozenset())
+    return vc
+
+
+def test_bare_plugin_path_in_an_agent_is_rejected(no_baseline):
+    vc = no_baseline
+    _agent(_plugin(vc, "p"), "Read `shared/brand/README.md` first.\n")
+    vc.check_plugin_relative_paths()
+    assert len(vc.errors) == 1
+    assert "shared/brand/README.md" in vc.errors[0]
+    assert "${CLAUDE_PLUGIN_ROOT}/shared/brand/README.md" in vc.errors[0]
+
+
+def test_bare_path_inside_a_code_block_is_rejected(no_baseline):
+    vc = no_baseline
+    _agent(_plugin(vc, "p"), "```bash\npython3 shared/tool.py deck.pptx\n```\n")
+    vc.check_plugin_relative_paths()
+    assert len(vc.errors) == 1
+
+
+def test_repo_relative_plugins_path_is_rejected(no_baseline):
+    vc = no_baseline
+    _agent(_plugin(vc, "p"), "See plugins/p/shared/x.md.\n")
+    vc.check_plugin_relative_paths()
+    assert len(vc.errors) == 1
+    assert "plugins/p/shared/x.md" in vc.errors[0]
+
+
+def test_anchored_home_and_url_paths_are_accepted(no_baseline):
+    vc = no_baseline
+    _agent(
+        _plugin(vc, "p"),
+        "Read `${CLAUDE_PLUGIN_ROOT}/shared/x.md`, write ${CLAUDE_PLUGIN_DATA}/shared/y.md,\n"
+        "see ~/.claude/plugins/cache/m/p/1.0.0/shared/z.md and\n"
+        "https://github.com/o/r/tree/master/plugins/p/shared.\n",
+    )
+    vc.check_plugin_relative_paths()
+    assert vc.errors == []
+
+
+def test_a_fixed_baseline_entry_must_be_deleted(vc):
+    setattr(vc, "KNOWN_BARE_PATHS", frozenset({("plugins/p/agents/a.md", "shared/old.md")}))
+    _agent(_plugin(vc, "p"), "Nothing bare here.\n")
+    vc.check_plugin_relative_paths()
+    assert len(vc.errors) == 1
+    assert "no longer bare" in vc.errors[0]
+
+
+def test_a_baselined_bare_path_is_tolerated(vc):
+    setattr(vc, "KNOWN_BARE_PATHS", frozenset({("plugins/p/agents/a.md", "shared/old.md")}))
+    _agent(_plugin(vc, "p"), "Still reads `shared/old.md`.\n")
+    vc.check_plugin_relative_paths()
+    assert vc.errors == []
+
+
+# --------------------------------------------------------------------------
+# check_asset_references: every indexed asset filename exists
+# --------------------------------------------------------------------------
+
+
+def _assets(plugin_dir, files, index_body, index_rel="icons/INDEX.md"):
+    for f in files:
+        p = plugin_dir / "assets" / f
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"x")
+    idx = plugin_dir / "assets" / index_rel
+    idx.parent.mkdir(parents=True, exist_ok=True)
+    idx.write_text(index_body)
+
+
+def test_missing_asset_name_is_rejected(vc):
+    d = _plugin(vc, "p")
+    _assets(d, ["icons/basics/Arrow_left.png"], "| `Arrow left.png` | back |\n")
+    vc.check_asset_references()
+    assert len(vc.errors) == 1
+    assert "Arrow left.png" in vc.errors[0]
+
+
+def test_asset_names_match_by_basename_or_relative_path(vc):
+    d = _plugin(vc, "p")
+    _assets(
+        d,
+        ["icons/basics/Arrow_left.png", "icons/money/Coin.svg"],
+        "| `Arrow_left.png` | back |\n| `money/Coin.svg` | coins |\n| `sets/*.svg` | glob |\n",
+    )
+    vc.check_asset_references()
+    assert vc.errors == []
+
+
+def test_asset_library_names_resolve_against_the_assets_tree(vc):
+    d = _plugin(vc, "p")
+    _assets(d, ["logos/NBG.png"], "| `NBG.png` | emblem |\n", index_rel="logos/INDEX.md")
+    lib = d / "shared" / "brand-system" / "asset-library.md"
+    lib.parent.mkdir(parents=True)
+    lib.write_text("| `logos/NBG.png` | ok |\n| `logos/Missing.png` | gone |\n")
+    vc.check_asset_references()
+    assert len(vc.errors) == 1
+    assert "Missing.png" in vc.errors[0]
