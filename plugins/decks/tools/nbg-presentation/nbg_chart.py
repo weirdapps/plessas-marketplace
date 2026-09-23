@@ -15,12 +15,17 @@ does not name one:
 `area_line` is a line chart with an area chart under it on the same axes: python-
 pptx cannot write a combination chart, so the area series are added to the plot
 area as XML after the line chart is built.
+
+A chart comparing the systemic banks (tokens.yaml `banks`) draws each bank in its
+brand colour. When logos go under the category axis, the plot area is placed
+exactly (a manual layout) so that nbg_build can put each logo under its own bar.
 """
 
 from __future__ import annotations
 
 import copy
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -39,12 +44,17 @@ from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_color import AA_NORMAL, contrast_ratio  # noqa: E402
+from nbg_text import metrics  # noqa: E402
 
 CHARTS = nbg_tokens.load()["charts"]
 FONT = str(CHARTS["font"])
 PALETTE = nbg_tokens.chart_palette()
+BANKS = nbg_tokens.load()["banks"]
+LOGOS = nbg_tokens.load()["components"]["bank_logos"]
+FIT = 0.97  # the measuring margin nbg_build uses: 97% of a width counts as full
 
 XL_TYPES = {
     "bar": XL_CHART_TYPE.COLUMN_CLUSTERED,
@@ -107,6 +117,114 @@ def default_number_format(values: list[Any]) -> str:
 
 def _all_values(series: list[dict[str, Any]]) -> list[Any]:
     return [v for s in series for v in (s.get("values") or []) if v is not None]
+
+
+# ---------------------------------------------------------------- peer banks
+
+
+def bank_colours(spec: dict[str, Any]) -> tuple[list[str], list[str] | None]:
+    """(colour per series, colour per point or None). A bank comparison paints each
+    bank in its brand colour, per series or per point, and mutes whatever else shares
+    the chart (a market average). Any other chart takes the palette in order."""
+    count = len(spec["data"]["series"])
+    palette = [PALETTE[i % len(PALETTE)] for i in range(count)]
+    plan = nbg_spec.bank_plan(spec)
+    if plan is None:
+        return palette, None
+    mode, banks = plan
+    muted = hexcolor(CHARTS["highlight"]["muted"])
+    colours = [str(BANKS[b]["color"]) if b else muted for b in banks]
+    return (colours, None) if mode == "series" else (palette, colours)
+
+
+def logo_path(bank: str) -> Path:
+    return Path(nbg_spec.ASSETS_DIR) / str(BANKS[bank]["logo"])
+
+
+def logo_width(bank: str, height: float) -> float:
+    """The width a bank's logo takes at `height`, keeping its own aspect (Standard #4)."""
+    from PIL import Image
+
+    with Image.open(logo_path(bank)) as img:
+        w_px, h_px = img.size
+    return float(height * w_px / h_px)
+
+
+@dataclass(frozen=True)
+class AxisLayout:
+    """Where a bank bar chart's plot sits in its frame, and where each logo goes."""
+
+    inner: tuple[float, float, float, float]  # x, y, w, h as fractions of the frame
+    anchors: list[tuple[float, float]]  # each category's logo centre, in slide inches
+    logo_h: float
+
+
+def _value_text(value: Any, number_format: str) -> str:
+    """Roughly what a data label shows, so its width can be measured."""
+    if value is None:
+        return ""
+    decimals = number_format.split(".")[1].count("0") if "." in number_format else 0
+    if number_format.endswith("%"):
+        return f"{float(value) * 100:,.{decimals}f}%"
+    return f"{float(value):,.{decimals}f}"
+
+
+def axis_layout(spec: dict[str, Any], box: tuple[float, float, float, float]) -> AxisLayout:
+    """The plot area of a bank bar chart, leaving room for the logos: a band under the
+    category labels of a column chart, a column left of them on a horizontal one.
+    Raises ValueError when the frame cannot keep a readable plot beside the logos."""
+    x, y, w, h = box
+    categories = [str(c) for c in spec["data"]["categories"]]
+    n = len(categories)
+    plan = nbg_spec.bank_plan(spec)
+    banks = plan[1] if plan else [None] * n
+    logo_h, gap = float(LOGOS["h"]), float(LOGOS["gap"])
+    m = metrics()
+    axis_pt = float(nbg_tokens.get("type.chart_axis.size"))
+    label_pt = float(nbg_tokens.get("type.chart_data_label.size"))
+    values = spec["data"]["series"][0]["values"]
+    number_format = str(spec.get("number_format") or default_number_format(values))
+    if spec["type"] == "bar_horizontal":
+        column = max(logo_width(b, logo_h) for b in banks if b)
+        labels_w = max(m.width(c, axis_pt, False) for c in categories) / FIT + gap
+        values_w = (
+            max(m.width(_value_text(v, number_format), label_pt, True) for v in values) / FIT
+            + 2 * gap
+        )
+        plot_w = w - column - gap - labels_w - values_w
+        if plot_w < 1.5:
+            raise ValueError(f"the bars get {plot_w:.2f} in beside the logos and labels")
+        pad = 0.05
+        inner = ((column + gap + labels_w) / w, pad / h, plot_w / w, (h - 2 * pad) / h)
+        anchors = [
+            (x + column / 2, y + h * (inner[1] + inner[3] * (j + 0.5) / n)) for j in range(n)
+        ]
+        return AxisLayout(inner, anchors, logo_h)
+    top = m.line_height(label_pt, 1.0) + gap
+    labels_h = m.line_height(axis_pt, 1.0) + gap
+    plot_h = h - top - labels_h - gap - logo_h
+    if plot_h < 1.0:
+        raise ValueError(f"the bars get {plot_h:.2f} in above the logos")
+    logo_y = y + top + plot_h + labels_h + gap + logo_h / 2
+    anchors = [(x + w * (j + 0.5) / n, logo_y) for j in range(n)]
+    return AxisLayout((0.0, top / h, 1.0, plot_h / h), anchors, logo_h)
+
+
+def _manual_layout(chart: Any, inner: tuple[float, float, float, float]) -> None:
+    """Place the plot area's inner rectangle (the bars, not their labels) exactly."""
+    plot_area = chart._chartSpace.find(qn("c:chart")).find(qn("c:plotArea"))
+    layout = plot_area.find(qn("c:layout"))
+    if layout is None:
+        layout = etree.Element(qn("c:layout"))
+        plot_area.insert(0, layout)  # CT_PlotArea: layout? comes first
+    for child in list(layout):
+        layout.remove(child)
+    manual = etree.SubElement(layout, qn("c:manualLayout"))
+    etree.SubElement(manual, qn("c:layoutTarget")).set("val", "inner")
+    etree.SubElement(manual, qn("c:xMode")).set("val", "edge")
+    etree.SubElement(manual, qn("c:yMode")).set("val", "edge")
+    for tag, value in zip(("c:x", "c:y", "c:w", "c:h"), inner, strict=True):
+        etree.SubElement(manual, qn(tag)).set("val", f"{value:.4f}")
 
 
 # ---------------------------------------------------------------- alt text
@@ -314,7 +432,13 @@ def _delete_point_label(point: Any) -> None:
 # ---------------------------------------------------------------- chart types
 
 
-def _style_bars(chart: Any, spec: dict[str, Any], number_format: str) -> None:
+def _style_bars(
+    chart: Any,
+    spec: dict[str, Any],
+    number_format: str,
+    series_colours: list[str],
+    point_colours: list[str] | None,
+) -> None:
     ctype = spec["type"]
     plot = chart.plots[0]
     plot.gap_width = int(CHARTS["bar"]["gap_width"])
@@ -325,7 +449,7 @@ def _style_bars(chart: Any, spec: dict[str, Any], number_format: str) -> None:
     highlight = spec.get("highlight_category")
     categories = [str(c) for c in spec["data"]["categories"]]
     for i, series in enumerate(series_list):
-        fill = PALETTE[i % len(PALETTE)]
+        fill = series_colours[i]
         series.format.fill.solid()
         series.format.fill.fore_color.rgb = RGBColor.from_string(fill)
         _no_line(series.format)
@@ -341,7 +465,13 @@ def _style_bars(chart: Any, spec: dict[str, Any], number_format: str) -> None:
             for point, value in zip(series.points, values, strict=False):
                 if value in (None, 0):
                     _delete_point_label(point)
-        if highlight is not None and len(series_list) == 1:
+        if point_colours is not None:
+            # Each bank's bar in its brand colour; the labels sit outside, on white.
+            for point, colour in zip(series.points, point_colours, strict=False):
+                point.format.fill.solid()
+                point.format.fill.fore_color.rgb = RGBColor.from_string(colour)
+                _no_line(point.format)
+        elif highlight is not None and len(series_list) == 1:
             accent = hexcolor(CHARTS["highlight"]["accent"])
             muted = hexcolor(CHARTS["highlight"]["muted"])
             for point, category in zip(series.points, categories, strict=False):
@@ -372,20 +502,22 @@ def _style_line_series(series: Any, colour: str) -> None:
     marker.format.line.width = width
 
 
-def _style_lines(chart: Any, spec: dict[str, Any], number_format: str) -> None:
+def _style_lines(
+    chart: Any, spec: dict[str, Any], number_format: str, series_colours: list[str]
+) -> None:
     plot = chart.plots[0]
     plot.has_data_labels = False
     for i, series in enumerate(plot.series):
-        _style_line_series(series, PALETTE[i % len(PALETTE)])
+        _style_line_series(series, series_colours[i])
     _category_axis(chart)
     _value_axis(
         chart, visible=CHARTS["value_axis"]["line"] != "hidden", number_format=number_format
     )
     if spec["type"] == "area_line":
-        _add_area_under_lines(chart)
+        _add_area_under_lines(chart, series_colours)
 
 
-def _add_area_under_lines(chart: Any) -> None:
+def _add_area_under_lines(chart: Any, colours: list[str]) -> None:
     """Put an area chart under the line chart, on the same axes: the 15% fill."""
     plot_area = chart._chartSpace.find(qn("c:chart")).find(qn("c:plotArea"))
     line_chart = plot_area.find(qn("c:lineChart"))
@@ -396,7 +528,7 @@ def _add_area_under_lines(chart: Any) -> None:
     etree.SubElement(area, qn("c:varyColors")).set("val", "0")
     offset = len(series)
     for i, ser in enumerate(series):
-        colour = PALETTE[i % len(PALETTE)]
+        colour = colours[i]
         new = etree.SubElement(area, qn("c:ser"))
         etree.SubElement(new, qn("c:idx")).set("val", str(offset + i))
         etree.SubElement(new, qn("c:order")).set("val", str(offset + i))
@@ -470,7 +602,7 @@ def _point_label_shows(label: Any, number_format: str, *, percent: bool) -> None
             dlbl.append(fmt)
 
 
-def _style_doughnut(chart: Any, spec: dict[str, Any]) -> None:
+def _style_doughnut(chart: Any, spec: dict[str, Any], point_colours: list[str] | None) -> None:
     plot = chart.plots[0]
     doughnut = (
         chart._chartSpace.find(qn("c:chart")).find(qn("c:plotArea")).find(qn("c:doughnutChart"))
@@ -488,7 +620,7 @@ def _style_doughnut(chart: Any, spec: dict[str, Any]) -> None:
     number_format = "0%" if as_percent else str(spec["number_format"])
     series = plot.series[0]
     for i, point in enumerate(series.points):
-        fill = PALETTE[i % len(PALETTE)]
+        fill = point_colours[i] if point_colours else PALETTE[i % len(PALETTE)]
         point.format.fill.solid()
         point.format.fill.fore_color.rgb = RGBColor.from_string(fill)
         point.format.line.color.rgb = RGBColor.from_string("FFFFFF")
@@ -516,8 +648,14 @@ def add_chart(
     box: tuple[float, float, float, float],
     lang: str,
     alt_text: str | None = None,
+    *,
+    legend: bool | None = None,
+    layout: AxisLayout | None = None,
 ) -> Any:
-    """Draw spec (a deck.schema.json `chart`) into box (x, y, w, h in inches)."""
+    """Draw spec (a deck.schema.json `chart`) into box (x, y, w, h in inches).
+
+    legend overrides the spec's show_legend (False when a logo legend replaces it);
+    layout places the plot area exactly, for logos along the category axis."""
     ctype = spec["type"]
     data = spec["data"]
     categories = [str(c) for c in data["categories"]]
@@ -534,15 +672,19 @@ def add_chart(
     )
     chart = frame.chart
     _chart_space(chart)
+    series_colours, point_colours = bank_colours(spec)
     # A doughnut's legend is what names its slices; otherwise one series needs none.
     default_legend = ctype == "doughnut" or len(series_specs) > 1
-    _legend(chart, bool(spec.get("show_legend", default_legend)))
+    shown = bool(spec.get("show_legend", default_legend)) if legend is None else legend
+    _legend(chart, shown)
     if ctype in ("bar", "bar_stacked", "bar_horizontal"):
-        _style_bars(chart, spec, number_format)
+        _style_bars(chart, spec, number_format, series_colours, point_colours)
     elif ctype in ("line", "area_line"):
-        _style_lines(chart, spec, number_format)
+        _style_lines(chart, spec, number_format, series_colours)
     else:
-        _style_doughnut(chart, spec)
+        _style_doughnut(chart, spec, point_colours)
+    if layout is not None:
+        _manual_layout(chart, layout.inner)
     set_alt_text(frame, alt_text or chart_alt_text(ctype, categories, series_specs, lang))
     return frame
 

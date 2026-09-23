@@ -72,6 +72,33 @@ extended_palettes:
   # validator's Bank Branding check requires each plotted bank in its own colour.
   peer_banks: {nbg: "007B85", eurobank: "DC2646", alpha: "0D488B", piraeus: "FFC02D"}
 
+# The systemic banks, for peer comparisons (assets/bank-logos/README.md). When two or
+# more are a chart's categories or series, nbg_build draws each in its colour with its
+# logo. color must equal extended_palettes.peer_banks (a test holds them together);
+# logo is relative to assets/ and keeps its own aspect (NBG's oval mark is 1.55:1);
+# aliases are matched whole-word, ignoring case and accents, in English and Greek.
+banks:
+  nbg:
+    name: "NBG"
+    color: "007B85"
+    logo: "bank-logos/nbg.png"
+    aliases: ["NBG", "National Bank of Greece", "National Bank", "ΕΤΕ", "Εθνική Τράπεζα", "Εθνική"]
+  eurobank:
+    name: "Eurobank"
+    color: "DC2646"
+    logo: "bank-logos/eurobank.png"
+    aliases: ["Eurobank"]
+  alpha:
+    name: "Alpha Bank"
+    color: "0D488B"
+    logo: "bank-logos/alpha-bank.png"
+    aliases: ["Alpha Bank", "Alpha", "Άλφα"]
+  piraeus:
+    name: "Piraeus Bank"
+    color: "FFC02D"
+    logo: "bank-logos/piraeus-bank.png"
+    aliases: ["Piraeus Bank", "Piraeus", "Τράπεζα Πειραιώς", "Πειραιώς"]
+
 # Colours that must not appear: retired greys, one-off tints, the python-pptx /
 # Office 2007 theme a deck inherits when nothing overrides it, and dark grounds.
 retired_colors:
@@ -226,6 +253,11 @@ components:
     gap: 0.1                 # between a tile column and an arrow
     label_gap: 0.15          # tile to the step title under it
     text_gap: 0.08           # step title to its line
+  bank_logos:                # peer-bank charts: a logo under, beside, or in a legend row
+    h: 0.3                   # logo height; its width follows the file (Standard #4)
+    gap: 0.08                # logo to the axis labels, and between the parts of a legend entry
+    swatch: 0.14             # the legend row's colour square
+    entry_gap: 0.3           # between legend-row entries
   two_column:
     gap: 0.3                 # geometry.grid_gap
     heading_gap: 0.1

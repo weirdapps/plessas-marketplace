@@ -1158,13 +1158,127 @@ def _require_series(deck: Deck, chart: dict[str, Any], rel: str) -> None:
         )
 
 
+def _bank_alt(deck: Deck, bank: str) -> str:
+    name = str(nbg_chart.BANKS[bank]["name"])
+    return f"Λογότυπο {name}" if deck.lang == "el" else f"{name} logo"
+
+
+def _bank_logo(
+    deck: Deck, slide: Any, bank: str, centre: tuple[float, float], height: float
+) -> Any:
+    """A bank's logo at its own aspect (Standard #4), centred on `centre`."""
+    path = nbg_chart.logo_path(bank)
+    if not path.exists():
+        raise CannotRun(f"missing brand asset {path}; the plugin install is incomplete")
+    picture = slide.shapes.add_picture(str(path), 0, 0, height=Inches(height))
+    cx, cy = centre
+    picture.left = Inches(cx) - picture.width // 2
+    picture.top = Inches(cy - height / 2)
+    set_alt_text(picture, _bank_alt(deck, bank))
+    return picture
+
+
+@dataclass(frozen=True)
+class _LegendEntry:
+    label: str
+    colour: str
+    bank: str | None
+    width: float
+
+
+def _bank_legend_rows(
+    entries: list[tuple[str, str, str | None]], width: float
+) -> tuple[list[list[_LegendEntry]], float]:
+    """Legend entries (swatch, logo, name) packed into centred rows, and the band's height."""
+    cfg = COMP["bank_logos"]
+    logo_h, gap = float(cfg["h"]), float(cfg["gap"])
+    swatch, entry_gap = float(cfg["swatch"]), float(cfg["entry_gap"])
+    ls = style("chart_legend")
+    packed: list[list[_LegendEntry]] = [[]]
+    used = 0.0
+    for label, colour, bank in entries:
+        w = swatch + gap + metrics().width(label, ls.size, ls.bold) / FIT + 0.02
+        if bank:
+            w += nbg_chart.logo_width(bank, logo_h) + gap
+        need = w + (entry_gap if packed[-1] else 0.0)
+        if packed[-1] and used + need > width:
+            packed.append([])
+            used, need = 0.0, w
+        packed[-1].append(_LegendEntry(label, colour, bank, w))
+        used += need
+    row_h = max(logo_h, text_height(1, ls))
+    return packed, 2 * gap + len(packed) * row_h + (len(packed) - 1) * gap
+
+
+def _draw_bank_legend(deck: Deck, slide: Any, rows: list[list[_LegendEntry]], frame: Frame) -> None:
+    cfg = COMP["bank_logos"]
+    logo_h, gap = float(cfg["h"]), float(cfg["gap"])
+    swatch, entry_gap = float(cfg["swatch"]), float(cfg["entry_gap"])
+    ls = style("chart_legend")
+    th = text_height(1, ls)
+    row_h = max(logo_h, th)
+    y = frame.y + 2 * gap
+    for row in rows:
+        row_w = sum(e.width for e in row) + entry_gap * (len(row) - 1)
+        x = frame.x + (frame.w - row_w) / 2
+        mid = y + row_h / 2
+        for entry in row:
+            start = x
+            add_shape(slide, "rect", (x, mid - swatch / 2, swatch, swatch), fill=entry.colour)
+            x += swatch + gap
+            if entry.bank:
+                lw = nbg_chart.logo_width(entry.bank, logo_h)
+                _bank_logo(deck, slide, entry.bank, (x + lw / 2, mid), logo_h)
+                x += lw + gap
+            add_text(
+                slide, (x, mid - th / 2, start + entry.width - x, th), entry.label, ls, deck.lang
+            )
+            x = start + entry.width + entry_gap
+        y += row_h + gap
+
+
+def draw_chart(deck: Deck, slide: Any, chart: dict[str, Any], frame: Frame, rel: str) -> Any:
+    """One native chart in frame. A peer-bank comparison (tokens.yaml banks) also gets
+    its logos: under or beside the bars when the banks are a bar chart's categories,
+    otherwise in a legend row of swatch, logo and name that replaces the chart's own."""
+    _require_series(deck, chart, rel)
+    alt = chart.get("alt_text")
+    plan = nbg_spec.bank_plan(chart)
+    if plan is None or chart.get("bank_logos") is False:
+        return nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt)
+    mode, banks = plan
+    if mode == "categories" and chart["type"] in ("bar", "bar_horizontal"):
+        try:
+            layout = nbg_chart.axis_layout(chart, frame.box())
+        except ValueError as e:
+            raise deck.fit(rel, str(e), "give the chart more room, or compare fewer banks") from e
+        shape = nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt, layout=layout)
+        for bank, centre in zip(banks, layout.anchors, strict=True):
+            if bank:
+                _bank_logo(deck, slide, bank, centre, layout.logo_h)
+        return shape
+    series_colours, point_colours = nbg_chart.bank_colours(chart)
+    data = chart["data"]
+    if mode == "series":
+        labels, colours = [str(s["name"]) for s in data["series"]], series_colours
+    else:
+        labels, colours = [str(c) for c in data["categories"]], point_colours or series_colours
+    rows, band = _bank_legend_rows(list(zip(labels, colours, banks, strict=True)), frame.w)
+    chart_frame = Frame(frame.x, frame.y, frame.w, frame.h - band)
+    if chart_frame.h < 1.0:
+        raise deck.fit(
+            rel, "no room for the chart above its logo legend", "give the chart more room"
+        )
+    shape = nbg_chart.add_chart(slide, chart, chart_frame.box(), deck.lang, alt, legend=False)
+    _draw_bank_legend(deck, slide, rows, Frame(frame.x, chart_frame.bottom, frame.w, band))
+    return shape
+
+
 def render_chart(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
     frame = titled_frame(deck, slide, content)
-    chart = spec.get("chart") or {}
-    _require_series(deck, chart, "chart")
-    nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, chart.get("alt_text"))
+    draw_chart(deck, slide, spec.get("chart") or {}, frame, "chart")
     draw_footer(deck, slide, content)
     return slide
 
@@ -1520,10 +1634,7 @@ def _column(deck: Deck, slide: Any, column: dict[str, Any], frame: Frame, rel: s
     elif kind == "text":
         add_paragraph_block(deck, slide, str(column["text"]), frame, f"{rel}.text")
     elif kind == "chart":
-        _require_series(deck, column["chart"], f"{rel}.chart")
-        nbg_chart.add_chart(
-            slide, column["chart"], frame.box(), deck.lang, column["chart"].get("alt_text")
-        )
+        draw_chart(deck, slide, column["chart"], frame, f"{rel}.chart")
     elif kind == "table":
         add_table(deck, slide, column["table"], frame, f"{rel}.table")
     elif kind == "image":
@@ -1617,8 +1728,7 @@ def _element(deck: Deck, slide: Any, el: dict[str, Any], rel: str) -> None:
     elif kind == "image":
         add_image(deck, slide, str(el["path"]), frame, alt=str(el["alt_text"]), rel=f"{rel}.path")
     elif kind == "chart":
-        _require_series(deck, el["chart"], f"{rel}.chart")
-        nbg_chart.add_chart(slide, el["chart"], frame.box(), deck.lang, el["chart"].get("alt_text"))
+        draw_chart(deck, slide, el["chart"], frame, f"{rel}.chart")
     elif kind == "table":
         add_table(deck, slide, el["table"], frame, f"{rel}.table")
     elif kind == "line":

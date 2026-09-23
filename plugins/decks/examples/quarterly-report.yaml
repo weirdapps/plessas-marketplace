@@ -1,6 +1,7 @@
 # Quarterly report: a longer review with sections, exhibits and a bridge.
 # Exercises: cover, contents, divider, content (bullets with a takeaway),
-# chart (area_line, bar_stacked, doughnut), table, waterfall, back_cover.
+# chart (area_line, bar_stacked, doughnut, and a four-bank comparison that the
+# builder brands with each bank's colour and logo), table, waterfall, back_cover.
 # The figures and sources are synthetic, written to show the shape.
 
 presentation:
@@ -147,8 +148,25 @@ slides:
           - name: "Transactions"
             values: [0.56, 0.24, 0.13, 0.07]
 
-  - type: content
+  - type: chart
     id: S11
+    content:
+      title: "Our mobile share of transactions leads the four systemic banks"
+      description: "Share of transactions made in the mobile app, Q4 2025, %"
+      source:
+        name: "Illustrative figures, not published data"
+        as_of: "31 December 2025"
+    chart:
+      type: bar
+      data:
+        categories: ["NBG", "Eurobank", "Piraeus Bank", "Alpha Bank"]
+        series:
+          - name: "Mobile share"
+            values: [58, 52, 49, 46]
+      number_format: "0"
+
+  - type: content
+    id: S12
     content:
       title: "2026 priorities focus on mobile expansion and personalisation"
       bumper: "Priorities"

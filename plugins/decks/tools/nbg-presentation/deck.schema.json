@@ -247,8 +247,9 @@
         },
         "number_format": { "type": "string", "description": "Excel number format for labels and axis, e.g. '#,##0.0' or '0%'." },
         "unit": { "type": "string", "description": "Unit shown in the caption or axis title, e.g. 'EUR m'." },
-        "highlight_category": { "type": "string", "description": "Category drawn in the accent colour; the rest are muted." },
+        "highlight_category": { "type": "string", "description": "Category drawn in the accent colour; the rest are muted. Ignored on a bank comparison." },
         "show_legend": { "type": "boolean" },
+        "bank_logos": { "type": "boolean", "default": true, "description": "When two or more systemic banks (tokens.yaml banks) are the categories of a one-series bar, bar_horizontal or doughnut chart, or the series of any bar or line chart, each bank takes its brand colour automatically and its logo is placed: under its bar, beside a horizontal bar, or in a legend row. false leaves the logos out, which the validator's Bank Branding check fails." },
         "alt_text": { "type": "string", "description": "Screen-reader description. Generated from the data when absent." }
       },
       "additionalProperties": false

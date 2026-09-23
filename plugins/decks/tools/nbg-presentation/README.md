@@ -85,7 +85,7 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 | `contents` | `content.sections[]` (`title`) | `content.title`, section `number`, `description` | Standard #18 list; unnumbered page when the deck is under 10 slides |
 | `divider` | `content.number`, `content.title` | | Number and title on one baseline, large logo |
 | `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit |
-| `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `alt_text` | One native chart |
+| `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `bank_logos`, `alt_text` | One native chart |
 | `waterfall` | `content.title`, `content.source`, `chart.data.items[]` (`label`, `value`) | item `total`; first and last items are totals | A bridge; step labels above the bars |
 | `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align` | Header in dark teal, zebra rows, figures right-aligned |
 | `kpi` | `content.title`, `content.source`, `kpis[]` (`value`, `label`) | `delta`, `sentiment: positive or negative or neutral` | 1 to 4 tiles |
@@ -95,6 +95,17 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 | `image` | `content.title`, `image.path`, `image.alt_text` | `fit: contain or cover`, `caption` | One picture |
 | `custom` | `content.title`, `elements[]` (`kind`, `x`, `y`, `w`, `h`) | per element: `text`, `points`, `shape`, `fill`, `border`, `text_color`, `role`, `size`, `path`, `chart`, `table` | Positioned elements inside the body area (x 0.374 to 12.959, y 1.3 to 6.5) |
 | `back_cover` | | | The centred oval emblem only |
+
+Peer-bank comparisons brand themselves. Name two or more of the systemic banks
+(`tokens.yaml` `banks`: NBG, Eurobank, Piraeus Bank, Alpha Bank, in English or Greek,
+any case or accents) as the categories of a one-series `bar`, `bar_horizontal` or
+`doughnut` chart, or as the series of any bar or line chart, and each bank takes its
+brand colour and its logo: under its bar, beside a horizontal bar, or in a legend row
+of swatch, logo and name that replaces the chart's own legend. `bank_logos: false`
+leaves the logos out (a warning; the validator's Bank Branding check fails it). Bank
+categories on a line chart or with more than one series are check errors, because one
+bank cannot be one colour there: make the banks the series instead. A
+`highlight_category` on a bank chart is ignored with a warning.
 
 Chart types: `bar`, `bar_stacked`, `bar_horizontal`, `line`, `area_line` (the default
 for a time series, Standard #2.8) and `doughnut` (there is no pie). Element kinds:
