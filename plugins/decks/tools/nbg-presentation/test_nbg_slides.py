@@ -278,6 +278,42 @@ def test_the_doughnut_sits_in_a_centred_square_so_its_ring_is_measurable(build):
     assert (x + w / 2, y + h / 2) == pytest.approx((0.5, 0.5), abs=0.001)
 
 
+MIX = [
+    {"name": "Cards", "values": [50, 60]},
+    {"name": "Loans", "values": [45, 38]},
+    {"name": "Other", "values": [1, 2]},
+]
+
+
+def _deleted_labels(ser):
+    return {
+        d.find("c:idx", NS).get("val")
+        for d in ser.findall("c:dLbls/c:dLbl", NS)
+        if d.find("c:delete", NS) is not None
+    }
+
+
+def test_a_stacked_segment_too_thin_for_its_label_drops_the_label(build):
+    """E2E-OUTPUT-08: a 1% segment still got a 12pt label, which overprinted the
+    labels of the segments either side."""
+    out = build(deck([_chart_slide("bar_stacked", series=MIX)]))
+    root = part_xml(out, chart_parts(out)[0])
+    cards, loans, other = root.findall(".//c:barChart/c:ser", NS)
+    assert _deleted_labels(other) == {"0", "1"}
+    assert _deleted_labels(cards) == set() and _deleted_labels(loans) == set()
+
+
+def test_a_stacked_chart_fixes_its_axis_and_plot_so_segment_heights_are_known(build):
+    """The labels sit inside the segments, so nothing needs headroom: the axis ends at
+    the tallest stack (60 + 38 + 2) and the stacks use the whole plot height."""
+    out = build(deck([_chart_slide("bar_stacked", series=MIX)]))
+    root = part_xml(out, chart_parts(out)[0])
+    scaling = root.find(".//c:valAx/c:scaling", NS)
+    assert float(scaling.find("c:min", NS).get("val")) == 0
+    assert float(scaling.find("c:max", NS).get("val")) == 100
+    assert root.find(".//c:plotArea/c:layout/c:manualLayout", NS) is not None
+
+
 def test_line_series_are_named_at_their_line_ends_not_in_a_legend(build):
     """E2E-OUTPUT-05: lines were told apart only by a colour-keyed legend."""
     series = [{"name": "2024", "values": [1, 2, 3]}, {"name": "2025", "values": [2, 3, 5]}]

@@ -461,6 +461,25 @@ def test_a_doughnut_slice_too_small_for_its_name_is_a_warning_naming_the_slice(t
     assert found and "'Other products'" in found[0].message and "legend" in found[0].message
 
 
+def test_stacked_labels_left_off_thin_segments_are_a_warning_naming_them(tmp_path):
+    """E2E-OUTPUT-08: the value stays in the chart data; the author hears which
+    labels were dropped and how to bring them back."""
+    series = [
+        {"name": "Cards", "values": [50, 60]},
+        {"name": "Loans", "values": [45, 38]},
+        {"name": "Other", "values": [1, 2]},
+    ]
+    slide = {
+        "type": "chart",
+        "content": {"title": "Cards lead the mix", "source": SOURCE},
+        "chart": {"type": "bar_stacked", "data": {"categories": ["Q1", "Q2"], "series": series}},
+    }
+    report = check(tmp_path, deck([slide]))
+    assert report.ok, [i.format() for i in report.errors]
+    found = [i for i in report.warnings if i.path == "slides[1].chart.data.series"]
+    assert found and "'Other' in Q1" in found[0].message and "'Other' in Q2" in found[0].message
+
+
 def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     spec = deck(
         [

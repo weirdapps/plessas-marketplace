@@ -381,9 +381,17 @@ def _category_axis(chart: Any, *, reverse: bool = False) -> None:
         axis.reverse_order = True
 
 
-def _value_axis(chart: Any, *, visible: bool, number_format: str, from_zero: bool = False) -> None:
+def _value_axis(
+    chart: Any,
+    *,
+    visible: bool,
+    number_format: str,
+    from_zero: bool = False,
+    top: float | None = None,
+) -> None:
     """from_zero pins the axis minimum at 0: PowerPoint's automatic scale starts close
-    values (93, 91, 90, 88) near 86, so a bar's length stops meaning its value."""
+    values (93, 91, 90, 88) near 86, so a bar's length stops meaning its value. top
+    fixes the maximum, where the builder needs to know how tall a value draws."""
     axis = chart.value_axis
     axis.has_major_gridlines = False
     axis.has_minor_gridlines = False
@@ -391,6 +399,8 @@ def _value_axis(chart: Any, *, visible: bool, number_format: str, from_zero: boo
     axis.minor_tick_mark = XL_TICK_MARK.NONE
     if from_zero:
         axis.minimum_scale = 0
+    if top is not None:
+        axis.maximum_scale = top
     if not visible:
         axis.visible = False
         return
@@ -440,12 +450,81 @@ def _delete_point_label(point: Any) -> None:
 # ---------------------------------------------------------------- chart types
 
 
+@dataclass(frozen=True)
+class StackPlan:
+    """Where a stacked column chart's plot sits, where its value axis ends, and which
+    segment labels have no room."""
+
+    inner: tuple[float, float, float, float]  # x, y, w, h as fractions of the frame
+    top: float | None  # the axis maximum, fixed when every stack is at or above zero
+    dropped: list[tuple[int, int]]  # (series, category) of each label left off
+
+
+def stack_plan(
+    spec: dict[str, Any], box: tuple[float, float, float, float], legend: bool
+) -> StackPlan:
+    """Lay a stacked column chart out exactly, so each segment's height is known: the
+    plot fills the frame above its category labels (and the legend), and the value
+    axis runs from 0 to the tallest stack, which needs no headroom because every label
+    sits inside its segment. A segment shorter than one label line, or narrower than
+    its label, leaves its label off (E2E-OUTPUT-08: they overprinted each other). A
+    stack below zero keeps the automatic axis, since the validator fails any bar axis
+    minimum but 0, so its heights are estimates."""
+    _, _, w, h = box
+    m = metrics()
+    series = spec["data"]["series"]
+    categories = [str(c) for c in spec["data"]["categories"]]
+    number_format = str(spec.get("number_format") or default_number_format(_all_values(series)))
+    label_pt = float(nbg_tokens.get("type.chart_data_label.size"))
+    axis_pt = float(CHARTS["category_axis"]["size"])
+
+    def stack(j: int, sign: float) -> float:
+        cells = [float(s["values"][j] or 0) for s in series if j < len(s["values"])]
+        return sum(v for v in cells if v * sign > 0)
+
+    up = max((stack(j, 1) for j in range(len(categories))), default=0.0)
+    down = min((stack(j, -1) for j in range(len(categories))), default=0.0)
+    span = (up - down) or 1.0
+    slot = 0.96 * w / max(1, len(categories))
+    lines = max((len(m.wrap(c, slot, axis_pt)) for c in categories), default=1)
+    band = lines * m.line_height(axis_pt) + 0.15
+    legend_h = _legend_band([str(s.get("name", "")) for s in series], w) if legend else 0.0
+    plot_h = max(0.5, h - 0.1 - band - legend_h)
+    bar_w = slot / (1 + float(CHARTS["bar"]["gap_width"]) / 100)
+    line = m.line_height(label_pt) + 0.02
+    dropped = []
+    for i, s in enumerate(series):
+        for j, v in enumerate(s["values"][: len(categories)]):
+            if v in (None, 0):
+                continue
+            label_w = m.width(_value_text(v, number_format), label_pt, True) / FIT + 0.04
+            if abs(float(v)) / span * plot_h < line or label_w > bar_w:
+                dropped.append((i, j))
+    top = up if down == 0 and up > 0 else None
+    return StackPlan((0.02, 0.1 / h, 0.96, plot_h / h), top, dropped)
+
+
+def _warn_dropped(
+    warn: Callable[[str, str, str], None], spec: dict[str, Any], stack: StackPlan
+) -> None:
+    series, categories = spec["data"]["series"], spec["data"]["categories"]
+    named = [f"'{series[i].get('name', '')}' in {categories[j]}" for i, j in stack.dropped]
+    listed = ", ".join(named[:6]) + (f" and {len(named) - 6} more" if len(named) > 6 else "")
+    warn(
+        "data.series",
+        f"{len(named)} segment label(s) left off, the segments too thin to hold them: {listed}",
+        "group the small series into 'Other', or give the chart more room; the values "
+        "stay in the chart data",
+    )
+
+
 def _style_bars(
     chart: Any,
     spec: dict[str, Any],
     number_format: str,
     series_colours: list[str],
     point_colours: list[str] | None,
+    stack: StackPlan | None = None,
 ) -> None:
     ctype = spec["type"]
     plot = chart.plots[0]
@@ -470,8 +549,9 @@ def _style_bars(
                 color_hex=str(label_text_color(fill)),
                 position=XL_LABEL_POSITION.CENTER,
             )
-            for point, value in zip(series.points, values, strict=False):
-                if value in (None, 0):
+            dropped = {j for s, j in stack.dropped if s == i} if stack else set()
+            for j, (point, value) in enumerate(zip(series.points, values, strict=False)):
+                if value in (None, 0) or j in dropped:
                     _delete_point_label(point)
         if point_colours is not None:
             # Each bank's bar in its brand colour; the labels sit outside, on white.
@@ -498,6 +578,7 @@ def _style_bars(
         visible=CHARTS["value_axis"]["bar"] != "hidden",
         number_format=number_format,
         from_zero=all(float(v) >= 0 for v in values),
+        top=stack.top if stack else None,
     )
 
 
@@ -929,8 +1010,14 @@ def add_chart(
     _legend(chart, shown)
     if lines and len(series_specs) > 1 and layout is None:
         layout = end_label_layout(spec, box)
+    stack = None
+    if ctype == "bar_stacked" and layout is None:
+        stack = stack_plan(spec, box, shown)
+        layout = AxisLayout(stack.inner, [], 0.0)
+        if stack.dropped and warn is not None:
+            _warn_dropped(warn, spec, stack)
     if ctype in ("bar", "bar_stacked", "bar_horizontal"):
-        _style_bars(chart, spec, number_format, series_colours, point_colours)
+        _style_bars(chart, spec, number_format, series_colours, point_colours, stack)
     elif ctype in ("line", "area_line"):
         _style_lines(chart, spec, number_format, series_colours)
     else:

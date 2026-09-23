@@ -126,7 +126,9 @@ inside the ring, the name broken between words until it fits the slice. When a s
 has no room for its name at any break, the doughnut names its slices in a legend
 instead and check warns which slice forced it. Only a multi-series bar chart shows a
 legend by default; `show_legend` overrides either way. An `area_line` draws its 15%
-fill under the first series only, so list the series to emphasise first. Element kinds:
+fill under the first series only, so list the series to emphasise first. A
+`bar_stacked` chart runs its axis from 0 to its tallest stack and labels a segment
+only where the label fits inside it; check warns which labels were left off. Element kinds:
 `text`, `bullets`, `shape` (`rect`, `rounded_rect`, `oval`, `chevron`, `arrow_right`),
 `image`, `chart`, `table`, `line`. Colours are token names from `tokens.yaml`
 (`teal`, `dark_teal`, `off_white`, ...), never hex.
