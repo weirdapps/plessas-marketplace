@@ -2852,8 +2852,8 @@ def check_thank_you(deck: Deck, out: Collector) -> str:
             out.count()
             continue
         out.count()
-        joined = fold(" ".join(texts))
-        hit = _STRONG_CLOSING.search(joined)
+        # Matched folded, reported as written: "Ευχαριστούμε", not "ευχαριστουμε".
+        hit = next((_snippet(t) for t in texts if _STRONG_CLOSING.search(fold(t))), None)
         title = find_title(s)
         largest = max(s.text_shapes(), key=lambda sf: sf[1].max_size() or 0, default=None)
         weak = None
@@ -2866,7 +2866,7 @@ def check_thank_you(deck: Deck, out: Collector) -> str:
                 if _WEAK_CLOSING.match(cleaned):
                     weak = candidate
         if hit or weak:
-            found = weak or hit.group(0)  # type: ignore[union-attr]
+            found = weak or hit
             out.add(
                 s.position,
                 f'closing text "{found}"; decks end on the plain back cover, not a thank-you or Q&A slide (Standard #19)',

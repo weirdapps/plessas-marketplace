@@ -896,6 +896,7 @@ def test_thank_you_catches_an_accented_greek_closing(tmp_path):
     result = check(closing, "Thank You Check")
     assert result.status == "fail"
     assert "Slide 5" in details(result)
+    assert "Ευχαριστούμε" in details(result)  # reported as written, not folded
 
 
 def test_thank_you_catches_a_q_and_a_title_on_the_closing_slide(tmp_path):
