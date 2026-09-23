@@ -69,7 +69,10 @@ with a `slides:` list and optional `presentation:` metadata (`title`, `author`,
 take `id` (so QA findings can name it), `key_message`, `so_what` and `notes` (speaker
 notes). Titled slides put their text under `content`: `title` (an action title, one
 line), `bumper` (the section pill, shown in capitals), `description` (a 12pt caption),
-`takeaway` (the pale-teal strip) and `source`.
+`takeaway` (the pale-teal strip) and `source`. Keys starting `x-` (top level,
+`presentation`, or a slide, e.g. `x-open-questions`, `x-assets`) are working notes:
+check and build accept them silently and draw nothing from them. Slide N of the built
+deck is always `slides[N-1]`; the builder adds no slides of its own.
 
 `content.source` is required on every exhibit (chart, waterfall, table, kpi, and any
 two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders as
