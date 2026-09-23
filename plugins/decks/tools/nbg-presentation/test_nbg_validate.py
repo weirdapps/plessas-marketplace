@@ -2046,6 +2046,26 @@ def test_a_period_without_a_year_still_dates_nothing(tmp_path, as_of):
     assert result.status == "fail" and "no as-of date" in details(result)
 
 
+@pytest.mark.parametrize(
+    "words",
+    [
+        "Μια ευχάριστη έκπληξη στις πωλήσεις",  # pleasant
+        "Οι πελάτες είναι ευχαριστημένοι",  # satisfied
+        "Η ευχαρίστηση του πελάτη ανέβηκε",  # satisfaction
+    ],
+)
+def test_ordinary_greek_eucharist_words_are_not_a_thank_you(tmp_path, words):
+    """VALIDATOR-CODE-1: ευχαριστ\\w* matched 'pleasant' and 'satisfied' on a closing slide."""
+    result = check(deck(tmp_path, _add(5, 0.374, 3.0, 8.0, 0.4, words)), "Thank You Check")
+    assert result.status == "pass", result.details
+
+
+@pytest.mark.parametrize("words", ["Ευχαριστώ", "Σας ευχαριστούμε πολύ", "ΕΥΧΑΡΙΣΤΟΥΜΕ"])
+def test_greek_thanking_forms_are_a_thank_you(tmp_path, words):
+    result = check(deck(tmp_path, _add(5, 0.374, 3.0, 8.0, 0.6, words, size=28)), "Thank You Check")
+    assert result.status == "fail" and words in details(result)
+
+
 def test_the_names_the_spec_checker_imports_stay_put():
     """nbg_spec imports these so `check` and this gate agree; renaming one breaks it."""
     assert nv.SOURCE_AS_OF.search("30 June 2026") and nv.SOURCE_AS_OF.search("9M25")

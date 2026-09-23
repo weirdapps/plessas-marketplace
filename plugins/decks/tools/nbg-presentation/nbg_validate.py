@@ -2873,9 +2873,11 @@ def check_back_cover(deck: Deck, out: Collector) -> str:
     return f"slide {s.position} is the plain back cover: the emblem alone"
 
 
+# Greek thanks are the verb forms only (ευχαριστώ, ευχαριστούμε, folded): the same stem
+# gives ευχάριστη (pleasant), ευχαριστημένοι (satisfied) and ευχαρίστηση (satisfaction).
 _STRONG_CLOSING = re.compile(
     r"\bthank\s*-?\s*you\b|\bthanks\b(?!\s+to\b)|\bany\s+questions\b|\bmerci\b|\bgrazie\b"
-    r"|\bdanke\b|\bευχαριστ\w*"
+    r"|\bdanke\b|\bευχαριστ(?:ω|ουμε)\b"
 )
 _WEAK_CLOSING = re.compile(r"^(?:q\s*&\s*a|questions|ερωτησεισ|ερωτησεισ\s*&\s*απαντησεισ)$")
 
