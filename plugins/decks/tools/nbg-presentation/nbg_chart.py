@@ -378,12 +378,16 @@ def _category_axis(chart: Any, *, reverse: bool = False) -> None:
         axis.reverse_order = True
 
 
-def _value_axis(chart: Any, *, visible: bool, number_format: str) -> None:
+def _value_axis(chart: Any, *, visible: bool, number_format: str, from_zero: bool = False) -> None:
+    """from_zero pins the axis minimum at 0: PowerPoint's automatic scale starts close
+    values (93, 91, 90, 88) near 86, so a bar's length stops meaning its value."""
     axis = chart.value_axis
     axis.has_major_gridlines = False
     axis.has_minor_gridlines = False
     axis.major_tick_mark = XL_TICK_MARK.NONE
     axis.minor_tick_mark = XL_TICK_MARK.NONE
+    if from_zero:
+        axis.minimum_scale = 0
     if not visible:
         axis.visible = False
         return
@@ -485,7 +489,13 @@ def _style_bars(
         plot.has_data_labels = True
         _labels(plot.data_labels, number_format, position=XL_LABEL_POSITION.OUTSIDE_END)
     _category_axis(chart, reverse=ctype == "bar_horizontal")
-    _value_axis(chart, visible=CHARTS["value_axis"]["bar"] != "hidden", number_format=number_format)
+    values = _all_values(spec["data"]["series"])
+    _value_axis(
+        chart,
+        visible=CHARTS["value_axis"]["bar"] != "hidden",
+        number_format=number_format,
+        from_zero=all(float(v) >= 0 for v in values),
+    )
 
 
 def _style_line_series(series: Any, colour: str) -> None:
@@ -812,7 +822,12 @@ def add_waterfall(
             _set_font(run.font, "chart_data_label", color_hex=colour)
         label.position = position
     _category_axis(chart)
-    _value_axis(chart, visible=False, number_format=number_format)
+    _value_axis(
+        chart,
+        visible=False,
+        number_format=number_format,
+        from_zero=all(min(s["start"], s["end"]) >= 0 for s in segments),
+    )
     words = ALT["el" if lang == "el" else "en"]
     default_alt = (
         f"{words['waterfall']}. {words['from']} {segments[0]['label']} "

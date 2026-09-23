@@ -833,6 +833,67 @@ def test_every_label_position_is_one_powerpoint_supports(tmp_path, monkeypatch):
     assert checked, "no label positions examined"
 
 
+@pytest.mark.parametrize("chart_type", ["bar", "bar_horizontal", "bar_stacked"])
+def test_bars_with_close_values_start_their_axis_at_zero(build, chart_type):
+    """E2E-OUTPUT-01: 93, 91, 90 and 88 drew on an axis PowerPoint started near 86, so a
+    2-point gap looked like a doubling, and the Zero Baseline check passed it."""
+    out = build(
+        deck(
+            [
+                _chart(
+                    "Contactless share is above 88% in every segment",
+                    chart_type,
+                    ["Retail", "Affluent", "Premium", "Business"],
+                    [{"name": "Share", "values": [93, 91, 90, 88]}],
+                )
+            ]
+        )
+    )
+    root = part_xml(out, chart_parts(out)[0])
+    minimum = root.find(".//c:valAx/c:scaling/c:min", NS)
+    assert minimum is not None and float(minimum.get("val")) == 0.0
+
+
+def test_a_waterfall_of_positive_totals_starts_its_axis_at_zero(build):
+    spec = deck(
+        [
+            {
+                "type": "waterfall",
+                "content": {"title": "Fees rose from 68 to 80", "source": SOURCE},
+                "chart": {
+                    "type": "waterfall",
+                    "data": {
+                        "items": [
+                            {"label": "Q4 2024", "value": 68},
+                            {"label": "Interchange", "value": 6},
+                            {"label": "Annual fees", "value": 3},
+                            {"label": "FX", "value": 3},
+                            {"label": "Q4 2025", "value": 80},
+                        ]
+                    },
+                },
+            }
+        ]
+    )
+    out = build(spec)
+    root = part_xml(out, chart_parts(out)[0])
+    assert float(root.find(".//c:valAx/c:scaling/c:min", NS).get("val")) == 0.0
+
+
+def test_bars_with_a_negative_value_keep_the_automatic_axis(build):
+    out = build(
+        deck(
+            [
+                _chart(
+                    "Margins moved both ways", "bar", ["A", "B"], [{"name": "M", "values": [3, -2]}]
+                )
+            ]
+        )
+    )
+    root = part_xml(out, chart_parts(out)[0])
+    assert root.find(".//c:valAx/c:scaling/c:min", NS) is None
+
+
 def test_a_chart_with_no_series_is_an_error_not_a_blank_plot(build):
     """ARCHITECTURE-5: a chart slide with no data built green with an empty plot."""
     spec = deck([_chart("Volumes rose", "bar", ["Q1"], [])])
