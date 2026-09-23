@@ -338,10 +338,6 @@ class Collector:
     def skip(self, reason: str, n: int = 1) -> None:
         self.not_examined[reason] += n
 
-    @property
-    def errors(self) -> int:
-        return sum(f.severity == "error" for f in self.findings)
-
 
 # ------------------------------------------------------------------ package
 
@@ -679,11 +675,6 @@ class Shape:
         sp_pr = self.sp_pr
         geom = sp_pr.find(f"{A}prstGeom") if sp_pr is not None else None
         return geom.get("prst") if geom is not None else None
-
-    @property
-    def graphic_uri(self) -> str | None:
-        data = self.el.find(f".//{A}graphicData")
-        return data.get("uri") if data is not None else None
 
     @property
     def is_table(self) -> bool:
@@ -1728,7 +1719,7 @@ def _is_logo_footprint(shape: Shape) -> bool:
 
 
 def _is_page_number(shape: Shape) -> bool:
-    x, y, w, h = brand().page_number
+    x, y, _w, _h = brand().page_number
     return (
         shape.kind == "sp"
         and shape.has_box
