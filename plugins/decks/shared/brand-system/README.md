@@ -29,7 +29,7 @@ aspect_ratio: 16:9
 | Bright Cyan | `00DFF8` | Feature accent, a mark only: **never a background, never text on white** |
 | Dark Text | `202020` | Body text, and dark text on any light fill (Standard #22) |
 | Caption Grey | `5A5F5A` | Captions, sources, footnotes, TOC descriptions, table notes |
-| Muted Grey | `939793` | Page numbers, cover date, process arrows; never body or label text |
+| Muted Grey | `939793` | Page numbers, process arrows, muted axis labels; never body or label text |
 | Light Grey | `BEC1BE` | Dividers, axis lines, hairlines |
 | White | `FFFFFF` | **ALWAYS** for slide backgrounds |
 | Off-white | `F5F8F6` | Default card and KPI-card fill |
@@ -63,7 +63,7 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 | Card title | 16pt | 003841 | Bold |
 | Card body | 14pt | 202020 | Regular |
 | KPI big number | **50pt** | **007B85** | **Bold** |
-| KPI caption | **14pt** | **202020** | Regular |
+| KPI caption | **16pt** | **5A5F5A** | Regular |
 | Owner subtitle | **14pt** | **5A5F5A** | Regular |
 | Caption | 12pt | 5A5F5A | Regular |
 | Source / footnote | 11pt | 5A5F5A | Regular |

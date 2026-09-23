@@ -82,8 +82,8 @@ Three greys, three jobs. Do NOT introduce others (`#666666`, `#595959`, `#5B5B69
 
 | Grey | Role |
 |------|------|
-| `#5A5F5A` | Captions, subtitles, owner lines, TOC teasers, table notes, sources, footnotes; the secondary-text grey |
-| `#939793` | Page numbers, cover date, process-flow arrows, subtle UI marks, "partner/them" ownership coding (always with a label: against `#007B85` it is only 1.70:1) |
+| `#5A5F5A` | Captions, subtitles, owner lines, TOC teasers, table notes, sources, footnotes, the cover date, KPI captions; the secondary-text grey |
+| `#939793` | Page numbers, process-flow arrows, muted axis labels, subtle UI marks, "partner/them" ownership coding (always with a label: against `#007B85` it is only 1.70:1) |
 | `#BEC1BE` | Dividers, hairlines, axis lines |
 
 Body text is `#202020` (never a grey).
@@ -245,7 +245,7 @@ palette in code loads it through `tools/nbg_tokens.py` (`color("teal")`, `chart_
 | Subtle elements | `#939793` (Medium Gray) |
 | **KPI card background** | `#F5F8F6` (Off-white) |
 | **KPI big number** | `#007B85` (NBG Teal), **50pt Aptos BOLD** |
-| **KPI caption** | `#202020` (Dark Text), 14pt under the big number |
+| **KPI caption** | `#5A5F5A` (Caption Grey), 16pt under the big number |
 | **Owner subtitle** | `#5A5F5A` (Caption Gray), the NBG executive signature |
 | **Unit chip (Key Figures header)** | fill `#003841` (Dark Teal), text white |
 | TOC description | `#5A5F5A` (Caption Gray) |

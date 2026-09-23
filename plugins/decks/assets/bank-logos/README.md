@@ -24,13 +24,15 @@ alt text naming the bank:
   alt_text: Alpha Bank
   x: 0.374
   y: 2.4
-  w: 0.38
-  h: 0.38
+  w: 0.3
+  h: 0.3
 ```
 
-`nbg_build.py` embeds the file. Give every logo in a comparison the same height and let the width
-follow the file (Standard #4): NBG's mark is an oval at 96x62 (1.55:1), so at a 0.38" height it
-is 0.59" wide, never a 0.38" square.
+`nbg_build.py` embeds the file. On a peer-bank chart (bank names as the categories or series) it
+also places every bank's logo and colour itself, so a spec needs no image elements there. Give
+every logo in a comparison the same height, 0.3" (tokens.yaml `components.bank_logos.h`), and let
+the width follow the file (Standard #4): NBG's mark is an oval at 96x62 (1.55:1), so at a 0.3"
+height it is 0.47" wide, never a 0.3" square.
 
 ## Brand Colors (MANDATORY for charts)
 
