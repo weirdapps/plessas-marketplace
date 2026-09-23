@@ -163,10 +163,12 @@ installers/
 scripts/
   validate_consistency.py            # manifest / command consistency checks
   check_version_bumps.py             # a changed plugin must raise its version
+  bump_changed_plugins.py            # weekly patch bump of plugins changed since their last bump
   sync_brand_system.sh               # keeps decks brand assets in sync
 shared/                              # cross-plugin templates (email-style, brand-system)
 .github/workflows/                   # tests, lint, validate-plugins, pii-check, rename-guard,
-                                     # version-bumps, sonarcloud, codeql, dependabot-auto-merge
+                                     # version-bumps, weekly-plugin-bump, sonarcloud, codeql,
+                                     # dependabot-auto-merge
 ```
 
 ### Natural-language triggering
@@ -252,7 +254,8 @@ suites; `sonarcloud.yml` also runs pytest, but only to produce `coverage.xml` fo
 | `lint.yml` | push / PR to master | The full `.pre-commit-config.yaml` hook set (ruff, ruff-format, mypy, gitleaks, yamllint, markdownlint, hygiene), plus `claude plugin validate --strict` on all six plugins and the marketplace root |
 | `validate-plugins.yml` | push / PR to master | `marketplace.json` is valid JSON, every plugin has `plugin.json` and a README, every command file at any depth has YAML frontmatter, `scripts/validate_consistency.py` passes |
 | `pii-check.yml` | push / PR | No personal data in git-tracked file contents or filenames (runs `installers/pii-gauntlet.sh --mode=ci`) |
-| `version-bumps.yml` | push / PR to master | Every plugin with a changed file under `plugins/<name>/` raises its `version` in the same push or PR, so installed copies actually update (`scripts/check_version_bumps.py`) |
+| `version-bumps.yml` | push / PR to master | Every plugin with a changed file under `plugins/<name>/` raises its `version` in the same push or PR, so installed copies actually update (`scripts/check_version_bumps.py`). Dependabot PRs, and pushes of a squash-merged one, are exempt; `weekly-plugin-bump.yml` ships them |
+| `weekly-plugin-bump.yml` | weekly Fri 05:37 UTC / manual | Opens one PR that patch-bumps every plugin with a file changed since its version last changed, plus the marketplace version (`scripts/bump_changed_plugins.py`). Opened with `GITHUB_TOKEN`, so no checks start on it by themselves: close and reopen it to run them before merging |
 | `rename-guard.yml` | push / PR | No stale slash-command names, every command at any depth declares `allowed-tools`, no deprecated tool aliases, no references to the pre-rename shared brand-system path |
 | `sonarcloud.yml` | push / PR | Static analysis and quality gate, and the coverage run that feeds it (public projects only) |
 | `codeql.yml` | push / PR / weekly Mon 06:00 UTC | Security scanning for Python and TypeScript / JavaScript |
@@ -266,7 +269,7 @@ commits land behind it. So every release bumps `version` in both
 `plugins/<name>/.claude-plugin/plugin.json` and that plugin's entry in
 `.claude-plugin/marketplace.json`; `validate_consistency.py` fails the build when the two
 disagree, `version-bumps.yml` fails any push or PR that changes a plugin's files without
-raising its version, and `claude plugin tag` creates the matching `<name>--v<version>` git tag.
+raising its version (Dependabot excepted: `weekly-plugin-bump.yml` bumps what it changed), and `claude plugin tag` creates the matching `<name>--v<version>` git tag.
 
 Auto-update is off by default for third-party marketplaces, so users pick up a release with
 `/plugin update` rather than automatically.
