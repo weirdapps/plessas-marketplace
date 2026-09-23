@@ -962,14 +962,11 @@ def test_bank_branding_does_not_count_a_source_footnote_as_a_competitor(tmp_path
 
 
 def test_bank_branding_still_reads_bank_names_in_the_body(tmp_path):
-    """The exclusion must not blind the scan: same deck, NBG in the body.
-
-    The body mention is counted, but only a chart that plots two or more banks is a
-    comparison (VALIDATOR-9, E2E-SMOKE-9); this chart plots none, so nothing fails.
-    """
+    """The exclusion must not blind the scan: same deck, NBG in the body."""
     banks = _check(_bank_deck(tmp_path, "body-bank.pptx", False), "Bank Branding")
-    assert "2 bank name(s) found" in banks.message
-    assert banks.skipped, banks.message
+    assert not banks.skipped, banks.message
+    assert not banks.passed, banks.message
+    assert any("Eurobank" in d for d in banks.details), banks.details
 
 
 # ----------------------------------------------------------------- alt text
