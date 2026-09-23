@@ -9,18 +9,23 @@ Keynote mode is Standard #21 in shared/presentation-style-guide.md. It is the ON
 sanctioned exception to the light-mode NBG deck format, and only for talks delivered
 live to an external or bank-wide audience. Everything else uses nbg_build.py.
 
-Spec: shared/brand-system/keynote.md
+Spec: shared/brand-system/keynote.md. Dark tokens: shared/brand-system/tokens.yaml.
 
-Usage:
-    python3 nbg_keynote.py deck.yaml
-    python3 nbg_keynote.py deck.yaml --out ~/Downloads/202608061821_my_talk
-    python3 nbg_keynote.py deck.yaml --validate      # check spec, render nothing
-    python3 nbg_keynote.py deck.yaml --slides 1,4,7  # re-render a subset
+Usage (through the plugin launcher, which provides the Python environment):
+    decks-py keynote deck.yaml
+    decks-py keynote deck.yaml --out ~/Downloads/202608061821_my_talk
+    decks-py keynote deck.yaml --validate              # check spec and layout, render nothing
+    decks-py keynote deck.yaml --slides 1,4,7          # re-render a subset
+    decks-py keynote deck.yaml --placeholder-images    # lay out before the photographs exist
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+import os
+import shutil
 import sys
 import unicodedata
 from pathlib import Path
@@ -29,9 +34,10 @@ import numpy as np
 import yaml
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-# nbg_color sits one level up, shared with nbg-presentation. These are scripts
-# in hyphenated directories rather than a package, so add the path by hand.
+# nbg_color and nbg_tokens sit one level up, shared with nbg-presentation. These
+# are scripts in hyphenated directories rather than a package, so add the path by hand.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import nbg_tokens  # noqa: E402
 from nbg_color import contrast_ratio  # noqa: E402
 from nbg_color import relative_luminance as luminance  # noqa: E402,F401  (re-export)
 
@@ -41,14 +47,17 @@ W, H = 2560, 1440  # render resolution (2x of 1280x720)
 EMU_W, EMU_H = 12192000, 6858000  # 13.333in x 7.5in
 DPI = 192  # 2560 / 13.333in
 
-M = 155  # side gutter, both sides (0.807in)
+M = int(nbg_tokens.get("keynote.gutter_px"))  # side gutter, both sides (155 = 0.807in)
 X_RIGHT = W - M  # 2405
 SAFE = 100  # nothing critical within 100px of an edge
+CONTENT_BOTTOM = 1280  # slide text ends above the footer row (logo at y 1300)
 
 Y_KICKER = 150
 Y_TITLE = 250
+Y_COVER_TITLE = 300
+Y_COVER_SUB = 500
 Y_FOOTER_LOGO = 1300
-Y_SOURCE = 1312
+Y_SOURCE = 1312  # the ascender line of the source note (Pillow's default anchor)
 LOGO_H_CONTENT = 46
 LOGO_H_COVER = 60
 LOGO_H_BACK = 150
@@ -57,20 +66,30 @@ GRAIN_SIGMA = 4
 DUO_X_RIGHT = 1360  # left edge of the right-hand stat in duo-stat
 
 # ============================================================ palette (dark)
-# Mapped from the light-mode SSOT in brand-system/colors.md. See keynote.md.
+# shared/brand-system/tokens.yaml (keynote.dark) is the machine source; keynote.md
+# explains the mapping from the light-mode colours in colors.md.
 
-INK = (255, 255, 255)  # #FFFFFF   <- 003841  primary text, hero numbers
-INK_2 = (223, 230, 230)  # #DFE6E6   <- 202020  body and support text
-INK_3 = (150, 166, 168)  # #96A6A8   <- 5A5F5A  source notes, metadata
-ACCENT = (0, 223, 248)  # #00DFF8   <- 007B85  kicker, emphasis, highlight
-ACCENT_BAR = (0, 190, 210)  # #00BED2   <- 00ADBF  default bar fill
-ACCENT_MUTE = (0, 130, 146)  # #008292   <- BEC1BE  non-highlighted bars
-GROUND_TOP = (0, 22, 27)  # #00161B   <- FFFFFF  gradient top, scrim base
-GROUND_BOT = (0, 56, 65)  # #003841   <- F5F8F6  gradient bottom (brand Dark Teal)
-NEGATIVE = (255, 82, 99)  # #FF5263   <- AA0028  negative statistic
-RULE = (120, 140, 142)  # #788C8E   <- BEC1BE  chart baseline
+_DARK = nbg_tokens.get("keynote.dark")
+
+
+def _rgb(token: str) -> tuple[int, int, int]:
+    h = str(_DARK[token]).lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+INK = _rgb("ink")  # #FFFFFF   <- 003841  primary text, hero numbers
+INK_2 = _rgb("ink_2")  # #DFE6E6   <- 202020  body and support text
+INK_3 = _rgb("ink_3")  # #96A6A8   <- 5A5F5A  source notes, metadata
+ACCENT = _rgb("accent")  # #00DFF8   <- 007B85  kicker, emphasis, highlight
+ACCENT_BAR = _rgb("accent_bar")  # #00BED2   <- 00ADBF  default bar fill
+ACCENT_MUTE = _rgb("accent_mute")  # #008292   <- BEC1BE  non-highlighted bars
+GROUND_TOP = _rgb("ground_from")  # #00161B   <- FFFFFF  gradient top, scrim base
+GROUND_BOT = _rgb("ground_to")  # #003841   <- F5F8F6  gradient bottom (brand Dark Teal)
+NEGATIVE = _rgb("negative")  # #FF5263   <- AA0028  negative statistic
+RULE = _rgb("rule")  # #788C8E   <- BEC1BE  chart baseline
 
 GLOW = np.array([0, 40, 46])  # faint cyan bloom, lower-left of the gradient
+PLACEHOLDER = (38, 58, 64)  # stands in for a missing photograph with --placeholder-images
 
 NAMED_COLORS = {
     "ink": INK,
@@ -86,66 +105,121 @@ NAMED_COLORS = {
 # ============================================================ typography
 
 # Aptos is the NBG brand font. Fall back rather than crash on a machine without it.
-FONT_DIRS = [
-    Path.home() / "Library/Fonts",
-    Path("/Library/Fonts"),
-    Path("/System/Library/Fonts/Supplemental"),
-    Path("/usr/share/fonts/truetype"),
-]
+
+
+def default_font_dirs() -> list[Path]:
+    """Every folder a colleague's machine keeps Aptos or Calibri in.
+
+    Office for Mac installs neither into a font folder: each app bundle carries its
+    own copy under Contents/Resources/DFonts. Windows keeps system fonts in
+    %WINDIR%\\Fonts and per-user fonts in %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts.
+    Searching only ~/Library/Fonts meant a stock Mac with Office aborted before
+    slide 1, asking for fonts it already had.
+    """
+    home = Path.home()
+    dirs = [
+        home / "Library/Fonts",
+        Path("/Library/Fonts"),
+        Path("/System/Library/Fonts/Supplemental"),
+    ]
+    dirs += [
+        Path(f"/Applications/Microsoft {app}.app/Contents/Resources/DFonts")
+        for app in ("PowerPoint", "Word", "Excel", "Outlook")
+    ]
+    windir = os.environ.get("WINDIR") or os.environ.get("SystemRoot")
+    if windir:
+        dirs.append(Path(windir) / "Fonts")
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        dirs.append(Path(local) / "Microsoft" / "Windows" / "Fonts")
+    dirs += [
+        home / ".local/share/fonts",
+        home / ".fonts",
+        Path("/usr/share/fonts/truetype"),
+        Path("/usr/share/fonts"),
+    ]
+    return dirs
+
+
+FONT_DIRS = default_font_dirs()
+# Matched case-insensitively. Office ships Calibri as Calibri.ttf / Calibrib.ttf
+# (Windows: calibri.ttf / calibrib.ttf); no Office has a "Calibri Bold.ttf".
 FONT_FILES = {
-    "x": ["Aptos-ExtraBold.ttf", "Aptos-Bold.ttf", "Calibri Bold.ttf", "DejaVuSans-Bold.ttf"],
-    "s": ["Aptos-SemiBold.ttf", "Aptos-Bold.ttf", "Calibri Bold.ttf", "DejaVuSans-Bold.ttf"],
-    "l": ["Aptos-Light.ttf", "Aptos.ttf", "Calibri.ttf", "DejaVuSans.ttf"],
-    "r": ["Aptos.ttf", "Calibri.ttf", "DejaVuSans.ttf"],
+    "x": ["Aptos-ExtraBold.ttf", "Aptos-Bold.ttf", "calibrib.ttf", "DejaVuSans-Bold.ttf"],
+    "s": ["Aptos-SemiBold.ttf", "Aptos-Bold.ttf", "calibrib.ttf", "DejaVuSans-Bold.ttf"],
+    "l": ["Aptos-Light.ttf", "Aptos.ttf", "calibril.ttf", "calibri.ttf", "DejaVuSans.ttf"],
+    "r": ["Aptos.ttf", "calibri.ttf", "DejaVuSans.ttf"],
 }
+WEIGHT_NAMES = {"x": "ExtraBold", "s": "SemiBold", "l": "Light", "r": "Regular"}
 _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 _font_warned: set[str] = set()
+_index_cache: dict[tuple[Path, ...], list[tuple[dict[str, Path], dict[str, Path]]]] = {}
+
+
+def _index(d: Path) -> tuple[dict[str, Path], dict[str, Path]]:
+    """Lower-cased file name -> path, for `d` itself and for one level below it.
+
+    The macOS dirs and the Office bundles hold their fonts flat. Linux does not:
+    Debian and Ubuntu file fonts by family, so DejaVu lives at
+    /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf, one level below the listed
+    directory. Without the second level CI had no way to find its only font.
+    """
+    flat: dict[str, Path] = {}
+    nested: dict[str, Path] = {}
+    try:
+        entries = sorted(d.iterdir())
+    except OSError:
+        return flat, nested
+    for p in entries:
+        if p.is_dir():
+            try:
+                for q in sorted(p.iterdir()):
+                    if q.is_file():
+                        nested.setdefault(q.name.lower(), q)
+            except OSError:
+                continue
+        else:
+            flat.setdefault(p.name.lower(), p)
+    return flat, nested
 
 
 def _find_font_file(name: str) -> Path | None:
-    """Locate a font file, checking one level of subdirectories as well.
-
-    The macOS dirs hold their fonts flat, so a direct hit is tried first and
-    Aptos still wins there. Linux does not: Debian and Ubuntu file fonts by
-    family, so the DejaVu fallback this module already declares lives at
-    /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf, one level below the
-    directory listed above. A flat lookup could therefore never reach it, and
-    the declared fallback was unreachable on exactly the platform that needs
-    it: CI had no Aptos, no Calibri and no way to find DejaVu, so it raised
-    SystemExit instead of degrading.
-    """
-    for d in FONT_DIRS:
-        p = d / name
-        if p.exists():
-            return p
-    for d in FONT_DIRS:
-        if not d.is_dir():
-            continue
-        for sub in sorted(d.iterdir()):
-            if sub.is_dir():
-                p = sub / name
-                if p.exists():
-                    return p
+    """Locate a font file by name, ignoring case. A file directly inside a listed
+    folder wins over one a level below it, so Aptos still beats a stray copy."""
+    key = tuple(FONT_DIRS)
+    if key not in _index_cache:
+        _index_cache[key] = [_index(d) for d in FONT_DIRS]
+    wanted = name.lower()
+    for level in (0, 1):
+        for idx in _index_cache[key]:
+            if wanted in idx[level]:
+                return idx[level][wanted]
     return None
 
 
-def font(kind: str, size: int) -> ImageFont.FreeTypeFont:
-    key = (kind, size)
-    if key in _font_cache:
-        return _font_cache[key]
+def font_path(kind: str) -> Path:
+    """The file weight `kind` renders with: Aptos when present, else the first fallback."""
     for i, name in enumerate(FONT_FILES[kind]):
         p = _find_font_file(name)
         if p is not None:
             if i > 0 and kind not in _font_warned:
                 _font_warned.add(kind)
-                warn(f"Aptos '{kind}' weight missing, falling back to {name}")
-            f = ImageFont.truetype(str(p), size)
-            _font_cache[key] = f
-            return f
+                warn(f"Aptos {WEIGHT_NAMES[kind]} missing, falling back to {p.name}")
+            return p
     raise SystemExit(
-        f"No usable font for weight '{kind}'. Install Aptos "
-        f"(https://learn.microsoft.com/typography) or Calibri."
+        f"No usable font for weight '{kind}' ({WEIGHT_NAMES[kind]}). Looked for "
+        f"{', '.join(FONT_FILES[kind])} in: {'; '.join(str(d) for d in FONT_DIRS)}. "
+        f"Install Aptos (Light, Regular, SemiBold, ExtraBold) or Calibri; Office for Mac "
+        f"and Windows already ship both. `decks-py doctor` lists the fonts it can see."
     )
+
+
+def font(kind: str, size: int) -> ImageFont.FreeTypeFont:
+    p = font_path(kind)
+    key = (str(p), size)
+    if key not in _font_cache:
+        _font_cache[key] = ImageFont.truetype(str(p), size)
+    return _font_cache[key]
 
 
 # Greek all-caps drops the tonos but keeps the dialytika. Python's str.upper()
@@ -296,6 +370,79 @@ def _min_ratio(size: int) -> float:
     return 3.0 if size >= 48 else 4.5
 
 
+# ============================================================ layout plan
+
+Box = tuple[float, float, float, float]
+
+
+class _Plan:
+    """What a renderer would draw, recorded instead of drawn.
+
+    Every slide is rendered twice. The first pass lays it out: each text block
+    records its ink box and the contrast it needs, and nothing is painted. The
+    scrim patches then go down, and the second pass draws. Guarding while drawing
+    let a later block's patch settle over text already on the canvas (a title's
+    patch dimmed the kicker above it); guarding first cannot. validate() reuses the
+    first pass, so it measures every block with the renderer's own fonts and wrap.
+    """
+
+    def __init__(self) -> None:
+        # (label, ink box, is footer chrome, block id): lines of one paragraph share a block
+        self.texts: list[tuple[str, Box, bool, int]] = []
+        self.guards: list[tuple[Box, tuple, float, str]] = []
+
+    def add(
+        self,
+        label: str,
+        boxes: list[Box],
+        fill,
+        size: int,
+        guard: Box | None = None,
+        footer: bool = False,
+    ) -> None:
+        block = len(self.texts)
+        for b in boxes:
+            self.texts.append((label, b, footer, block))
+        if boxes:
+            self.guards.append((guard or _union(boxes), fill, _min_ratio(size), label))
+
+
+_PLAN: _Plan | None = None
+
+
+def _union(boxes: list[Box]) -> Box:
+    return (
+        min(b[0] for b in boxes),
+        min(b[1] for b in boxes),
+        max(b[2] for b in boxes),
+        max(b[3] for b in boxes),
+    )
+
+
+def text_box(xy, text: str, fnt: ImageFont.FreeTypeFont, anchor: str | None = None) -> Box:
+    """The ink box of `text` drawn at `xy`: the pixels Pillow will actually paint."""
+    x0, y0, x1, y1 = fnt.getbbox(text, anchor=anchor)
+    return (xy[0] + x0, xy[1] + y0, xy[0] + x1, xy[1] + y1)
+
+
+def _two_phase(draw):
+    """Wrap an archetype renderer: lay out, guard every text box, then draw."""
+
+    def render(canvas, s, ctx, on_image) -> None:
+        global _PLAN
+        _PLAN = plan = _Plan()
+        try:
+            draw(canvas, s, ctx, on_image)
+        finally:
+            _PLAN = None
+        for box, fill, ratio, label in plan.guards:
+            ensure_contrast(canvas, box, fill, ratio, label)
+        draw(canvas, s, ctx, on_image)
+
+    render.layout = draw  # type: ignore[attr-defined]
+    return render
+
+
 # ============================================================ drawing helpers
 
 
@@ -332,15 +479,16 @@ def para(
         # used to reach max() on an empty sequence and abort the whole build
         # with a raw traceback. There is nothing to draw, so draw nothing.
         return y
-    if guard:
+    if _PLAN is not None:
         width = max(fnt.getlength(ln) for ln in lines)
-        ensure_contrast(
-            canvas,
-            (x, y, x + width, y + lh * len(lines)),
-            fill,
-            _min_ratio(size or fnt.size),
+        _PLAN.add(
             label or text[:40],
+            [text_box((x, y + i * lh), ln, fnt) for i, ln in enumerate(lines)],
+            fill,
+            size or fnt.size,
+            guard=(x, y, x + width, y + lh * len(lines)) if guard else None,
         )
+        return y + lh * len(lines)
     for ln in lines:
         shadow_text(canvas, (x, y), ln, fnt, fill, shadow)
         y += lh
@@ -350,14 +498,17 @@ def para(
 def line(canvas, xy, text, fnt, fill, shadow=False, guard=True, label="") -> None:
     if not text:
         return
-    if guard:
-        ensure_contrast(
-            canvas,
-            (xy[0], xy[1], xy[0] + fnt.getlength(text), xy[1] + fnt.size * 1.3),
-            fill,
-            _min_ratio(fnt.size),
+    if _PLAN is not None:
+        _PLAN.add(
             label or text[:40],
+            [text_box(xy, text, fnt)],
+            fill,
+            fnt.size,
+            guard=(xy[0], xy[1], xy[0] + fnt.getlength(text), xy[1] + fnt.size * 1.3)
+            if guard
+            else None,
         )
+        return
     shadow_text(canvas, xy, text, fnt, fill, shadow)
 
 
@@ -366,31 +517,48 @@ def kicker(canvas, text, greek=False, color=ACCENT, y=Y_KICKER) -> None:
     Same job as the filled section pill in light mode."""
     if not text:
         return
-    d = ImageDraw.Draw(canvas)
-    d.rectangle([M, y + 6, M + 22, y + 28], fill=color)
     f = font("s", 30)
     caps = greek_upper(text) if greek else text.upper()
+    if _PLAN is not None:
+        x_end = M + 44 + sum(f.getlength(ch) + 6 for ch in caps) - 6
+        _PLAN.add("kicker", [(M, y, x_end, y + f.size * 1.3)], color, f.size)
+        return
+    d = ImageDraw.Draw(canvas)
+    d.rectangle([M, y + 6, M + 22, y + 28], fill=color)
     x = float(M + 44)
     for ch in caps:
         d.text((x, y), ch, font=f, fill=color)
         x += f.getlength(ch) + 6
 
 
+def mark(canvas, box, fill) -> None:
+    """A filled square or rule: drawn only in the draw pass."""
+    if _PLAN is None:
+        ImageDraw.Draw(canvas).rectangle(box, fill=fill)
+
+
 def place_logo(canvas, logo: Image.Image, height: int, xy) -> int:
-    lg = logo.resize((int(height * logo.width / logo.height), height), Image.Resampling.LANCZOS)
-    canvas.alpha_composite(lg, xy)
-    return int(lg.width)
+    w = int(height * logo.width / logo.height)
+    if _PLAN is None:
+        canvas.alpha_composite(logo.resize((w, height), Image.Resampling.LANCZOS), xy)
+    return w
 
 
 def footer(canvas, logo, source=None) -> None:
     w = place_logo(canvas, logo, LOGO_H_CONTENT, (M, Y_FOOTER_LOGO))
-    if source:
-        ImageDraw.Draw(canvas).text((M + w + 40, Y_SOURCE), source, font=font("r", 24), fill=INK_3)
+    if not source:
+        return
+    f = font("r", 24)
+    xy = (M + w + 40, Y_SOURCE)
+    if _PLAN is not None:
+        _PLAN.add("source", [text_box(xy, source, f)], INK_3, f.size, footer=True)
+        return
+    ImageDraw.Draw(canvas).text(xy, source, font=f, fill=INK_3)
 
 
 MAX_BARS = 7
 MAX_CHARTS = 2  # the exemplar keynote uses two in 16 slides; more is a business deck
-BAR_W_CAP = 380  # n<=3 otherwise yields ~1000px bars: a wall, not a comparison
+BAR_W_CAP = 380  # a few bars otherwise yield 500-1000px bars: a wall, not a comparison
 
 
 def draw_bars(canvas, cats, vals, highlight=None, unit="") -> None:
@@ -398,59 +566,77 @@ def draw_bars(canvas, cats, vals, highlight=None, unit="") -> None:
         raise SystemExit("bars: 'cats' and 'vals' must be the same length")
     if len(vals) > MAX_BARS:
         raise SystemExit(f"bars: at most {MAX_BARS} bars in keynote mode (got {len(vals)})")
-    x1, base, top = X_RIGHT, 1170, 545
-    x0 = float(M)
+    if any(v < 0 for v in vals):
+        # Pillow refuses a rectangle drawn upwards from the baseline, and the deck
+        # died on a raw traceback. validate() rejects this first; this is the belt.
+        raise SystemExit(
+            "bars: negative values cannot stand on a true zero baseline; "
+            "state a decline as a hero-stat (color: negative) or a statement"
+        )
+    base, top = 1170, 545
     n = len(vals)
     gap = 46 if n > 3 else 150
-    bw = (x1 - x0 - gap * (n - 1)) / n
-    span = x1 - x0
-    if n <= 3 and bw > BAR_W_CAP:
-        bw = float(BAR_W_CAP)
-        x0 = x0 + (span - (bw * n + gap * (n - 1))) / 2  # centre the group
+    span = X_RIGHT - M
+    # The cap holds for every bar count; the group is centred in the content band.
+    bw = min((span - gap * (n - 1)) / n, float(BAR_W_CAP))
+    x0 = M + (span - (bw * n + gap * (n - 1))) / 2
     mx = max(vals)
-    # An all-zero (or all-negative) series has no scale. The bars collapse onto
-    # the baseline instead of dividing by zero; validate() rejects such a spec
-    # before it ever reaches here, so this is the belt to that pair of braces.
+    # An all-zero series has no scale. The bars collapse onto the baseline instead
+    # of dividing by zero; validate() rejects such a spec before it ever reaches
+    # here, so this is the belt to that pair of braces.
     scale = (base - top - 90) / mx if mx > 0 else 0.0
-    d = ImageDraw.Draw(canvas)
-    d.line([M, base, X_RIGHT, base], fill=RULE, width=2)
+    vfont = font("x", 60 if n <= 3 else 46)
+    cfont = font("r", 34 if n <= 3 else 30)
+    if _PLAN is None:
+        ImageDraw.Draw(canvas).line([M, base, X_RIGHT, base], fill=RULE, width=2)
     for i, (c, v) in enumerate(zip(cats, vals, strict=True)):
         bx = x0 + i * (bw + gap)
         bh = v * scale  # true zero baseline
-        col = ACCENT if highlight == i else (ACCENT_BAR if n <= 3 else ACCENT_MUTE)
+        if highlight == i:
+            col = ACCENT
+        elif highlight is None:
+            col = ACCENT_BAR
+        else:
+            col = ACCENT_MUTE
+        value_xy, value = (bx + bw / 2, base - bh - 20), f"{v}{unit}"
+        cat_xy, cat = (bx + bw / 2, base + 22), str(c)
+        cat_fill = INK if highlight == i else INK_2
+        if _PLAN is not None:
+            _PLAN.add("bar value", [text_box(value_xy, value, vfont, "mb")], INK, vfont.size)
+            _PLAN.add("bar label", [text_box(cat_xy, cat, cfont, "ma")], cat_fill, cfont.size)
+            continue
+        d = ImageDraw.Draw(canvas)
         d.rectangle([bx, base - bh, bx + bw, base], fill=col)
-        d.text(
-            (bx + bw / 2, base - bh - 20),
-            f"{v}{unit}",
-            font=font("x", 60 if n <= 3 else 46),
-            fill=INK,
-            anchor="mb",
-        )
-        d.text(
-            (bx + bw / 2, base + 22),
-            c,
-            font=font("r", 34 if n <= 3 else 30),
-            fill=INK if highlight == i else INK_2,
-            anchor="ma",
-        )
+        d.text(value_xy, value, font=vfont, fill=INK, anchor="mb")
+        d.text(cat_xy, cat, font=cfont, fill=cat_fill, anchor="ma")
 
 
 # ============================================================ archetypes
 
 
-def _ground(spec, assets: Path):
-    """Photo plus scrim, or the house gradient."""
+def _image_path(img, assets: Path) -> Path:
+    p = Path(img).expanduser()
+    return p if p.is_absolute() else assets / img
+
+
+def _ground(spec, assets: Path, placeholder: bool = False):
+    """Photo plus scrim, or the house gradient.
+
+    With `placeholder`, a missing photograph becomes a flat dark stand-in under the
+    same scrim, so the slide lays out exactly as it will over the real picture.
+    """
     img = spec.get("image")
     if not img:
         return gradient_bg(), False
-    p = Path(img).expanduser()
-    if not p.is_absolute():
-        p = assets / img
-    if not p.exists():
+    p = _image_path(img, assets)
+    if p.exists():
+        photo = cover_fit(Image.open(p))
+    elif placeholder:
+        warn(f"image not found: {p}; laid out over a placeholder")
+        photo = Image.new("RGB", (W, H), PLACEHOLDER)
+    else:
         raise SystemExit(f"image not found: {p}")
-    return scrim(
-        cover_fit(Image.open(p)), spec.get("scrim", "left"), float(spec.get("scrim_strength", 1.0))
-    ), True
+    return scrim(photo, spec.get("scrim", "left"), float(spec.get("scrim_strength", 1.0))), True
 
 
 def is_color(v) -> bool:
@@ -481,11 +667,28 @@ def _color(spec, key, default):
 
 
 def render_cover(c, s, ctx, on_image):
-    shadow_text(c, (M, 300), s["title"], font("x", s.get("size", 150)), INK)
+    size = s.get("size", 150)
+    lh = int(size * 1.1)
+    # Wrapped inside the gutters: drawn as one line it ran off the canvas edge.
+    y = para(
+        c,
+        M,
+        Y_COVER_TITLE,
+        s["title"],
+        font("x", size),
+        INK,
+        X_RIGHT - M,
+        lh,
+        shadow=True,
+        size=size,
+        label="cover title",
+    )
+    # A second title line pushes the subtitle down by exactly one line.
+    sub_y = Y_COVER_SUB + max(0, y - (Y_COVER_TITLE + lh))
     para(
         c,
         M,
-        500,
+        sub_y,
         s.get("subtitle", ""),
         font("l", 50),
         INK_2,
@@ -567,7 +770,7 @@ def render_hero_stat(c, s, ctx, on_image):
     vsize = s.get("size", 400 if on_image else 440)
     vy = s.get("y", 250 if on_image else 300)
     vcolor = _color(s, "color", INK)
-    shadow_text(c, (x, vy), str(s["value"]), font("x", vsize), vcolor, shadow=on_image)
+    line(c, (x, vy), str(s["value"]), font("x", vsize), vcolor, shadow=on_image, label="hero value")
     cy = s.get("caption_y", vy + int(vsize * 1.18))
     csize = s.get("caption_size", 48 if right else (58 if on_image else 60))
     # The caption is normally accent cyan. When the number is red it goes white:
@@ -618,13 +821,14 @@ def render_duo_stat(c, s, ctx, on_image):
     left, right = s["left"], s["right"]
     vsize = s.get("size", 300)
     for spec, x, default_col in ((left, M, INK), (right, DUO_X_RIGHT, ACCENT)):
-        shadow_text(
+        line(
             c,
             (x, 470),
             str(spec["value"]),
             font("x", vsize),
             _color(spec, "color", default_col),
             shadow=on_image,
+            label="duo value",
         )
         para(
             c,
@@ -679,7 +883,7 @@ def render_points(c, s, ctx, on_image):
     )
     y = s.get("y", 500)
     for p in s["points"]:
-        ImageDraw.Draw(c).rectangle([M, y + 12, M + 18, y + 30], fill=ACCENT)
+        mark(c, [M, y + 12, M + 18, y + 30], ACCENT)
         y = (
             para(c, M + 42, y, p, font("r", 37), INK_2, 2050, 50, shadow=on_image, label="point")
             + 34
@@ -692,18 +896,20 @@ def render_points(c, s, ctx, on_image):
 def render_divider(c, s, ctx, on_image):
     kicker(c, s.get("kicker"), ctx["greek"])
     x = M if s.get("align", "right") == "left" else 1290
-    maxw = 2250 if x == M else 1130
+    # The right-hand column ends at the gutter; it used to run 15px past it.
+    maxw = X_RIGHT - x
+    size = s.get("size", 96)
     para(
         c,
         x,
         s.get("y", 560),
         s["title"],
-        font("x", s.get("size", 96)),
+        font("x", size),
         INK,
         maxw,
-        112,
+        int(size * 1.17),
         shadow=on_image,
-        size=96,
+        size=size,
         label="divider title",
     )
     place_logo(c, ctx["logo"], LOGO_H_CONTENT, (M, Y_FOOTER_LOGO))
@@ -745,15 +951,15 @@ def render_back(c, s, ctx, on_image):
 
 
 RENDERERS = {
-    "cover": render_cover,
-    "statement": render_statement,
-    "hero-stat": render_hero_stat,
-    "duo-stat": render_duo_stat,
-    "bars": render_bars,
-    "points": render_points,
-    "divider": render_divider,
-    "closing": render_closing,
-    "back": render_back,
+    "cover": _two_phase(render_cover),
+    "statement": _two_phase(render_statement),
+    "hero-stat": _two_phase(render_hero_stat),
+    "duo-stat": _two_phase(render_duo_stat),
+    "bars": _two_phase(render_bars),
+    "points": _two_phase(render_points),
+    "divider": _two_phase(render_divider),
+    "closing": _two_phase(render_closing),
+    "back": _two_phase(render_back),
 }
 REQUIRED_KEYS = {
     "cover": ["title"],
@@ -767,6 +973,74 @@ REQUIRED_KEYS = {
     "back": [],
 }
 
+# ============================================================ text for assistive technology
+
+
+def _brand_name(greek: bool) -> str:
+    return "Εθνική Τράπεζα" if greek else "National Bank of Greece"
+
+
+def slide_title(s: dict, greek: bool = False) -> str:
+    """The one line a screen reader and PowerPoint's outline announce for the slide."""
+    t = s.get("type")
+    if t == "hero-stat":
+        return f"{s.get('value', '')} {s.get('caption', '')}".strip()
+    if t == "duo-stat" and not s.get("title"):
+        return f"{(s.get('left') or {}).get('value', '')} {(s.get('right') or {}).get('value', '')}".strip()
+    if t == "back":
+        return _brand_name(greek)
+    return str(s.get("title") or s.get("text") or "").strip()
+
+
+def slide_text(s: dict, greek: bool = False) -> str:
+    """Everything the slide shows, in reading order: the picture's alt text.
+
+    A keynote slide is one flattened image, so without this a screen reader
+    announced every slide by its file name ('slide_01.jpg'). Standard #22 holds
+    in keynote mode too.
+    """
+    t = s.get("type")
+    parts: list[str] = [s.get("kicker", "")]
+    if t == "cover":
+        sp = s.get("speaker") or {}
+        parts += [
+            s.get("title", ""),
+            s.get("subtitle", ""),
+            sp.get("name", ""),
+            sp.get("role", ""),
+            s.get("venue", ""),
+        ]
+    elif t in ("statement", "closing"):
+        parts += [s.get("text", ""), s.get("emphasis", ""), s.get("coda", "")]
+    elif t == "hero-stat":
+        parts += [str(s.get("value", "")), s.get("caption", ""), s.get("support", "")]
+    elif t == "duo-stat":
+        parts.append(s.get("title", ""))
+        for side in ("left", "right"):
+            half = s.get(side) or {}
+            parts.append(f"{half.get('value', '')} {half.get('caption', '')}".strip())
+    elif t == "bars":
+        unit = s.get("unit", "")
+        pairs = zip(s.get("cats") or [], s.get("vals") or [], strict=False)
+        parts += [
+            s.get("title", ""),
+            ", ".join(f"{c} {v}{unit}" for c, v in pairs),
+            s.get("axis_label", ""),
+        ]
+    elif t == "points":
+        parts += [
+            s.get("title", ""),
+            *[str(p) for p in s.get("points") or []],
+            s.get("takeaway", ""),
+        ]
+    elif t == "divider":
+        parts.append(s.get("title", ""))
+    elif t == "back":
+        parts.append(_brand_name(greek))
+    parts.append(s.get("source", ""))
+    return "\n".join(str(p).strip() for p in parts if str(p).strip())
+
+
 # ============================================================ assembly
 
 
@@ -779,16 +1053,32 @@ def white_wordmark(path: Path) -> Image.Image:
     return Image.fromarray(a)
 
 
-def build_pptx(images: list[Path], notes: list[str], out: Path) -> None:
+def build_pptx(
+    images: list[Path],
+    notes: list[str],
+    out: Path,
+    slides: list[dict] | None = None,
+    greek: bool = False,
+) -> None:
     from pptx import Presentation
     from pptx.util import Emu
 
     prs = Presentation()
     prs.slide_width, prs.slide_height = Emu(EMU_W), Emu(EMU_H)
-    blank = prs.slide_layouts[6]
-    for img, note in zip(images, notes, strict=True):
-        s = prs.slides.add_slide(blank)
-        s.shapes.add_picture(str(img), Emu(0), Emu(0), width=Emu(EMU_W), height=Emu(EMU_H))
+    title_only = prs.slide_layouts[5]  # a real title placeholder, for assistive technology
+    specs = slides if slides is not None else [{} for _ in images]
+    for img, note, spec in zip(images, notes, specs, strict=True):
+        s = prs.slides.add_slide(title_only)
+        title = s.shapes.title
+        if title is not None:
+            title.text = slide_title(spec, greek) or img.stem
+            # Covered by the full-bleed frame: announced by screen readers and shown
+            # in the outline, never seen on screen.
+            title.left, title.top, title.width, title.height = 0, 0, Emu(EMU_W), Emu(EMU_H // 6)
+        pic = s.shapes.add_picture(str(img), Emu(0), Emu(0), width=Emu(EMU_W), height=Emu(EMU_H))
+        # python-pptx seeds descr with the file name, which is what a screen reader
+        # used to announce for every slide.
+        pic._element.nvPicPr.cNvPr.set("descr", slide_text(spec, greek) or slide_title(spec, greek))
         if note:
             frame = s.notes_slide.notes_text_frame
             if frame is not None:
@@ -798,7 +1088,11 @@ def build_pptx(images: list[Path], notes: list[str], out: Path) -> None:
 
 def build_pdf(images: list[Path], out: Path) -> None:
     frames = [Image.open(p).convert("RGB") for p in images]
-    frames[0].save(out, save_all=True, append_images=frames[1:], resolution=DPI, quality=92)
+    # 4:4:4 like the frames (hard rule 7). Without subsampling=0 Pillow re-encoded
+    # the PDF, the file that goes on the AV laptop, at 4:2:0.
+    frames[0].save(
+        out, save_all=True, append_images=frames[1:], resolution=DPI, quality=92, subsampling=0
+    )
 
 
 # ============================================================ validation
@@ -812,6 +1106,10 @@ def warn(msg: str) -> None:
 # two inside the duo-stat halves.
 _COLOR_KEYS = ("color", "caption_color")
 _COLOR_SUBKEYS = ("left", "right")
+# Blocks with a line budget. Anything else is bounded by the gutter, the footer
+# row and its neighbours.
+LINE_BUDGET = {"cover title": 2}
+_GUTTER_SLACK = 4  # px of glyph overhang tolerated past the gutter
 
 
 def _blank(v) -> bool:
@@ -819,24 +1117,101 @@ def _blank(v) -> bool:
     return isinstance(v, str) and not v.strip()
 
 
-def validate(spec: dict, assets: Path) -> list[str]:
+def _logo_stub() -> Image.Image:
+    """Stands in for the wordmark when laying out: same 1200x348 proportions."""
+    return Image.new("RGBA", (1200, 348))
+
+
+def _layout(slide: dict, greek: bool = False) -> _Plan:
+    global _PLAN
+    canvas = Image.new("RGBA", (W, H), GROUND_TOP + (255,))  # never painted in this pass
+    ctx = {"logo": _logo_stub(), "greek": greek}
+    _PLAN = plan = _Plan()
+    try:
+        RENDERERS[slide["type"]].layout(canvas, slide, ctx, bool(slide.get("image")))  # type: ignore[attr-defined]
+    finally:
+        _PLAN = None
+    return plan
+
+
+def text_boxes(slide: dict, greek: bool = False) -> list[tuple[str, Box]]:
+    """Every text box `slide` would draw, as (label, (x0, y0, x1, y1)) ink boxes,
+    measured with the renderer's own fonts and wrapping."""
+    return [(label, box) for label, box, _, _ in _layout(slide, greek).texts]
+
+
+def _fit_errors(i: int, t: str, plan: _Plan) -> list[str]:
+    """Text that leaves its column, its line budget, the safe area or its neighbours."""
+    errors: list[str] = []
+    seen: set[tuple[str, str]] = set()
+
+    def once(label: str, kind: str, msg: str) -> None:
+        if (label, kind) not in seen:
+            seen.add((label, kind))
+            errors.append(f"slide {i} ({t}): {label} {msg}")
+
+    lines: dict[str, int] = {}
+    for label, (x0, y0, x1, y1), footer_chrome, _ in plan.texts:
+        lines[label] = lines.get(label, 0) + 1
+        if x1 > X_RIGHT + _GUTTER_SLACK:
+            once(
+                label,
+                "right",
+                f"runs past the right gutter (ends at x={x1:.0f}, gutter x={X_RIGHT}); "
+                f"shorten it or lower its size",
+            )
+        if x0 < SAFE:
+            once(label, "left", f"starts outside the safe area (x={x0:.0f}, limit {SAFE})")
+        if y0 < SAFE:
+            once(label, "top", f"starts above the safe area (y={y0:.0f}, limit {SAFE})")
+        if not footer_chrome and y1 > CONTENT_BOTTOM:
+            once(
+                label,
+                "bottom",
+                f"runs into the footer (ends at y={y1:.0f}, limit y={CONTENT_BOTTOM}); "
+                f"shorten it or lower its size",
+            )
+    for label, budget in LINE_BUDGET.items():
+        if lines.get(label, 0) > budget:
+            once(
+                label,
+                "lines",
+                f"needs {lines[label]} lines at this size, the budget is {budget}; "
+                f"shorten it or lower `size`",
+            )
+    texts = plan.texts
+    for a in range(len(texts)):
+        la, ba, _, block_a = texts[a]
+        for b in range(a + 1, len(texts)):
+            lb, bb, _, block_b = texts[b]
+            if block_a == block_b:
+                continue
+            if ba[0] < bb[2] and bb[0] < ba[2] and ba[1] < bb[3] and bb[1] < ba[3]:
+                once(la, f"overlap:{lb}", f"overlaps {lb}")
+    return errors
+
+
+def validate(spec: dict, assets: Path, placeholder_images: bool = False) -> list[str]:
     """Check a spec well enough that `--validate` is worth trusting.
 
-    README.md sells --validate as the gate before a render. Four specs used to
-    clear it and then fail the build: whitespace-only text, mismatched cats and
-    vals, an all-zero bar series, and an unknown colour name. Two of those came
-    out as raw tracebacks.
+    README.md sells --validate as the gate before a render. Specs used to clear it
+    and then fail the build or ship broken: whitespace-only text, mismatched cats
+    and vals, an all-zero or partly negative bar series, an unknown colour name,
+    and text that ran off the canvas or past the gutter. Every block is now laid
+    out with the renderer's own fonts and wrapping and measured.
     """
     errors: list[str] = []
     slides = spec.get("slides") or []
     if not slides:
         errors.append("spec has no slides")
+    greek = str((spec.get("meta") or {}).get("language", "en")).lower().startswith("el")
     charts = 0
     for i, s in enumerate(slides, 1):
         t = s.get("type")
         if t not in RENDERERS:
             errors.append(f"slide {i}: unknown type '{t}' (expected one of {sorted(RENDERERS)})")
             continue
+        before = len(errors)
         for k in REQUIRED_KEYS[t]:
             if k not in s:
                 errors.append(f"slide {i} ({t}): missing required key '{k}'")
@@ -861,11 +1236,19 @@ def validate(spec: dict, assets: Path) -> list[str]:
             bad = [v for v in vals if isinstance(v, bool) or not isinstance(v, (int, float))]
             if bad:
                 errors.append(f"slide {i} (bars): non-numeric value(s) {bad}")
-            elif vals and max(vals) <= 0:
-                errors.append(
-                    f"slide {i} (bars): every value is {max(vals)} or less; a bar chart "
-                    f"needs at least one positive value to set its scale"
-                )
+            else:
+                if vals and max(vals) <= 0:
+                    errors.append(
+                        f"slide {i} (bars): every value is {max(vals)} or less; a bar chart "
+                        f"needs at least one positive value to set its scale"
+                    )
+                negative = [v for v in vals if v < 0]
+                if negative:
+                    errors.append(
+                        f"slide {i} (bars): negative value(s) {negative}; keynote bars stand on "
+                        f"a true zero baseline, so state a decline as a hero-stat "
+                        f"(color: negative) or a statement"
+                    )
             if len(vals) > MAX_BARS:
                 errors.append(f"slide {i}: {len(vals)} bars exceeds the {MAX_BARS} limit")
         for key in _COLOR_KEYS:
@@ -880,14 +1263,81 @@ def validate(spec: dict, assets: Path) -> list[str]:
         if s.get("scrim") and s["scrim"] not in SCRIM_SIDES:
             errors.append(f"slide {i}: unknown scrim '{s['scrim']}'")
         if s.get("image"):
-            p = Path(s["image"]).expanduser()
-            if not p.is_absolute():
-                p = assets / s["image"]
+            p = _image_path(s["image"], assets)
             if not p.exists():
-                errors.append(f"slide {i}: image not found: {p}")
+                if placeholder_images:
+                    warn(f"slide {i}: image not found: {p}; it will be laid out over a placeholder")
+                else:
+                    errors.append(f"slide {i}: image not found: {p}")
+        structural = any("image not found" not in e for e in errors[before:])
+        if not structural:
+            try:
+                errors += _fit_errors(i, t, _layout(s, greek))
+            except SystemExit as e:  # no usable font, or a value a renderer refuses
+                errors.append(f"slide {i} ({t}): could not be laid out: {e}")
+            except Exception as e:  # noqa: BLE001  a bad spec must never surface as a traceback
+                errors.append(f"slide {i} ({t}): could not be laid out: {type(e).__name__}: {e}")
     if charts > MAX_CHARTS:
         errors.append(f"{charts} chart slides; keynote mode allows at most {MAX_CHARTS}")
     return errors
+
+
+def font_report() -> list[str]:
+    """The font file behind each weight, so a fallback is visible before a render."""
+    lines = []
+    for kind, weight in WEIGHT_NAMES.items():
+        p = font_path(kind)
+        note = (
+            "" if p.name.lower() == FONT_FILES[kind][0].lower() else "  (fallback: Aptos not found)"
+        )
+        lines.append(f"  {weight:<9} {p}{note}")
+    return lines
+
+
+# ============================================================ frames
+
+
+def _frame_key(
+    s: dict,
+    base_seed: int,
+    assets: Path,
+    logo_path: Path,
+    greek: bool,
+    placeholder: bool,
+    source_digest: str,
+) -> str:
+    """What a frame depends on: the slide spec, the grain seed, the language, the
+    photograph and wordmark on disk, and this compositor's own code."""
+    h = hashlib.sha256()
+    h.update(source_digest.encode())
+    h.update(json.dumps(s, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8"))
+    h.update(f"|{base_seed}|{greek}|{placeholder}".encode())
+    paths = [logo_path]
+    if s.get("image"):
+        paths.append(_image_path(s["image"], assets))
+    for p in paths:
+        if p.exists():
+            st = p.stat()
+            h.update(f"|{p}|{st.st_size}|{st.st_mtime_ns}".encode())
+    return h.hexdigest()[:20]
+
+
+def _slide_seed(s: dict, base_seed: int) -> int:
+    """Grain seed from the slide's own content, not its position, so a slide that
+    moves keeps a byte-identical frame and a reused frame matches a fresh render."""
+    digest = hashlib.sha256(
+        json.dumps(s, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
+    )
+    return base_seed + int(digest.hexdigest()[:8], 16)
+
+
+def _publish(src: Path, dst: Path) -> None:
+    if dst.exists() or dst.is_symlink():
+        dst.unlink()
+    try:
+        os.link(src, dst)
+    except OSError:
+        shutil.copyfile(src, dst)
 
 
 # ============================================================ main
@@ -898,22 +1348,42 @@ def main() -> int:
     ap.add_argument("spec", type=Path, help="YAML deck specification")
     ap.add_argument("--out", type=Path, help="output stem (overrides meta.output)")
     ap.add_argument("--assets", type=Path, help="base directory for relative image paths")
-    ap.add_argument("--validate", action="store_true", help="check the spec, render nothing")
-    ap.add_argument("--slides", help="comma-separated 1-based indices to re-render")
+    ap.add_argument(
+        "--validate", action="store_true", help="check the spec and its layout, render nothing"
+    )
+    ap.add_argument(
+        "--slides",
+        help="comma-separated 1-based indices to re-render; other slides reuse their frame "
+        "only if nothing they depend on changed",
+    )
+    ap.add_argument(
+        "--placeholder-images",
+        action="store_true",
+        help="lay out a slide whose photograph is missing over a placeholder instead of failing",
+    )
     args = ap.parse_args()
 
     spec = yaml.safe_load(args.spec.read_text(encoding="utf-8"))
     meta = spec.get("meta") or {}
     assets = (args.assets or Path(meta.get("assets", args.spec.parent))).expanduser()
 
-    errors = validate(spec, assets)
+    errors = validate(spec, assets, placeholder_images=args.placeholder_images)
+    slides = spec.get("slides") or []
+    only = {int(n) for n in args.slides.split(",") if n.strip()} if args.slides else None
+    if only:
+        errors += [
+            f"--slides: there is no slide {n}" for n in sorted(only) if not 1 <= n <= len(slides)
+        ]
     if errors:
         print("Spec validation failed:", file=sys.stderr)
         for e in errors:
             print(f"  - {e}", file=sys.stderr)
         return 1
     if args.validate:
-        print(f"OK: {len(spec['slides'])} slides, spec valid.")
+        print(f"OK: {len(slides)} slides, spec and layout valid.")
+        print("fonts:")
+        for ln in font_report():
+            print(ln)
         return 0
 
     if args.out:
@@ -925,7 +1395,8 @@ def main() -> int:
         return 1
     stem.parent.mkdir(parents=True, exist_ok=True)
     frames_dir = stem.parent / f"{stem.name}_frames"
-    frames_dir.mkdir(exist_ok=True)
+    cache = frames_dir / ".cache"
+    cache.mkdir(parents=True, exist_ok=True)
 
     logo_path = Path(
         meta.get("logo", Path(__file__).resolve().parents[2] / "assets/nbg-logo-gr.png")
@@ -934,30 +1405,47 @@ def main() -> int:
         print(f"NBG wordmark not found: {logo_path}", file=sys.stderr)
         return 1
 
-    ctx = {
-        "logo": white_wordmark(logo_path),
-        "greek": str(meta.get("language", "en")).lower().startswith("el"),
-    }
+    greek = str(meta.get("language", "en")).lower().startswith("el")
+    ctx = {"logo": white_wordmark(logo_path), "greek": greek}
     base_seed = int((spec.get("theme") or {}).get("seed", 7))
-    only = {int(n) for n in args.slides.split(",")} if args.slides else None
+    source_digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
-    slides = spec["slides"]
-    images, notes = [], []
+    # Frames are stored by what they depend on, never by position: --slides used
+    # to pair frame N with slide N, so an inserted slide shifted every later slide
+    # onto a stale image and a slide went missing.
+    images, notes, keys = [], [], []
     for i, s in enumerate(slides, 1):
+        key = _frame_key(
+            s, base_seed, assets, logo_path, greek, args.placeholder_images, source_digest
+        )
+        keys.append(key)
+        cached = cache / f"{key}.jpg"
         out_img = frames_dir / f"slide_{i:02d}.jpg"
+        if only is not None and i not in only and cached.exists():
+            print(f"  slide {i:02d}  {s['type']}  (unchanged, frame reused)")
+        else:
+            ground, on_image = _ground(s, assets, placeholder=args.placeholder_images)
+            canvas = grain(ground, _slide_seed(s, base_seed))  # deterministic per slide
+            RENDERERS[s["type"]](canvas, s, ctx, on_image)
+            # JPEG 4:4:4, 4:2:0 smears the grain and the fine type
+            canvas.convert("RGB").save(cached, quality=92, subsampling=0)
+            print(f"  slide {i:02d}  {s['type']}")
+        _publish(cached, out_img)
         images.append(out_img)
         notes.append(str(s.get("notes", "")))
-        if only and i not in only and out_img.exists():
-            continue
-        ground, on_image = _ground(s, assets)
-        canvas = grain(ground, base_seed + i)  # deterministic per slide
-        RENDERERS[s["type"]](canvas, s, ctx, on_image)
-        # JPEG 4:4:4, 4:2:0 smears the grain and the fine type
-        canvas.convert("RGB").save(out_img, quality=92, subsampling=0)
-        print(f"  slide {i:02d}  {s['type']}")
+
+    # A deck that shrank leaves no stale slide_NN.jpg behind, and the store keeps
+    # only the frames the current deck uses.
+    current = {p.name for p in images}
+    for p in frames_dir.glob("slide_*.jpg"):
+        if p.name not in current:
+            p.unlink()
+    for p in cache.glob("*.jpg"):
+        if p.stem not in keys:
+            p.unlink()
 
     pptx_path, pdf_path = stem.with_suffix(".pptx"), stem.with_suffix(".pdf")
-    build_pptx(images, notes, pptx_path)
+    build_pptx(images, notes, pptx_path, slides=slides, greek=greek)
     build_pdf(images, pdf_path)
     print(f"\n{pptx_path}  ({len(slides)} slides)")
     print(f"{pdf_path}")
