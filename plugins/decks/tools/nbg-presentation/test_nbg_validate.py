@@ -1110,6 +1110,40 @@ def test_a_per_point_label_colour_overrides_the_series_labels(tmp_path):
     assert result.status == "pass", result.details
 
 
+def _carrier(label_color):
+    """A stacked chart whose second series is an invisible label carrier (a:noFill),
+    as nbg_build's waterfall step labels are: inside labels on nothing."""
+
+    def edit(prs):
+        sld = slide(prs, 3)
+        remove(sld.shapes[1])
+        frame = bar_chart(
+            sld,
+            chart_type=XL_CHART_TYPE.COLUMN_STACKED,
+            series=(("Value", (40, 45, 50, 55)), ("Labels", (5, 5, 5, 5))),
+        )
+        plot = frame.chart.plots[0]
+        plot.series[1].format.fill.background()
+        labels = plot.series[1].data_labels
+        labels.show_value = True
+        labels.position = XL_LABEL_POSITION.INSIDE_BASE
+        labels.font.size = Pt(12)
+        labels.font.bold = True
+        labels.font.color.rgb = RGBColor.from_string(label_color)
+
+    return edit
+
+
+def test_labels_inside_an_unfilled_carrier_series_are_measured_against_the_slide(tmp_path):
+    """They draw on whatever is behind the chart, so they are measured, not skipped:
+    white labels can only fail as white on white if they were measured at all."""
+    dark = check(deck(tmp_path, _carrier("202020"), name="dark.pptx"), "Contrast")
+    assert dark.status == "pass", dark.details
+    white = check(deck(tmp_path, _carrier("FFFFFF"), name="white.pptx"), "Contrast")
+    assert white.status == "fail" and "#FFFFFF on #FFFFFF" in details(white)
+    assert "series 'Labels'" in details(white)
+
+
 def test_a_valueless_chart_delete_flag_means_deleted(golden):
     """<c:delete/> with no val is true by the schema; python-pptx writes exactly that
     for a hidden axis, so the golden bar chart's value axis has no labels to measure."""

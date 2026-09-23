@@ -2359,18 +2359,26 @@ def _chart_text_rows(
 
         plot_labels = plot.find(f"{C}dLbls")
         for ser in plot.findall(f"{C}ser"):
+            # A series or point with a:noFill draws nothing, so a label "inside" it sits
+            # on whatever is behind the chart (nbg_build's waterfall step labels ride an
+            # invisible carrier series).
             ser_fill = _fill_child(ser.find(f"{C}spPr"))
-            ser_color = (
-                ctx.first(ser_fill)
-                if ser_fill is not None and _local(ser_fill.tag) == "solidFill"
-                else None
-            )
-            points = {}
+            if ser_fill is not None and _local(ser_fill.tag) == "noFill":
+                ser_color = outside
+            elif ser_fill is not None and _local(ser_fill.tag) == "solidFill":
+                ser_color = ctx.first(ser_fill)
+            else:
+                ser_color = None
+            points: dict[str | None, str | None] = {}
             for dpt in ser.findall(f"{C}dPt"):
                 idx = dpt.find(f"{C}idx")
                 fill = _fill_child(dpt.find(f"{C}spPr"))
-                if idx is not None and fill is not None and _local(fill.tag) == "solidFill":
+                if idx is None or fill is None:
+                    continue
+                if _local(fill.tag) == "solidFill":
                     points[idx.get("val")] = ctx.first(fill)
+                elif _local(fill.tag) == "noFill":
+                    points[idx.get("val")] = outside
             labels = ser.find(f"{C}dLbls")
             if labels is None:
                 labels = plot_labels
