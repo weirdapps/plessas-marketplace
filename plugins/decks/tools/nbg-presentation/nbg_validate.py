@@ -2462,12 +2462,29 @@ def check_colors(deck: Deck, out: Collector) -> str:
     return f"{out.examined} colour reference(s) in slides and charts, all NBG colours"
 
 
-def _typefaces(root: Any) -> Iterator[tuple[str, str]]:
-    for tag, role in (("latin", "text"), ("sym", "symbol"), ("buFont", "bullet")):
+_FACE_ROLES = {"latin": "text", "sym": "symbol", "buFont": "bullet"}
+
+
+def _typefaces(root: Any, tags: Iterable[str] = tuple(_FACE_ROLES)) -> Iterator[tuple[str, str]]:
+    for tag in tags:
         for el in root.iter(f"{A}{tag}"):
             face = el.get("typeface")
             if face:
-                yield face, role
+                yield face, _FACE_ROLES[tag]
+
+
+def _shape_runs(s: Slide, shape: Shape) -> Iterator[Run]:
+    """The text runs a shape draws: its own text, or each table cell's."""
+    if shape.kind == "sp":
+        frames = [s.frame(shape)]
+    elif shape.is_table:
+        frames = [_cell_frame(s, tc, look) for tc, look in _cell_looks(s, shape)]
+    else:
+        frames = []
+    for frame in frames:
+        for run in frame.runs() if frame is not None else []:
+            if run.text.strip():
+                yield run
 
 
 def check_fonts(deck: Deck, out: Collector) -> str:
@@ -2492,19 +2509,27 @@ def check_fonts(deck: Deck, out: Collector) -> str:
                 f'"{resolved}" is not an NBG font; use {", ".join(b.fonts_allowed)} ({role} in {where})',
             )
 
+    # A run's typeface is its own, else what it inherits (list styles, placeholders, the
+    # deck default), else the theme's minor font: the font it is drawn in. Symbol and
+    # bullet fonts are read where they are written.
     for s, shape in _judged_shapes(deck, out):
         if shape.kind == "grpSp":
             continue
-        for face, role in _typefaces(shape.el):
-            judge(s.position, face, role, s.theme, _where(shape))
+        where = _where(shape)
+        for face, role in _typefaces(shape.el, ("sym", "buFont")):
+            judge(s.position, face, role, s.theme, where)
+        for run in _shape_runs(s, shape):
+            judge(s.position, run.typeface or "+mn-lt", "text", s.theme, where)
     for chart in deck.charts():
+        where = f"chart {chart.stem}"
         for face, role in _typefaces(chart.root):
-            judge(chart.slide.position, face, role, chart.slide.theme, f"chart {chart.stem}")
+            judge(chart.slide.position, face, role, chart.slide.theme, where)
+        top = chart.root.find(f"{C}txPr")
+        if top is None or top.find(f".//{A}latin") is None:  # chart text in the theme font
+            judge(chart.slide.position, "+mn-lt", "text", chart.slide.theme, f"{where}, theme font")
     if out.findings:
         return f"{len(out.findings)} non-NBG font use(s) among {out.examined} typeface reference(s)"
-    return (
-        f"{out.examined} typeface reference(s): {', '.join(sorted(used)) or 'none set explicitly'}"
-    )
+    return f"{out.examined} typeface reference(s): {', '.join(sorted(used)) or 'no text'}"
 
 
 def _size_floor(slide: Slide, shape: Shape, frame: Frame, title: Title | None) -> tuple[float, str]:
@@ -4316,7 +4341,7 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Theme", check_theme, "warning", "Theme colour slots are NBG colours and the major/minor fonts are Aptos.", "colors.md; tokens colors, fonts", "theme colour slots and font slots"),
     CheckSpec("Background", check_background, "error", "Every slide's effective background (slide, layout, master) is white.", "Standard #2", "slides", True),
     CheckSpec("Colors", check_colors, "error", "Every colour in slides (with the layout and master shapes they show) and charts, including theme references and shape-style colours, is in tokens.yaml; retired colours fail with their reason.", "colors.md; tokens colors, retired_colors", "colour references in slide, layout and master shapes and chart parts", True),
-    CheckSpec("Fonts", check_fonts, "error", "Every typeface (text, symbol, bullet) in slides, the layout and master shapes they show, and charts is an allowed font; Aptos SemiBold is forbidden.", "typography.md; tokens fonts", "typeface references in slide, layout and master shapes and chart parts", True),
+    CheckSpec("Fonts", check_fonts, "error", "Every font text is drawn in is allowed: each run's resolved typeface (theme font included), symbol and bullet fonts, chart fonts; Aptos SemiBold is forbidden.", "typography.md; tokens fonts", "text runs, symbol and bullet fonts, chart fonts", True),
     CheckSpec("Font Sizes", check_font_sizes, "error", "Text is 10pt or more; sources and footnotes 11pt or more; only the header pill may be 9pt.", "Standard #11; tokens accessibility, type.source", "sized text runs in slide, layout and master shapes, table cells and chart parts", True),
     CheckSpec("Contrast", check_contrast, "error", "Text meets WCAG AA against what is behind it; muted grey is waived only for page numbers and axis labels on white.", "Standard #22", "text runs with a resolvable colour and background", True),
     CheckSpec("Boundaries", check_boundaries, "error", "No element extends past a slide edge.", "dimensions.md", "positioned shapes, pictures, charts, tables and connectors", True),

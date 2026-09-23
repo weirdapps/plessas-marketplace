@@ -1944,6 +1944,41 @@ def test_tint_and_shade_work_in_linear_light_as_powerpoint_does():
     assert tinted("shade", 100000) == "4F81BD"
 
 
+def _comic_minor(xml):
+    return re.sub(r'(<a:minorFont>\s*<a:latin typeface=")[^"]*"', r'\1Comic Sans MS"', xml)
+
+
+def _theme_font_run(prs):
+    """Slide 2 gains a run with no typeface of its own: it draws in the theme's minor font."""
+    shape = text(slide(prs, 2), 9.0, 5.3, 3.0, 0.3, "Delivered", size=12)
+    r_pr = shape._element.find(".//" + qn("a:rPr"))
+    r_pr.remove(r_pr.find(qn("a:latin")))
+
+
+def test_text_in_a_non_brand_theme_font_fails_fonts(tmp_path):
+    """VALIDATOR-CODE-4: only explicit a:latin was read, so text drawn in the theme's font,
+    how PowerPoint stores most text, never reached the error-level check."""
+    path = deck(tmp_path, _theme_font_run, patch={"ppt/theme/theme1.xml": _comic_minor})
+    result = check(path, "Fonts")
+    assert result.status == "fail" and "Comic Sans MS" in details(result)
+
+
+def test_text_in_the_nbg_theme_font_passes_fonts(tmp_path):
+    assert check(deck(tmp_path, _theme_font_run), "Fonts").status == "pass"
+
+
+def test_chart_text_with_no_font_of_its_own_is_in_the_theme_font(tmp_path):
+    def edit(prs):
+        chart = next(sh for sh in slide(prs, 3).shapes if sh.has_chart).chart
+        tx_pr = chart._chartSpace.find(qn("c:txPr"))
+        tx_pr.getparent().remove(tx_pr)
+
+    path = deck(tmp_path, edit, patch={"ppt/theme/theme1.xml": _comic_minor})
+    result = check(path, "Fonts")
+    assert result.status == "fail" and "Comic Sans MS" in details(result)
+    assert "chart" in details(result)
+
+
 def test_bank_branding_reads_chart_categories(tmp_path):
     """E2E-SMOKE-9: a four-bank chart passed as 'examined nothing'."""
     result = check(_bank_case(tmp_path, colored=False), "Bank Branding")
