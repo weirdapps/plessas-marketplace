@@ -40,7 +40,7 @@ compare against, and stop.
      and `top: 25`; `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on messages whose `.pptx`
      attachment name matches the record's slug; keep only messages that deliver the deck (not review
      requests); `mcp__plugin_mail_outlook-bridge__outlook_download_attachments` with
-     `out: ${CLAUDE_PLUGIN_DATA}/work/review_<deck id>/`.
+     `out: ${CLAUDE_PLUGIN_DATA}/work/review_<deck id>/` (create it with `mkdir -p` first).
   3. Otherwise ask for the path.
 
   Show what you found and ask the user to confirm before comparing.

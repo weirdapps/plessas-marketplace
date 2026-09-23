@@ -14,7 +14,7 @@ edits.
 
 - `pptx`: the deck to review.
 - `deck`: its `deck.yaml`, or `none` for a deck the plugin did not build.
-- `render`: an empty folder for this review's renders and reports.
+- `render`: a new folder for this review's renders and reports (create it; never reuse one).
 - `cycle`: 0 for the first review, 1 or 2 after fixes.
 
 **Light mode only.** A keynote from `/decks:create-keynote` (dark, full-bleed picture slides, no
@@ -27,6 +27,7 @@ by number when there is none.
 ## Layer 1: the validator
 
 ```bash
+mkdir -p "<render>"
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json > "<render>/validate.json"
 ```
 
