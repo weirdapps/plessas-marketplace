@@ -967,6 +967,7 @@ class Deck:
         self._themes: dict[str | None, Theme] = {}
         self._charts: list[Chart] | None = None
         self._media: dict[str, tuple[str, tuple[int, int] | None]] = {}
+        self._table_styles: dict[str, Any] = {}
         self.missing_slides: list[str] = []
         self.measurer = TextMeasurer()
         self.slides = self._load_slides()
@@ -986,6 +987,28 @@ class Deck:
                 continue
             slides.append(Slide(self, len(slides) + 1, part))
         return slides
+
+    def table_style(self, style_id: str | None) -> Any:
+        """The a:tblStyle a table names: the deck's own definition in ppt/tableStyles.xml,
+        else a built-in style known by its GUID. No id means the list's default style
+        (tblStyleLst/@def). None when the style cannot be found."""
+        styles = self.pkg.xml(self.pkg.related("ppt/presentation.xml", "tableStyles"))
+        key = (style_id or (styles.get("def", "") if styles is not None else "")).strip().upper()
+        if key not in self._table_styles:
+            found = next(
+                (
+                    style
+                    for style in (styles.findall(f"{A}tblStyle") if styles is not None else [])
+                    if (style.get("styleId") or "").strip().upper() == key
+                ),
+                None,
+            )
+            if found is None and key in _BUILTIN_TABLE_STYLES:
+                found = ET.fromstring(
+                    f'<a:tblStyle xmlns:a="{NS["a"]}">{_BUILTIN_TABLE_STYLES[key]}</a:tblStyle>'
+                )
+            self._table_styles[key] = found
+        return self._table_styles[key]
 
     def theme(self, part: str | None) -> Theme:
         if part not in self._themes:
@@ -1352,14 +1375,19 @@ def _shape_frame(slide: Slide, shape: Shape) -> Frame | None:
     return _build_frame(tx, slide.ctx, sources, body_chain, font_ref)
 
 
-def _cell_frame(slide: Slide, tc: Any) -> Frame | None:
+def _cell_frame(slide: Slide, tc: Any, look: _CellLook | None = None) -> Frame | None:
     tx = tc.find(f"{A}txBody")
     if tx is None:
         return None
     default = slide.deck.default_text_style
+    styled = _style_run_defaults(look)
 
     def sources(level: int) -> list[Any]:
-        found = [_lvl(default, level), default.find(f"{A}defPPr") if default is not None else None]
+        found = [
+            styled,
+            _lvl(default, level),
+            default.find(f"{A}defPPr") if default is not None else None,
+        ]
         return [x for x in found if x is not None]
 
     tc_pr = tc.find(f"{A}tcPr")
@@ -1409,6 +1437,169 @@ def _slide_paragraphs(slide: Slide) -> Iterator[str]:
 
 def _cells(shape: Shape) -> Iterator[Any]:
     yield from shape.el.iter(f"{A}tc")
+
+
+# A cell takes its fill and text colour from the table's style unless it sets its own.
+# PowerPoint writes each style a deck uses into ppt/tableStyles.xml; python-pptx names a
+# built-in style by GUID alone, so those styles are spelled out here, copied from
+# PowerPoint's own definitions (borders left out: no check reads them).
+TABLE_STYLE_UNREAD = "table cell coloured by a table style the validator does not know"
+_TABLE_FLAGS = ("firstRow", "lastRow", "firstCol", "lastCol", "bandRow", "bandCol")
+_PLAIN_TABLE = (
+    '<a:wholeTbl><a:tcTxStyle><a:schemeClr val="tx1"/></a:tcTxStyle>'
+    "<a:tcStyle><a:fill><a:noFill/></a:fill></a:tcStyle></a:wholeTbl>"
+)
+_ACCENT_1 = '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill>'
+_MEDIUM_2_ACCENT_1 = (
+    '<a:wholeTbl><a:tcTxStyle><a:schemeClr val="dk1"/></a:tcTxStyle><a:tcStyle><a:fill>'
+    '<a:solidFill><a:schemeClr val="accent1"><a:tint val="20000"/></a:schemeClr></a:solidFill>'
+    "</a:fill></a:tcStyle></a:wholeTbl>"
+    + "".join(
+        f"<a:{band}><a:tcStyle><a:fill><a:solidFill>"
+        '<a:schemeClr val="accent1"><a:tint val="40000"/></a:schemeClr>'
+        f"</a:solidFill></a:fill></a:tcStyle></a:{band}>"
+        for band in ("band1H", "band1V")
+    )
+    + "".join(
+        f'<a:{part}><a:tcTxStyle b="on"><a:schemeClr val="lt1"/></a:tcTxStyle>'
+        f"<a:tcStyle><a:fill>{_ACCENT_1}</a:fill></a:tcStyle></a:{part}>"
+        for part in ("lastCol", "firstCol", "lastRow", "firstRow")
+    )
+)
+_BUILTIN_TABLE_STYLES = {
+    "{2D5ABB26-0587-4C30-8999-92F81FD0307C}": _PLAIN_TABLE,  # No Style, No Grid
+    "{5940675A-B579-460E-94D1-54222C63F5DA}": _PLAIN_TABLE,  # No Style, Table Grid
+    "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}": _MEDIUM_2_ACCENT_1,  # the default table
+}
+
+
+def _style_parts(flags: set[str], r: int, c: int, *, rows: int, cols: int) -> list[str]:
+    """The table-style parts that reach cell (r, c), in the order PowerPoint layers them:
+    whole table, banded rows, banded columns, first and last column, first and last row,
+    corner cells. Banding skips a header or total row and restarts after the header."""
+    first_row = "firstRow" in flags and r == 0
+    last_row = "lastRow" in flags and r == rows - 1
+    first_col = "firstCol" in flags and c == 0
+    last_col = "lastCol" in flags and c == cols - 1
+    parts = ["wholeTbl"]
+    if "bandRow" in flags and not (first_row or last_row):
+        row = r - (1 if "firstRow" in flags else 0)
+        parts.append("band1H" if row % 2 == 0 else "band2H")
+    if "bandCol" in flags and not (first_col or last_col):
+        col = c - (1 if "firstCol" in flags else 0)
+        parts.append("band1V" if col % 2 == 0 else "band2V")
+    edges = (
+        ("firstCol", first_col),
+        ("lastCol", last_col),
+        ("firstRow", first_row),
+        ("lastRow", last_row),
+        ("seCell", last_row and last_col),
+        ("swCell", last_row and first_col),
+        ("neCell", first_row and last_col),
+        ("nwCell", first_row and first_col),
+    )
+    return parts + [name for name, applies in edges if applies]
+
+
+@dataclass(frozen=True)
+class _CellLook:
+    """What a table style gives one cell. fill: ("solid", hex), ("none", None) or
+    ("other", None), or None when no part sets one; text colour and weight likewise."""
+
+    fill: tuple[str, str | None] | None = None
+    text: str | None = None
+    bold: bool | None = None
+
+
+def _cell_look(ctx: ColorContext, style: Any, parts: list[str]) -> _CellLook:
+    fill: tuple[str, str | None] | None = None
+    text: str | None = None
+    bold: bool | None = None
+    for name in parts:
+        part = style.find(f"{A}{name}")
+        if part is None:
+            continue
+        tc_style = part.find(f"{A}tcStyle")
+        node = _fill_child(tc_style.find(f"{A}fill")) if tc_style is not None else None
+        ref = tc_style.find(f"{A}fillRef") if tc_style is not None else None
+        if node is not None:
+            kind = _local(node.tag)
+            fill = (
+                ("solid", ctx.first(node))
+                if kind == "solidFill"
+                else ("none", None)
+                if kind == "noFill"
+                else ("other", None)
+            )
+        elif ref is not None:
+            fill = ("solid", ctx.first(ref))
+        tx = part.find(f"{A}tcTxStyle")
+        if tx is not None:
+            font_ref = tx.find(f"{A}fontRef")
+            text = ctx.first(tx) or (ctx.first(font_ref) if font_ref is not None else None) or text
+            if tx.get("b") in ("on", "off"):
+                bold = tx.get("b") == "on"
+    return _CellLook(fill, text, bold)
+
+
+def _cell_looks(s: Slide, shape: Shape) -> Iterator[tuple[Any, _CellLook | None]]:
+    """Each a:tc a table draws (merged-away cells skipped), with what the table's style
+    gives it: None when the table names a style the validator does not know."""
+    tbl = shape.el.find(f".//{A}tbl")
+    if tbl is None:
+        return
+    tbl_pr = tbl.find(f"{A}tblPr")
+    inline = tbl_pr.find(f"{A}tableStyle") if tbl_pr is not None else None
+    id_el = tbl_pr.find(f"{A}tableStyleId") if tbl_pr is not None else None
+    style = (
+        inline
+        if inline is not None
+        else s.deck.table_style(id_el.text if id_el is not None else None)
+    )
+    flags = {f for f in _TABLE_FLAGS if tbl_pr is not None and tbl_pr.get(f) in ("1", "true")}
+    rows = tbl.findall(f"{A}tr")
+    cols = len(tbl.findall(f"{A}tblGrid/{A}gridCol"))
+    for r, tr in enumerate(rows):
+        for c, tc in enumerate(tr.findall(f"{A}tc")):
+            if tc.get("hMerge") in ("1", "true") or tc.get("vMerge") in ("1", "true"):
+                continue
+            if style is None:
+                yield tc, None
+                continue
+            parts = _style_parts(flags, r, c, rows=len(rows), cols=cols or len(tr))
+            yield tc, _cell_look(s.ctx, style, parts)
+
+
+def _style_run_defaults(look: _CellLook | None) -> Any:
+    """A table style's text colour and weight as a list-style level, so they slot into
+    the text chain between the cell's own text and the deck default."""
+    if look is None or (look.text is None and look.bold is None):
+        return None
+    bold = "" if look.bold is None else f' b="{int(look.bold)}"'
+    fill = f'<a:solidFill><a:srgbClr val="{look.text}"/></a:solidFill>' if look.text else ""
+    return ET.fromstring(
+        f'<a:lvl1pPr xmlns:a="{NS["a"]}"><a:defRPr{bold}>{fill}</a:defRPr></a:lvl1pPr>'
+    )
+
+
+def _table_style_colors(s: Slide, shape: Shape) -> Iterator[tuple[str, str | None] | None]:
+    """(role, hex) for each colour a table's style actually paints: a fill where the cell
+    sets none, a text colour where a run sets none. None for a cell whose colours would
+    come from a style the validator does not know."""
+    for tc, look in _cell_looks(s, shape):
+        own_fill = _fill_child(tc.find(f"{A}tcPr")) is not None
+        cell = _cell_frame(s, tc, look)
+        plain = [
+            r for r in (cell.runs() if cell else []) if r.text.strip() and not r.color_explicit
+        ]
+        if look is None:
+            if not own_fill or plain:
+                yield None
+            continue
+        if not own_fill and look.fill is not None and look.fill[0] == "solid":
+            yield "fill from its table style", look.fill[1]
+        if look.text and any(r.color == look.text for r in plain):
+            yield "text colour from its table style", look.text
 
 
 # ------------------------------------------------------------ measuring text
@@ -2172,6 +2363,19 @@ def check_colors(deck: Deck, out: Collector) -> str:
             verdict = _color_verdict(hex_)
             if verdict:
                 out.add(s.position, f"#{hex_} {verdict} ({role}, in {where}); set it explicitly")
+        if shape.is_table:
+            for painted in _table_style_colors(s, shape):
+                if painted is None:
+                    out.skip(TABLE_STYLE_UNREAD)
+                    continue
+                role, hex_ = painted
+                if hex_ is None:
+                    out.skip("unresolvable table style colour")
+                    continue
+                out.count()
+                verdict = _color_verdict(hex_)
+                if verdict:
+                    out.add(s.position, f"#{hex_} {verdict} ({role}, in {where})")
     for chart in deck.charts():
         for el in _color_elements(chart.root):
             out.count()
@@ -2401,29 +2605,34 @@ def check_contrast(deck: Deck, out: Collector) -> str:
         for shape in s.shapes:
             if not shape.is_table:
                 continue
-            for tc in _cells(shape):
-                cell = _cell_frame(s, tc)
+            for tc, look in _cell_looks(s, shape):
+                cell = _cell_frame(s, tc, look)
                 if cell is None:
                     continue
-                tc_pr = tc.find(f"{A}tcPr")
-                fill = _fill_child(tc_pr)
-                if fill is not None and _local(fill.tag) == "solidFill":
-                    cell_bg = s.ctx.first(fill)
-                elif fill is not None and _local(fill.tag) != "noFill":
-                    cell_bg = None
+                own = _fill_child(tc.find(f"{A}tcPr"))
+                if own is not None:  # the cell's own fill outranks its table style
+                    kind, hex_ = _local(own.tag), s.ctx.first(own)
+                elif look is not None and look.fill is not None:
+                    kind = {"solid": "solidFill", "none": "noFill"}.get(look.fill[0], "other")
+                    hex_ = look.fill[1]
                 else:
-                    cell_bg = slide_bg
+                    kind, hex_ = "noFill", None
+                cell_bg = hex_ if kind == "solidFill" else slide_bg if kind == "noFill" else None
                 for run in cell.runs():
-                    if run.text.strip():
-                        measure(
-                            s.position,
-                            run.color,
-                            cell_bg,
-                            run.size,
-                            run.bold,
-                            f'table cell "{_snippet(run.text, 40)}"',
-                            None,
-                        )
+                    if not run.text.strip():
+                        continue
+                    if look is None and (own is None or not run.color_explicit):
+                        out.skip(TABLE_STYLE_UNREAD)
+                        continue
+                    measure(
+                        s.position,
+                        run.color,
+                        cell_bg,
+                        run.size,
+                        run.bold,
+                        f'table cell "{_snippet(run.text, 40)}"',
+                        None,
+                    )
     for chart in deck.charts():
         kind, slide_bg, _ = _slide_background(chart.slide)
         outside = slide_bg if kind == "solid" else None

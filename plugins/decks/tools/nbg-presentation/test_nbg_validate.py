@@ -1765,6 +1765,104 @@ def test_smartart_without_a_drawing_part_is_unexamined_and_fails_strict(tmp_path
     assert nv.exit_code(results, strict=True) == 1
 
 
+NO_STYLE_TABLE = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"  # No Style, No Grid
+CUSTOM_TABLE = "{0B5E1C3A-5D2B-4C3E-9A11-7C1D2E3F4A5B}"
+
+
+def _styled_table(prs, *, style=None):
+    """Swap slide 5's table for one that leaves colour to its table style: no cell fills,
+    no run colours, the header row and banding flags python-pptx turns on."""
+    sld = slide(prs, 5)
+    remove(next(sh for sh in sld.shapes if sh.has_table))
+    frame = sld.shapes.add_table(3, 2, inch(0.374), inch(1.3), inch(6.0), inch(1.2))
+    if style is not None:
+        frame._element.find(".//" + qn("a:tableStyleId")).text = style
+    for r in range(3):
+        for c in range(2):
+            run = frame.table.cell(r, c).text_frame.paragraphs[0].add_run()
+            run.text = f"Line {r}{c}"
+            run.font.size = Pt(12)
+            run.font.name = "Aptos"
+    set_alt(frame, "Table of fee lines by year.")
+
+
+def _table_styles(header_fill):
+    header = (
+        f'<a:firstRow><a:tcTxStyle b="on"><a:schemeClr val="lt1"/></a:tcTxStyle>'
+        f"<a:tcStyle><a:fill><a:solidFill>{header_fill}</a:solidFill></a:fill></a:tcStyle>"
+        "</a:firstRow>"
+    )
+    style = (
+        f'<a:tblStyle styleId="{CUSTOM_TABLE}" styleName="House">'
+        '<a:wholeTbl><a:tcTxStyle><a:schemeClr val="dk1"/></a:tcTxStyle></a:wholeTbl>'
+        f"{header}</a:tblStyle>"
+    )
+    return lambda xml: re.sub(
+        r"<a:tblStyleLst([^>]*?)\s*/>", rf"<a:tblStyleLst\1>{style}</a:tblStyleLst>", xml
+    )
+
+
+def test_the_default_table_style_colours_are_measured(tmp_path):
+    """VALIDATOR-CODE-8: PowerPoint's default table (Medium Style 2, Accent 1) puts white
+    bold text on accent 1, cyan in the NBG theme, at about 2.2:1; with no cell fills
+    written, both Contrast and Colors passed it."""
+    path = deck(tmp_path, _styled_table)
+    contrast = check(path, "Contrast")
+    assert contrast.status == "fail" and "#FFFFFF on #00ADBF" in details(contrast)
+    colors = check(path, "Colors")
+    assert colors.status == "fail" and "fill from its table style" in details(colors)
+
+
+def test_a_table_with_no_style_is_plain_text_on_the_slide(tmp_path):
+    path = deck(tmp_path, lambda prs: _styled_table(prs, style=NO_STYLE_TABLE))
+    assert check(path, "Contrast").status == "pass"
+    assert check(path, "Colors").status == "pass"
+
+
+def test_a_style_defined_in_the_deck_is_read_from_table_styles_xml(tmp_path):
+    teal = _table_styles('<a:srgbClr val="007B85"/>')
+    ok = deck(
+        tmp_path,
+        lambda prs: _styled_table(prs, style=CUSTOM_TABLE),
+        patch={"ppt/tableStyles.xml": teal},
+    )
+    assert check(ok, "Contrast").status == "pass"
+    assert check(ok, "Colors").status == "pass"
+    bright = _table_styles('<a:schemeClr val="accent6"/>')
+    bad = deck(
+        tmp_path,
+        lambda prs: _styled_table(prs, style=CUSTOM_TABLE),
+        name="bright.pptx",
+        patch={"ppt/tableStyles.xml": bright},
+    )
+    result = check(bad, "Contrast")
+    assert result.status == "fail" and "#FFFFFF on #00DFF8" in details(result)
+
+
+def test_an_unknown_table_style_is_not_examined(tmp_path):
+    unknown = "{11111111-2222-3333-4444-555555555555}"
+    path = deck(tmp_path, lambda prs: _styled_table(prs, style=unknown))
+    for name in ("Contrast", "Colors"):
+        result = check(path, name)
+        assert result.not_examined.get(nv.TABLE_STYLE_UNREAD, 0) >= 6, (name, result.not_examined)
+
+
+@pytest.mark.parametrize(
+    ("flags", "cell", "parts"),
+    [
+        ({"firstRow", "bandRow"}, (0, 0), ["wholeTbl", "firstRow"]),
+        ({"firstRow", "bandRow"}, (1, 0), ["wholeTbl", "band1H"]),
+        ({"firstRow", "bandRow"}, (2, 1), ["wholeTbl", "band2H"]),
+        ({"bandRow"}, (0, 0), ["wholeTbl", "band1H"]),
+        ({"firstRow", "firstCol"}, (0, 0), ["wholeTbl", "firstCol", "firstRow", "nwCell"]),
+        ({"lastRow", "bandRow", "firstRow"}, (3, 0), ["wholeTbl", "lastRow"]),
+        ({"firstCol", "bandRow"}, (1, 0), ["wholeTbl", "band2H", "firstCol"]),
+    ],
+)
+def test_table_style_parts_layer_in_powerpoint_order(flags, cell, parts):
+    assert nv._style_parts(flags, *cell, rows=4, cols=2) == parts
+
+
 def test_bank_branding_reads_chart_categories(tmp_path):
     """E2E-SMOKE-9: a four-bank chart passed as 'examined nothing'."""
     result = check(_bank_case(tmp_path, colored=False), "Bank Branding")

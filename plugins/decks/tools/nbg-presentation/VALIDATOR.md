@@ -94,10 +94,10 @@ Sev: E = error (blocks), W = warning (reports). U = universal: applies to every 
 | Dimensions | Slide size is exactly 12192000 x 6858000 EMU (13.333 x 7.5 in, PowerPoint Widescreen), within 635 EMU. | dimensions.md; tokens `geometry.slide` | E | the `p:sldSz` element | U |
 | Theme | Theme colour slots are NBG colours and the major/minor fonts are Aptos or Aptos Display. | colors.md; tokens `colors`, `fonts` | W | theme colour slots and font slots | |
 | Background | Every slide's effective background (slide, else layout, else master) is white. | Standard #2 | E | slides | U |
-| Colors | Every colour in slide shapes (and the layout and master shapes a slide shows, and SmartArt drawings) and chart parts is in tokens.yaml, including theme (`schemeClr`) references and the outline or fill a shape takes from its `p:style`. A retired colour fails with its reason. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide, layout and master shapes and chart parts | U |
+| Colors | Every colour in slide shapes (and the layout and master shapes a slide shows, and SmartArt drawings) and chart parts is in tokens.yaml, including theme (`schemeClr`) references, the outline or fill a shape takes from its `p:style`, and the fill and text colour a table cell takes from its table style. A retired colour fails with its reason. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide, layout and master shapes and chart parts | U |
 | Fonts | Every typeface (text, symbol, bullet) in slides, the layout and master shapes they show, SmartArt drawings and charts is in `fonts.allowed`; `+mn`/`+mj` theme references are resolved; Aptos SemiBold is forbidden. | typography.md; tokens `fonts` | E | typeface references | U |
 | Font Sizes | Text is at least 10pt; sources and footnotes at least 11pt; only the header pill may be 9pt. Table cells, chart text, SmartArt text and the text of layout and master shapes a slide shows included. | Standard #11; tokens `accessibility`, `type.source` | E | sized text runs in slide, layout and master shapes, table cells and chart parts | U |
-| Contrast | Text meets WCAG AA against what is behind it: its own fill, else the topmost filled shape below it containing its centre, else the slide background. Muted grey `939793` (2.96:1 on white) is waived only for the page number (10pt or less at the page-number position) and chart axis labels, on white, as Standard #22 allows; the cover date is caption grey and gets no waiver. Bullet glyphs are not text runs. | Standard #22 | E | text runs with a resolvable colour and background | U |
+| Contrast | Text meets WCAG AA against what is behind it: its own fill, else the topmost filled shape below it containing its centre, else the slide background. A table cell's text and fill come from the cell, else from the table style. Muted grey `939793` (2.96:1 on white) is waived only for the page number (10pt or less at the page-number position) and chart axis labels, on white, as Standard #22 allows; the cover date is caption grey and gets no waiver. Bullet glyphs are not text runs. | Standard #22 | E | text runs with a resolvable colour and background | U |
 | Boundaries | No element extends past a slide edge (0.05 in tolerance). | dimensions.md | E | positioned shapes, pictures, charts, tables, connectors, group children | U |
 | Safe Zones | Content stays right of the 0.374 in gutter, left of the right boundary, above the 6.85 in footer line; sources and footnotes end by 6.5 in. | dimensions.md; tokens `geometry` | E | content elements (logo footprints and the page number excluded) | U |
 | Content Spacing | The first body element starts at 1.3 in or lower (`geometry.body_top`) and at least 0.15 in below the title's measured bottom, with or without a pill. | Standard #11 | E | slides with a content title and body content | |
@@ -165,6 +165,16 @@ Sizes, Logo and Back Cover read those shapes. A layout or master shape is judged
 the first slide that shows it, and its finding names the part (`on slideMaster1.xml`), since
 that is where it is fixed. Placeholders on a layout or master render only through a slide's
 own placeholder, so they are read as that placeholder's inherited properties instead.
+
+**Table styles**: a table cell takes its fill and text colour from the table's style
+unless it sets its own. The style is the deck's own definition in `ppt/tableStyles.xml`
+(an inline `a:tableStyle`, or the list's default when the table names none), else one of the
+built-in styles python-pptx decks name by GUID alone: No Style (with or without grid) and
+Medium Style 2 Accent 1, PowerPoint's default table, which in the NBG theme puts white text
+on cyan. Parts layer in PowerPoint's order (whole table, banded rows and columns, first and
+last column, first and last row, corner cells), honouring the table's `firstRow`,
+`bandRow` and related flags. Colors and Contrast read the result. A cell whose colours
+would come from any other style is reported under "not examined".
 
 **SmartArt**: PowerPoint draws a diagram from its drawing part (`ppt/diagrams/drawingN.xml`,
 found through the data part's `dsp:dataModelExt`). Colors, Fonts and Font Sizes read the
