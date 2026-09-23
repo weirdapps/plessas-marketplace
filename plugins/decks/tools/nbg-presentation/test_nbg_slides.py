@@ -199,6 +199,47 @@ def test_waterfall_step_labels_sit_above_the_bar_and_totals_inside(build):
     assert "".join(t.text for t in labels[0].iter(f"{A}t")) == "+2"
 
 
+def test_a_waterfall_is_four_series_with_each_bar_coloured_by_its_kind(build):
+    """The bridge was eight series (a base, six kind-and-sign columns, a label
+    carrier), and the validator warns past six: QA read construction as a crowded
+    chart. Now the visible parts take their kind's colour point by point."""
+    slide = {
+        "type": "waterfall",
+        "content": {"title": "The bridge crosses zero", "source": SOURCE},
+        "chart": {
+            "type": "waterfall",
+            "data": {
+                "items": [
+                    {"label": "Start", "value": 10},
+                    {"label": "Up", "value": 3},
+                    {"label": "Down", "value": -5},
+                    {"label": "Cross", "value": -12},
+                    {"label": "End", "value": -4, "total": True},
+                ]
+            },
+        },
+    }
+    out = build(deck([slide]))
+    root = part_xml(out, chart_parts(out)[0])
+    series = root.findall(".//c:barChart/c:ser", NS)
+    assert [s.find(".//c:tx//c:v", NS).text for s in series] == [
+        "Base",
+        "Above zero",
+        "Below zero",
+        "Labels",
+    ]
+
+    def fills(ser):
+        return {
+            int(pt.find("c:idx", NS).get("val")): pt.find(".//a:srgbClr", NS).get("val")
+            for pt in ser.findall("c:dPt", NS)
+        }
+
+    total, increase, decrease = "003841", "00ADBF", "AA0028"
+    assert fills(series[1]) == {0: total, 1: increase, 2: decrease, 3: decrease}
+    assert fills(series[2]) == {3: decrease, 4: total}
+
+
 # ---------------------------------------------------------------- other slide types
 
 

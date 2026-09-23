@@ -604,9 +604,13 @@ def add_waterfall(
     native waterfall). Totals dark teal, increases cyan, decreases alert red; every
     label is the signed contribution, written as text so it reads right in any viewer.
 
-    A step's label sits just above its bar, on an empty series stacked on top: inside
-    a thin bar a centred label runs over both edges. Totals, and steps below zero,
-    keep a centred label in the bar."""
+    Four series: the invisible base, the part of each bar above zero, the part below
+    zero, and an empty label carrier. Each visible part takes its kind's colour point
+    by point, so the chart never looks like more than the one exhibit it is.
+
+    A step's label sits just above its bar, on the carrier stacked on top: inside a
+    thin bar a centred label runs over both edges. Totals, and steps below zero, keep
+    a centred label in the bar."""
     cfg = CHARTS["waterfall"]
     segments = waterfall_segments(spec["data"]["items"])
     values = [s["value"] for s in segments]
@@ -616,28 +620,12 @@ def add_waterfall(
         "increase": hexcolor(cfg["increase_color"]),
         "decrease": hexcolor(cfg["decrease_color"]),
     }
-    order = [
-        ("total", 1),
-        ("total", -1),
-        ("increase", 1),
-        ("increase", -1),
-        ("decrease", 1),
-        ("decrease", -1),
-    ]
-    columns: dict[tuple[str, int], list[float]] = {key: [] for key in order}
-    base: list[float] = []
-    for seg in segments:
-        b, pos, neg = _split(seg["start"], seg["end"])
-        base.append(b)
-        for key in order:
-            kind, sign = key
-            part = (pos if sign > 0 else neg) if seg["kind"] == kind else 0.0
-            columns[key].append(part)
+    parts = [_split(seg["start"], seg["end"]) for seg in segments]
     chart_data = CategoryChartData(number_format=number_format)
     chart_data.categories = [s["label"] for s in segments]
-    chart_data.add_series("Base", base)
-    for key in order:
-        chart_data.add_series(f"{key[0]} {'+' if key[1] > 0 else '-'}", columns[key])
+    chart_data.add_series("Base", [b for b, _, _ in parts])
+    chart_data.add_series("Above zero", [pos for _, pos, _ in parts])
+    chart_data.add_series("Below zero", [neg for _, _, neg in parts])
     chart_data.add_series("Labels", [0.0] * len(segments))
     x, y, w, h = box
     frame = slide.shapes.add_chart(
@@ -649,25 +637,31 @@ def add_waterfall(
     plot = chart.plots[0]
     plot.gap_width = int(cfg["gap_width"])
     plot.overlap = 100
-    all_series = list(plot.series)
-    for invisible in (all_series[0], all_series[-1]):
+    base_series, above_zero, below_zero, carrier = plot.series
+    for invisible in (base_series, carrier):
         invisible.format.fill.background()
         _no_line(invisible.format)
-    for series, key in zip(all_series[1:-1], order, strict=True):
+    for series in (above_zero, below_zero):
         series.format.fill.solid()
-        series.format.fill.fore_color.rgb = RGBColor.from_string(colours[key[0]])
+        series.format.fill.fore_color.rgb = RGBColor.from_string(colours["total"])
         _no_line(series.format)
         series.invert_if_negative = False
+    for index, (seg, (_, pos, neg)) in enumerate(zip(segments, parts, strict=True)):
+        for series, part in ((above_zero, pos), (below_zero, neg)):
+            if part:
+                point = series.points[index]
+                point.format.fill.solid()
+                point.format.fill.fore_color.rgb = RGBColor.from_string(colours[seg["kind"]])
+                _no_line(point.format)
     above = hexcolor(str(nbg_tokens.get("type.chart_data_label.color")))
-    for index, seg in enumerate(segments):
-        _, pos, neg = _split(seg["start"], seg["end"])
+    for index, (seg, (_, pos, neg)) in enumerate(zip(segments, parts, strict=True)):
         floating_above_zero = seg["kind"] != "total" and neg == 0
         if floating_above_zero:
-            label = all_series[-1].points[index].data_label
+            label = carrier.points[index].data_label
             position, colour = XL_LABEL_POSITION.INSIDE_BASE, above
         else:
-            sign = 1 if pos != 0 or neg == 0 else -1
-            label = all_series[1 + order.index((seg["kind"], sign))].points[index].data_label
+            holder = above_zero if pos != 0 or neg == 0 else below_zero
+            label = holder.points[index].data_label
             position, colour = XL_LABEL_POSITION.CENTER, str(label_text_color(colours[seg["kind"]]))
         tf = label.text_frame
         tf.text = _format_delta(seg["value"], seg["kind"], number_format)
