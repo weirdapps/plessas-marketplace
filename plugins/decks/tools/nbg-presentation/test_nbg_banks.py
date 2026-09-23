@@ -126,14 +126,18 @@ def _stretch(out, slide_no, pic):
 # ---------------------------------------------------------------- tokens
 
 
-def test_every_bank_has_a_colour_the_validator_accepts_a_logo_and_unambiguous_names():
+def test_every_bank_has_a_palette_colour_a_logo_and_unambiguous_names():
+    """Colours live once, in extended_palettes.peer_banks (what the validator checks);
+    banks adds the logo and the names. Full names count anywhere; the short
+    label_aliases only in a chart label, where "Alpha" beside "Eurobank" is a bank
+    but "alpha release" in running text is not (VALIDATOR-9)."""
     banks = nbg_tokens.get("banks")
     peer = nbg_tokens.get("extended_palettes.peer_banks")
     assert set(banks) == set(peer)
     for key, bank in banks.items():
-        assert bank["color"] == peer[key], key
+        assert "color" not in bank, "one colour source: extended_palettes.peer_banks"
         assert (nbg_spec.ASSETS_DIR / bank["logo"]).is_file(), bank["logo"]
-        for alias in bank["aliases"]:
+        for alias in bank["names"] + bank["label_aliases"]:
             assert nbg_spec.bank_of(alias) == key, alias
     assert nbg_spec.bank_of("Market average") is None
     assert nbg_spec.bank_of("NBG and Eurobank") is None  # two banks in one label
@@ -142,10 +146,14 @@ def test_every_bank_has_a_colour_the_validator_accepts_a_logo_and_unambiguous_na
 def test_greek_and_english_names_are_recognised_without_case_or_accents():
     assert nbg_spec.bank_of("Εθνική Τράπεζα") == "nbg"
     assert nbg_spec.bank_of("ΕΤΕ") == "nbg"
-    assert nbg_spec.bank_of("TRAPEZA") is None
     assert nbg_spec.bank_of("τράπεζα πειραιώς") == "piraeus"
     assert nbg_spec.bank_of("Άλφα") == "alpha"
     assert nbg_spec.bank_of("alpha bank") == "alpha"
+
+
+@pytest.mark.parametrize("label", ["Bank", "bank", "Τράπεζα", "ΤΡΑΠΕΖΑ", "Other banks", "Trapeza"])
+def test_the_word_bank_alone_names_no_bank(label):
+    assert nbg_spec.bank_of(label) is None
 
 
 # ---------------------------------------------------------------- banks as categories
@@ -248,14 +256,15 @@ def test_greek_bank_names_get_the_colours_and_greek_alt_text(build):
 # ---------------------------------------------------------------- opt-out and check
 
 
-def test_bank_logos_false_keeps_the_colours_and_drops_the_logos_with_a_warning(build, tmp_path):
-    slide = _bank_chart("bar", bank_logos=False)
-    out = build(deck([slide]))
-    chart = part_xml(out, chart_parts(out)[0])
-    assert _point_fills(chart) == {i: COLOURS[b] for i, b in enumerate(BANKS)}
-    assert not _logos(slide_xml(out, 2))
-    report = nbg_build.check(write_spec(tmp_path, deck([slide]), "optout.yaml"))
-    assert any(i.path == "slides[1].chart.bank_logos" for i in report.warnings)
+def test_bank_logos_false_on_a_bank_chart_is_a_check_error(tmp_path):
+    """The Bank Branding gate fails a comparison without one logo per bank, so a
+    warning here only let check pass a deck the build then rejected."""
+    spec = write_spec(tmp_path, deck([_bank_chart("bar", bank_logos=False)]), "optout.yaml")
+    report = nbg_build.check(spec)
+    error = next(i for i in report.errors if i.path == "slides[1].chart.bank_logos")
+    assert "Bank Branding" in error.message
+    with pytest.raises(nbg_build.SpecInvalid):
+        nbg_build.build_presentation(spec, tmp_path / "optout.pptx", validate=False)
 
 
 def test_check_refuses_bank_charts_the_builder_cannot_brand(tmp_path):

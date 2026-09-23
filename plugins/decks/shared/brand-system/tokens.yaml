@@ -73,31 +73,33 @@ extended_palettes:
   peer_banks: {nbg: "007B85", eurobank: "DC2646", alpha: "0D488B", piraeus: "FFC02D"}
 
 # The systemic banks, for peer comparisons (assets/bank-logos/README.md). When two or
-# more are a chart's categories or series, nbg_build draws each in its colour with its
-# logo. color must equal extended_palettes.peer_banks (a test holds them together);
-# logo is relative to assets/ and keeps its own aspect (NBG's oval mark is 1.55:1);
-# aliases are matched whole-word, ignoring case and accents, in English and Greek.
+# more are a chart's categories or series, nbg_build draws each in its colour
+# (extended_palettes.peer_banks, the one colour source) with its logo. logo is
+# relative to assets/ and keeps its own aspect (NBG's oval mark is 1.55:1). Names match
+# whole-word, ignoring case and accents: `names` count anywhere, `label_aliases` only
+# in a chart label, where "Alpha" beside "Eurobank" is a bank but "alpha release" in
+# running text is not (VALIDATOR-9). The word "bank" alone names no bank.
 banks:
   nbg:
     name: "NBG"
-    color: "007B85"
     logo: "bank-logos/nbg.png"
-    aliases: ["NBG", "National Bank of Greece", "National Bank", "ΕΤΕ", "Εθνική Τράπεζα", "Εθνική"]
+    names: ["NBG", "National Bank of Greece", "Εθνική Τράπεζα"]
+    label_aliases: ["National Bank", "ΕΤΕ", "Εθνική"]
   eurobank:
     name: "Eurobank"
-    color: "DC2646"
     logo: "bank-logos/eurobank.png"
-    aliases: ["Eurobank"]
+    names: ["Eurobank"]
+    label_aliases: []
   alpha:
     name: "Alpha Bank"
-    color: "0D488B"
     logo: "bank-logos/alpha-bank.png"
-    aliases: ["Alpha Bank", "Alpha", "Άλφα"]
+    names: ["Alpha Bank"]
+    label_aliases: ["Alpha", "Άλφα"]
   piraeus:
     name: "Piraeus Bank"
-    color: "FFC02D"
     logo: "bank-logos/piraeus-bank.png"
-    aliases: ["Piraeus Bank", "Piraeus", "Τράπεζα Πειραιώς", "Πειραιώς"]
+    names: ["Piraeus Bank", "Τράπεζα Πειραιώς"]
+    label_aliases: ["Piraeus", "Πειραιώς"]
 
 # Colours that must not appear: retired greys, one-off tints, the python-pptx /
 # Office 2007 theme a deck inherits when nothing overrides it, and dark grounds.

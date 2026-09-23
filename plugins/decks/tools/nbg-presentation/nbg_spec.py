@@ -1060,9 +1060,12 @@ def fold(text: Any) -> str:
 
 @lru_cache(maxsize=1)
 def _bank_patterns() -> dict[str, re.Pattern[str]]:
+    """Per bank, its full names and its label-only short forms: a chart label is a
+    label, so both count here."""
     patterns = {}
     for key, bank in nbg_tokens.get("banks").items():
-        names = sorted((fold(a) for a in bank["aliases"]), key=len, reverse=True)
+        aliases = list(bank["names"]) + list(bank["label_aliases"])
+        names = sorted((fold(a) for a in aliases), key=len, reverse=True)
         patterns[key] = re.compile("|".join(rf"\b{re.escape(n)}\b" for n in names))
     return patterns
 
@@ -1113,10 +1116,11 @@ def _bank_issues(chart: dict[str, Any], path: str, issues: Issues) -> None:
             "use bar or bar_horizontal (or doughnut for shares), or make the banks the series",
         )
     if chart.get("bank_logos") is False:
-        issues.warning(
+        issues.error(
             f"{path}.bank_logos",
-            "the bank logos are switched off on a peer comparison",
-            "remove bank_logos: false; the validator's Bank Branding check wants one logo per bank",
+            "bank_logos is false on a peer comparison, and the Bank Branding gate requires "
+            "each plotted bank's logo",
+            "remove bank_logos: false; the builder places the logos itself",
         )
     if chart.get("highlight_category") is not None:
         issues.warning(

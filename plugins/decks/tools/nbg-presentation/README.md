@@ -98,14 +98,16 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 
 Peer-bank comparisons brand themselves. Name two or more of the systemic banks
 (`tokens.yaml` `banks`: NBG, Eurobank, Piraeus Bank, Alpha Bank, in English or Greek,
-any case or accents) as the categories of a one-series `bar`, `bar_horizontal` or
-`doughnut` chart, or as the series of any bar or line chart, and each bank takes its
-brand colour and its logo: under its bar, beside a horizontal bar, or in a legend row
-of swatch, logo and name that replaces the chart's own legend. `bank_logos: false`
-leaves the logos out (a warning; the validator's Bank Branding check fails it). Bank
-categories on a line chart or with more than one series are check errors, because one
-bank cannot be one colour there: make the banks the series instead. A
-`highlight_category` on a bank chart is ignored with a warning.
+any case or accents; the word "bank" alone names none) as the categories of a
+one-series `bar`, `bar_horizontal` or `doughnut` chart, or as the series of any bar or
+line chart, and each bank takes its brand colour (`extended_palettes.peer_banks`) and
+its logo: under its bar, beside a horizontal bar, or in a legend row of swatch, logo
+and name that replaces the chart's own legend. `bank_logos: false` on a comparison is a
+check error, because the validator's Bank Branding gate requires every plotted bank's
+logo. Bank categories on a line chart or with more than one series are check errors
+too, because one bank cannot be one colour there: make the banks the series instead.
+A `highlight_category` on a bank chart is ignored with a warning.
+[`examples/peer-banks.yaml`](../../examples/peer-banks.yaml) shows every layout.
 
 Chart types: `bar`, `bar_stacked`, `bar_horizontal`, `line`, `area_line` (the default
 for a time series, Standard #2.8) and `doughnut` (there is no pie). Element kinds:

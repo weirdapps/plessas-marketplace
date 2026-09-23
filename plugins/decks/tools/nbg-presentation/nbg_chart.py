@@ -53,6 +53,7 @@ CHARTS = nbg_tokens.load()["charts"]
 FONT = str(CHARTS["font"])
 PALETTE = nbg_tokens.chart_palette()
 BANKS = nbg_tokens.load()["banks"]
+BANK_COLOURS = nbg_tokens.get("extended_palettes.peer_banks")
 LOGOS = nbg_tokens.load()["components"]["bank_logos"]
 FIT = 0.97  # the measuring margin nbg_build uses: 97% of a width counts as full
 
@@ -133,7 +134,7 @@ def bank_colours(spec: dict[str, Any]) -> tuple[list[str], list[str] | None]:
         return palette, None
     mode, banks = plan
     muted = hexcolor(CHARTS["highlight"]["muted"])
-    colours = [str(BANKS[b]["color"]) if b else muted for b in banks]
+    colours = [str(BANK_COLOURS[b]).upper() if b else muted for b in banks]
     return (colours, None) if mode == "series" else (palette, colours)
 
 

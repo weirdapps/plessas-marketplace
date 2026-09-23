@@ -10,6 +10,7 @@ the shape.
 |---|---|---|
 | [`executive-summary.yaml`](executive-summary.yaml) | Board | cover, kpi, chart (bar with a highlighted category), cards (SVG icons, a recommended option, a takeaway), two_column (bullets beside an area_line chart, 40/60), back_cover |
 | [`quarterly-report.yaml`](quarterly-report.yaml) | Executive committee | cover, contents, divider, content (level-2 bullet, takeaway), chart (area_line, bar_stacked, doughnut, a four-bank comparison with brand colours and logos), table, waterfall, back_cover |
+| [`peer-banks.yaml`](peer-banks.yaml) | Executive committee | every peer-bank layout: logos under bars, beside horizontal bars, and in a legend row for bank series and a doughnut; a bank chart in a two_column half |
 | [`strategy-deck.yaml`](strategy-deck.yaml) | Strategy committee | cover, divider, content (caption), process, cards (grid, a highlighted card), chart (bar_horizontal), table, image, custom (positioned elements with a line chart), back_cover |
 | [`greek-deck.yaml`](greek-deck.yaml) | Executive committee, in Greek | cover, contents, divider, content (a Greek pill in accent-free capitals), kpi, chart (bar), back_cover |
 

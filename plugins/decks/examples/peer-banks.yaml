@@ -1,0 +1,128 @@
+# Peer banks: every layout the builder brands when a chart compares the systemic banks.
+# Exercises: chart (bar with each logo under its bar, bar_horizontal with each logo
+# beside its bar, line with the banks as series and a logo legend, doughnut with a
+# logo legend), two_column (a bank chart in half the width, its legend on two rows),
+# back_cover. Name the banks; the builder adds the colours and logos. The figures are
+# illustrative, not published data, and every source line says so.
+
+presentation:
+  title: "Peer Bank Comparison"
+  audience: "Executive Committee"
+  purpose: "Show how a comparison of the four systemic banks is drawn"
+  main_recommendation: "Name the banks in the data; colours and logos follow"
+  language: en
+
+slides:
+  - type: cover
+    id: S01
+    content:
+      title: "Peer Bank Comparison"
+      subtitle: "Retail Banking | Illustrative benchmark"
+      location: "Athens"
+      date: "February 2026"
+
+  - type: chart
+    id: S02
+    content:
+      title: "Mobile share of transactions ranges from 46% to 58% across the four banks"
+      description: "Share of transactions made in the mobile app, Q4 2025, %"
+      source:
+        name: "Illustrative figures, not published data"
+        as_of: "31 December 2025"
+    chart:
+      type: bar
+      data:
+        categories: ["NBG", "Eurobank", "Piraeus Bank", "Alpha Bank"]
+        series:
+          - name: "Mobile share"
+            values: [58, 52, 49, 46]
+      number_format: "0"
+
+  - type: chart
+    id: S03
+    content:
+      title: "Card spending per active card spans EUR 3,500 to EUR 4,200 a year"
+      description: "Card spending per active card, 2025, EUR"
+      source:
+        name: "Illustrative figures, not published data"
+        as_of: "31 December 2025"
+    chart:
+      type: bar_horizontal
+      data:
+        categories: ["NBG", "Eurobank", "Piraeus Bank", "Alpha Bank"]
+        series:
+          - name: "Spending per card"
+            values: [4200, 3900, 3700, 3500]
+      number_format: "#,##0"
+
+  - type: chart
+    id: S04
+    content:
+      title: "Digital sales share rose at all four banks between 2022 and 2025"
+      description: "Digital share of retail product sales, %"
+      source:
+        name: "Illustrative figures, not published data"
+        as_of: "31 December 2025"
+    chart:
+      type: line
+      data:
+        categories: ["2022", "2023", "2024", "2025"]
+        series:
+          - name: "NBG"
+            values: [22, 27, 31, 35]
+          - name: "Eurobank"
+            values: [20, 24, 28, 32]
+          - name: "Piraeus Bank"
+            values: [18, 22, 26, 29]
+          - name: "Alpha Bank"
+            values: [17, 21, 24, 27]
+      number_format: "0"
+
+  - type: chart
+    id: S05
+    content:
+      title: "New mobile accounts split across the four banks in shares of 18% to 34%"
+      description: "New mobile accounts opened in 2025, share by bank"
+      source:
+        name: "Illustrative figures, not published data"
+        as_of: "31 December 2025"
+    chart:
+      type: doughnut
+      data:
+        categories: ["NBG", "Eurobank", "Piraeus Bank", "Alpha Bank"]
+        series:
+          - name: "Share of new accounts"
+            values: [0.34, 0.26, 0.22, 0.18]
+
+  - type: two_column
+    id: S06
+    content:
+      title: "Every bank grew its mobile share from 2024 to 2025"
+      source:
+        name: "Illustrative figures, not published data"
+        as_of: "31 December 2025"
+    left:
+      kind: bullets
+      heading: "What the comparison shows"
+      points:
+        - "Mobile share rose by four to six points at every bank"
+        - "The gap between the first and fourth bank held at about twelve points"
+    right:
+      kind: chart
+      heading: "Mobile share of transactions, %"
+      chart:
+        type: bar
+        data:
+          categories: ["2024", "2025"]
+          series:
+            - name: "NBG"
+              values: [52, 58]
+            - name: "Eurobank"
+              values: [48, 52]
+            - name: "Piraeus Bank"
+              values: [45, 49]
+            - name: "Alpha Bank"
+              values: [42, 46]
+        number_format: "0"
+
+  - type: back_cover
