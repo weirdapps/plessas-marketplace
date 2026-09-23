@@ -435,3 +435,18 @@ def test_examples_use_only_canonical_keys():
         data = yaml.safe_load(spec.read_text(encoding="utf-8"))
         _, issues = nbg_spec.normalise(data)
         assert not issues, (spec.name, [i.format() for i in issues])
+
+
+def test_the_readme_example_checks_clean_and_builds(tmp_path, monkeypatch):
+    """DOCS-MEMORY-6: the first snippet a colleague copied from the README failed."""
+    readme = (HERE / "README.md").read_text(encoding="utf-8")
+    block = readme.split("<!-- readme-example -->", 1)[1].split("```yaml", 1)[1].split("```", 1)[0]
+    spec = tmp_path / "readme.yaml"
+    spec.write_text(block, encoding="utf-8")
+    report = nbg_build.check(spec)
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+    from testkit import passing_validator
+
+    passing_validator(monkeypatch, nbg_build)
+    nbg_build.build_presentation(spec, tmp_path / "readme.pptx")
+    assert (tmp_path / "readme.pptx").exists()
