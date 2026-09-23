@@ -43,8 +43,9 @@ from pptx.enum.chart import (  # noqa: E402
     XL_LEGEND_POSITION,
     XL_MARKER_STYLE,
 )
-from pptx.enum.shapes import MSO_SHAPE  # noqa: E402
+from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE  # noqa: E402
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN  # noqa: E402
+from pptx.opc.constants import RELATIONSHIP_TYPE as RT  # noqa: E402
 from pptx.oxml.ns import qn  # noqa: E402
 from pptx.util import Emu, Pt  # noqa: E402
 
@@ -406,6 +407,25 @@ def shape_with_text(sld, prefix):
         if sh.has_text_frame and sh.text_frame.text.startswith(prefix):
             return sh
     raise AssertionError(f"no shape starting {prefix!r}")
+
+
+def background_graphic(prs, make, *, master=False):
+    """Draw a shape with make(scratch slide) and move it onto the Blank layout every
+    golden slide uses, or onto the slide master: a background graphic that each slide
+    showing it renders. python-pptx cannot add shapes to a layout directly."""
+    scratch = prs.slides.add_slide(prs.slide_layouts[6])
+    el = make(scratch)._element
+    owner = prs.slide_master if master else prs.slide_layouts[6]
+    blip = el.find(".//" + qn("a:blip"))
+    if blip is not None:
+        image = scratch.part.related_part(blip.get(qn("r:embed")))
+        blip.set(qn("r:embed"), owner.part.relate_to(image, RT.IMAGE))
+    owner.shapes._spTree.append(el)
+    ids = prs.slides._sldIdLst
+    last = list(ids)[-1]
+    prs.part.drop_rel(last.rId)
+    ids.remove(last)
+    return el
 
 
 def move_slide(prs, old_index, new_index):
@@ -1575,6 +1595,79 @@ def test_text_margins_fail_on_any_violation(tmp_path):
 def test_the_old_bullet_child_order_is_an_ooxml_error(tmp_path):
     result = check(FAIL_CASES["OOXML Order"](tmp_path), "OOXML Order")
     assert result.status == "fail" and "a:pPr" in details(result)
+
+
+def _master_band(prs):
+    background_graphic(prs, lambda s: box(s, 0, 7.3, 13.333, 0.2, "4F81BD"), master=True)
+
+
+def test_an_off_palette_band_on_the_master_fails_colors_once(tmp_path):
+    """VALIDATOR-CODE-9: layout and master shapes were never read, so an off-palette band
+    on the master passed on every slide that showed it."""
+    result = check(deck(tmp_path, _master_band), "Colors")
+    assert result.status == "fail"
+    assert "4F81BD" in details(result) and "slideMaster1.xml" in details(result)
+    assert len(result.details) == 1, "judged once, not once per slide that shows it"
+
+
+def test_a_layout_that_hides_master_shapes_hides_the_band(tmp_path):
+    def edit(prs):
+        _master_band(prs)
+        prs.slide_layouts[6]._element.set("showMasterSp", "0")
+
+    assert check(deck(tmp_path, edit), "Colors").status == "pass"
+
+
+def test_hide_background_graphics_on_every_slide_hides_the_layout_band(tmp_path):
+    def edit(prs):
+        background_graphic(prs, lambda s: box(s, 0, 7.3, 13.333, 0.2, "4F81BD"))
+        for sld in prs.slides:
+            sld._element.set("showMasterSp", "0")
+
+    assert check(deck(tmp_path, edit), "Colors").status == "pass"
+
+
+def test_layout_text_is_held_to_the_font_and_size_rules(tmp_path):
+    def edit(prs):
+        background_graphic(
+            prs,
+            lambda s: text(s, 0.374, 7.0, 4.0, 0.3, "Confidential", size=8, font="Comic Sans MS"),
+        )
+
+    path = deck(tmp_path, edit)
+    fonts = check(path, "Fonts")
+    assert fonts.status == "fail" and "Comic Sans MS" in details(fonts)
+    assert "slideLayout" in details(fonts)
+    sizes = check(path, "Font Sizes")
+    assert sizes.status == "fail" and "8pt" in details(sizes)
+
+
+def _drop_pictures(sld):
+    for shape in list(sld.shapes):
+        if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+            shape._element.getparent().remove(shape._element)
+
+
+def test_a_logo_on_the_layout_is_the_logo_of_each_slide_that_shows_it(tmp_path):
+    """A logo placed once on the layout failed Logo on every slide that rendered it."""
+
+    def edit(prs):
+        slides = list(prs.slides)
+        for sld in slides[1:-1]:
+            _drop_pictures(sld)
+        background_graphic(prs, lambda s: logo(s, "small"))
+        for sld in (slides[0], slides[-1]):
+            sld._element.set("showMasterSp", "0")
+
+    path = deck(tmp_path, edit)
+    result = check(path, "Logo")
+    assert result.status == "pass", result.details
+    assert check(path, "Back Cover").status == "pass"
+
+
+def test_the_back_cover_shows_the_logo_on_its_layout(tmp_path):
+    result = check(deck(tmp_path, lambda prs: background_graphic(prs, logo)), "Back Cover")
+    assert result.status == "fail" and "besides the emblem" in details(result)
 
 
 def test_bank_branding_reads_chart_categories(tmp_path):

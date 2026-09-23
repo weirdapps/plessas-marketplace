@@ -650,6 +650,7 @@ class Shape:
     depth: int
     layout_ph: Any = None
     master_ph: Any = None
+    part: str | None = None  # the layout or master that owns an inherited shape
 
     @property
     def has_box(self) -> bool:
@@ -788,6 +789,10 @@ def _find_ph(root: Any, ph_type: str | None, ph_idx: str | None, *, by_idx: bool
     return None
 
 
+def _shows_master_shapes(root: Any) -> bool:
+    return root is not None and root.get("showMasterSp", "1") not in ("0", "false")
+
+
 @dataclass
 class Chart:
     part: str
@@ -828,7 +833,28 @@ class Slide:
         for shape in self.shapes:
             if shape.is_placeholder:
                 self._inherit_placeholder(shape)
+        self.inherited = self._background_graphics()
         self._frames: dict[int, Frame | None] = {}
+
+    def _background_graphics(self) -> list[Shape]:
+        """The layout's and master's non-placeholder shapes this slide renders, master
+        first. showMasterSp="0" on the slide (Hide Background Graphics) hides both; on
+        the layout it hides the master's."""
+        if not _shows_master_shapes(self.root):
+            return []
+        owners = [(self.layout, self.layout_part)]
+        if _shows_master_shapes(self.layout):
+            owners.insert(0, (self.master, self.master_part))
+        out: list[Shape] = []
+        for root, part in owners:
+            tree = root.find(f"{P}cSld/{P}spTree") if root is not None else None
+            if tree is None:
+                continue
+            for shape in _flatten(tree, _Xform(), 0, []):
+                if not shape.is_placeholder:
+                    shape.part = part
+                    out.append(shape)
+        return out
 
     def _inherit_placeholder(self, shape: Shape) -> None:
         shape.layout_ph = _find_ph(self.layout, shape.ph_type, shape.ph_idx, by_idx=True)
@@ -870,11 +896,12 @@ class Slide:
         rid = blip.get(f"{R}embed") if blip is not None else None
         if not rid:
             return None
-        return self.deck.pkg.rels(self.part).get(rid, ("", None))[1]
+        return self.deck.pkg.rels(shape.part or self.part).get(rid, ("", None))[1]
 
     def chart_part(self, shape: Shape) -> str | None:
         rid = shape.chart_rid
-        return self.deck.pkg.rels(self.part).get(rid, ("", None))[1] if rid else None
+        owner = shape.part or self.part
+        return self.deck.pkg.rels(owner).get(rid, ("", None))[1] if rid else None
 
 
 class Deck:
@@ -2052,32 +2079,47 @@ def _color_elements(root: Any) -> Iterator[Any]:
             stack.append(child)
 
 
-def check_colors(deck: Deck, out: Collector) -> str:
+def _judged_shapes(deck: Deck) -> Iterator[tuple[Slide, Shape]]:
+    """Each slide's shapes, then the layout and master shapes it renders. An inherited
+    shape comes once, with the first slide that shows it: a band on the master is one
+    finding, not one per slide."""
+    seen: set[int] = set()
     for s in deck.slides:
-        for shape in s.shapes:
-            if shape.kind == "grpSp":
+        yield from ((s, shape) for shape in s.shapes)
+        for shape in s.inherited:
+            if id(shape.el) not in seen:
+                seen.add(id(shape.el))
+                yield s, shape
+
+
+def _where(shape: Shape) -> str:
+    name = f'"{shape.name}"' if shape.name else shape.kind
+    return f"{name} on {posixpath.basename(shape.part)}" if shape.part else name
+
+
+def check_colors(deck: Deck, out: Collector) -> str:
+    for s, shape in _judged_shapes(deck):
+        if shape.kind == "grpSp":
+            continue
+        where = _where(shape)
+        for el in _color_elements(shape.el):
+            out.count()
+            hex_ = s.ctx.resolve(el)
+            if hex_ is None:
+                out.skip("unresolvable colour reference")
                 continue
-            where = f'"{shape.name}"' if shape.name else shape.kind
-            for el in _color_elements(shape.el):
-                out.count()
-                hex_ = s.ctx.resolve(el)
-                if hex_ is None:
-                    out.skip("unresolvable colour reference")
-                    continue
-                verdict = _color_verdict(hex_)
-                if verdict:
-                    via = f" ({s.ctx.describe(el)})" if s.ctx.describe(el) else ""
-                    out.add(s.position, f"#{hex_}{via} {verdict} (in {where})")
-            for role, hex_ in _style_ref_colors(s, shape):
-                out.count()
-                if hex_ is None:
-                    out.skip("unresolvable style colour")
-                    continue
-                verdict = _color_verdict(hex_)
-                if verdict:
-                    out.add(
-                        s.position, f"#{hex_} {verdict} ({role}, in {where}); set it explicitly"
-                    )
+            verdict = _color_verdict(hex_)
+            if verdict:
+                via = f" ({s.ctx.describe(el)})" if s.ctx.describe(el) else ""
+                out.add(s.position, f"#{hex_}{via} {verdict} (in {where})")
+        for role, hex_ in _style_ref_colors(s, shape):
+            out.count()
+            if hex_ is None:
+                out.skip("unresolvable style colour")
+                continue
+            verdict = _color_verdict(hex_)
+            if verdict:
+                out.add(s.position, f"#{hex_} {verdict} ({role}, in {where}); set it explicitly")
     for chart in deck.charts():
         for el in _color_elements(chart.root):
             out.count()
@@ -2123,14 +2165,11 @@ def check_fonts(deck: Deck, out: Collector) -> str:
                 f'"{resolved}" is not an NBG font; use {", ".join(b.fonts_allowed)} ({role} in {where})',
             )
 
-    for s in deck.slides:
-        for shape in s.shapes:
-            if shape.kind == "grpSp":
-                continue
-            for face, role in _typefaces(shape.el):
-                judge(
-                    s.position, face, role, s.theme, f'"{shape.name}"' if shape.name else shape.kind
-                )
+    for s, shape in _judged_shapes(deck):
+        if shape.kind == "grpSp":
+            continue
+        for face, role in _typefaces(shape.el):
+            judge(s.position, face, role, s.theme, _where(shape))
     for chart in deck.charts():
         for face, role in _typefaces(chart.root):
             judge(chart.slide.position, face, role, chart.slide.theme, f"chart {chart.stem}")
@@ -2157,32 +2196,9 @@ def _size_floor(slide: Slide, shape: Shape, frame: Frame, title: Title | None) -
 def check_font_sizes(deck: Deck, out: Collector) -> str:
     b = brand()
     sizes: set[float] = set()
-    for s in deck.slides:
-        title = find_title(s)
-        for shape, frame in s.text_shapes():
-            floor, role = _size_floor(s, shape, frame, title)
-            for run in frame.runs():
-                if not run.text.strip():
-                    continue
-                if run.size is None:
-                    out.skip("size inherited from a default the validator cannot read")
-                    continue
-                out.count()
-                sizes.add(run.size)
-                if run.size + 1e-6 < floor:
-                    if role == "source or footnote":
-                        out.add(
-                            s.position,
-                            f'{run.size:g}pt source or footnote "{_snippet(run.text)}"; sources and footnotes are at least {floor:g}pt (Standard #11)',
-                        )
-                    else:
-                        out.add(
-                            s.position,
-                            f'{run.size:g}pt {role} "{_snippet(run.text)}" is below the {floor:g}pt floor (Standard #11)',
-                        )
-        for shape in s.shapes:
-            if not shape.is_table:
-                continue
+    titles: dict[int, Title | None] = {}
+    for s, shape in _judged_shapes(deck):
+        if shape.is_table:
             for tc in _cells(shape):
                 cell = _cell_frame(s, tc)
                 if cell is None:
@@ -2200,6 +2216,32 @@ def check_font_sizes(deck: Deck, out: Collector) -> str:
                             s.position,
                             f'{run.size:g}pt table text "{_snippet(run.text)}" is below the {b.min_font:g}pt floor (Standard #11)',
                         )
+            continue
+        frame = s.frame(shape) if shape.kind == "sp" else None
+        if frame is None or not frame.text.strip():
+            continue
+        if s.position not in titles:
+            titles[s.position] = find_title(s)
+        floor, role = _size_floor(s, shape, frame, titles[s.position])
+        for run in frame.runs():
+            if not run.text.strip():
+                continue
+            if run.size is None:
+                out.skip("size inherited from a default the validator cannot read")
+                continue
+            out.count()
+            sizes.add(run.size)
+            if run.size + 1e-6 < floor:
+                if role == "source or footnote":
+                    out.add(
+                        s.position,
+                        f'{run.size:g}pt source or footnote "{_snippet(run.text)}"; sources and footnotes are at least {floor:g}pt (Standard #11)',
+                    )
+                else:
+                    out.add(
+                        s.position,
+                        f'{run.size:g}pt {role} "{_snippet(run.text)}" is below the {floor:g}pt floor (Standard #11)',
+                    )
     for chart in deck.charts():
         for el in list(chart.root.iter(f"{A}defRPr")) + list(chart.root.iter(f"{A}rPr")):
             sz = el.get("sz")
@@ -2796,7 +2838,7 @@ def check_logo(deck: Deck, out: Collector) -> str:
         out.count()
         spots = [
             (shape, spot_name)
-            for shape in s.shapes
+            for shape in s.shapes + s.inherited
             if shape.kind == "pic"
             for spot_name, spot in (("small", b.logo_small), ("large", b.logo_large))
             if _spot_match(shape, spot, size=False)
@@ -2849,9 +2891,10 @@ def check_back_cover(deck: Deck, out: Collector) -> str:
         return "a one-slide deck has no back cover to check"
     s = deck.slides[-1]
     out.count()
-    pictures = [sh for sh in s.shapes if sh.kind == "pic"]
-    others = [sh for sh in s.shapes if sh.kind in ("graphicFrame", "cxnSp")]
-    texts = [sh for sh in s.shapes if sh.kind == "sp"]
+    shown = s.shapes + s.inherited
+    pictures = [sh for sh in shown if sh.kind == "pic"]
+    others = [sh for sh in shown if sh.kind in ("graphicFrame", "cxnSp")]
+    texts = [sh for sh in shown if sh.kind == "sp"]
     for shape in texts:
         frame = s.frame(shape)
         body = frame.text.strip() if frame is not None else ""
@@ -3940,17 +3983,17 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Dimensions", check_dimensions, "error", "Slide size is exactly 12192000 x 6858000 EMU (13.333 x 7.5 in, PowerPoint Widescreen).", "dimensions.md; tokens geometry.slide", "the p:sldSz element", True),
     CheckSpec("Theme", check_theme, "warning", "Theme colour slots are NBG colours and the major/minor fonts are Aptos.", "colors.md; tokens colors, fonts", "theme colour slots and font slots"),
     CheckSpec("Background", check_background, "error", "Every slide's effective background (slide, layout, master) is white.", "Standard #2", "slides", True),
-    CheckSpec("Colors", check_colors, "error", "Every colour in slides and charts, including theme references and shape-style colours, is in tokens.yaml; retired colours fail with their reason.", "colors.md; tokens colors, retired_colors", "colour references in slide shapes and chart parts", True),
-    CheckSpec("Fonts", check_fonts, "error", "Every typeface (text, symbol, bullet) in slides and charts is an allowed font; Aptos SemiBold is forbidden.", "typography.md; tokens fonts", "typeface references in slide shapes and chart parts", True),
-    CheckSpec("Font Sizes", check_font_sizes, "error", "Text is 10pt or more; sources and footnotes 11pt or more; only the header pill may be 9pt.", "Standard #11; tokens accessibility, type.source", "sized text runs in shapes, table cells and chart parts", True),
+    CheckSpec("Colors", check_colors, "error", "Every colour in slides (with the layout and master shapes they show) and charts, including theme references and shape-style colours, is in tokens.yaml; retired colours fail with their reason.", "colors.md; tokens colors, retired_colors", "colour references in slide, layout and master shapes and chart parts", True),
+    CheckSpec("Fonts", check_fonts, "error", "Every typeface (text, symbol, bullet) in slides, the layout and master shapes they show, and charts is an allowed font; Aptos SemiBold is forbidden.", "typography.md; tokens fonts", "typeface references in slide, layout and master shapes and chart parts", True),
+    CheckSpec("Font Sizes", check_font_sizes, "error", "Text is 10pt or more; sources and footnotes 11pt or more; only the header pill may be 9pt.", "Standard #11; tokens accessibility, type.source", "sized text runs in slide, layout and master shapes, table cells and chart parts", True),
     CheckSpec("Contrast", check_contrast, "error", "Text meets WCAG AA against what is behind it; muted grey is waived only for page numbers and axis labels on white.", "Standard #22", "text runs with a resolvable colour and background", True),
     CheckSpec("Boundaries", check_boundaries, "error", "No element extends past a slide edge.", "dimensions.md", "positioned shapes, pictures, charts, tables and connectors", True),
     CheckSpec("Safe Zones", check_safe_zones, "error", "Content stays between the 0.374in gutter and the right boundary, above the 6.85in footer line; sources end by 6.5in.", "dimensions.md; tokens geometry", "content elements (logo footprints and the page number excluded)", True),
     CheckSpec("Content Spacing", check_content_spacing, "error", "The first body element starts at 1.3in or lower and 0.15in or more below the title.", "Standard #11; tokens geometry.body_top", "slides with a content title and body content"),
     CheckSpec("Text Fit", check_text_fit, "error", "Measured text fits its box, a pill is as wide as its text, cover titles stay on one line, text boxes do not overlap, tables do not grow into the footer.", "Standards #11, #13; dimensions.md", "text frames and tables", True),
     CheckSpec("Text Margins", check_text_margins, "error", "Unfilled text boxes have zero margins on all four sides.", "dimensions.md (Text Box Rules)", "unfilled text boxes carrying text"),
-    CheckSpec("Logo", check_logo, "error", "Every slide but the back cover carries the Greek wordmark at the small or large position, unstretched; the cover uses the large logo.", "Standards #4, #10, #17", "slides other than the last", True),
-    CheckSpec("Back Cover", check_back_cover, "error", "The last slide holds only the centred oval emblem: no text, no page number, no corner logo.", "Standard #19", "the last slide in presentation order", True),
+    CheckSpec("Logo", check_logo, "error", "Every slide but the back cover carries the Greek wordmark at the small or large position (on the slide, or its layout or master), unstretched; the cover uses the large logo.", "Standards #4, #10, #17", "slides other than the last", True),
+    CheckSpec("Back Cover", check_back_cover, "error", "The last slide holds only the centred oval emblem: no text, no page number, no corner logo, counting the layout and master shapes it shows.", "Standard #19", "the last slide in presentation order", True),
     CheckSpec("Thank You Check", check_thank_you, "error", "No thank-you, closing or Q&A slide.", "Standard #19; layouts.md", "the last two slides and slides of 12 words or fewer"),
     CheckSpec("Decorative", check_decorative, "error", "No decorative presets (stars, hearts, clouds...); an ellipse is decorative only if textless, over 0.5in and carrying no icon.", "Standards #3, #19", "preset-geometry shapes"),
     CheckSpec("Shadows", check_shadows, "error", "No shape or chart draws a shadow, including one inherited from the theme's effect styles.", "brand-system README; tokens components.card.shadow", "shapes and charts", True),

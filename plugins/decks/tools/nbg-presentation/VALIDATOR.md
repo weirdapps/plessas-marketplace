@@ -94,17 +94,17 @@ Sev: E = error (blocks), W = warning (reports). U = universal: applies to every 
 | Dimensions | Slide size is exactly 12192000 x 6858000 EMU (13.333 x 7.5 in, PowerPoint Widescreen), within 635 EMU. | dimensions.md; tokens `geometry.slide` | E | the `p:sldSz` element | U |
 | Theme | Theme colour slots are NBG colours and the major/minor fonts are Aptos or Aptos Display. | colors.md; tokens `colors`, `fonts` | W | theme colour slots and font slots | |
 | Background | Every slide's effective background (slide, else layout, else master) is white. | Standard #2 | E | slides | U |
-| Colors | Every colour in slide shapes and chart parts is in tokens.yaml, including theme (`schemeClr`) references and the outline or fill a shape takes from its `p:style`. A retired colour fails with its reason. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide shapes and chart parts | U |
-| Fonts | Every typeface (text, symbol, bullet) in slides and charts is in `fonts.allowed`; `+mn`/`+mj` theme references are resolved; Aptos SemiBold is forbidden. | typography.md; tokens `fonts` | E | typeface references | U |
-| Font Sizes | Text is at least 10pt; sources and footnotes at least 11pt; only the header pill may be 9pt. Table cells and chart text included. | Standard #11; tokens `accessibility`, `type.source` | E | sized text runs in shapes, table cells and chart parts | U |
+| Colors | Every colour in slide shapes (and the layout and master shapes a slide shows) and chart parts is in tokens.yaml, including theme (`schemeClr`) references and the outline or fill a shape takes from its `p:style`. A retired colour fails with its reason. | colors.md; tokens `colors`, `retired_colors` | E | colour references in slide, layout and master shapes and chart parts | U |
+| Fonts | Every typeface (text, symbol, bullet) in slides, the layout and master shapes they show, and charts is in `fonts.allowed`; `+mn`/`+mj` theme references are resolved; Aptos SemiBold is forbidden. | typography.md; tokens `fonts` | E | typeface references | U |
+| Font Sizes | Text is at least 10pt; sources and footnotes at least 11pt; only the header pill may be 9pt. Table cells, chart text and the text of layout and master shapes a slide shows included. | Standard #11; tokens `accessibility`, `type.source` | E | sized text runs in slide, layout and master shapes, table cells and chart parts | U |
 | Contrast | Text meets WCAG AA against what is behind it: its own fill, else the topmost filled shape below it containing its centre, else the slide background. Muted grey `939793` (2.96:1 on white) is waived only for the page number (10pt or less at the page-number position) and chart axis labels, on white, as Standard #22 allows; the cover date is caption grey and gets no waiver. Bullet glyphs are not text runs. | Standard #22 | E | text runs with a resolvable colour and background | U |
 | Boundaries | No element extends past a slide edge (0.05 in tolerance). | dimensions.md | E | positioned shapes, pictures, charts, tables, connectors, group children | U |
 | Safe Zones | Content stays right of the 0.374 in gutter, left of the right boundary, above the 6.85 in footer line; sources and footnotes end by 6.5 in. | dimensions.md; tokens `geometry` | E | content elements (logo footprints and the page number excluded) | U |
 | Content Spacing | The first body element starts at 1.3 in or lower (`geometry.body_top`) and at least 0.15 in below the title's measured bottom, with or without a pill. | Standard #11 | E | slides with a content title and body content | |
 | Text Fit | Measured text fits its box (half a line of slack when unfilled); unwrapped text fits its filled shape (the pill); cover title and subtitle stay on one line; the measured text of two boxes does not overlap; a table whose rows grow to fit their text stays above the footer. | Standards #11, #13; dimensions.md | E | text frames and tables | U |
 | Text Margins | Unfilled text boxes have zero margins on all four sides (0.02 in tolerance). Filled shapes pad on purpose and are exempt. | dimensions.md (Text Box Rules) | E | unfilled text boxes carrying text | |
-| Logo | Every slide but the last carries the Greek wordmark at the small or large logo position, unstretched (within 3% of the image's own aspect) and at the brand size; the cover (slide 1) uses the large logo; the English fallback fails. | Standards #4, #10, #17 | E | slides other than the last | U |
-| Back Cover | The last slide holds only the centred oval emblem: no text, no page number, no empty text box, no corner logo, no other picture. | Standard #19 | E | the last slide in presentation order | U |
+| Logo | Every slide but the last carries the Greek wordmark at the small or large logo position (placed on the slide, or on the layout or master it shows), unstretched (within 3% of the image's own aspect) and at the brand size; the cover (slide 1) uses the large logo; the English fallback fails. | Standards #4, #10, #17 | E | slides other than the last | U |
+| Back Cover | The last slide holds only the centred oval emblem: no text, no page number, no empty text box, no corner logo, no other picture, counting the layout and master shapes it shows. | Standard #19 | E | the last slide in presentation order | U |
 | Thank You Check | No thank-you, closing or Q&A slide. Unambiguous phrases (thank you, thanks but not "thanks to", any questions, merci, and the Greek verb forms ευχαριστώ and ευχαριστούμε, never ευχάριστη, ευχαριστημένοι or ευχαρίστηση) count anywhere on a candidate; "Q&A" and "Ερωτήσεις" count only as the slide's title or largest text. Matching is accent- and case-folded. | Standard #19; layouts.md | E | the last two slides and slides of 12 words or fewer | |
 | Decorative | No decorative presets (stars, hearts, moons, clouds, suns, lightning, irregular seals). An ellipse is decorative only when it carries no text, exceeds 0.5 in on a side and carries no icon; numbered badges, triangles, chevrons and arrows pass. | Standards #3, #19 | E | preset-geometry shapes | |
 | Shadows | No shape or chart draws a shadow, including one inherited from a theme effect style through `p:style/a:effectRef` when `spPr` sets no effect list. | brand-system README; tokens `components.card.shadow` | E | shapes and charts | U |
@@ -157,6 +157,14 @@ own name, since those files are hashed), `C:\Windows\Fonts` or
 for ASCII, Greek and common punctuation, which gives the same widths, so a laptop and a CI
 runner without Aptos agree. `DECKS_FONT_DIRS` (path-separated) replaces the search list. The
 check's message says which measurer ran.
+
+**Layout and master shapes**: a slide renders the non-placeholder shapes of its layout
+and master behind its own, unless it sets `showMasterSp="0"` (Hide Background Graphics),
+which hides both, or its layout sets it, which hides the master's. Colors, Fonts, Font
+Sizes, Logo and Back Cover read those shapes. A layout or master shape is judged once, at
+the first slide that shows it, and its finding names the part (`on slideMaster1.xml`), since
+that is where it is fixed. Placeholders on a layout or master render only through a slide's
+own placeholder, so they are read as that placeholder's inherited properties instead.
 
 **Package safety**: parts are read from the zip one at a time, never extracted, with limits
 on member count (5,000), part size (64 MB) and total size (1 GB). Every part parsed as XML,
