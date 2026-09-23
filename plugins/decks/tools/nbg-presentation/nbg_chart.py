@@ -495,7 +495,8 @@ def _style_doughnut(chart: Any, spec: dict[str, Any]) -> None:
         point.format.line.width = Pt(1)
         label = point.data_label
         _set_font(label.font, "chart_data_label", color_hex=str(label_text_color(fill)))
-        label.position = XL_LABEL_POSITION.CENTER
+        # No position: a doughnut draws its labels on the ring, and PowerPoint does
+        # not accept dLblPos on a doughnut at all (its PDF export hung on one).
         _point_label_shows(label, number_format, percent=as_percent)
     plot.has_data_labels = True
     labels = plot.data_labels

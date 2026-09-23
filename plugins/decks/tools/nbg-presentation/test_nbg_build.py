@@ -783,6 +783,38 @@ def test_the_doughnut_hole_is_55_percent(build):
     assert root.find(".//c:doughnutChart/c:holeSize", NS).get("val") == "55"
 
 
+# Label positions PowerPoint accepts per chart element. The schema allows dLblPos on
+# every chart; PowerPoint does not, and a doughnut slice label with dLblPos="ctr" hung
+# its PDF export at that slide (found by exporting the examples from PowerPoint).
+POWERPOINT_LABEL_POSITIONS = {
+    "barChart:clustered": {"ctr", "inEnd", "inBase", "outEnd"},
+    "barChart:stacked": {"ctr", "inEnd", "inBase"},
+    "lineChart:standard": {"t", "b", "l", "r", "ctr"},
+    "areaChart:standard": set(),
+    "doughnutChart:": set(),
+}
+
+
+def test_every_label_position_is_one_powerpoint_supports(tmp_path, monkeypatch):
+    passing_validator(monkeypatch, nbg_build)
+    checked = 0
+    for spec in sorted(EXAMPLES_DIR.glob("*.yaml")):
+        out = tmp_path / f"{spec.stem}.pptx"
+        nbg_build.build_presentation(spec, out)
+        for part in chart_parts(out):
+            for plot in part_xml(out, part).find(".//c:plotArea", NS):
+                tag = plot.tag.split("}")[1]
+                if not tag.endswith("Chart"):
+                    continue
+                grouping = plot.find("c:grouping", NS)
+                key = f"{tag}:{grouping.get('val') if grouping is not None else ''}"
+                allowed = POWERPOINT_LABEL_POSITIONS[key]
+                for pos in plot.iter(f"{C}dLblPos"):
+                    checked += 1
+                    assert pos.get("val") in allowed, f"{spec.name} {part} {key}: {pos.get('val')}"
+    assert checked, "no label positions examined"
+
+
 def test_a_chart_with_no_series_is_an_error_not_a_blank_plot(build):
     """ARCHITECTURE-5: a chart slide with no data built green with an empty plot."""
     spec = deck([_chart("Volumes rose", "bar", ["Q1"], [])])
