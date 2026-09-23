@@ -27,6 +27,26 @@ def test_greek_upper_keeps_the_dialytika():
     assert nbg_text.greek_upper("προϊόν") == "ΠΡΟΪΟΝ"
 
 
+@pytest.mark.parametrize(
+    "given,expected",
+    [
+        ("Μάιος", "ΜΑΪΟΣ"),
+        ("άυλες", "ΑΫΛΕΣ"),
+        ("ρολόι", "ΡΟΛΟΪ"),
+        ("νεράιδα", "ΝΕΡΑΪΔΑ"),
+        ("καΐκι", "ΚΑΪΚΙ"),
+        ("είναι", "ΕΙΝΑΙ"),
+        ("υιός", "ΥΙΟΣ"),
+        ("Ευρώπη", "ΕΥΡΩΠΗ"),
+    ],
+)
+def test_dropping_a_tonos_adds_the_dialytika_that_keeps_two_vowels_apart(given, expected):
+    """E2E-OUTPUT-06: in Μάιος the tonos on α says α and ι are two sounds. Dropped in
+    capitals, ΜΑΙΟΣ reads as the diphthong αι, so Greek writes ΜΑΪΟΣ. A tonos on the
+    second letter of a real diphthong (είναι) needs nothing."""
+    assert nbg_text.greek_upper(given) == expected
+
+
 def test_plain_upper_keeps_the_tonos_which_is_the_bug():
     assert "η συναίνεση".upper() != "Η ΣΥΝΑΙΝΕΣΗ"
 
