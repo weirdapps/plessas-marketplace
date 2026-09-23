@@ -111,11 +111,19 @@ Prefer what the plugin ships, then plan what must be made.
     - kind: infographic
       output: images/S07_funnel.svg
       brief: "four-stage funnel: 120k visits, 40k starts, 18k completed, 11k funded"
-      size_in: [12.0, 4.8]
+      size_in: [11.58, 4.62]          # the slot check reports, see below
   ```
 
   An infographic brief carries its numbers from the slide, never new ones. Every `image` gets
   `alt_text` that says what the reader should see.
+- **Size every diagram to its slot.** The builder places an SVG that declares `size_in` at exactly
+  that size and never shrinks it, so its labels keep their point size. Once the diagram's `image`
+  is planned, run `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check <deck> --format json` and read
+  its `image_slots` entry for that slide (`w` and `h` in inches; it is there even while the file
+  does not exist). Write those two numbers, rounded down to 2 decimals, as `image.size_in` in the
+  spec and as the request's `size_in`. A slot too short for the diagram (under about 3.5 in tall)
+  means the slide carries too much around it: move its description into the title or `notes`,
+  drop its takeaway, and read the slot again.
 
 ## Check before you return
 
@@ -139,5 +147,6 @@ slides:
   S05 content -> chart area_line (quarterly trend)
 assets to make:
   S04 icon images/S04_contactless.svg "a card with a contactless wave"
+  S07 infographic images/S07_funnel.svg size_in [11.58, 4.62] "four-stage funnel: ..."
 notes: <anything the command must decide, e.g. keynote criteria met, a message that needs rewording>
 ```

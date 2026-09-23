@@ -117,7 +117,9 @@ skill is available, and never for anything that carries numbers.
 
 Dispatch `decks:graphics-renderer` with the deck, `out: <WORK>/deck.pptx` and the asset results. It
 returns the build exit and any violations left. For a missing asset file, dispatch its asset agent
-again; for a missing source or figure, ask the user; then build again.
+again; for a diagram that must be redrawn at a new slot size, dispatch `decks:infographic-specialist`
+again with that `size_in` and set the same value as the image's `size_in`; for a missing source or
+figure, ask the user; then build again.
 
 ### 8. QA gate
 
