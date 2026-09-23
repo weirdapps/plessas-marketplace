@@ -2131,17 +2131,17 @@ def _fill(slide: Slide, shape: Shape) -> tuple[str, str | None]:
 SOURCE_PREFIX = re.compile(r"^\s*(?:sources?|πηγ(?:η|εσ))\s*[:\-" + EN_DASH + "]")
 NOTE_PREFIX = re.compile(r"^\s*(?:notes?|σημειωσ(?:η|εισ)|σημ\.|\*|[¹²³])")
 # What dates a source: a four-digit year, a slashed or dotted date, or a reporting
-# period with a two-digit year, as board packs write them (FY25, 1Q26, Q2'26, 9M25,
-# 1H26, H1 '26). A period without a year ("H1", "latest") dates nothing. Public:
-# nbg_spec's `check` applies it to source.as_of, so check and this gate agree.
-_YEAR2 = r"\s?['" + chr(0x2019) + r"]?\d{2}\b"
+# period with a two- or four-digit year, as board packs write them (FY25, FY2025, 1Q26,
+# Q2'26, 9M25, 1H2025, H1 '26). A period without a year ("H1", "latest") dates nothing.
+# Public: nbg_spec's `check` applies it to source.as_of, so check and this gate agree.
+_PERIOD_YEAR = r"\s?['" + chr(0x2019) + r"]?(?:(?:19|20)\d{2}|\d{2})\b"
 SOURCE_AS_OF = re.compile(
     r"\b(?:19|20)\d{2}\b"
     r"|\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b"
-    rf"|\b(?:FY|CY){_YEAR2}"
-    rf"|\b[1-4]Q{_YEAR2}|\bQ[1-4]{_YEAR2}"
-    rf"|\b(?:[1-9]|1[0-2])M{_YEAR2}"
-    rf"|\b[12]H{_YEAR2}|\bH[12]{_YEAR2}",
+    rf"|\b(?:FY|CY){_PERIOD_YEAR}"
+    rf"|\b[1-4]Q{_PERIOD_YEAR}|\bQ[1-4]{_PERIOD_YEAR}"
+    rf"|\b(?:[1-9]|1[0-2])M{_PERIOD_YEAR}"
+    rf"|\b[12]H{_PERIOD_YEAR}|\bH[12]{_PERIOD_YEAR}",
     re.IGNORECASE,
 )
 
@@ -4517,7 +4517,8 @@ def print_results(
     counts = summary(results)
     print(
         f"\nSummary: {counts['passed']} passed, {counts['failed']} failed, "
-        f"{counts['warnings']} warning(s), {counts['skipped']} skipped (examined nothing)"
+        f"{counts['warnings']} warning(s), {counts['skipped']} skipped"
+        + (" (examined nothing)" if counts["skipped"] else "")
     )
     fixes = sorted(
         ((f, r.name) for r in results for f in r.findings),
