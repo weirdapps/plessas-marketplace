@@ -45,7 +45,8 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 
 Decision rules:
 
-- **Charts**: set `highlight_category` to the category the title is about. Six series at most
+- **Charts**: set `highlight_category` to the category the title is about (never on a peer-bank
+  comparison; see Peer banks). Six series at most
   (Standard #22); past that, split into small multiples or group the tail into "Other". Plain
   `line` only when several series overlap and a fill would mislead. Set `unit` and, when the data
   needs it, `number_format`.
@@ -60,11 +61,10 @@ Decision rules:
   with distinct sections.
 - **Two columns**: a column holding a chart, table or KPIs means the slide needs `content.source`.
 - **Peer banks**: a comparison of the systemic banks is a `chart` (`bar` or `bar_horizontal`) or a
-  `table` with the bank names as categories or rows, `chart.highlight_category` set to NBG's label
-  (NBG draws in the accent colour, peers in muted grey), and a dated `content.source`. There is no
-  special slide type and no bank brand colours on bars. Logos only when the user asks for them, as
-  `image` or `custom` elements from `${CLAUDE_PLUGIN_ROOT}/assets/bank-logos/` (relative form
-  `bank-logos/<file>`), each at its native aspect ratio (Standard #4).
+  `table` with the bank names (NBG, Eurobank, Piraeus, Alpha, in English or Greek) as categories,
+  series or rows, and a dated `content.source`. The builder applies each bank's mandatory brand
+  colour itself, so set no `highlight_category` and choose no colours on these slides. Logos under
+  the bars only when the user asks for them: `chart.bank_logos: true`.
 - **Custom**: a `content.title` like every slide, then elements with geometry in inches inside the
   body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
   gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from
