@@ -3343,10 +3343,56 @@ def check_chart_styling(deck: Deck, out: Collector) -> str:
     return f"{out.examined} series with explicit brand colours and hollow circle markers"
 
 
+def _bar_values(chart: Chart) -> list[float]:
+    """What a bar chart's value axis must span: each bar, or each stack's positive and
+    negative totals. Empty for percent-stacked bars, whose axis is fixed at 0-100%."""
+    values: list[float] = []
+    for plot in _plots(chart):
+        if _local(plot.tag) not in BAR_CHART_TAGS:
+            continue
+        grouping = plot.find(f"{C}grouping")
+        kind = grouping.get("val", "clustered") if grouping is not None else "clustered"
+        if kind == "percentStacked":
+            continue
+        stacks: dict[str, list[float]] = {}
+        for ser in plot.findall(f"{C}ser"):
+            for pt in ser.findall(f"{C}val//{C}pt"):
+                try:
+                    v = float(pt.findtext(f"{C}v") or "")
+                except ValueError:
+                    continue
+                if kind == "stacked":
+                    stacks.setdefault(pt.get("idx", "0"), []).append(v)
+                else:
+                    values.append(v)
+        for stack in stacks.values():
+            values += [sum(v for v in stack if v > 0), sum(v for v in stack if v < 0)]
+    return values
+
+
+def _axis_bound(scaling: Any, name: str) -> tuple[float | None, str | None]:
+    """(value, raw text) of an explicit c:min or c:max; (None, raw) when unparseable."""
+    node = scaling.find(f"{C}{name}") if scaling is not None else None
+    if node is None:
+        return None, None
+    raw = node.get("val", "0")
+    try:
+        return float(raw), raw
+    except ValueError:
+        return None, raw
+
+
 def check_zero_baseline(deck: Deck, out: Collector) -> str:
-    """Bar and column value axes start at zero. Read by parsing: 'c:min' also occurs
+    """Bar and column value axes include zero. Read by parsing: 'c:min' also occurs
     inside c:minorTickMark on every chart, so a text search finds minimums that are
-    not there."""
+    not there.
+
+    An explicit minimum above zero (or maximum below it) truncates the bars. So does an
+    automatic axis on close values: PowerPoint, like Excel, leaves zero off an automatic
+    axis when the lowest bar is over five sixths of the highest, so 2.9 to 3.3 draws from
+    about 2.7 and a 14% rise looks like a tripling (E2E-OUTPUT-01). A hidden axis hides
+    the truncation, it does not remove it.
+    """
     non_bar = 0
     for chart in deck.charts():
         tags = {_local(p.tag) for p in _plots(chart)}
@@ -3354,24 +3400,39 @@ def check_zero_baseline(deck: Deck, out: Collector) -> str:
         if not bars:
             non_bar += 1
             continue
+        kinds = "/".join(sorted(bars))
+        values = _bar_values(chart)
+        lo, hi = (min(values), max(values)) if values else (0.0, 0.0)
         for val_ax in chart.root.iter(f"{C}valAx"):
             out.count()
-            minimum = val_ax.find(f"{C}scaling/{C}min")
-            if minimum is None:
-                continue
-            raw = minimum.get("val", "0")
-            try:
-                value = float(raw)
-            except ValueError:
+            scaling = val_ax.find(f"{C}scaling")
+            minimum, raw_min = _axis_bound(scaling, "min")
+            maximum, raw_max = _axis_bound(scaling, "max")
+            for raw, value in ((raw_min, minimum), (raw_max, maximum)):
+                if raw is not None and value is None:
+                    out.add(
+                        chart.slide.position,
+                        f"chart {chart.stem} value axis bound is not a number ({raw!r})",
+                    )
+            if minimum is not None and minimum > 0:
                 out.add(
                     chart.slide.position,
-                    f"chart {chart.stem} value axis minimum is not a number ({raw!r})",
+                    f"chart {chart.stem} {kinds} value axis starts at {minimum:g}, not zero; a truncated bar misstates every ratio",
                 )
-                continue
-            if value != 0:
+            elif maximum is not None and maximum < 0:
                 out.add(
                     chart.slide.position,
-                    f"chart {chart.stem} {'/'.join(sorted(bars))} value axis starts at {value:g}, not zero; a truncated bar misstates every ratio",
+                    f"chart {chart.stem} {kinds} value axis ends at {maximum:g}, below zero; the negative bars are truncated",
+                )
+            elif raw_min is None and lo >= 0 and hi > 0 and lo > hi * 5 / 6:
+                out.add(
+                    chart.slide.position,
+                    f"chart {chart.stem} {kinds} value axis is automatic and the bars run {lo:g} to {hi:g}: PowerPoint starts that axis above zero and truncates every bar; set its minimum to 0",
+                )
+            elif raw_max is None and hi <= 0 and lo < 0 and hi < lo * 5 / 6:
+                out.add(
+                    chart.slide.position,
+                    f"chart {chart.stem} {kinds} value axis is automatic and the bars run {lo:g} to {hi:g}: PowerPoint ends that axis below zero and truncates every bar; set its maximum to 0",
                 )
     note = f", {non_bar} non-bar chart(s) not subject to the rule" if non_bar else ""
     if out.findings:
@@ -3849,7 +3910,7 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Chart Types", check_chart_types, "error", "No pie charts of any kind; part-to-whole is a doughnut.", "charts.md", "chart parts"),
     CheckSpec("Chart Data", check_chart_data, "error", "Every chart has series and categories; over 6 series warns, over 8 fails.", "Standard #22; tokens charts.max_series", "chart parts"),
     CheckSpec("Chart Styling", check_chart_styling, "error", "Line and area series carry an explicit line colour; automatic colours must resolve to NBG accents; line markers are hollow circles (warning).", "Standard #5; charts.md; tokens charts.line", "chart series"),
-    CheckSpec("Zero Baseline", check_zero_baseline, "error", "Bar and column value axes start at zero.", "keynote.md; charts.md", "value axes of bar and column charts"),
+    CheckSpec("Zero Baseline", check_zero_baseline, "error", "Bar and column value axes include zero, including an automatic axis on close values, which PowerPoint draws without it.", "keynote.md; charts.md", "value axes of bar and column charts"),
     CheckSpec("Exhibit Sources", check_exhibit_sources, "error", "Every slide with a chart or table carries a dated source line.", "deck.schema.json content.source; presentation-qa", "slides carrying a chart or table"),
     CheckSpec("Alt Text", check_alt_text, "error", "Pictures, charts, tables and groups carry descriptive alt text; brand logos are decorative.", "Standard #22 (EN 301 549)", "top-level pictures, graphic frames and groups"),
     CheckSpec("Bank Branding", check_bank_branding, "error", "A chart plotting two or more of the four systemic banks colours each in its brand colour and the slide carries a logo per bank.", "presentation-qa 2H; tokens extended_palettes.peer_banks", "charts plotting two or more banks"),

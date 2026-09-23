@@ -285,6 +285,7 @@ def bar_chart(
     font="Aptos",
     label_size=12,
     styled=True,
+    zero_based=True,
     chart_type=XL_CHART_TYPE.COLUMN_CLUSTERED,
     alt="Column chart of mobile users by quarter of 2025, rising from 2.9M to 3.3M.",
 ):
@@ -303,6 +304,10 @@ def bar_chart(
     plot = chart.plots[0]
     if chart_type not in (XL_CHART_TYPE.PIE, XL_CHART_TYPE.DOUGHNUT):
         _style_axes(chart, font=font, value_visible=False)
+        if zero_based:
+            # As nbg_build does: an automatic axis on close values (2.9 to 3.3) starts
+            # above zero in PowerPoint and truncates every bar (E2E-OUTPUT-01).
+            chart.value_axis.minimum_scale = 0
     else:
         chart.font.name = font
         chart.font.size = Pt(12)
@@ -669,8 +674,11 @@ def _shadow_patch(xml):
 
 
 def _truncate_axis(xml):
+    """Give the value axis an explicit minimum of 30 (replacing a zero minimum)."""
     head, sep, tail = xml.partition("<c:valAx>")
-    if "<c:scaling/>" in tail:
+    if re.search(r'<c:min val="[^"]*"/>', tail.split("</c:valAx>", 1)[0]):
+        tail = re.sub(r'<c:min val="[^"]*"/>', '<c:min val="30"/>', tail, count=1)
+    elif "<c:scaling/>" in tail:
         tail = tail.replace("<c:scaling/>", '<c:scaling><c:min val="30"/></c:scaling>', 1)
     else:
         tail = tail.replace("<c:scaling>", '<c:scaling><c:min val="30"/>', 1)
@@ -2136,6 +2144,54 @@ def test_shape_style_text_colour_outranks_the_deck_default(tmp_path):
     assert teal.status == "pass", teal.details
     light = check(deck(tmp_path, _style_colored_text("F5F8F6"), name="light.pptx"), "Contrast")
     assert light.status == "fail" and "#FFFFFF on #F5F8F6" in details(light)
+
+
+def test_close_bar_values_on_an_automatic_axis_fail(tmp_path):
+    """E2E-OUTPUT-01: with no c:min, PowerPoint starts the axis for 2.9..3.3 near 2.7, so
+    every bar is truncated; the check passed because it only read an explicit minimum."""
+    result = check(deck(tmp_path, _replace_bar_chart(zero_based=False)), "Zero Baseline")
+    assert result.status == "fail"
+    assert "automatic" in details(result) and "Slide 3" in details(result)
+
+
+def test_spread_bar_values_on_an_automatic_axis_start_at_zero(tmp_path):
+    """PowerPoint puts zero on an automatic axis when the data spread is wide (the
+    lowest value under five sixths of the highest), so that chart is fine."""
+    spread = _replace_bar_chart(zero_based=False, series=(("Users (M)", (1.2, 2.0, 2.9, 3.3)),))
+    result = check(deck(tmp_path, spread), "Zero Baseline")
+    assert result.status == "pass", result.details
+
+
+def test_negative_bars_need_zero_at_the_top(tmp_path):
+    """All-negative close values truncate at the top; an explicit negative minimum is
+    fine (the old check failed any non-zero minimum, including -120 on negative data)."""
+    close = (("Net outflow (EUR M)", (-100, -104, -102, -98)),)
+    auto = check(
+        deck(tmp_path, _replace_bar_chart(zero_based=False, series=close), name="a.pptx"),
+        "Zero Baseline",
+    )
+    assert auto.status == "fail"
+
+    def floor_below(xml):
+        head, sep, tail = xml.partition("<c:valAx>")
+        return (
+            head
+            + sep
+            + re.sub(
+                r"<c:scaling/>",
+                '<c:scaling><c:max val="0"/><c:min val="-120"/></c:scaling>',
+                tail,
+                count=1,
+            )
+        )
+
+    path = deck(
+        tmp_path,
+        _replace_bar_chart(zero_based=False, series=close),
+        name="b.pptx",
+        patch={(lambda p: chart_part(p, b"Net outflow")): floor_below},
+    )
+    assert check(path, "Zero Baseline").status == "pass"
 
 
 def test_the_names_the_spec_checker_imports_stay_put():
