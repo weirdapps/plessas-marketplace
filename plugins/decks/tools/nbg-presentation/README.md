@@ -187,6 +187,11 @@ Exit 4 (`font_fallback: true`) means Aptos was not embedded: LibreOffice drew th
 slides in a substitute font, so text widths differ from PowerPoint and fit judgements
 made from the PNGs are unreliable. On 2 and 3, stdout is `{"error", "fix"}`.
 
+LibreOffice is not PowerPoint: line-chart markers show as solid dots in these PNGs,
+because LibreOffice's chart engine draws a symbol in one colour with no outline.
+PowerPoint shows the hollow circle the deck specifies (a white fill inside a 2pt
+ring), so a solid marker in a render is not a defect.
+
 ## extract
 
 ```bash
