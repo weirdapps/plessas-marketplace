@@ -111,9 +111,11 @@ slides:
       title: "Customers will see growth in their own finances, not only in our app"
       bumper: "Customer view"
     image:
-      path: "illustrations/Growth.png"
-      alt_text: "Illustration of a rising savings balance on a phone screen"
-      caption: "Illustrative customer view of the personal finance dashboard"
+      # An SVG from the illustration library: vector art scales to the slot without
+      # blurring, where an 800 px PNG would stop at 5.3 in (150 DPI) and warn.
+      path: "illustrations/splash/moneybox.svg"
+      alt_text: "Illustration of a money box with a coin dropping in"
+      caption: "Illustrative: the personal finance view shows customers their savings growing"
 
   - type: custom
     id: S09

@@ -458,6 +458,46 @@ def test_an_image_slide_places_the_picture_with_its_alt_text(build):
     assert "Illustrative" in [b[0] for b in shape_boxes(root)]
 
 
+def _picture_box(root):
+    pic = next(p for p in root.iter(f"{P}pic") if p.find(".//p:cNvPr", NS).get("descr"))
+    off, ext = pic.find(".//a:xfrm/a:off", NS), pic.find(".//a:xfrm/a:ext", NS)
+    return tuple(inches(v) for v in (off.get("x"), off.get("y"), ext.get("cx"), ext.get("cy")))
+
+
+def test_a_small_raster_is_never_enlarged_past_150_dpi_and_check_warns(build, tmp_path):
+    """strategy-deck slide 8 blew an 800 px illustration up to 9 in, 85 DPI, and it
+    blurred (the lead's visual review). A raster now stops at its 150 DPI size,
+    centred in its slot, and check says the image is too small for the slot."""
+    from PIL import Image
+
+    Image.new("RGB", (300, 150), "#007B85").save(tmp_path / "small.png")
+    slide = {
+        "type": "image",
+        "content": {"title": "A small picture stays sharp"},
+        "image": {"path": str(tmp_path / "small.png"), "alt_text": "A teal block"},
+    }
+    root = slide_xml(build(deck([slide])), 2)
+    x, _, w, h = _picture_box(root)
+    assert (w, h) == (pytest.approx(2.0, abs=0.01), pytest.approx(1.0, abs=0.01))
+    assert x + w / 2 == pytest.approx(0.374 + 12.585 / 2, abs=0.02), "centred in its slot"
+    report = nbg_build.check(write_spec(tmp_path, deck([slide]), "small.yaml"))
+    warning = next(i for i in report.warnings if i.path == "slides[1].image.path")
+    assert "150" in warning.message and "300" in warning.message
+
+
+def test_an_svg_fills_its_slot_because_it_has_no_pixels_to_blur(build, tmp_path):
+    slide = {
+        "type": "image",
+        "content": {"title": "A vector picture fills its slot"},
+        "image": {"path": str(EXAMPLES_DIR / "icons" / "insight.svg"), "alt_text": "An insight"},
+    }
+    root = slide_xml(build(deck([slide])), 2)
+    _, _, w, h = _picture_box(root)
+    assert max(w, h) > 4.0, "scaled to its slot, not to a pixel size"
+    report = nbg_build.check(write_spec(tmp_path, deck([slide]), "svg.yaml"))
+    assert not [i for i in report.warnings if i.path == "slides[1].image.path"]
+
+
 def test_an_svg_icon_is_rasterised_into_the_package(build, tmp_path):
     icon = tmp_path / "dot.svg"
     icon.write_text(

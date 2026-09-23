@@ -716,13 +716,17 @@ def add_paragraph_block(
 # ---------------------------------------------------------------- images
 
 
-def _image_stream(deck: Deck, raw: str, width_in: float, rel: str) -> tuple[Any, tuple[int, int]]:
+def _image_stream(
+    deck: Deck, raw: str, width_in: float, rel: str
+) -> tuple[Any, tuple[int, int], bool]:
+    """(PNG or JPEG stream, its pixel size, whether it came from a vector file)."""
     path = nbg_spec.resolve_asset(raw, deck.spec_dir)
     if path is None:
         raise deck.fit(rel, f"image not found: {raw}", "check the path")
     from PIL import Image
 
-    if path.suffix.lower() == ".svg":
+    vector = path.suffix.lower() == ".svg"
+    if vector:
         try:
             import resvg_py
         except ImportError as e:
@@ -736,7 +740,7 @@ def _image_stream(deck: Deck, raw: str, width_in: float, rel: str) -> tuple[Any,
     with Image.open(stream) as img:
         size = img.size
     stream.seek(0)
-    return stream, size
+    return stream, size, vector
 
 
 def _tinted(deck: Deck, stream: Any, colour: str, rel: str) -> Any:
@@ -775,11 +779,32 @@ def add_image(
     tint: str | None = None,
 ) -> Any:
     """A picture inside frame: contain keeps all of it, cover fills the frame and crops.
-    tint (a hex colour) redraws an icon's shape in that one colour."""
-    stream, (px_w, px_h) = _image_stream(deck, raw, frame.w, rel)
+    tint (a hex colour) redraws an icon's shape in that one colour. A raster is never
+    enlarged past components.image.min_dpi: contain draws it at that size, centred,
+    and says the image is too small for its slot; cover, which must fill, warns."""
+    stream, (px_w, px_h), vector = _image_stream(deck, raw, frame.w, rel)
     if tint:
         stream = _tinted(deck, stream, tint, rel)
     aspect = px_w / px_h if px_h else 1.0
+    dpi = float(COMP["image"]["min_dpi"])
+    if not vector:
+        needed = (
+            max(frame.w, frame.h * aspect) if fit == "cover" else min(frame.w, frame.h * aspect)
+        )
+        if needed * dpi > px_w + 0.5:
+            deck.warn(
+                rel,
+                f"the image is {px_w} x {px_h} px, too small for its {frame.w:.1f} x {frame.h:.1f} in "
+                f"slot at {dpi:g} DPI",
+                f"use an image at least {math.ceil(needed * dpi)} px wide, or an SVG",
+            )
+            if fit != "cover":
+                frame = Frame(
+                    frame.x + (frame.w - px_w / dpi) / 2,
+                    frame.y + (frame.h - px_h / dpi) / 2,
+                    px_w / dpi,
+                    px_h / dpi,
+                )
     if fit == "cover":
         picture = slide.shapes.add_picture(
             stream, Inches(frame.x), Inches(frame.y), Inches(frame.w), Inches(frame.h)

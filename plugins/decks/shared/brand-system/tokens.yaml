@@ -266,6 +266,7 @@ components:
     heading_gap: 0.1
   image:
     caption_gap: 0.1
+    min_dpi: 150             # a raster is never enlarged past this; below it, check warns and it stays at this size
   table:
     header_fill: dark_teal
     header_h: 0.4

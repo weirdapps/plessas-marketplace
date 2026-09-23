@@ -117,7 +117,11 @@ for a time series, Standard #2.8) and `doughnut` (there is no pie). Element kind
 
 Images are PNG, JPEG or SVG (SVG is rasterised with resvg). A relative path resolves
 against the spec's folder first, then the plugin's `assets/` folder, so
-`illustrations/Growth.png` works from anywhere.
+`illustrations/Growth.png` works from anywhere. A PNG or JPEG is never enlarged past
+150 DPI (`components.image.min_dpi`): one too small for its slot is drawn at that
+size, centred, and check warns with the width it needs. Prefer an SVG for a large
+slot; the library's 800 px illustrations reach 5.3 in at most, while
+`illustrations/splash/*.svg` scale to any size.
 
 Legacy names (`thankyou`, `toc`, `bar_chart`, `pie_chart`, `charts/pie_single`,
 `covers/*`, `infographic`, `hyper_title`, `paragraphs`, `items`, `waterfall_items`,
