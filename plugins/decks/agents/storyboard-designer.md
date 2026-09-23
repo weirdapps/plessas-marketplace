@@ -66,7 +66,8 @@ Decision rules:
   leave `chart.bank_logos` at its default (never `false`: the validator fails it). Banks as
   categories take exactly one series (`bar`, `bar_horizontal` or `doughnut`). For several periods
   or measures, make the banks the series and the periods the categories (`bar`, `bar_stacked`,
-  `bar_horizontal`, `line` or `area_line`).
+  `bar_horizontal`, `line` or `area_line`). Every layout, worked:
+  `${CLAUDE_PLUGIN_ROOT}/examples/peer-banks.yaml`.
 - **Custom**: a `content.title` like every slide, then elements with geometry in inches inside the
   body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
   gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from
@@ -84,9 +85,13 @@ Prefer what the plugin ships, then plan what must be made.
 - **Library first.** Duotone icons: search `${CLAUDE_PLUGIN_ROOT}/assets/icons/INDEX.md` with Grep
   for the concept, confirm the file exists with Glob. App screenshots:
   `${CLAUDE_PLUGIN_ROOT}/assets/screenshots/<product>/INDEX.md`. Logos:
-  `${CLAUDE_PLUGIN_ROOT}/assets/logos/INDEX.md`. In `deck.yaml` write a library file as its path
-  relative to the plugin's assets folder (for example `icons/money/Coins.png`); the builder
+  `${CLAUDE_PLUGIN_ROOT}/assets/logos/INDEX.md`. Illustrations for a large image slot: the SVGs in
+  `${CLAUDE_PLUGIN_ROOT}/assets/illustrations/splash/`, which scale to any size; the PNG
+  illustrations are 800 px wide, about 5.3 in at most. In `deck.yaml` write a library file as its
+  path relative to the plugin's assets folder (for example `icons/money/Coins.png`); the builder
   resolves a relative path against the folder holding `deck.yaml` first, then the plugin's assets.
+- **Resolution.** The builder never enlarges a PNG or JPEG past 150 DPI: one too small for its slot
+  is drawn smaller, and `check` warns with the pixel width it needs. Pick a bigger file or an SVG.
 - **Plan the rest.** For an icon the library lacks, a diagram no slide type expresses (funnel,
   timeline, matrix), or a phone mockup of a screenshot, choose the file it will become,
   `images/<slide id>_<name>.<svg|png>` (relative to `deck.yaml`), write that path into the target

@@ -72,9 +72,11 @@ if it has one. The number of PNGs must equal the deck's slide count (`deck_slide
 JSON, or the length of `deck.yaml`'s slides); name any slide that has no image. Judge each image, not the XML, against the criteria
 below. After a text-only review, judge what text can show (A, B, and bullet counts).
 
-LibreOffice gets two things wrong, so never report them from the image alone: negative bar values
-drawn as positive bars (trust the data labels and the spec), and a faint drop shadow under a pill
-or card (LibreOffice draws the theme shadow even where the deck switches it off).
+LibreOffice gets three things wrong, so never report them from the image alone: negative bar
+values drawn as positive bars (trust the data labels and the spec); a faint drop shadow under a
+pill or card (it draws the theme shadow even where the deck switches it off); and line-chart
+markers drawn as solid dots (it paints chart symbols in one colour, where PowerPoint shows the
+hollow ring the deck specifies).
 
 **A. Message** (compare with `key_message` when there is a spec)
 - The title is an action title: a sentence stating the claim, not a topic label.
@@ -107,7 +109,8 @@ or card (LibreOffice draws the theme shadow even where the deck switches it off)
   line or bar is a failure); no decorative shapes.
 - Dark text on light fills and white text only on dark fills; a label you have to strain to read
   fails (Standard #22). Colour is never the only carrier of meaning.
-- Line charts have hollow circle markers (Standard #5); part-to-whole is a doughnut, never a pie.
+- Line charts have straight segments and a marker at every point (Standard #5); part-to-whole
+  is a doughnut, never a pie.
 - Pill text sits inside its pill. Logo bottom-left on every slide except the back cover, which
   carries only the centred emblem; no page number on the cover, dividers or back cover.
 
