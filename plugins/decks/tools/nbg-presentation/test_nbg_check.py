@@ -545,9 +545,99 @@ def test_x_keys_carry_pipeline_notes_through_check_and_build_untouched(tmp_path,
     assert b"Coins" not in xml and b"Q2 figure" not in xml and b"internal" not in xml
 
 
-def test_an_em_dash_in_slide_text_is_a_warning(tmp_path):
-    report = check(tmp_path, deck([_content("Growth " + chr(0x2014) + " all of it")]))
-    assert any("em dash" in i.message for i in report.warnings)
+def test_check_applies_the_validators_own_spec_rules():
+    """PROMPTS-CONTRACTS-03: check passed specs the build then failed on rules it could
+    read in the spec. It now uses the validator's own patterns, so a change to either
+    (VALIDATOR-CODE-5 widening the as-of test, say) reaches both."""
+    import nbg_validate
+
+    assert nbg_spec.EM_DASH == nbg_validate.EM_DASH
+    assert nbg_spec.SOURCE_AS_OF is nbg_validate.SOURCE_AS_OF
+    assert nbg_spec.ALT_TEXT_PLACEHOLDER is nbg_validate.ALT_TEXT_PLACEHOLDER
+    assert nbg_spec.ALT_TEXT_LEAD_IN is nbg_validate.ALT_TEXT_LEAD_IN
+
+
+@pytest.mark.parametrize(
+    "title", ["Growth " + chr(0x2014) + " all of it", "Growth -- all of it", "Growth --\nall of it"]
+)
+def test_an_em_dash_or_a_double_hyphen_in_slide_text_is_an_error(tmp_path, title):
+    """The validator's Em Dashes check fails the deck on either (Standard #7)."""
+    report = check(tmp_path, deck([_content(title)]))
+    assert any(
+        i.path == "slides[1].content.title" and "em dash" in i.message for i in report.errors
+    ), [i.format() for i in report.issues]
+
+
+def test_an_em_dash_nothing_draws_is_only_a_warning(tmp_path):
+    """Speaker notes and alt text never reach slide text, so the validator never
+    reads them; check still points the dash out."""
+    slide = {**_content(), "notes": "Pause here " + chr(0x2014) + " then go on"}
+    report = check(tmp_path, deck([slide]))
+    assert report.ok and any(i.path == "slides[1].notes" for i in report.warnings)
+
+
+def test_a_spaced_en_dash_in_slide_text_is_a_warning(tmp_path):
+    report = check(tmp_path, deck([_content("Growth " + chr(0x2013) + " all of it")]))
+    assert report.ok and any("en dash" in i.message for i in report.warnings)
+
+
+def test_an_em_dash_in_an_x_key_is_nothing(tmp_path):
+    slide = {**_content(), "x-assets": {"why": "Chosen " + chr(0x2014) + " for now"}}
+    report = check(tmp_path, deck([slide]))
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+
+
+def _bar_slide(source):
+    return {
+        "type": "chart",
+        "content": {"title": "Fees rose in the second quarter", "source": source},
+        "chart": {
+            "type": "bar",
+            "data": {"categories": ["Q1", "Q2"], "series": [{"name": "Fees", "values": [1, 2]}]},
+        },
+    }
+
+
+def test_an_undated_source_on_an_exhibit_is_an_error(tmp_path):
+    """The validator's Exhibit Sources check fails a chart or table slide whose source
+    line has no year or date; check accepted as_of: latest."""
+    report = check(tmp_path, deck([_bar_slide({"name": "Management accounts", "as_of": "latest"})]))
+    found = [i for i in report.errors if i.path == "slides[1].content.source.as_of"]
+    assert found and "date" in found[0].message, [i.format() for i in report.issues]
+
+
+def test_a_year_anywhere_in_the_source_line_dates_it(tmp_path):
+    """The validator reads the whole line: 'Annual report 2025, as of Q4' is dated."""
+    report = check(tmp_path, deck([_bar_slide({"name": "Annual report 2025", "as_of": "Q4"})]))
+    assert report.ok, [i.format() for i in report.errors]
+
+
+def test_an_undated_source_on_a_text_slide_is_a_warning(tmp_path):
+    slide = _content(source={"name": "Internal analysis", "as_of": "latest"})
+    report = check(tmp_path, deck([slide]))
+    assert report.ok and any(i.path == "slides[1].content.source.as_of" for i in report.warnings)
+
+
+@pytest.mark.parametrize(
+    ("alt", "words"),
+    [
+        ("growth.png", "filename"),
+        ("Picture 3", "autoname"),
+        ("Image of a rising arrow", "image of"),
+        ("Growth came from cards", "repeats"),
+    ],
+)
+def test_alt_text_the_validator_rejects_is_an_error(tmp_path, alt, words):
+    """Alt Text fails a filename, an autoname, an 'image of' opening, and a caption
+    repeated from the slide; check let all four through."""
+    slide = {
+        "type": "image",
+        "content": {"title": "Growth came from cards"},
+        "image": {"path": "illustrations/Growth.png", "alt_text": alt},
+    }
+    report = check(tmp_path, deck([slide]))
+    found = [i for i in report.errors if i.path == "slides[1].image.alt_text"]
+    assert found and words in found[0].message, [i.format() for i in report.issues]
 
 
 # ---------------------------------------------------------------- dry-run layout

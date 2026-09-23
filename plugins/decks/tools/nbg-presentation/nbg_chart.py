@@ -757,7 +757,7 @@ def _legend_band(names: list[str], width: float) -> float:
         if used and used + entry > width - 0.2:
             rows, used = rows + 1, 0.0
         used += entry
-    return rows * m.line_height(size) + 0.15
+    return float(rows * m.line_height(size) + 0.15)
 
 
 def _ring_square(

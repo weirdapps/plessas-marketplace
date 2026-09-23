@@ -57,9 +57,14 @@ do not match their categories, a missing image, a custom element outside the bod
 area, an unknown colour name, a deck that does not end on its back cover, duplicate
 titles, and anything that cannot fit (bullets that need more room than the body has
 at 14pt, a table taller than the body, a cover title or subtitle that does not stay on
-one line, Standard #13). Warnings do not: a legacy name, an unquoted number or date, a
-slide title that wraps to two lines, more than six chart series, a waterfall total that
-does not add up, an em dash.
+one line, Standard #13). So do the validator's own spec-level rules, applied with its
+own patterns so check never passes what the build then rejects: an em dash or a typed
+` -- ` in slide text, an exhibit whose source line carries no year or date, and alt
+text that is a filename or an autoname, opens with "image of", or repeats text on the
+slide. Warnings do not stop it: a legacy name, an unquoted number or date, a slide
+title that wraps to two lines, more than six chart series, a waterfall total that does
+not add up, a spaced en dash, an em dash in speaker notes or alt text, an undated
+source on a slide without a chart or table.
 
 ## The deck spec
 
