@@ -260,7 +260,9 @@ def test_a_numbered_card_gets_an_oval_badge(build):
     assert "".join(t.text for t in badges[0].iter(f"{A}t")) == "1"
 
 
-def test_process_steps_are_joined_by_arrows(build):
+def test_process_steps_are_teal_tiles_labelled_underneath_and_joined_by_grey_arrows(build):
+    """layouts.md Standard #20: rounded-square #007B85 tiles with white content, the
+    16pt bold title and 14pt line under each tile, #939793 arrows between tiles."""
     slide = {
         "type": "process",
         "content": {"title": "Four steps from idea to launch"},
@@ -273,7 +275,60 @@ def test_process_steps_are_joined_by_arrows(build):
         if sp.find(".//a:prstGeom[@prst='rightArrow']", NS) is not None
     ]
     assert len(arrows) == 3
-    assert {b[0] for b in shape_boxes(root)} >= {"01", "02", "03", "04"}
+    assert {a.find("p:spPr/a:solidFill/a:srgbClr", NS).get("val") for a in arrows} == {"939793"}
+    tiles = _shapes_with_fill(root, "007B85")
+    assert len(tiles) == 4 and not _shapes_with_fill(root, "F5F8F6")
+    for tile, number, title in zip(
+        tiles, ("01", "02", "03", "04"), ("Plan", "Build", "Test", "Launch"), strict=True
+    ):
+        ext = tile.find(".//a:xfrm/a:ext", NS)
+        assert ext.get("cx") == ext.get("cy"), "a step tile is square"
+        run = tile.find(".//a:r", NS)
+        assert run.find("a:t", NS).text == number
+        assert run.find("a:rPr/a:solidFill/a:srgbClr", NS).get("val") == "FFFFFF"
+        label = shape_by_text(root, title)
+        label_top = inches(label.find(".//a:xfrm/a:off", NS).get("y"))
+        tile_bottom = inches(tile.find(".//a:xfrm/a:off", NS).get("y")) + inches(ext.get("cy"))
+        assert label_top >= tile_bottom, f"{title} sits under its tile"
+        rpr = label.find(".//a:rPr", NS)
+        assert rpr.get("sz") == "1600" and rpr.get("b") == "1"
+        assert rpr.find("a:solidFill/a:srgbClr", NS).get("val") == "003841"
+
+
+def test_a_process_icon_is_drawn_white_inside_its_tile(build):
+    """A line icon is supplied in brand colours; on a teal tile it must turn white."""
+    import io
+
+    from PIL import Image
+
+    icon = EXAMPLES_DIR / "icons" / "insight.svg"
+    slide = {
+        "type": "process",
+        "content": {"title": "Two steps with icons"},
+        "steps": [{"title": "Learn", "icon": str(icon)}, {"title": "Act", "icon": str(icon)}],
+    }
+    out = build(deck([slide]))
+    root = slide_xml(out, 2)
+    # The icons carry alt text; the slide's logo is decorative (empty descr).
+    pictures = [p for p in root.iter(f"{P}pic") if p.find(".//p:cNvPr", NS).get("descr")]
+    assert len(pictures) == 2
+    tile = _shapes_with_fill(root, "007B85")[0]
+    t_off, t_ext = tile.find(".//a:xfrm/a:off", NS), tile.find(".//a:xfrm/a:ext", NS)
+    p_off = pictures[0].find(".//a:xfrm/a:off", NS)
+    assert int(t_off.get("x")) < int(p_off.get("x")) < int(t_off.get("x")) + int(t_ext.get("cx"))
+    rels = part_xml(out, "ppt/slides/_rels/slide2.xml.rels")
+    target = {r.get("Id"): r.get("Target") for r in rels}
+    r_embed = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+    with zipfile.ZipFile(out) as zf:
+        icons = [
+            Image.open(io.BytesIO(zf.read("ppt/" + target[blip.get(r_embed)].replace("../", ""))))
+            for p in pictures
+            for blip in p.iter(f"{A}blip")
+        ]
+    pixels = [px for im in icons for px in im.convert("RGBA").getdata() if px[3] > 128]
+    assert pixels and all(px[:3] == (255, 255, 255) for px in pixels), (
+        "every visible pixel is white"
+    )
 
 
 def test_two_column_split_sets_the_column_widths(build):

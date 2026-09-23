@@ -220,12 +220,12 @@ components:
     h: 3.0                   # layouts.md Key Figures card; less when the body area is shorter
     pad: 0.25
     delta: {positive: teal, negative: alert, neutral: body_text}   # the delta text carries its sign: colour is never the only signal
-  process:
-    fill: off_white
-    radius_in: 0.04
+  process:                   # layouts.md Standard #20 process flow
+    tile: {size: 1.2, fill: teal, radius_in: 0.04, text_color: white, icon: 0.6}   # white on teal 5.03:1
     arrow: {w: 0.3, h: 0.35, color: muted_grey}
-    gap: 0.1                 # between a step box and an arrow
-    pad: 0.2
+    gap: 0.1                 # between a tile column and an arrow
+    label_gap: 0.15          # tile to the step title under it
+    text_gap: 0.08           # step title to its line
   two_column:
     gap: 0.3                 # geometry.grid_gap
     heading_gap: 0.1

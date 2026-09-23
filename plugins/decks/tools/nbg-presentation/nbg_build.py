@@ -739,6 +739,30 @@ def _image_stream(deck: Deck, raw: str, width_in: float, rel: str) -> tuple[Any,
     return stream, size
 
 
+def _tinted(deck: Deck, stream: Any, colour: str, rel: str) -> Any:
+    """The icon's shape in one colour: every pixel `colour`, the original alpha kept.
+    Only a picture with transparency has a shape to keep; an opaque one is left as is."""
+    from PIL import Image
+
+    with Image.open(stream) as img:
+        rgba = img.convert("RGBA")
+    alpha = rgba.getchannel("A")
+    if alpha.getextrema()[0] == 255:
+        deck.warn(
+            rel,
+            "the icon has no transparent background, so it cannot be drawn white",
+            "use an SVG or a transparent PNG",
+        )
+        stream.seek(0)
+        return stream
+    solid = Image.new("RGBA", rgba.size, "#" + colour)
+    solid.putalpha(alpha)
+    out = io.BytesIO()
+    solid.save(out, format="PNG")
+    out.seek(0)
+    return out
+
+
 def add_image(
     deck: Deck,
     slide: Any,
@@ -748,9 +772,13 @@ def add_image(
     alt: str,
     fit: str = "contain",
     rel: str = "image.path",
+    tint: str | None = None,
 ) -> Any:
-    """A picture inside frame: contain keeps all of it, cover fills the frame and crops."""
+    """A picture inside frame: contain keeps all of it, cover fills the frame and crops.
+    tint (a hex colour) redraws an icon's shape in that one colour."""
     stream, (px_w, px_h) = _image_stream(deck, raw, frame.w, rel)
+    if tint:
+        stream = _tinted(deck, stream, tint, rel)
     aspect = px_w / px_h if px_h else 1.0
     if fit == "cover":
         picture = slide.shapes.add_picture(
@@ -1368,61 +1396,86 @@ def render_cards(deck: Deck, spec: dict[str, Any]) -> Any:
 
 
 def render_process(deck: Deck, spec: dict[str, Any]) -> Any:
+    """Standard #20 process flow: a teal rounded-square tile per step holding its
+    number (or its icon, drawn white), the title and one line under the tile, and a
+    grey arrow from each tile to the next. The row is centred in the body."""
     slide = new_slide(deck)
     content = spec.get("content") or {}
     frame = titled_frame(deck, slide, content)
     steps = spec["steps"]
     comp = COMP["process"]
-    arrow = comp["arrow"]
+    tile_cfg, arrow = comp["tile"], comp["arrow"]
     n = len(steps)
     lane = float(arrow["w"]) + 2 * float(comp["gap"])
-    box_w = (frame.w - lane * (n - 1)) / n
-    box_h = min(frame.h, 3.4)
-    y = frame.y + (frame.h - box_h) / 2
-    pad = float(comp["pad"])
-    inner = box_w - 2 * pad
-    ns, ts = style("step_number"), style("card_title")
+    col_w = (frame.w - lane * (n - 1)) / n
+    tile = min(float(tile_cfg["size"]), col_w)
+    ns = style("step_number", color=hexc(tile_cfg["text_color"]))
+    ts, bs = style("card_title"), style("card_body")
+    titles = [lines_of(str(s["title"]), col_w, ts) for s in steps]
+    bodies = [lines_of(str(s["body"]), col_w, bs) if s.get("body") else [] for s in steps]
+    title_h = text_height(max(len(t) for t in titles), ts)
+    body_h = max(text_height(len(b), bs, BODY_SPACING) for b in bodies)
+    block = tile + float(comp["label_gap"]) + title_h
+    if body_h:
+        block += float(comp["text_gap"]) + body_h
+    if block > frame.h + 1e-6:
+        raise deck.fit(
+            "steps",
+            f"the steps need {block:.2f} in and the body has {frame.h:.2f} in",
+            "shorten the step text, or use fewer steps",
+        )
+    top = frame.y + (frame.h - block) / 2
     for i, step in enumerate(steps):
-        x = frame.x + i * (box_w + lane)
-        add_shape(
+        col_x = frame.x + i * (col_w + lane)
+        tile_x = col_x + (col_w - tile) / 2
+        shape = add_shape(
             slide,
             "rounded_rect",
-            (x, y, box_w, box_h),
-            fill=comp["fill"],
-            radius_in=float(comp["radius_in"]),
+            (tile_x, top, tile, tile),
+            fill=tile_cfg["fill"],
+            radius_in=float(tile_cfg["radius_in"]),
         )
-        cursor = y + pad
-        add_text(
-            slide, (x + pad, cursor, inner, text_height(1, ns)), str(i + 1).zfill(2), ns, deck.lang
-        )
-        cursor += text_height(1, ns) + 0.08
         if step.get("icon"):
-            icon = float(COMP["card"]["icon"])
+            icon = float(tile_cfg["icon"])
             add_image(
                 deck,
                 slide,
                 str(step["icon"]),
-                Frame(x + pad, cursor, icon, icon),
+                Frame(tile_x + (tile - icon) / 2, top + (tile - icon) / 2, icon, icon),
                 alt=_icon_alt(deck, str(step["title"])),
                 rel=f"steps[{i}].icon",
+                tint=hexc(tile_cfg["text_color"]),
             )
-            cursor += icon + 0.08
-        th = text_height(len(lines_of(str(step["title"]), inner, ts)), ts)
-        add_text(slide, (x + pad, cursor, inner, th + 0.02), str(step["title"]), ts, deck.lang)
-        cursor += th + 0.08
-        if step.get("body"):
-            room = y + box_h - pad - cursor
-            _card_body(
-                deck,
+        else:
+            _frame_basics(shape.text_frame, anchor="middle", wrap=False)
+            _write(shape.text_frame, str(i + 1).zfill(2), ns, deck.lang, align="center")
+        cursor = top + tile + float(comp["label_gap"])
+        th = text_height(len(titles[i]), ts)
+        add_text(
+            slide,
+            (col_x, cursor, col_w, th + 0.02),
+            str(step["title"]),
+            ts,
+            deck.lang,
+            align="center",
+        )
+        if bodies[i]:
+            cursor += title_h + float(comp["text_gap"])
+            bh = text_height(len(bodies[i]), bs, BODY_SPACING)
+            add_text(
                 slide,
+                (col_x, cursor, col_w, bh + 0.02),
                 str(step["body"]),
-                (x + pad, cursor, inner, room),
-                f"steps[{i}].body",
-                f"step {i + 1}'s text",
+                bs,
+                deck.lang,
+                align="center",
+                spacing=BODY_SPACING,
             )
         if i < n - 1:
-            ax = x + box_w + float(comp["gap"])
-            ay = y + box_h / 2 - float(arrow["h"]) / 2
+            gap_left = tile_x + tile
+            gap_right = col_x + col_w + lane + (col_w - tile) / 2
+            ax = (gap_left + gap_right) / 2 - float(arrow["w"]) / 2
+            ay = top + tile / 2 - float(arrow["h"]) / 2
             add_shape(
                 slide,
                 "arrow_right",
