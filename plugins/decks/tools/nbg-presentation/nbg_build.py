@@ -201,6 +201,7 @@ class Deck:
     index: int = 0
     slide_spec: dict[str, Any] = field(default_factory=dict)
     warnings: list[Issue] = field(default_factory=list)
+    errors: list[Issue] = field(default_factory=list)
     require_title: bool = True
 
     def path(self, rel: str = "") -> str:
@@ -222,6 +223,10 @@ class Deck:
 
     def warn(self, rel: str, message: str, fix: str = "") -> None:
         self.warnings.append(self.issue("warning", rel, message, fix))
+
+    def error(self, rel: str, message: str, fix: str = "") -> None:
+        """An error that leaves the slide drawable, so the rest of it is still checked."""
+        self.errors.append(self.issue("error", rel, message, fix))
 
     def fit(self, rel: str, message: str, fix: str) -> FitError:
         return FitError(self.path(rel), message, fix)
@@ -302,6 +307,12 @@ def lines_of(text: str, width: float, s: Style) -> list[str]:
 
 def text_height(n_lines: int, s: Style, spacing: float = 1.0) -> float:
     return float(n_lines * metrics().line_height(s.size, spacing))
+
+
+def _chars_that_fit(text: str, width: float, s: Style) -> int:
+    """Roughly how many of text's characters fit on one line, for a fix message."""
+    measured = metrics().width(text, s.size, s.bold)
+    return max(1, int(len(text) * width * FIT / measured)) if measured else len(text)
 
 
 def _strip_style(shape: Any) -> None:
@@ -946,22 +957,16 @@ def render_cover(deck: Deck, spec: dict[str, Any]) -> Any:
     floor = float(base.get("min_size", size))
     box_w = float(comp["title"]["w"])
     s = style("cover_title", size=size)
-    # Standard #13: one line. Shrink from 48 to 44pt before wrapping at all.
+    # Standard #13: one line. Shrink from 48 to 44pt; past that, shorten.
     while len(lines_of(title, box_w, s)) > 1 and size > floor:
         size -= 1
         s = style("cover_title", size=size)
     lines = lines_of(title, box_w, s)
-    if len(lines) > 2:
-        raise deck.fit(
+    if len(lines) > 1:
+        deck.error(
             "content.title",
-            f"the cover title needs {len(lines)} lines",
-            "shorten it (Standard #13)",
-        )
-    if len(lines) == 2:
-        deck.warn(
-            "content.title",
-            f"the cover title wraps to two lines even at {floor:g}pt",
-            "Standard #13: shorten it to one line",
+            f"the cover title needs {len(lines)} lines even at {floor:g}pt",
+            f"Standard #13: shorten it to one line, about {_chars_that_fit(title, box_w, s)} characters",
         )
     title_h = text_height(len(lines), s, TITLE_SPACING) + 0.1
     title_y = float(comp["title"]["y"])
@@ -972,13 +977,12 @@ def render_cover(deck: Deck, spec: dict[str, Any]) -> Any:
         ss = style("cover_subtitle")
         sw = float(comp["subtitle"]["w"])
         sub_lines = lines_of(str(subtitle), sw, ss)
-        if len(sub_lines) > 2:
-            raise deck.fit(
-                "content.subtitle", "the subtitle needs more than two lines", "shorten it"
-            )
-        if len(sub_lines) == 2:
-            deck.warn(
-                "content.subtitle", "the subtitle wraps to two lines", "Standard #13: one line"
+        if len(sub_lines) > 1:
+            deck.error(
+                "content.subtitle",
+                f"the subtitle needs {len(sub_lines)} lines at {ss.size:g}pt",
+                "Standard #13: shorten it to one line, about "
+                f"{_chars_that_fit(str(subtitle), sw, ss)} characters",
             )
         sub_h = text_height(len(sub_lines), ss) + 0.05
         add_text(slide, (GUTTER, cursor, sw, sub_h), str(subtitle), ss, deck.lang)
@@ -1755,7 +1759,7 @@ def render(
         if notes:
             slide.notes_slide.notes_text_frame.text = str(notes)
     _core_properties(prs, spec, lang)
-    return prs, errors, deck.warnings
+    return prs, sorted(errors + deck.errors, key=lambda i: i.slide or 0), deck.warnings
 
 
 def check(spec_path: Path | str) -> Report:

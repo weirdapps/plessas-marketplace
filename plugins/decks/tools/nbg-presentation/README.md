@@ -56,9 +56,10 @@ Errors stop a build: a schema violation, a missing source on an exhibit, series 
 do not match their categories, a missing image, a custom element outside the body
 area, an unknown colour name, a deck that does not end on its back cover, duplicate
 titles, and anything that cannot fit (bullets that need more room than the body has
-at 14pt, a table taller than the body, a cover title that needs three lines).
-Warnings do not: a legacy name, an unquoted number or date, a title that wraps to two
-lines, more than six chart series, a waterfall total that does not add up, an em dash.
+at 14pt, a table taller than the body, a cover title or subtitle that does not stay on
+one line, Standard #13). Warnings do not: a legacy name, an unquoted number or date, a
+slide title that wraps to two lines, more than six chart series, a waterfall total that
+does not add up, an em dash.
 
 ## The deck spec
 

@@ -355,19 +355,27 @@ def test_an_em_dash_in_slide_text_is_a_warning(tmp_path):
 # ---------------------------------------------------------------- dry-run layout
 
 
-def test_a_cover_title_that_cannot_fit_is_an_error(tmp_path):
+def test_a_cover_title_or_subtitle_that_wraps_is_an_error(tmp_path):
+    """Standard #13 keeps each on one line, and the validator's Text Fit fails a
+    wrapped one: a warning here let check pass a deck the build then rejected."""
     long_title = "An extremely long cover title that no presenter should ever need"
+    long_subtitle = (
+        "Retail Banking | Digital Channels | Cards | Payments | Direct Banking | Fraud Prevention"
+        " | Controls"
+    )
     report = check(
         tmp_path,
         {
             "slides": [
-                {"type": "cover", "content": {"title": long_title[:60]}},
+                {"type": "cover", "content": {"title": long_title[:60], "subtitle": long_subtitle}},
                 {"type": "back_cover"},
             ]
         },
     )
-    wrapped = [i for i in report.warnings if i.path == "slides[0].content.title"]
-    assert wrapped and "Standard #13" in wrapped[0].fix
+    assert not report.ok
+    for field in ("title", "subtitle"):
+        wrapped = [i for i in report.errors if i.path == f"slides[0].content.{field}"]
+        assert wrapped and "Standard #13" in wrapped[0].fix, field
 
 
 def test_bullets_that_cannot_fit_at_14pt_are_refused(tmp_path):
