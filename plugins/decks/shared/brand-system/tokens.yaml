@@ -115,8 +115,11 @@ type:
   caption:            {size: 12, bold: false, color: caption_grey}
   source:             {size: 11, bold: false, color: caption_grey}
   footnote:           {size: 11, bold: false, color: caption_grey}
-  kpi_value:          {size: 50, bold: true, color: teal}
+  kpi_value:          {size: 50, min_size: 32, bold: true, color: teal}   # shrinks to fit a 4-up row
   kpi_label:          {size: 14, bold: false, color: body_text}
+  kpi_delta:          {size: 14, bold: true, color: body_text}   # colour by sentiment: components.kpi.delta
+  step_number:        {size: 18, bold: false, color: teal}       # process step "01", like a contents number
+  recommended_tab:    {size: 11, bold: true, color: body_text, caps: true}   # layouts.md: 202020 on gold
   card_title:         {size: 16, bold: true, color: dark_teal}
   card_body:          {size: 14, bold: false, color: body_text}
   pill:               {size: 9, bold: true, color: white, caps: true}
@@ -176,30 +179,56 @@ components:
   contents:
     header: {x: 0.374, y: 0.40, w: 10.0, h: 0.5}
     first_row_y: 1.48
-    row_step: 0.85
-    number_w: 0.8
+    row_step: 0.85           # layouts.md: one row per 0.85" when the rows carry teasers
+    row_step_compact: 0.6    # rows with no teaser at all
+    number_w: 0.8            # the section title starts at gutter + number_w (Standard #18)
+    title_w: 10.0
+    page_number_from_slides: 10   # Standard #18: a shorter deck's contents page is unnumbered
   divider:
     number: {x: 0.374, y: 2.84, w: 1.2, h: 1.0}
     title: {x: 1.574, y: 2.84, w: 9.5, h: 1.0}
     same_baseline: true      # Standard #3: number and title share a baseline
   bullets:
     glyph: "•"
+    glyph_l2: "–"            # level 2 is told apart by indent and glyph, never by a smaller size
     glyph_color: cyan
     glyph_font: "Arial"
     space_before_pt: 14      # layouts.md; the first bullet has none
-    indent_emu: 228600       # 0.25": marL, with indent = -marL for a hanging bullet
+    space_before_l2_pt: 5    # layouts.md "Bullet L2"
+    indent_emu: 228600       # 0.25" per level: marL, with indent = -0.25" for a hanging bullet
   card:
     fill: off_white
     radius_in: 0.04          # Standard #12
     metric_border: {color: light_grey, width_pt: 1}
     highlight_fill: highlight_tint
     recommended: {fill: gold_tint, border: gold, border_pt: 1.5}
+    recommended_tab: {fill: gold, h: 0.26, pad_x: 0.12}   # text: type.recommended_tab
     shadow: false            # no shadows on any shape (brand-system README)
+    pad: 0.25                # inset of the title, body and icon from the card edge
+    icon: 0.6                # icon box, square
+    gap: 0.1                 # between icon, title and body
   badge:
     shape: oval
     size_in: 0.28
     fill: teal
-  takeaway_strip: {fill: takeaway_tint, text_color: dark_teal, size: 14, bold: true}
+  takeaway_strip: {fill: takeaway_tint, text_color: dark_teal, size: 14, bold: true, h: 0.45, pad_x: 0.15, gap_above: 0.15}
+  kpi:
+    fill: off_white
+    radius_in: 0.04
+    h: 3.0                   # layouts.md Key Figures card; less when the body area is shorter
+    pad: 0.25
+    delta: {positive: teal, negative: alert, neutral: body_text}   # plus a sign and an arrow glyph, never colour alone
+  process:
+    fill: off_white
+    radius_in: 0.04
+    arrow: {w: 0.3, h: 0.35, color: muted_grey}
+    gap: 0.1                 # between a step box and an arrow
+    pad: 0.2
+  two_column:
+    gap: 0.3                 # geometry.grid_gap
+    heading_gap: 0.1
+  image:
+    caption_gap: 0.1
   table:
     header_fill: dark_teal
     header_h: 0.4
@@ -224,6 +253,7 @@ charts:
   area_line: {fill_alpha: 0.15, width_pt: 3.5}
   doughnut: {hole_size: 55}
   waterfall: {gap_width: 100, total_color: dark_teal, increase_color: cyan, decrease_color: alert}
+  highlight: {accent: cyan, muted: light_grey}   # chart.highlight_category: one bar in the accent, the rest muted
   time_series_default: area_line   # Standard #2.8: never a bare line for a time series
 
 keynote:
