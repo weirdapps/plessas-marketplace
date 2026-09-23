@@ -1,7 +1,10 @@
-# NBG Keynote — worked example showing every archetype and every option.
+# NBG Keynote: worked example showing every archetype and every option.
 # Replace the placeholder text; supply your own photographs. See ../../shared/brand-system/keynote.md
 #
-#   python3 nbg_keynote.py example.yaml --validate
+# Before the photographs exist, check the spec and preview the layout over stand-ins
+# (from the repository root; inside Claude Code use ${CLAUDE_PLUGIN_ROOT}/bin/decks-py):
+#   bash plugins/decks/bin/decks-py keynote plugins/decks/tools/nbg-keynote/example.yaml --validate --placeholder-images
+# Once they are in meta.assets (or pass --assets DIR), drop --placeholder-images.
 
 meta:
   title: Talk title
@@ -56,7 +59,7 @@ slides:
     kicker: "Move 2  ·  Second move"
     image: detail.jpg
     scrim: right
-    align: right                     # puts the block on the un-scrimmed side
+    align: right                     # puts the block on the right, the side `scrim: right` darkens
     value: 3.3m
     color: ink                       # ink | accent | negative | #RRGGBB
     caption: what that number counts
