@@ -253,7 +253,7 @@ content:
     y: 0.35"
     w: text width + 2 × 0.1" inset, minimum 1.0"   # sized to its text, one line, no wrap
     h: 0.3"
-    radius: 0.15 # Standard #12
+    radius: 0.15"  # half the height, so the ends are fully rounded (Standard #12)
     shadow: none  # NO shadow on any element
   title:
     x: 0.374"    # Standard #15 gutter, never 0.37 and never 0.5

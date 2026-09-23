@@ -203,7 +203,7 @@ Light background card placed in the right margin of a chart slide for a key call
 |----------|-------|
 | Background | `#F5F8F6` |
 | Border | 1pt `#BEC1BE` |
-| Corners | Tight, radius 0.04 (Standard #12) |
+| Corners | Tight, radius 0.04" (Standard #12) |
 | Size | 1.40" × 0.80" (typical) |
 
 | Element | Font | Size | Color | Alignment |
@@ -218,9 +218,9 @@ Used for "Key Figures" slides, observed 30+ times across NBG executive reference
 **Slide composition** (3 cards, equal-width, centered):
 
 ```
-Card 1: Rounded rect at (1.01, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04
-Card 2: Rounded rect at (4.92, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04
-Card 3: Rounded rect at (8.81, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04
+Card 1: Rounded rect at (1.01, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04"
+Card 2: Rounded rect at (4.92, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04"
+Card 3: Rounded rect at (8.81, 2.15, 3.5, 3.0)   fill = #F5F8F6, 1pt #BEC1BE border, radius 0.04"
 ```
 
 KPI cards are metric cards: the 1pt light-grey border and no shadow (`tokens.yaml`
@@ -282,7 +282,7 @@ a measured Standard #22 pair.
 
 | Part | Spec |
 |---|---|
-| Step tile | Rounded square, tight corners (radius 0.04), fill `#007B85`, white line icon (5.03:1) |
+| Step tile | Rounded square, tight corners (radius 0.04"), fill `#007B85`, white line icon (5.03:1) |
 | Step label | Under each tile: 16pt Bold `#003841` title, optional 14pt `#202020` line |
 | Arrow | Between tiles, a right-pointing arrow in `#939793` (the process-arrow grey) |
 | Ownership | A 0.06" stripe on each tile's left edge in the owner's colour: `#003841` for one party, `#BEC1BE` for the other (7.04:1 apart, opposite ends of the lightness range) |

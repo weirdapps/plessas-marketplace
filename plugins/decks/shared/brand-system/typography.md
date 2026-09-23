@@ -32,10 +32,13 @@
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| Title | Aptos | 48pt | #003841 | Regular |
+| Title | Aptos | 48pt (44pt minimum) | #003841 | Regular |
 | Subtitle | Aptos | **24pt** | #007B85 | Regular |
 | Location | Aptos | 14pt | #003841 | Regular |
 | Date | Aptos | 14pt | #939793 | Regular |
+
+The title stays on one line (Standard #13). The builder shrinks a long title to 44pt before it
+would wrap; past that, shorten the text rather than let it wrap.
 
 **Subtitle content**: the presenting unit(s), pipe-separated, no trailing period, for example
 `Unit A | Unit B | Unit C`. Name the units that present the deck rather than a generic department

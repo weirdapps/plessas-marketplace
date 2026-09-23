@@ -72,6 +72,9 @@ brief
   -> decks-py record       keeps the draft /presentation-review later learns from
 ```
 
+A deck that still fails QA after the two fix cycles is not copied to your folder: you are told
+what is wrong and can ask to ship it anyway.
+
 There is one renderer for light-mode decks, `nbg_build.py`; no agent writes PowerPoint by hand.
 The main conversation runs the pipeline and dispatches each agent directly. `/create-keynote` is
 the one exception, rendered by `tools/nbg-keynote/nbg_keynote.py`. The contracts between the

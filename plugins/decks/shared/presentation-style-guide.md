@@ -127,8 +127,8 @@ Use `nbg-logo-gr.png` (Greek `ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ`), never the English f
 
 Rounded rectangle shapes in NBG presentations (cards, KPI boxes, callout containers) use **tight corner radius**, not the default large rounding.
 
-- Cards, KPI tiles and callouts: radius **0.04** (`tokens.yaml` `components.card.radius_in`)
-- **Exception**: section pills are more rounded, radius **0.15** (`components.pill.radius_in`), since they're small accent elements
+- Cards, KPI tiles and callouts: corner radius **0.04"** whatever the card's size (`tokens.yaml` `components.card.radius_in`). In python-pptx that is `shape.adjustments[0] = 0.04 / min(width, height)`, both in inches; a flat `adjustments[0] = 0.04` would round a tall card several times more
+- **Exception**: section pills have fully rounded ends, radius **0.15"**, half their 0.3" height (`components.pill.radius_in`, `adjustments[0] = 0.5`), since they're small accent elements
 
 Default radius (~0.167) looks amateur and "bubbly." Tight corners give a more mature, design-professional appearance appropriate for executive decks.
 
@@ -327,18 +327,22 @@ Three brand-system specs used to put white on a light fill and have been correct
 
 What a user teaches the system lives outside the plugin, in
 `${CLAUDE_PLUGIN_DATA}/style-preferences.md` (for this plugin,
-`~/.claude/plugins/data/decks-plessas-marketplace/style-preferences.md`). `/presentation-review`
-writes it after comparing a generated draft with the version the user finalised; the agents read
-it after this guide, on every deck. It survives plugin updates, belongs to one person, and is never
-committed to this repository.
+`~/.claude/plugins/data/decks-plessas-marketplace/style-preferences.md`). The agents read it after
+this guide, on every deck. It survives plugin updates, belongs to one person, and is never
+committed to this repository. It has three parts:
+
+- **Defaults**: what the user writes by hand, such as the units on their cover subtitle, a
+  preferred sign-off, recurring audiences, their team's deck conventions.
+- **Learned**: what `/presentation-review` found by comparing a shipped draft with the version the
+  user finalised, with how often each pattern has been seen. One review is a hint to lean toward;
+  two or more make it a rule for that user.
+- **Not applied**: patterns in the user's edits that a Standard rules out, recorded so they are
+  not relearned.
 
 It is an overlay, never an override:
 
 - **The Standards above win on every conflict.** A preference can pick among options a Standard
   leaves open (a density, a chart type, a phrasing, a default layout); it cannot break a Standard.
-- **Confidence is recorded.** An entry seen in one review is a hint to lean toward; it becomes a
-  rule for that user after it recurs in two or more reviews.
-- **Personal context goes there, not here**: a unit list for cover subtitles, a preferred sign-off,
-  recurring audiences, one team's deck conventions. This guide is public and serves every colleague.
+- **Personal context goes there, not here.** This guide is public and serves every colleague.
 - **A preference reaches this guide only by a deliberate commit** that turns it into a numbered
   Standard for everyone.

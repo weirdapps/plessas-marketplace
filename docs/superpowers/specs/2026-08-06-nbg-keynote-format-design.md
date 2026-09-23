@@ -138,8 +138,8 @@ plugins/decks/
   agents/presentation-qa.md                   + keynote pointer
 ```
 
-`plugins/decks/shared/brand-system/` is canonical; the repo-root `shared/brand-system/` is an
-auto-synced mirror. After editing, run `scripts/sync_brand_system.sh` or CI fails on drift.
+`plugins/decks/shared/brand-system/` is the one copy of the brand system; its machine-readable
+values live in `tokens.yaml` there.
 
 ## YAML interface
 

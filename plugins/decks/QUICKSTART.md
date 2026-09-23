@@ -137,6 +137,7 @@ The rest (`/presentation-review`, `/create-keynote`, `/create-icon`, `/create-in
 | QA says it could not render the slides | LibreOffice is not installed. Install it, or accept a QA based on the validator report alone (it says so) |
 | "fonts substituted" from a render (exit 4) | LibreOffice cannot see Aptos, so text-fit judgements are off. Install Aptos where LibreOffice looks and render again |
 | Infographics look like plain charts, not illustrations | `manage-nano-banana` not installed. Install the `plessas-lab` marketplace, or keep the charts; both are brand-compliant |
+| No deck appeared in `~/Downloads` | It failed QA after two fix cycles, so it was not copied; the reply says what is wrong. Fix the brief, or ask to ship it anyway |
 | Output landed in an unexpected folder | The finished deck goes to the folder you named, else `~/Downloads/`; working files stay under `~/.claude/plugins/data/decks-plessas-marketplace/work/`. Name the folder in your request |
 | Charts came out as pie charts | Re-run: pie charts are blocked by the builder and at QA. If one slipped through, file an issue |
 | "Thank You" slide appeared | Same as above, blocked at QA. Re-run |
@@ -157,4 +158,4 @@ The rest (`/presentation-review`, `/create-keynote`, `/create-icon`, `/create-in
 - The pipeline, the launcher and the deck spec: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Every command, and which one to use when: [README.md](README.md)
 - Sample deck specs (YAML): `examples/`
-- For Excel-driven decks (monthly packs, variance reviews): `/excel-to-deck` from the `excel` plugin turns a workbook into a deck brief for `/create-presentation`
+- For Excel-driven decks (monthly packs, variance reviews): `/excel-to-deck` from the `excel` plugin turns a workbook into a deck spec and, with `decks` installed, runs `/create-presentation` on it for you
