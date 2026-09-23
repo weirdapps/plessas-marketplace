@@ -305,6 +305,9 @@ Every palette fill, measured (`tools/test_brand_docs.py` recomputes each ratio):
 | `#5D8D2F` Green | 3.95 | 4.12 | white, large text only |
 | `#90DC48` Bright Green | 1.68 | 9.71 | `#202020` |
 | `#0D90FF` Business | 3.26 | 5.00 | `#202020` |
+| `#C8323C` Ownership: ask | 5.28 | 3.09 | white |
+| `#FAEBEC` Ownership: ask fill | 1.16 | 14.09 | `#202020` |
+| `#E6F4F5` Ownership: band | 1.13 | 14.45 | `#202020` |
 
 "Large text only" means no colour clears 4.5:1 on that fill: put only 18pt+ regular or 14pt+ bold
 text on it, or put the text beside the swatch instead.

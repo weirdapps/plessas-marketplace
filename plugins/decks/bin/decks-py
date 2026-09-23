@@ -13,7 +13,10 @@
 # every version bump) in ${DECKS_VENV_HOME:-${XDG_CACHE_HOME:-~/.cache}/nbg-decks},
 # one per tool, keyed by a hash of that tool's requirements.txt. The first call
 # builds one (with uv when it is installed, else python3.12+ -m venv and pip);
-# later calls start at once. A requirements change builds a fresh one.
+# later calls start at once. A requirements change builds a fresh one, and an
+# environment unused for 30 days is deleted the next time its tool is prepared.
+# Only prebuilt wheels are installed (no package build code runs on your machine);
+# DECKS_ALLOW_SOURCE_BUILDS=1 lifts that for a platform with no wheel.
 #
 # Exit codes: the tool's own code is passed through (0 ok, 1 a check failed);
 # 2 means the environment could not be prepared, with the fix printed on stderr.
@@ -23,6 +26,13 @@ set -euo pipefail
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 VENV_HOME="${DECKS_VENV_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}/nbg-decks}"
 MIN_PY_MINOR=12
+STALE_DAYS=30
+# A uv.toml or pyproject in the caller's folder must not reshape a shared tool env.
+export UV_NO_CONFIG=1
+# Python's UTF-8 mode for every tool: on Windows a piped stdout otherwise takes the
+# ANSI code page, and printing a check mark or Greek text raised 'charmap' after the
+# work had succeeded, exiting 1, which reads as "brand violations".
+export PYTHONUTF8=1
 
 die() {
   echo "decks-py: $*" >&2
@@ -39,7 +49,7 @@ Deck building (tools/nbg-presentation):
   validate <deck.pptx> [--format json]
                                    brand-compliance check of any .pptx (exit 1 = violations)
   render <deck.pptx> <outdir>      LibreOffice render to PDF + one PNG per slide, with a font check
-  extract <file.pptx|.docx|.pdf>   text, notes, tables and chart data as markdown (for redesign)
+  extract <file.pptx|.pdf>         text, notes, tables and chart data as markdown (for redesign)
   record <deck.pptx> <spec.yaml> --data <dir>
                                    write the draft record /presentation-review learns from
 
@@ -122,16 +132,53 @@ find_python() {
   return 1
 }
 
+only_binary() {
+  # Echoes the wheels-only flag unless the user lifted it.
+  if [ "${DECKS_ALLOW_SOURCE_BUILDS:-0}" != "1" ]; then echo "--only-binary=:all:"; fi
+}
+
+# The lock is a directory holding the builder's PID. A lock whose process is gone
+# (an interrupted first build) is broken at once instead of hanging every later
+# call; one older than an hour is broken too, since no install takes that long.
 lock_acquire() {
-  local lock="$1" waited=0
-  mkdir -p "$(dirname "$lock")"
+  local lock="$1" waited=0 owner said=0
   until mkdir "$lock" 2>/dev/null; do
+    owner="$(cat "$lock/pid" 2>/dev/null || true)"
+    if [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null; then
+      rm -rf "$lock"
+      continue
+    fi
+    if [ -z "$owner" ] && [ "$waited" -ge 5 ]; then
+      # No PID after 5s: a lock left by an older launcher, or a crash mid-mkdir.
+      rm -rf "$lock"
+      continue
+    fi
+    if [ -n "$(find "$lock" -maxdepth 0 -mmin +60 2>/dev/null)" ]; then
+      rm -rf "$lock"
+      continue
+    fi
+    if [ "$said" -eq 0 ]; then
+      echo "decks-py: waiting for another decks-py to finish preparing this environment..." >&2
+      said=1
+    fi
     sleep 1
     waited=$((waited + 1))
-    if [ "$waited" -ge 600 ]; then
-      die "timed out waiting for $lock (remove it if no other decks-py is running)"
+    if [ "$waited" -ge 900 ]; then
+      die "timed out waiting for $lock; if no other decks-py is running, delete that folder"
     fi
   done
+  echo "$$" >"$lock/pid"
+}
+
+prune_stale() {
+  # Delete this tool's other environments that have not been used for STALE_DAYS.
+  local name="$1" keep="$2" stamp dir
+  while IFS= read -r stamp; do
+    dir="$(dirname "$stamp")"
+    [ "$dir" = "$keep" ] && continue
+    [ -d "$dir.lock" ] && continue
+    rm -rf "$dir"
+  done < <(find "$VENV_HOME" -maxdepth 2 -path "$VENV_HOME/$name-*/.decks-ready" -mtime +"$STALE_DAYS" 2>/dev/null)
 }
 
 # ensure_env <tool dir> -> echoes the interpreter to use
@@ -152,24 +199,34 @@ ensure_env() {
   stamp="$venv/.decks-ready"
 
   if [ -f "$stamp" ] && py="$(venv_python "$venv")"; then
+    touch "$stamp" 2>/dev/null || true # marks it in use, for prune_stale
     echo "$py"
     return 0
   fi
 
+  mkdir -p "$VENV_HOME" 2>/dev/null && [ -w "$VENV_HOME" ] ||
+    die "cannot write the environment folder $VENV_HOME; set DECKS_VENV_HOME to a writable folder"
+
   lock_acquire "$venv.lock"
-  # Another process may have finished it while we waited.
+  # From here until the stamp is written, an interruption must not leave a half-built
+  # environment or a held lock behind.
+  trap 'rm -rf "$venv"; rm -rf "$venv.lock"' INT TERM HUP
   if [ -f "$stamp" ] && py="$(venv_python "$venv")"; then
-    rmdir "$venv.lock" 2>/dev/null || true
+    # Another process finished it while we waited.
+    trap - INT TERM HUP
+    rm -rf "$venv.lock"
     echo "$py"
     return 0
   fi
   rm -rf "$venv"
   echo "decks-py: preparing the $name environment (first run only)..." >&2
 
-  local ok=0
+  local ok=0 wheels
+  wheels="$(only_binary)"
   if command -v uv >/dev/null 2>&1; then
-    if uv venv -q --python ">=3.$MIN_PY_MINOR" "$venv" >&2 && py="$(venv_python "$venv")" \
-      && uv pip install -q --python "$py" -r "$req" >&2; then
+    # shellcheck disable=SC2086  # $wheels is empty or one flag
+    if uv venv -q --python ">=3.$MIN_PY_MINOR" "$venv" >&2 && py="$(venv_python "$venv")" &&
+      uv pip install -q $wheels --python "$py" -r "$req" >&2; then
       ok=1
     fi
   fi
@@ -177,42 +234,27 @@ ensure_env() {
     rm -rf "$venv"
     local base
     if ! base="$(find_python)"; then
-      rmdir "$venv.lock" 2>/dev/null || true
+      trap - INT TERM HUP
+      rm -rf "$venv.lock"
       die "no Python 3.$MIN_PY_MINOR+ found. Install Python 3.12 or newer (https://www.python.org/downloads/) or uv (https://docs.astral.sh/uv/), then retry. On Debian/Ubuntu also: apt install python3-venv"
     fi
-    # shellcheck disable=SC2086  # "py -3.12" is intentionally two words
-    if $base -m venv "$venv" >&2 && py="$(venv_python "$venv")" \
-      && "$py" -m pip install -q --disable-pip-version-check -r "$req" >&2; then
+    # shellcheck disable=SC2086  # "py -3.12" is intentionally two words; $wheels too
+    if $base -m venv "$venv" >&2 && py="$(venv_python "$venv")" &&
+      "$py" -m pip install -q --disable-pip-version-check $wheels -r "$req" >&2; then
       ok=1
     fi
   fi
   if [ "$ok" -eq 0 ]; then
     rm -rf "$venv"
-    rmdir "$venv.lock" 2>/dev/null || true
-    die "could not install $req into $venv (see the pip/uv output above). Check network access or a proxy, then retry."
+    trap - INT TERM HUP
+    rm -rf "$venv.lock"
+    die "could not install $req into $venv (see the pip/uv output above). Check network access or a proxy, then retry. If a package has no prebuilt wheel for this machine, DECKS_ALLOW_SOURCE_BUILDS=1 allows building it."
   fi
   date >"$stamp"
-  rmdir "$venv.lock" 2>/dev/null || true
+  trap - INT TERM HUP
+  rm -rf "$venv.lock"
+  prune_stale "$name" "$venv"
   echo "$py"
-}
-
-find_soffice() {
-  local c
-  for c in soffice libreoffice; do
-    if command -v "$c" >/dev/null 2>&1; then
-      command -v "$c"
-      return 0
-    fi
-  done
-  for c in "/Applications/LibreOffice.app/Contents/MacOS/soffice" \
-    "/c/Program Files/LibreOffice/program/soffice.exe" \
-    "/usr/lib/libreoffice/program/soffice"; do
-    if [ -x "$c" ] || [ -f "$c" ]; then
-      echo "$c"
-      return 0
-    fi
-  done
-  return 1
 }
 
 doctor() {
@@ -227,34 +269,37 @@ doctor() {
     command -v uv >/dev/null 2>&1 || status=2
   fi
   if command -v uv >/dev/null 2>&1; then echo "uv:            $(command -v uv)"; else echo "uv:            not installed (optional)"; fi
-  local d name hash venv
+  local d name hash venv presentation_py=""
   for d in "${ALL_TOOL_DIRS[@]}"; do
     name="$(basename "$d")"
     hash="$(sha12 "$PLUGIN_ROOT/$d/requirements.txt")"
     venv="$VENV_HOME/$name-$hash"
     if [ -f "$venv/.decks-ready" ]; then
       echo "env $name: ready ($venv)"
+      if [ "$name" = "nbg-presentation" ]; then presentation_py="$(venv_python "$venv" || true)"; fi
     else
       echo "env $name: not built yet (first use builds it; or run: decks-py setup)"
     fi
   done
-  if py="$(find_soffice)"; then
-    echo "LibreOffice:   $py (render-and-look QA available)"
+  if [ -n "$presentation_py" ]; then
+    # Ask the tools themselves, so doctor finds exactly what render and the builder
+    # will use (DECKS_SOFFICE and DECKS_FONT_DIRS included).
+    local found soffice aptos
+    found="$("$presentation_py" - "$PLUGIN_ROOT/tools" "$PLUGIN_ROOT/tools/nbg-presentation" <<'PY' 2>/dev/null || true
+import sys
+sys.path[:0] = sys.argv[1:3]
+import nbg_render, nbg_text
+print(nbg_render.find_soffice() or "")
+print(nbg_text.find_font("Aptos") or "")
+PY
+)"
+    soffice="$(printf '%s\n' "$found" | sed -n 1p)"
+    aptos="$(printf '%s\n' "$found" | sed -n 2p)"
+    if [ -n "$soffice" ]; then echo "LibreOffice:   $soffice (render-and-look QA available)"; else echo "LibreOffice:   not found; QA cannot render slides (install LibreOffice, or set DECKS_SOFFICE)"; fi
+    if [ -n "$aptos" ]; then echo "Aptos fonts:   $aptos"; else echo "Aptos fonts:   not found; builds measure text with a fallback table, renders substitute a font (DECKS_FONT_DIRS adds folders)"; fi
   else
-    echo "LibreOffice:   not found; QA cannot render slides (install LibreOffice to enable it)"
-  fi
-  local fonts=()
-  local f
-  for f in "$HOME/Library/Fonts" "/Library/Fonts" \
-    "/Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts" \
-    "/c/Windows/Fonts" "${LOCALAPPDATA:-/nonexistent}/Microsoft/Windows/Fonts" \
-    "$HOME/.local/share/fonts" "/usr/share/fonts"; do
-    if ls "$f"/Aptos*.ttf >/dev/null 2>&1; then fonts+=("$f"); fi
-  done
-  if [ "${#fonts[@]}" -gt 0 ]; then
-    echo "Aptos fonts:   ${fonts[*]}"
-  else
-    echo "Aptos fonts:   not found; renders and keynotes fall back to Calibri/DejaVu"
+    echo "LibreOffice:   (run 'decks-py setup' first: doctor asks the render tool itself)"
+    echo "Aptos fonts:   (run 'decks-py setup' first: doctor asks the builder's font lookup itself)"
   fi
   return "$status"
 }

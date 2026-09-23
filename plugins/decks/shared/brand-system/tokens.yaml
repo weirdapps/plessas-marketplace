@@ -45,6 +45,12 @@ colors:
   info_blue: "1E478E"
   warning: "FF7F1A"        # warning-flag square
 
+  # Two-party ownership coding (layouts.md): asks from another division vs work we lead.
+  # Owner's established set, adopted 2026-09-24; badges on it stay >= 10pt.
+  ownership_ask: "C8323C"       # asks: accent bar, section header bar, badge
+  ownership_ask_fill: "FAEBEC"  # asks: card and row fill
+  ownership_band: "E6F4F5"      # the "we lead in parallel" footer band
+
   # Legacy but allowed (existing decks use it; do not pick it for new work)
   teal_variant: "047A85"
 
