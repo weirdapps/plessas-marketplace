@@ -3538,46 +3538,88 @@ def check_alt_text(deck: Deck, out: Collector) -> str:
     return f"{out.examined} object(s) carry descriptive alt text{chrome}"
 
 
-# Bank names. In chart labels a short name is unambiguous ("Alpha" beside "Eurobank");
-# in running text only full names count, so "alpha release" and "Piraeus port" do not.
-_BANK_LABEL = {
-    "nbg": r"\bnbg\b|\bnational bank\b|\bετε\b|\bεθνικη\b",
-    "eurobank": r"\beurobank\b",
-    "alpha": r"\balpha\b|\bαλφα\b",
-    "piraeus": r"\bpiraeus\b|\bπειραιωσ\b",
-}
-_BANK_TEXT = {
-    "nbg": r"\bnbg\b|\bnational bank of greece\b|\bεθνικη τραπεζα\b",
-    "eurobank": r"\beurobank\b",
-    "alpha": r"\balpha bank\b",
-    "piraeus": r"\bpiraeus bank\b|\bτραπεζα πειραιωσ\b",
-}
-_BANK_NAMES = {
-    "nbg": "NBG",
-    "eurobank": "Eurobank",
-    "alpha": "Alpha Bank",
-    "piraeus": "Piraeus Bank",
-}
-_BANK_LOGO_FILES = {
-    "nbg": "nbg.png",
-    "eurobank": "eurobank.png",
-    "alpha": "alpha-bank.png",
-    "piraeus": "piraeus-bank.png",
-}
+# Bank names and logos come from tokens.yaml `banks`, colours from
+# extended_palettes.peer_banks. `names` count anywhere; `label_aliases` only in a chart
+# label, where a short name is unambiguous ("Alpha" beside "Eurobank"), so "alpha
+# release" and "Piraeus port" in running text name no bank (VALIDATOR-9).
+@dataclass(frozen=True)
+class _Bank:
+    name: str
+    logo: str
+    text: re.Pattern[str]
+    label: re.Pattern[str]
 
 
-def _banks_in(text: str, patterns: dict[str, str]) -> set[str]:
+def _names_pattern(names: Iterable[str]) -> re.Pattern[str]:
+    words = [fold(str(n)).split() for n in names]
+    alternatives = [r"(?<!\w)" + r"\s+".join(map(re.escape, w)) + r"(?!\w)" for w in words if w]
+    return re.compile("|".join(alternatives) or r"(?!)")
+
+
+@lru_cache(maxsize=1)
+def _bank_table() -> dict[str, _Bank]:
+    table = {}
+    for key, bank in nbg_tokens.get("banks").items():
+        names = list(bank.get("names") or [bank["name"]])
+        aliases = list(bank.get("label_aliases") or [])
+        table[key] = _Bank(
+            str(bank["name"]),
+            str(bank["logo"]),
+            _names_pattern(names),
+            _names_pattern(names + aliases),
+        )
+    return table
+
+
+def _banks_in(text: str, *, label: bool) -> set[str]:
     folded = fold(text)
-    return {key for key, pattern in patterns.items() if re.search(pattern, folded)}
+    return {
+        key
+        for key, bank in _bank_table().items()
+        if (bank.label if label else bank.text).search(folded)
+    }
+
+
+@lru_cache(maxsize=8)
+def _asset_size(name: str) -> tuple[int, int] | None:
+    try:
+        return _image_size((ASSETS_DIR / name).read_bytes())
+    except OSError:
+        return None
+
+
+def _bank_logo(deck: Deck, s: Slide, pic: Shape) -> tuple[str | None, tuple[int, int] | None]:
+    """The bank whose logo `pic` shows, and the image's pixel size. A picture is a
+    bank's logo when it is that bank's shipped asset, or when it names the bank in its
+    alt text or name and keeps the asset's aspect ratio (a redrawn copy)."""
+    part = s.image_part(pic)
+    if not part:
+        return None, None
+    digest, size = deck.media(part)
+    table = _bank_table()
+    for key, bank in table.items():
+        if digest == _asset_hash(bank.logo):
+            return key, size
+    nv = pic.c_nv_pr
+    named = _banks_in(f"{pic.name} {nv.get('descr', '') if nv is not None else ''}", label=True)
+    if len(named) == 1 and size and size[1]:
+        key = named.pop()
+        asset = _asset_size(table[key].logo)
+        if asset and asset[1]:
+            aspect = asset[0] / asset[1]
+            if abs(size[0] / size[1] - aspect) / aspect <= 0.05:
+                return key, size
+    return None, size
 
 
 def check_bank_branding(deck: Deck, out: Collector) -> str:
     b = brand()
+    table = _bank_table()
     mentioned: set[str] = set()
     for s in deck.slides:
         for text in _slide_texts(s):
             if not _is_source(text):
-                mentioned |= _banks_in(text, _BANK_TEXT)
+                mentioned |= _banks_in(text, label=False)
         comparisons: list[tuple[Chart, set[str]]] = []
         for chart in (c for c in deck.charts() if c.slide is s):
             plotted: dict[str, str] = {}
@@ -3594,7 +3636,7 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                     ser_color = ser_color or (
                         s.ctx.first(line_fill) if line_fill is not None else None
                     )
-                    for bank in _banks_in(_series_name(ser), _BANK_LABEL):
+                    for bank in _banks_in(_series_name(ser), label=True):
                         plotted[bank] = ser_color or ""
                     points = {}
                     for dpt in ser.findall(f"{C}dPt"):
@@ -3603,7 +3645,7 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                         if idx is not None and fill is not None:
                             points[idx.get("val")] = s.ctx.first(fill)
                     for i, label in enumerate(_categories(ser)):
-                        for bank in _banks_in(label, _BANK_LABEL):
+                        for bank in _banks_in(label, label=True):
                             color = points.get(str(i)) or ser_color or ""
                             if plotted.get(bank) != b.peer_banks[bank]:
                                 plotted[bank] = color
@@ -3616,31 +3658,27 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                         shown = f"#{color}" if color else "an automatic colour"
                         out.add(
                             s.position,
-                            f"chart {chart.stem} plots {_BANK_NAMES[bank]} in {shown}, not its brand colour #{b.peer_banks[bank]} (presentation-qa 2H)",
+                            f"chart {chart.stem} plots {table[bank].name} in {shown}, not its brand colour #{b.peer_banks[bank]} (presentation-qa 2H)",
                         )
         if comparisons:
             banks = set().union(*(c[1] for c in comparisons))
-            pictures = [sh for sh in s.shapes if sh.kind == "pic" and not _is_logo_footprint(sh)]
-            logos = 0
-            for pic in pictures:
-                part = s.image_part(pic)
-                digest, size = deck.media(part) if part else ("", None)
-                matched = [
-                    k
-                    for k, f in _BANK_LOGO_FILES.items()
-                    if digest and digest == _asset_hash(f"bank-logos/{f}")
-                ]
-                logos += 1
+            shown_logos: set[str] = set()
+            for pic in (sh for sh in s.shapes if sh.kind == "pic" and not _is_logo_footprint(sh)):
+                key, size = _bank_logo(deck, s, pic)
+                if key is None:
+                    continue
+                shown_logos.add(key)
                 stretch = _stretch(pic, size)
-                if matched and stretch is not None and stretch > 0.03:
+                if stretch is not None and stretch > 0.03:
                     out.add(
                         s.position,
-                        f"the {_BANK_NAMES[matched[0]]} logo is stretched; keep its native aspect ratio (Standard #4)",
+                        f"the {table[key].name} logo is stretched; keep its native aspect ratio (Standard #4)",
                     )
-            if logos < len(banks):
+            missing = [table[key].name for key in table if key in banks - shown_logos]
+            if missing:
                 out.add(
                     s.position,
-                    f"the slide plots {len(banks)} banks but carries {logos} bank logo picture(s); each plotted bank needs its logo (presentation-qa 2H)",
+                    f"the slide plots {len(banks)} banks but carries no logo for {', '.join(missing)}; each plotted bank needs its own logo from assets/bank-logos (presentation-qa 2H)",
                 )
     if not out.examined:
         return f"no chart compares two or more banks ({len(mentioned)} bank name(s) found)"
@@ -3913,7 +3951,7 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Zero Baseline", check_zero_baseline, "error", "Bar and column value axes include zero, including an automatic axis on close values, which PowerPoint draws without it.", "keynote.md; charts.md", "value axes of bar and column charts"),
     CheckSpec("Exhibit Sources", check_exhibit_sources, "error", "Every slide with a chart or table carries a dated source line.", "deck.schema.json content.source; presentation-qa", "slides carrying a chart or table"),
     CheckSpec("Alt Text", check_alt_text, "error", "Pictures, charts, tables and groups carry descriptive alt text; brand logos are decorative.", "Standard #22 (EN 301 549)", "top-level pictures, graphic frames and groups"),
-    CheckSpec("Bank Branding", check_bank_branding, "error", "A chart plotting two or more of the four systemic banks colours each in its brand colour and the slide carries a logo per bank.", "presentation-qa 2H; tokens extended_palettes.peer_banks", "charts plotting two or more banks"),
+    CheckSpec("Bank Branding", check_bank_branding, "error", "A chart plotting two or more banks colours each in its brand colour and the slide carries each plotted bank's own logo.", "presentation-qa 2H; tokens banks, extended_palettes.peer_banks", "charts plotting two or more banks"),
     CheckSpec("Number Formats", check_number_formats, "warning", "One currency notation per deck and one decimal precision per unit; Greek separators understood.", "typography.md", "currency amounts in slide text"),
     CheckSpec("AI Slop", check_ai_slop, "warning", "No slide clusters two or more AI-register phrases.", "presentation-qa (tone)", "slides carrying text"),
     CheckSpec("Official Name", check_official_name, "warning", "The bank is «Εθνική Τράπεζα», never «Εθνική Τράπεζα της Ελλάδος».", "writing style", "slides carrying text"),

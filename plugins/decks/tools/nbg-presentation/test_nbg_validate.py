@@ -703,7 +703,17 @@ def _replace_bar_chart(**kwargs):
     return edit
 
 
-def _bank_slide(prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", "Piraeus")):
+BANK_FILES = {
+    "nbg": "nbg.png",
+    "eurobank": "eurobank.png",
+    "alpha": "alpha-bank.png",
+    "piraeus": "piraeus-bank.png",
+}
+
+
+def _bank_slide(
+    prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", "Piraeus"), pictures=None
+):
     sld = blank(prs)
     title(sld, "NBG leads peers on mobile adoption")
     keys = ("nbg", "eurobank", "alpha", "piraeus")
@@ -716,13 +726,13 @@ def _bank_slide(prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", 
         alt="Column chart of active mobile users by bank: NBG 62%, Eurobank 55%, Alpha 51%, Piraeus 49%.",
     )
     if logos:
-        files = ("nbg.png", "eurobank.png", "alpha-bank.png", "piraeus-bank.png")
-        for i, name in enumerate(files):
-            w = 0.542 if name == "nbg.png" else 0.35  # 96x62 and 64x64 at a 0.35" height
+        if pictures is None:
+            pictures = [(BANK_LOGOS / BANK_FILES[k], f"{k.title()} logo") for k in keys]
+        for i, (path, alt) in enumerate(pictures):
             pic = sld.shapes.add_picture(
-                str(BANK_LOGOS / name), inch(1.6 + i * 3.1), inch(5.45), inch(w), inch(0.35)
+                str(path), inch(1.6 + i * 3.1), inch(5.45), height=inch(0.35)
             )
-            set_alt(pic, f"{keys[i].title()} logo")
+            set_alt(pic, alt)
     source(sld, "Source: bank annual reports, 2025")
     logo(sld, "small")
     page_number(sld, len(prs.slides))
@@ -730,9 +740,11 @@ def _bank_slide(prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", 
     return sld
 
 
-def _bank_case(tmp_path, *, colored=True, logos=True):
+def _bank_case(tmp_path, *, colored=True, logos=True, pictures=None):
     return deck(
-        tmp_path, lambda prs: _bank_slide(prs, colored=colored, logos=logos), name="banks.pptx"
+        tmp_path,
+        lambda prs: _bank_slide(prs, colored=colored, logos=logos, pictures=pictures),
+        name="banks.pptx",
     )
 
 
@@ -1576,6 +1588,80 @@ def test_bank_branding_reads_chart_categories(tmp_path):
 def test_bank_branding_wants_one_logo_per_plotted_bank(tmp_path):
     result = check(_bank_case(tmp_path, logos=False), "Bank Branding")
     assert result.status == "fail" and "logo" in details(result)
+
+
+def _png(path, w, h):
+    from PIL import Image
+
+    Image.new("RGB", (w, h), (0, 123, 133)).save(path)
+    return path
+
+
+def test_any_picture_is_not_a_bank_logo(tmp_path):
+    """VALIDATOR-CODE-10: four icons beside a four-bank chart counted as four logos."""
+    icon = _png(tmp_path / "icon.png", 64, 64)
+    result = check(_bank_case(tmp_path, pictures=[(icon, "Growth icon")] * 4), "Bank Branding")
+    assert result.status == "fail"
+    assert "no logo for NBG, Eurobank, Alpha Bank, Piraeus Bank" in details(result)
+
+
+def test_two_logos_of_one_bank_leave_another_bank_without_one(tmp_path):
+    files = ("nbg.png", "eurobank.png", "alpha-bank.png", "alpha-bank.png")
+    pictures = [(BANK_LOGOS / f, "Bank logo") for f in files]
+    result = check(_bank_case(tmp_path, pictures=pictures), "Bank Branding")
+    assert result.status == "fail"
+    assert "no logo for Piraeus Bank" in details(result)
+
+
+def test_a_redrawn_logo_counts_when_it_names_its_bank_and_keeps_the_shape(tmp_path):
+    """Not the shipped file, so no hash match: the alt text names the bank and the image
+    keeps the asset's aspect ratio. A picture of another shape is not that logo."""
+    from PIL import Image
+
+    sharp = tmp_path / "eurobank-large.png"
+    with Image.open(BANK_LOGOS / "eurobank.png") as img:
+        img.convert("RGB").resize((256, 256)).save(sharp)
+    wide = _png(tmp_path / "eurobank-wide.png", 256, 128)
+
+    def pictures(eurobank):
+        return [
+            (BANK_LOGOS / "nbg.png", "NBG logo"),
+            (eurobank, "Eurobank logo"),
+            (BANK_LOGOS / "alpha-bank.png", "Alpha Bank logo"),
+            (BANK_LOGOS / "piraeus-bank.png", "Piraeus Bank logo"),
+        ]
+
+    assert check(_bank_case(tmp_path, pictures=pictures(sharp)), "Bank Branding").status == "pass"
+    result = check(_bank_case(tmp_path, pictures=pictures(wide)), "Bank Branding")
+    assert result.status == "fail" and "no logo for Eurobank" in details(result)
+
+
+def test_bank_names_come_from_tokens(tmp_path, monkeypatch):
+    """The builder and the gate read one list: a label alias added to tokens.yaml makes
+    a bank to the validator as well."""
+    real = nv.nbg_tokens.get
+
+    def get(path):
+        value = real(path)
+        if path == "banks":
+            value = {key: dict(bank) for key, bank in value.items()}
+            value["eurobank"]["label_aliases"] = ["EFG"]
+        return value
+
+    monkeypatch.setattr(nv.nbg_tokens, "get", get)
+    nv._bank_table.cache_clear()
+    try:
+        path = deck(
+            tmp_path,
+            lambda prs: _bank_slide(
+                prs, colored=True, logos=True, categories=("NBG", "EFG", "Sector", "Market")
+            ),
+            name="efg.pptx",
+        )
+        result = check(path, "Bank Branding")
+    finally:
+        nv._bank_table.cache_clear()
+    assert result.status == "pass" and result.examined == 1, result.message
 
 
 def test_bank_branding_ignores_a_source_footnote(tmp_path):
