@@ -187,13 +187,13 @@ commit to the standard) or against the created file via
 ## The judge
 
 `--judge-model` defaults to `haiku`. That is a **tier alias**, and this repo's
-machines remap the tier aliases to Opus 5:
+machines remap the tier aliases to Opus 5.5:
 
 ```
-ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-opus-5[1m]
+ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-opus-5-5[1m]
 ```
 
-So the "cheap haiku judge" is Opus 5 here. It works, and it is not worth fighting
+So the "cheap haiku judge" is Opus 5.5 here. It works, and it is not worth fighting
 because the judge is a rounding error: across the measured runs the judge was
 **1 to 3 per cent** of total cost. The agent runs are the entire bill. Do not
 pass a bare `sonnet`/`haiku` alias to `--judge-model` hoping to save money on a
