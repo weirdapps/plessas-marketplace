@@ -500,7 +500,7 @@ def _style_line_series(series: Any, colour: str) -> None:
     marker.format.fill.solid()
     marker.format.fill.fore_color.rgb = rgb(line_cfg["marker_fill"])
     marker.format.line.color.rgb = RGBColor.from_string(colour)
-    marker.format.line.width = width
+    marker.format.line.width = Pt(line_cfg["marker_line_pt"])
 
 
 def _style_lines(

@@ -163,6 +163,9 @@ def test_line_series_are_stroked_in_the_palette_with_hollow_markers(build):
         assert marker.find("c:size", NS).get("val") == "6"
         assert marker.find("c:spPr/a:solidFill/a:srgbClr", NS).get("val") == "FFFFFF"
         assert marker.find("c:spPr/a:ln/a:solidFill/a:srgbClr", NS).get("val") == colour
+        # Standard #5 hollow: a 3.5pt outline on a 6pt marker left no white centre and
+        # every marker read as a solid dot (lead's visual review). 2pt keeps the hole.
+        assert marker.find("c:spPr/a:ln", NS).get("w") == "25400"
         assert ser.find("c:smooth", NS).get("val") == "0"
 
 
