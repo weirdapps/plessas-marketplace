@@ -111,7 +111,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check <work>/deck.yaml
 - Exit 0: done.
 - Exit 1: fix every violation it names (each comes with a slide id and field path), then run it
   again. The only violations you leave are missing sources on slides listed in `x-open-questions`.
-- Exit 2: the tool environment could not be prepared. Stop and return its message verbatim.
+- Exit 2: the tool environment could not be prepared. Return anyway, with `check: not run` and
+  its message verbatim; the command reports it.
 
 ## Return
 

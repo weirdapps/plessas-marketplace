@@ -22,8 +22,9 @@ User request: $ARGUMENTS
    tool stretches the screenshot to fit. Read the size with `file "<screenshot>"`; if the ratio is
    more than 3 per cent off, warn the user before running, because the phone would show a squashed
    screen.
-4. **Run.** Output: the path the user gave, else `~/Downloads/<timestamp>_<slug>_mockup.png` with
-   the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'` and the slug from the screenshot name.
+4. **Run.** Output: the path the user gave, else `$HOME/Downloads/<timestamp>_<slug>_mockup.png`,
+   as an absolute path, with the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'` and the slug
+   from the screenshot name.
 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup "<screenshot>" "<output>" --frame <key>

@@ -37,7 +37,8 @@ edit: keynote slides are flattened images and can only be regenerated from their
 - Deck id `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`; no version
   suffix), work folder WORK = `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` with an `images/` folder
   (`mkdir -p`).
-- Output stem: `<folder>/<deck id>`, where folder is the one the user named, else `~/Downloads`. The
+- Output stem: `<folder>/<deck id>`, where folder is the one the user named, else `$HOME/Downloads`,
+  always as an absolute path. The
   compositor writes `<stem>.pptx` and `<stem>.pdf`.
 - Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment
   could not be prepared: show the printed fix and stop.
@@ -98,7 +99,8 @@ removed or moved since the last full build; otherwise build everything again.
 </process>
 
 <constraints>
-- Never edit the generated PPTX by hand; change the YAML and re-render.
+- Never edit the generated PPTX by hand; change the YAML and re-render. The
+  `document-skills:pptx` skill is not used here.
 - Never save photographs or generated decks inside a repository; they live in WORK and the output
   folder.
 - Greek wordmark always, even on an English talk. There is no English NBG logo.

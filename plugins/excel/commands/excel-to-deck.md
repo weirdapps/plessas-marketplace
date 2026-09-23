@@ -23,7 +23,7 @@ Bridge from data analysis to presentation creation.
 
 3. **Find the provenance.** Every slide that shows numbers needs a source: the workbook's file name and sheet, and the period the figures describe (`as_of`, e.g. `YTD August 2026`). Take the period from the workbook itself (sheet names, headers, a date cell). If the workbook does not state it, ask the user; never guess one.
 
-4. **Write the deck spec** to `~/Downloads/YYYYMMDDHHMM_deck_spec_<workbook-slug>.yaml`, taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. It is the decks plugin's input format (`deck.schema.json` in that plugin), in this shape:
+4. **Write the deck spec** to `$HOME/Downloads/YYYYMMDDHHMM_deck_spec_<workbook-slug>.yaml` (as an absolute path), taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. It is the decks plugin's input format (`deck.schema.json` in that plugin), in this shape:
 
    ```yaml
    presentation:

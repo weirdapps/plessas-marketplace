@@ -18,6 +18,8 @@ User request: $ARGUMENTS
   Standards change only through a deliberate commit.
 - Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment
   could not be prepared: show the printed fix and stop.
+- Extract decks with `decks-py extract`, not the `document-skills:pptx` skill; if that skill loads
+  anyway, the NBG Standards override its advice.
 </rules>
 
 <process>

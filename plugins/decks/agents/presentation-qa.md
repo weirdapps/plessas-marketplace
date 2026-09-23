@@ -56,8 +56,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" render "<pptx>" "<render>"
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<pptx>"`, and the verdict can be at best
   UNVERIFIED: say that the slides were not visually verified and why.
 
-Then Read EVERY slide PNG in `<render>`, in order. The number of PNGs must equal the slide count;
-name any slide that has no image. Judge each image, not the XML, against these criteria:
+After a render (exit 0 or 4), Read EVERY slide PNG in `<render>`, in order. The number of PNGs must
+equal the slide count; name any slide that has no image. Judge each image, not the XML, against the
+criteria below. After a text-only review, judge what text can show (A, B, and bullet counts).
+
+LibreOffice gets two things wrong, so never report them from the image alone: negative bar values
+drawn as positive bars (trust the data labels and the spec), and a faint drop shadow under a pill
+or card (LibreOffice draws the theme shadow even where the deck switches it off).
 
 **A. Message** (compare with `key_message` when there is a spec)
 - The title is an action title: a sentence stating the claim, not a topic label.
@@ -84,7 +89,7 @@ name any slide that has no image. Judge each image, not the XML, against these c
 
 **D. Brand, as the image shows it** (the validator checks the XML; you check what a reader sees)
 - White background on every slide; colours from the NBG teal palette only (an Office blue or red
-  line or bar is a failure); no shadows or decorative shapes.
+  line or bar is a failure); no decorative shapes.
 - Dark text on light fills and white text only on dark fills; a label you have to strain to read
   fails (Standard #22). Colour is never the only carrier of meaning.
 - Line charts have hollow circle markers (Standard #5); part-to-whole is a doughnut, never a pie.

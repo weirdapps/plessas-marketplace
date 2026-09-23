@@ -18,13 +18,15 @@ User request: $ARGUMENTS
   when the request lacks them, never invent one.
 - If the Agent tool is unavailable or denied, Read `${CLAUDE_PLUGIN_ROOT}/agents/<agent>.md` and do
   its job yourself, reading any `CLAUDE_PLUGIN_ROOT` placeholder in it as this plugin's folder.
+- Only the builder writes the slide: no python-pptx, PptxGenJS or OOXML, and not the
+  `document-skills:pptx` skill; if it loads anyway, the NBG Standards override its advice.
 </rules>
 
 <process>
 
 1. **Set up.** Deck id `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`),
    WORK = `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` (`mkdir -p "<WORK>/images"`), output folder the
-   one the user named or `~/Downloads`.
+   one the user named or `$HOME/Downloads`, as an absolute path.
 
 2. **Choose the route.** Read `${CLAUDE_PLUGIN_ROOT}/tools/nbg-presentation/deck.schema.json` first.
    - **Native slide** (the default): the visual is a chart (`bar`, `bar_horizontal`, `bar_stacked`,

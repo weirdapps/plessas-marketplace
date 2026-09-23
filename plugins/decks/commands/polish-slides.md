@@ -19,7 +19,9 @@ User request: $ARGUMENTS
 - Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the environment
   could not be prepared: show the printed fix and stop.
 - Only the builder writes a deck. Never edit a `.pptx` directly, never write python-pptx, PptxGenJS
-  or OOXML, and never modify the user's file: a polish ships as a new file.
+  or OOXML, and never modify the user's file: a polish ships as a new file. The
+  `document-skills:pptx` skill is not used here; if it loads anyway, the NBG Standards override its
+  typography and margin advice.
 - Polish scope: wording, type sizes, the element a slide uses, brand fixes. No reordering and no new
   slides, except splitting a slide QA says is overloaded. Anything bigger is
   `/decks:redesign-deck`.
@@ -42,8 +44,9 @@ User request: $ARGUMENTS
 
 3. **Review.** Create the polish's work folder, called WORK: a new deck id
    `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, the slug of the
-   original name) and `${CLAUDE_PLUGIN_DATA}/work/<new deck id>/`. On the spec route, copy OLD's
-   contents into it first (`cp -R "<OLD>/." "<WORK>/"`).
+   original name), then `mkdir -p "${CLAUDE_PLUGIN_DATA}/work/<new deck id>/images"`. On the spec
+   route, copy the spec and its files in first: `cp "<OLD>/deck.yaml" "<WORK>/"` and
+   `cp -R "<OLD>/images/." "<WORK>/images/"` (never OLD's old renders).
    Dispatch `decks:presentation-qa` with `pptx: <the user's file>`, `deck: <WORK>/deck.yaml` on the
    spec route (else `none`) and `render: <WORK>/qa/0`. A PASS means there is nothing to polish: say
    so and stop.
@@ -51,8 +54,8 @@ User request: $ARGUMENTS
    **3a. Spec route.** Apply the fixes that fall inside polish scope to `<WORK>/deck.yaml`, list any
    that fall outside it for the user, then dispatch `decks:graphics-renderer` with
    `out: <WORK>/deck.pptx` and `decks:presentation-qa` again with `render: <WORK>/qa/<cycle>`. At
-   most 2 fix cycles. Deliver: on PASS or UNVERIFIED copy to `<folder>/<new deck id>.pptx` (folder: the one the user named, else
-   `~/Downloads`) and run
+   most 2 fix cycles. Deliver: on PASS or UNVERIFIED copy to `<folder>/<new deck id>.pptx` (folder:
+   the one the user named, else `$HOME/Downloads`, as an absolute path) and run
    `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" record "<folder>/<new deck id>.pptx" "<WORK>/deck.yaml" --data "${CLAUDE_PLUGIN_DATA}"`;
    on FAIL, do not copy, and report the remaining fixes and the build's path.
 

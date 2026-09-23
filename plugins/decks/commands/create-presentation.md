@@ -18,7 +18,9 @@ User request: $ARGUMENTS
   `CLAUDE_PLUGIN_DATA` placeholder in it as the same plugin and data folders this command uses.
 - Every tool runs as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`. The first call of a
   tool prepares its environment and can take a minute. Exit 2 from any command means that
-  environment could not be prepared: show the user the fix it printed and stop.
+  environment could not be prepared: tell the user the fix it printed. The storyline and the
+  outline checkpoint (steps 3 and 4) still run, since they need no build; stop before step 5 until
+  the fix is applied.
 - `deck.yaml` (format: `${CLAUDE_PLUGIN_ROOT}/tools/nbg-presentation/deck.schema.json`) is the only
   hand-off between stages. Pass paths, never payloads.
 - The builder renders the deck. Nobody writes PptxGenJS, python-pptx or OOXML, and the
@@ -35,7 +37,8 @@ User request: $ARGUMENTS
 - Deck id: `<timestamp>_<slug>`, the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, the slug
   two to five lowercase words from the topic joined by underscores (no version suffix).
 - Work folder, called WORK below: `mkdir -p "${CLAUDE_PLUGIN_DATA}/work/<deck id>/images"`.
-- Output: the folder the user named, else `~/Downloads`. The deck ships as `<folder>/<deck id>.pptx`.
+- Output: the folder the user named, else their Downloads folder, always as an absolute path
+  (`$HOME/Downloads`; a quoted `~` does not expand). The deck ships as `<folder>/<deck id>.pptx`.
 - Preferences: `${CLAUDE_PLUGIN_DATA}/style-preferences.md` if it exists, else `none`. It is the
   user's overlay on the shipped Standards (`${CLAUDE_PLUGIN_ROOT}/shared/presentation-style-guide.md`),
   and a numbered Standard wins any conflict.
@@ -57,8 +60,9 @@ material: <brief text, or a path>
 - A `.pptx`, `.docx` or `.pdf` path:
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<file>" > "<WORK>/source.md"`, and the material
   is that file.
-- A `.yaml` deck spec (from `/excel:excel-to-deck` or the user): copy it to `<WORK>/deck.yaml`, then
-  go to step 4 and skip step 3.
+- A `.yaml` deck spec (from `/excel:excel-to-deck` or the user): copy it to `<WORK>/deck.yaml` and
+  run `check` on it. Skip step 3 unless check fails on anything other than missing sources; then
+  dispatch the storyline architect with `mode: preserve` and the spec as the material.
 - `--from-email <subject>`: `mcp__plugin_mail_outlook-bridge__outlook_list_mail` on the Inbox with
   `top: 50` and `since` 30 days back, match the subject, then
   `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on the match; save the thread text to
@@ -105,8 +109,8 @@ skill is available, and never for anything that carries numbers.
 ### 7. Build
 
 Dispatch `decks:graphics-renderer` with the deck, `out: <WORK>/deck.pptx` and the asset results. It
-returns the build exit and any violations left. Violations it could not fix (a missing source, a
-missing file) go to the user as questions; then build again.
+returns the build exit and any violations left. For a missing asset file, dispatch its asset agent
+again; for a missing source or figure, ask the user; then build again.
 
 ### 8. QA gate
 
@@ -132,8 +136,8 @@ On FAIL: apply the fixes to `deck.yaml`, then repeat steps 7 and 8. At most 2 fi
   fixes, and give the path of `<WORK>/deck.pptx`. Copy and record it only if the user then asks to
   ship it as it is.
 
-Close with: "After you edit the deck, run `/decks:presentation-review <final.pptx>` and the plugin
-learns from your changes." If the mail plugin is installed, offer `/mail:send-mail` with the deck
-attached.
+When a deck shipped, close with: "After you edit the deck, run
+`/decks:presentation-review <final.pptx>` and the plugin learns from your changes." If the mail
+plugin is installed, offer `/mail:send-mail` with the deck attached.
 
 </process>

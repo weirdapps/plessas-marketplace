@@ -37,6 +37,7 @@ User request: $ARGUMENTS
    - The fixes, grouped by slide, most serious first.
 
    Then offer `/decks:polish-slides <file>` to apply them. Do not edit the deck, rebuild it, write a
-   draft record or touch `style-preferences.md`.
+   draft record or touch `style-preferences.md`. The `document-skills:pptx` skill is not used here;
+   if it loads anyway, the NBG Standards override its typography and margin advice.
 
 </process>

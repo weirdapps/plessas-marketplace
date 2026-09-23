@@ -19,7 +19,8 @@ User request: $ARGUMENTS
    deck.yaml form (the path relative to the plugin's assets folder, such as `icons/money/Coins.png`).
 
 2. **Otherwise draw one.** Output: `<folder>/<timestamp>_<slug>.svg`, folder the one the user named
-   or `~/Downloads`, timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, slug from the concept.
+   or `$HOME/Downloads`, as an absolute path; timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`;
+   slug from the concept.
    Dispatch `decks:icon-designer` with the concept, that output path and the background (light
    unless the user says dark). If the Agent tool is unavailable or denied, Read
    `${CLAUDE_PLUGIN_ROOT}/agents/icon-designer.md` and follow it yourself, reading any

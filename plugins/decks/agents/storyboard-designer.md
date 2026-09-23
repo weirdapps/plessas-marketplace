@@ -109,7 +109,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check <deck>
 Fix every violation it names and run it again until it exits 0. Two exceptions you leave in place
 and report: a missing source the storyline listed in `x-open-questions`, and a planned
 `images/...` file that does not exist yet. Exit 2 means the tool environment could not be
-prepared: stop and return its message verbatim.
+prepared: return with `check: not run` and its message verbatim.
 
 ## Return
 
