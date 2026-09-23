@@ -59,10 +59,12 @@ Decision rules:
 - **Dividers and contents**: optional; most NBG decks use neither. Keep them only in long decks
   with distinct sections.
 - **Two columns**: a column holding a chart, table or KPIs means the slide needs `content.source`.
-- **Peer banks**: a comparison of the systemic banks is a `chart` (`bar`) or `table` with the bank
-  names as categories or rows and a dated source; there is no special slide type. When logos are
-  wanted, place them as `image` or `custom` elements from `${CLAUDE_PLUGIN_ROOT}/assets/bank-logos/`
-  (relative form `bank-logos/<file>`), each at its native aspect ratio (Standard #4).
+- **Peer banks**: a comparison of the systemic banks is a `chart` (`bar` or `bar_horizontal`) or a
+  `table` with the bank names as categories or rows, `chart.highlight_category` set to NBG's label
+  (NBG draws in the accent colour, peers in muted grey), and a dated `content.source`. There is no
+  special slide type and no bank brand colours on bars. Logos only when the user asks for them, as
+  `image` or `custom` elements from `${CLAUDE_PLUGIN_ROOT}/assets/bank-logos/` (relative form
+  `bank-logos/<file>`), each at its native aspect ratio (Standard #4).
 - **Custom**: a `content.title` like every slide, then elements with geometry in inches inside the
   body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
   gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from

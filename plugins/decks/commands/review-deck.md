@@ -33,8 +33,9 @@ User request: $ARGUMENTS
 4. **Report** what QA returned, in this order:
    - The verdict in one line: PASS, FAIL, or UNVERIFIED (validator clean, slides not visually
      checked, with the reason). A deck is ready to ship only on PASS; say so plainly otherwise.
-   - The validator checks that failed, and any check that examined nothing although the deck has
-     what it measures.
+   - The validator checks that failed, and every check that examined nothing (status `skipped`),
+     marking as unverified those the deck should have exercised. Report what the validator returned,
+     whatever the deck's shape.
    - The fixes, grouped by slide, most serious first.
 
    Then offer `/decks:polish-slides <file>` to apply them. Do not edit the deck, rebuild it, write a
