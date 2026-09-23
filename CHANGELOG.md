@@ -2,6 +2,29 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] — 2026-09-23
+
+Delivers what was merged after 2.2.0. Every plugin stayed at 1.1.0 while its files kept
+changing, and Claude Code refreshes an installed plugin only when its version changes, so none
+of it had reached an installed copy.
+
+### Changed
+
+- All six plugins 1.1.0 → 1.1.1, marketplace 2.2.0 → 2.2.1. That ships the `meetings` router
+  fixes (#100 to #104), the `excel` routing fix for pasted tables (#99), the `decks` build
+  blocking on missing source lines (#97), the rebuilt `mail` and `chat` MCP bundles with their
+  dependency updates, the `numpy` requirement updates in two `decks` tools, and the eval graders
+  added to every plugin.
+- `mail` and `chat`: the bundled CLIs moved to their current commits, which need Node 22.12.0
+  or newer, so both servers' `engines` floor moved up from Node 20. The committed bundle still
+  starts on Node 20; the `npm ci` fallback path does not. Upgrade Node before updating if you
+  are still on 20.
+
+### Added
+
+- `version-bumps.yml` with `scripts/check_version_bumps.py`: a push or PR that changes files
+  under `plugins/<name>/` without raising that plugin's version now fails.
+
 ## [2.2.0] — 2026-09-09
 
 A full audit of the marketplace: correctness, security, CI and documentation. The headline
