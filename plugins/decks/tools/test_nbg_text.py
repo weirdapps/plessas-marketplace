@@ -57,6 +57,20 @@ def test_find_font_file_searches_the_override_and_one_subfolder(tmp_path, monkey
     assert nbg_text.find_font_file("Missing.ttf") is None
 
 
+def test_find_font_file_reaches_two_folder_levels_and_ignores_case(tmp_path, monkeypatch):
+    """Debian and Ubuntu file fonts by format and family, two levels down
+    (/usr/share/fonts/truetype/aptos/), and a case-sensitive Linux file system sees
+    aptos.ttf and Aptos.ttf as different names (found by docs on the keynote side)."""
+    root = tmp_path / "fonts"
+    deep = root / "truetype" / "aptos"
+    deep.mkdir(parents=True)
+    (deep / "aptos.TTF").write_bytes(b"x")
+    monkeypatch.setenv("DECKS_FONT_DIRS", str(root))
+    assert nbg_text.find_font_file("Aptos.ttf") == deep / "aptos.TTF"
+    (root / "Aptos.ttf").write_bytes(b"x")
+    assert nbg_text.find_font_file("Aptos.ttf") == root / "Aptos.ttf", "a flat hit wins"
+
+
 def test_default_font_dirs_include_office_bundles_and_windows(monkeypatch):
     monkeypatch.delenv("DECKS_FONT_DIRS", raising=False)
     monkeypatch.setenv("LOCALAPPDATA", "/tmp/localappdata")
