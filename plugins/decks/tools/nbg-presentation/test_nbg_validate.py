@@ -1075,6 +1075,60 @@ def test_dark_text_on_a_dark_card_is_caught(tmp_path):
     assert "#003841 on #003841" in details(result)
 
 
+def _stacked(white_on_dark: bool):
+    def edit(prs):
+        sld = slide(prs, 3)
+        remove(sld.shapes[1])
+        frame = bar_chart(
+            sld,
+            chart_type=XL_CHART_TYPE.COLUMN_STACKED,
+            series=(("Mobile", (40, 45, 50, 55)), ("Web", (35, 32, 30, 28))),
+        )
+        frame.chart.plots[0].data_labels.font.color.rgb = RGBColor.from_string("202020")
+        if white_on_dark:
+            web = frame.chart.plots[0].series[1]
+            for i in range(4):
+                label = web.points[i].data_label
+                label.font.size = Pt(12)
+                label.font.bold = True
+                label.font.color.rgb = RGBColor.from_string("FFFFFF")
+
+    return edit
+
+
+def test_stacked_labels_are_measured_against_their_own_bar(tmp_path):
+    """Stacked labels sit on the bar: #202020 on dark teal is 1.27:1."""
+    result = check(deck(tmp_path, _stacked(False)), "Contrast")
+    assert result.status == "fail"
+    assert "#202020 on #003841" in details(result)
+
+
+def test_a_per_point_label_colour_overrides_the_series_labels(tmp_path):
+    """The builder colours each label against its own fill through c:dLbl."""
+    result = check(deck(tmp_path, _stacked(True)), "Contrast")
+    assert result.status == "pass", result.details
+
+
+def test_a_valueless_chart_delete_flag_means_deleted(golden):
+    """<c:delete/> with no val is true by the schema; python-pptx writes exactly that
+    for a hidden axis, so the golden bar chart's value axis has no labels to measure."""
+    with nv.load_deck(golden) as loaded:
+        chart = next(c for c in loaded.charts() if b"barChart" in loaded.pkg.read(c.part))
+        value_axis = loaded.pkg.read(chart.part).decode().split("<c:valAx>", 1)[1]
+        assert "<c:delete/>" in value_axis.split("</c:valAx>", 1)[0]
+        whats = [row[2] for row in nv._chart_text_rows(chart, "FFFFFF")]
+    assert "valAx labels" not in whats and "catAx labels" in whats
+
+
+def test_a_deck_that_opens_on_a_content_slide_is_not_told_its_cover_needs_the_large_logo(tmp_path):
+    def edit(prs):
+        move_slide(prs, 0, 5)  # the cover moves to the end, a content slide leads
+        move_slide(prs, 4, 5)  # and the back cover stays last
+
+    result = check(deck(tmp_path, edit), "Logo")
+    assert "large logo" not in details(result)
+
+
 def test_the_muted_grey_waiver_covers_page_numbers_and_the_cover_date_only(tmp_path, golden):
     """VALIDATOR-8 / BRAND-SSOT-10: the 939793 waiver applied to any text anywhere."""
     assert check(golden, "Contrast").status == "pass"

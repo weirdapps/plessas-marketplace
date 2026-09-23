@@ -2368,22 +2368,40 @@ def _chart_text_rows(
             labels = ser.find(f"{C}dLbls")
             if labels is None:
                 labels = plot_labels
-            if labels is None or _shown(labels) is False:
+            if labels is None or _flag(labels, "delete"):
                 continue
+            name = _series_name(ser)
+            count = len(_categories(ser)) or len(ser.findall(f"{C}val//{C}pt"))
             style = _txpr_style(ctx, labels.find(f"{C}txPr"), base)
-            if inside(labels):
-                backgrounds = set(points.values()) | ({ser_color} if ser_color else set())
-                for bg in backgrounds or {None}:
-                    rows.append((style, bg, f"series {_series_name(ser)!r} labels", False))
-            else:
-                rows.append((style, outside, f"series {_series_name(ser)!r} labels", False))
+            overridden: set[str] = set()
+            # A per-point c:dLbl overrides the series labels for that point: its own
+            # text colour, its own position, or its deletion.
+            for dlbl in labels.findall(f"{C}dLbl"):
+                idx_el = dlbl.find(f"{C}idx")
+                if idx_el is None:
+                    continue
+                idx = idx_el.get("val", "0")
+                overridden.add(idx)
+                if _flag(dlbl, "delete") or not (_shown(dlbl) or _shown(labels)):
+                    continue
+                point_style = _txpr_style(ctx, dlbl.find(f"{C}txPr"), style)
+                bg = (points.get(idx) or ser_color) if inside(dlbl, inside(labels)) else outside
+                rows.append((point_style, bg, f"series {name!r} label {int(idx) + 1}", False))
+            if not _shown(labels):
+                continue
+            backgrounds: set[str | None] = set()
+            for i in range(count):
+                if str(i) in overridden:
+                    continue
+                backgrounds.add((points.get(str(i)) or ser_color) if inside(labels) else outside)
+            for bg in backgrounds:
+                rows.append((style, bg, f"series {name!r} labels", False))
     for axis in (
         list(chart.root.iter(f"{C}catAx"))
         + list(chart.root.iter(f"{C}valAx"))
         + list(chart.root.iter(f"{C}dateAx"))
     ):
-        deleted = axis.find(f"{C}delete")
-        if deleted is not None and deleted.get("val") in ("1", "true"):
+        if _flag(axis, "delete"):
             continue
         if (
             axis.find(f"{C}tickLblPos") is not None
@@ -2404,10 +2422,15 @@ def _chart_text_rows(
     return rows
 
 
+def _flag(parent: Any, name: str) -> bool:
+    """A chart CT_Boolean child: present with no val means true, per the schema."""
+    node = parent.find(f"{C}{name}") if parent is not None else None
+    return node is not None and node.get("val", "true") in ("1", "true")
+
+
 def _shown(labels: Any) -> bool:
     for flag in ("showVal", "showCatName", "showSerName", "showPercent"):
-        node = labels.find(f"{C}{flag}")
-        if node is not None and node.get("val") in ("1", "true"):
+        if _flag(labels, flag):
             return True
     return False
 
@@ -2757,7 +2780,9 @@ def check_logo(deck: Deck, out: Collector) -> str:
                 s.position,
                 f'the logo is {shape.w:.3f}" x {shape.h:.3f}"; the {spot_name} logo is {spot[2]}" x {spot[3]}" (Standard #17)',
             )
-        if s.position == 1 and len(deck.slides) > 1 and spot_name != "large":
+        title = find_title(s) if s.position == 1 else None
+        cover = s.position == 1 and len(deck.slides) > 1 and (title is None or not title.is_content)
+        if cover and spot_name != "large":
             out.add(
                 s.position,
                 "slide 1 is the cover and carries the small logo; covers and dividers use the large logo (Standard #17)",
@@ -3159,8 +3184,7 @@ def check_chart_styling(deck: Deck, out: Collector) -> str:
         for plot in _plots(chart):
             tag = _local(plot.tag)
             plot_marker = plot.find(f"{C}marker")
-            vary = plot.find(f"{C}varyColors")
-            varies = vary is not None and vary.get("val") in ("1", "true")
+            varies = _flag(plot, "varyColors")
             for n, ser in enumerate(plot.findall(f"{C}ser")):
                 out.count()
                 name = _series_name(ser)
@@ -3222,7 +3246,7 @@ def check_chart_styling(deck: Deck, out: Collector) -> str:
                         else None
                     )
                     if symbol is None:
-                        shown = plot_marker is None or plot_marker.get("val") in ("1", "true")
+                        shown = plot_marker is None or _flag(plot, "marker")
                         symbol = "automatic" if shown else "none"
                     if symbol != b.marker_symbol or marker_fill != b.marker_fill:
                         out.add(

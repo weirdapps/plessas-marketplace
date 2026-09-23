@@ -17,6 +17,10 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate deck.pptx --strict        # a
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate --list-checks --format json
 ```
 
+Scope: light-mode decks. A keynote (Standard #21) is a dark, full-bleed, rasterised deck that
+breaks the light-mode rules on purpose; validate it with the keynote tool instead
+(`decks-py keynote ... --validate`).
+
 ## Exit codes
 
 | Code | Meaning |
