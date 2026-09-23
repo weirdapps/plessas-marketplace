@@ -78,9 +78,11 @@ to `reviewed/`.
 
 ### 4. Update the preferences
 
-Read every `*.review.yaml` in `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/`. A pattern becomes a
-preference only when it appears in 2 or more reviews. Write `${CLAUDE_PLUGIN_DATA}/style-preferences.md`
-in this shape, keeping the Defaults section the user writes by hand:
+Read every `*.review.yaml` in `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/` and count, for each
+pattern, the reviews it appears in. Every pattern goes into the Learned table: seen in one review it
+is a hint the agents lean toward; seen in two or more it is a rule for this user. Write
+`${CLAUDE_PLUGIN_DATA}/style-preferences.md` in this shape, keeping the Defaults section the user
+writes by hand:
 
 ```markdown
 # Presentation style preferences
@@ -94,17 +96,18 @@ shipped Standards: a numbered Standard wins any conflict.
 ## Learned
 | Preference | Reviews | Last seen | Confidence |
 |---|---|---|---|
-| <e.g. titles lead with the number> | 3 | <date> | high |
+| <e.g. titles lead with the number> | 3 | <date> | medium |
+| <e.g. one chart per slide, no bullets beside it> | 1 | <date> | hint |
 ```
 
-Confidence is `medium` at 2 reviews and `high` at 4 or more. A pattern that contradicts a numbered
-Standard is listed under a `## Not applied` heading with the Standard's number, never as a
-preference. The storyline and storyboard agents read this file on every build.
+Confidence is `hint` at 1 review, `medium` at 2 or 3, and `high` at 4 or more. A pattern that
+contradicts a numbered Standard is listed under a `## Not applied` heading with the Standard's
+number, never in the Learned table. The storyline and storyboard agents read this file on every
+build.
 
 ### 5. Report
 
-The slide counts per class, the patterns in this deck, and which preferences were added or
-strengthened. If nothing reached two reviews yet, say how many more reviews would confirm each
-pattern.
+The slide counts per class, the patterns in this deck, and which rows were added or strengthened,
+naming each hint that one more review would turn into a rule.
 
 </process>

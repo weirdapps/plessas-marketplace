@@ -15,8 +15,9 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 ## Inputs
 
 - `deck`: path to `deck.yaml` in the work folder.
-- `preferences`: path to the user's `style-preferences.md`, or `none`. Its layout and chart
-  preferences apply unless a numbered Standard disagrees.
+- `preferences`: path to the user's `style-preferences.md`, or `none`. Its layout and chart rows
+  apply (`medium` and `high` as rules, `hint` as a lean where the choice is open) unless a numbered
+  Standard disagrees.
 
 ## Read first
 
