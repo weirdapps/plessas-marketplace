@@ -43,7 +43,9 @@ storyboard designer does) and you never render anything.
   in distinct sections, and for everything else `content`, or `chart`, `waterfall`, `table` or `kpi`
   when the slide's message rests on numbers. The storyboard designer may change a type later.
 - Cover subtitle: the presenting unit or units, pipe-separated, no trailing period, taken from the
-  material or the preferences file. If neither names them, leave the subtitle out.
+  material or the preferences file. If neither names them, leave the subtitle out. The cover title
+  and subtitle must each fit one line (Standard #13); `check` rejects a wrap, so shorten rather
+  than split.
 
 ## Evidence rules
 

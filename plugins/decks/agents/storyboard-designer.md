@@ -60,11 +60,13 @@ Decision rules:
 - **Dividers and contents**: optional; most NBG decks use neither. Keep them only in long decks
   with distinct sections.
 - **Two columns**: a column holding a chart, table or KPIs means the slide needs `content.source`.
-- **Peer banks**: a comparison of the systemic banks is a `chart` (`bar` or `bar_horizontal`) or a
-  `table` with the bank names (NBG, Eurobank, Piraeus, Alpha, in English or Greek) as categories,
-  series or rows, and a dated `content.source`. The builder applies each bank's mandatory brand
-  colour itself, so set no `highlight_category` and choose no colours on these slides. On a chart,
-  set `chart.bank_logos: true`: the validator requires one unstretched logo per plotted bank.
+- **Peer banks**: a comparison of the systemic banks (NBG, Eurobank, Piraeus, Alpha, in English or
+  Greek) is a `chart` or a `table` with a dated `content.source`. The builder applies each bank's
+  mandatory brand colour and logo itself, so choose no colours, set no `highlight_category`, and
+  leave `chart.bank_logos` at its default (never `false`: the validator fails it). Banks as
+  categories take exactly one series (`bar`, `bar_horizontal` or `doughnut`). For several periods
+  or measures, make the banks the series and the periods the categories (`bar`, `bar_stacked`,
+  `bar_horizontal`, `line` or `area_line`).
 - **Custom**: a `content.title` like every slide, then elements with geometry in inches inside the
   body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
   gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from
