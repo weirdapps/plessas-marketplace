@@ -1,79 +1,31 @@
 ---
-description: "Generate an SVG icon (NBG duotone brand defaults)"
-argument-hint: "[icon concept or description]"
-allowed-tools: Write
+description: "Get an NBG duotone icon for a slide: a match from the shipped icon library, or a new SVG drawn to the brand spec"
+argument-hint: "<icon concept> [folder to save in]"
+allowed-tools: Agent, Read, Write, Glob, Grep, Bash
 ---
 
 <objective>
-Create a custom SVG icon in the NBG duotone style. Uses NBG brand defaults unless a different brand is specified.
+Give the user one on-brand icon for the concept they describe.
 
 User request: $ARGUMENTS
 </objective>
 
-<icon_rules>
-
-## Icon Specifications (NBG Duotone Defaults)
-
-### Canvas
-
-- Size: 64 x 64 px
-- ViewBox: "0 0 64 64"
-- Root: `fill="none"`
-- Padding: content within 6-58px from edges
-
-### Style
-
-- **Duotone** - exactly two teals, both present in every icon
-- **Stroke-based outlines** - main shapes are outlines, NOT solid fills
-- **Geometric** - clean, simple shapes
-- **stroke-width 3** on the 64 canvas
-
-### Colors
-
-| Role | Hex |
-|------|-----|
-| Primary (main shapes, outlines) | `#087681` |
-| Accent (details, dots, highlights) | `#13A4AD` |
-| On dark background | `#F5F8F6` |
-| Success accent | `#26A567` |
-| Alert accent | `#BE4B4B` |
-
-### Template
-
-```svg
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Primary structural element(s) stroke="#087681" stroke-width="3" -->
-  <!-- Accent detail(s) in #13A4AD -->
-</svg>
-```
-
-Reference library: `assets/icons-duotone/` (read 2-3 similar icons first). Full spec: `shared/brand-system/icons.md`.
-
-### What NOT to use
-
-- Solid-filled main shapes (they are outlines)
-- Single-color / non-duotone icons
-- Gradients
-- Transparency/opacity
-- Inline styles
-- Complex details
-- Colors outside the target brand palette
-</icon_rules>
-
 <process>
-1. Analyze the icon concept
-2. Check 2-3 similar icons in assets/icons-duotone/ to calibrate style
-3. Plan the duotone split (primary shape #087681, accent details #13A4AD)
-4. Design using simple geometric stroked shapes
-5. Output clean SVG code only
+
+1. **Library first.** The plugin ships a duotone icon library in the house style. Grep
+   `${CLAUDE_PLUGIN_ROOT}/assets/icons/INDEX.md` for the concept and one or two synonyms, confirm the
+   file exists with Glob under `${CLAUDE_PLUGIN_ROOT}/assets/icons/`, and Read the PNG to check it
+   fits. If it does, offer it: copy it to the output folder if the user wants a copy, and give its
+   deck.yaml form (the path relative to the plugin's assets folder, such as `icons/money/Coins.png`).
+
+2. **Otherwise draw one.** Output: `<folder>/<timestamp>_<slug>.svg`, folder the one the user named
+   or `~/Downloads`, timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, slug from the concept.
+   Dispatch `decks:icon-designer` with the concept, that output path and the background (light
+   unless the user says dark). If the Agent tool is unavailable or denied, Read
+   `${CLAUDE_PLUGIN_ROOT}/agents/icon-designer.md` and follow it yourself, reading any
+   `CLAUDE_PLUGIN_ROOT` placeholder in it as this plugin's folder.
+
+3. **Report** the file path and its alt text. The SVG opens in PowerPoint (Insert, Pictures), and in
+   a deck spec it goes into an `image` or a card or step `icon` field.
+
 </process>
-
-<success_criteria>
-
-- [ ] Canvas is 64x64, viewBox="0 0 64 64", root fill="none"
-- [ ] Uses BOTH #087681 and #13A4AD (true duotone)
-- [ ] Main shapes are strokes (stroke-width 3), large shapes never filled
-- [ ] Optically centered with 6-8px padding
-- [ ] Simple, geometric design, recognizable at 24x24px
-- [ ] Clean, minimal SVG structure
-</success_criteria>
