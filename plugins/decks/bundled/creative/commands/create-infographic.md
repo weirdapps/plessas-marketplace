@@ -39,12 +39,13 @@ User request: $ARGUMENTS
      `content.source`.
    - **Diagram**: a funnel, timeline, matrix, hierarchy or cycle that no slide type expresses. The
      visual's slide is an `image` slide with an action title, `path: images/<slug>.svg` and an alt
-     text from the brief. Before the file exists, run
-     `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check "<WORK>/deck.yaml" --format json` and read its
-     `image_slots` entry for that slide: write its `w` and `h`, rounded down to 2 decimals, as
-     `image.size_in`. Then dispatch `decks:infographic-specialist` with the brief,
-     `output: <WORK>/images/<slug>.svg` and that `size_in`, and replace the alt text with the one it
-     returns.
+     text from the brief. Write a placeholder at that path
+     (`<svg xmlns="http://www.w3.org/2000/svg" id="decks-placeholder" viewBox="0 0 864 346"/>`), run
+     `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check "<WORK>/deck.yaml" --format json`, and read its
+     `image_slots` entry for that slide (it appears once the slide lays out cleanly). Dispatch
+     `decks:infographic-specialist` with the brief, `output: <WORK>/images/<slug>.svg` and `size_in`
+     set to that entry's `[w, h]`, rounded down to 2 decimals. It replaces the placeholder; replace
+     the alt text with the one it returns.
    - **Generated illustration**, only when the user explicitly asks for an AI-generated image and
      `Skill(manage-nano-banana:manage-nano-banana)` is available: decorative imagery only, never a
      number or a data label, on a white background with the teal palette from
@@ -59,7 +60,9 @@ User request: $ARGUMENTS
    bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" render "<WORK>/deck.pptx" "<WORK>/render"
    ```
 
-   Fix the spec and repeat on a check or build exit 1 (each error names the field and a fix). Read
+   Fix the spec and repeat on a check or build exit 1 (each error names the field and a fix). An
+   error or warning that the diagram's labels print under 10 or 12 pt names the `size_in` to
+   redraw at: dispatch `decks:infographic-specialist` again with it. Read
    `<WORK>/render/slide-02.png`, the visual's slide, and confirm the numbers match the data, every
    label reads, and nothing is clipped. Render exit 4 means Aptos was substituted, so text fit is
    unconfirmed: say so; exit 3 means LibreOffice is not installed: deliver without the PNG and say
