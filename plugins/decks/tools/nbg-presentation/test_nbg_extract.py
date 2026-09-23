@@ -129,6 +129,50 @@ def test_a_missing_or_damaged_file_exits_2(tmp_path, capsys):
     assert nbg_extract.main([str(broken)]) == 2
 
 
+def test_every_picture_gets_a_marker_even_without_alt_text_or_in_a_placeholder(tmp_path):
+    """PROMPTS-CONTRACTS-05: a picture without alt text, or inside a picture placeholder,
+    vanished from the markdown, and redesign asks for image files by those markers.
+    A picture its author marked decorative (the builder's logos) stays out."""
+    from PIL import Image
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    png = tmp_path / "photo.png"
+    Image.new("RGB", (60, 40), "teal").save(png)
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    described = slide.shapes.add_picture(str(png), Inches(1), Inches(1))
+    described._element.find(".//{*}cNvPr").set("descr", "The branch at night")
+    bare = slide.shapes.add_picture(str(png), Inches(3), Inches(1))
+    bare._element.find(".//{*}cNvPr").set("descr", "")  # as PowerPoint leaves it
+    with_placeholder = prs.slides.add_slide(prs.slide_layouts[8])  # "Picture with Caption"
+    placeholder = next(
+        p for p in with_placeholder.placeholders if p.placeholder_format.type == 18
+    )  # PP_PLACEHOLDER.PICTURE
+    placed = placeholder.insert_picture(str(png))
+    placed._element.find(".//{*}cNvPr").set("descr", "")
+    logo = slide.shapes.add_picture(str(png), Inches(5), Inches(1))
+    nbg_build.mark_decorative(logo)
+    deck = tmp_path / "pictures.pptx"
+    prs.save(str(deck))
+    text = nbg_extract.extract(deck)
+    assert "[image: The branch at night]" in text
+    markers = [line for line in text.splitlines() if line.startswith("[image: no alt text")]
+    assert len(markers) == 2, text  # the undescribed picture and the placeholder picture
+    assert text.count("[image:") == 3, "the decorative logo is not content"
+
+
+def test_a_zip_bomb_is_refused_before_python_pptx_opens_it(tmp_path, capsys):
+    """SECURITY-PUBLIC-2: a 406 KB crafted deck drove one extract to 583 MB."""
+    import zipfile
+
+    bomb = tmp_path / "bomb.pptx"
+    with zipfile.ZipFile(bomb, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("ppt/slides/slide1.xml", " " * (3 * 2**20))
+    assert nbg_extract.main([str(bomb)]) == 2
+    assert "zip bomb" in capsys.readouterr().err
+
+
 def test_the_cli_writes_greek_as_utf8(tmp_path):
     out = tmp_path / "greek.pptx"
     nbg_build.build_presentation(EXAMPLES_DIR / "greek-deck.yaml", out, validate=False)

@@ -11,6 +11,9 @@ a .pdf: the text of each page. Replaces markitdown, which nothing installed.
 A .docx is not supported: python-docx is not one of this tool's dependencies. Save
 the document as PDF and extract that.
 
+A .pptx passes nbg_package's limits before anything opens it: a third-party deck can
+be a zip bomb.
+
 Exit codes: 0 markdown on stdout; 2 the file could not be read.
 """
 
@@ -20,6 +23,9 @@ import argparse
 import sys
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import nbg_package  # noqa: E402
 
 EXIT_OK = 0
 EXIT_ERROR = 2
@@ -123,9 +129,30 @@ def _chart_lines(chart: Any) -> list[str]:
     return [f"Chart ({kind}):", "", *_md_table(rows)]
 
 
+_P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+_A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+_DECORATIVE_EXT = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}"
+
+
 def _alt_text(shape: Any) -> str:
-    nv = shape._element.find(".//{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr")
+    nv = shape._element.find(f".//{_P}cNvPr")
     return (nv.get("descr") or "").strip() if nv is not None else ""
+
+
+def _is_picture(shape: Any) -> bool:
+    """A picture, in a placeholder or not: both are p:pic in the slide XML."""
+    return bool(shape._element.tag == f"{_P}pic")
+
+
+def _decorative(shape: Any) -> bool:
+    """Marked decorative by its author (PowerPoint's flag, as the builder sets on logos)."""
+    nv = shape._element.find(f".//{_P}cNvPr")
+    if nv is None:
+        return False
+    for ext in nv.iter(f"{_A}ext"):
+        if ext.get("uri", "").upper() == _DECORATIVE_EXT:
+            return any(child.get("val", "1") in ("1", "true") for child in ext)
+    return False
 
 
 def _is_page_number(shape: Any) -> bool:
@@ -172,6 +199,10 @@ def extract_pptx(path: Path) -> str:
     from pptx import Presentation
 
     try:
+        nbg_package.check_package(path)
+    except nbg_package.PackageError as e:
+        raise ExtractError(f"{path.name} was not opened: {e}") from e
+    try:
         prs = Presentation(str(path))
     except Exception as e:  # noqa: BLE001 - python-pptx raises several types for a bad file
         raise ExtractError(f"{path.name} is not a readable .pptx ({type(e).__name__}: {e})") from e
@@ -191,10 +222,12 @@ def extract_pptx(path: Path) -> str:
             elif getattr(shape, "has_table", False) and shape.has_table:
                 rows = [[cell.text for cell in row.cells] for row in shape.table.rows]
                 out += _md_table(rows) + [""]
-            elif shape.shape_type == 13:  # MSO_SHAPE_TYPE.PICTURE
-                alt = _alt_text(shape)
-                if alt:
-                    out += [f"[image: {alt}]", ""]
+            elif _is_picture(shape):
+                # Every picture gets a marker (the redesign asks for its file by it),
+                # unless its author marked it decorative, as the builder does its logos.
+                if not _decorative(shape):
+                    alt = _alt_text(shape)
+                    out += [f"[image: {alt}]" if alt else f"[image: no alt text, {shape.name}]", ""]
             elif shape.has_text_frame:
                 lines = _text_lines(shape)
                 if lines:

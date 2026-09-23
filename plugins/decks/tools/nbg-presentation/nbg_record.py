@@ -142,8 +142,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--topic", help="what the deck is about (defaults to its title)")
     args = parser.parse_args(argv)
+    data = Path(args.data.strip()).expanduser() if args.data.strip() else None
+    if data is None or not data.is_absolute():
+        # An unset ${CLAUDE_PLUGIN_DATA} arrives as "": the record, the whole spec and its
+        # absolute paths included, would land in whatever folder happens to be current.
+        print(
+            f"nbg_record.py: --data {args.data!r} is not an absolute folder. Pass "
+            '"${CLAUDE_PLUGIN_DATA}", which the plugin runtime sets; if it is empty, run '
+            "from the plugin command rather than by hand",
+            file=sys.stderr,
+        )
+        return EXIT_ERROR
     try:
-        path, record = write_record(Path(args.deck), Path(args.spec), Path(args.data), args.topic)
+        path, record = write_record(Path(args.deck), Path(args.spec), data, args.topic)
     except (RecordError, nbg_spec.CannotRun, OSError) as e:
         print(f"nbg_record.py: {e}", file=sys.stderr)
         return EXIT_ERROR

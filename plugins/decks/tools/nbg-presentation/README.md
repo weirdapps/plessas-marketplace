@@ -49,17 +49,27 @@ ERROR slide 4 (S04, chart) slides[3].chart.data.series[0].values: 3 value(s) for
 {"spec": "/abs/deck.yaml", "ok": false,
  "errors": [{"slide": 4, "id": "S04", "type": "chart", "path": "slides[3].chart.data.series[0].values",
              "message": "3 value(s) for 4 categories", "fix": "give one value per category (null for a gap)"}],
- "warnings": []}
+ "warnings": [],
+ "image_slots": [{"slide": 8, "id": "S08", "path": "slides[7].image", "w": 12.59, "h": 4.87}]}
 ```
+
+`image_slots` lists the box, in inches, that each image gets on a slide that laid out
+cleanly: pass it as `size_in` when an infographic is drawn for that slide, so it is placed
+at the size it was drawn for.
 
 Errors stop a build: a schema violation, a missing source on an exhibit, series that
 do not match their categories, a missing image, a custom element outside the body
 area, an unknown colour name, a deck that does not end on its back cover, duplicate
 titles, and anything that cannot fit (bullets that need more room than the body has
 at 14pt, a table taller than the body, a cover title or subtitle that does not stay on
-one line, Standard #13). Warnings do not: a legacy name, an unquoted number or date, a
-slide title that wraps to two lines, more than six chart series, a waterfall total that
-does not add up, an em dash.
+one line, Standard #13). So do the validator's own spec-level rules, applied with its
+own patterns so check never passes what the build then rejects: an em dash or a typed
+` -- ` in slide text, an exhibit whose source line carries no year or date, and alt
+text that is a filename or an autoname, opens with "image of", or repeats text on the
+slide. Warnings do not stop it: a legacy name, an unquoted number or date, a slide
+title that wraps to two lines, more than six chart series, a waterfall total that does
+not add up, a spaced en dash, an em dash in speaker notes or alt text, an undated
+source on a slide without a chart or table.
 
 ## The deck spec
 
@@ -84,10 +94,10 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 | `cover` | `content.title` | `subtitle`, `location`, `date` | Title on one line at 48pt (down to 44pt), subtitle 24pt below it, large logo |
 | `contents` | `content.sections[]` (`title`) | `content.title`, section `number`, `description` | Standard #18 list; unnumbered page when the deck is under 10 slides |
 | `divider` | `content.number`, `content.title` | | Number and title on one baseline, large logo |
-| `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit |
+| `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit; a sparse list grows toward 20pt until it fills 60% of the body (Standard #7) |
 | `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `bank_logos`, `alt_text` | One native chart |
 | `waterfall` | `content.title`, `content.source`, `chart.data.items[]` (`label`, `value`) | item `total`; first and last items are totals | A bridge; step labels above the bars |
-| `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align` | Header in dark teal, zebra rows, figures right-aligned |
+| `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align` | Header in dark teal, zebra rows, figures right-aligned; a short table's rows grow toward 60% of the body, to 0.55 in at most |
 | `kpi` | `content.title`, `content.source`, `kpis[]` (`value`, `label`) | `delta`, `sentiment: positive or negative or neutral` | 1 to 4 tiles |
 | `cards` | `content.title`, `cards[]` (`title`) | `layout: row or grid`, card `body`, `icon`, `number`, `highlight`, `recommended` | 2 to 6 cards; the recommended one gets a gold border and tab |
 | `process` | `content.title`, `steps[]` (`title`) | step `body`, `icon` | 2 to 6 teal step tiles joined by grey arrows, the title and body under each tile; an icon is drawn white in its tile |
@@ -109,8 +119,21 @@ too, because one bank cannot be one colour there: make the banks the series inst
 A `highlight_category` on a bank chart is ignored with a warning.
 [`examples/peer-banks.yaml`](../../examples/peer-banks.yaml) shows every layout.
 
+`chart.unit` ("EUR m") joins the slide's caption ("Fee income by quarter, EUR m", or
+the caption itself when there is none), a column's heading, or a caption line above a
+chart that has neither; it is never repeated where the text already names it.
+
 Chart types: `bar`, `bar_stacked`, `bar_horizontal`, `line`, `area_line` (the default
-for a time series, Standard #2.8) and `doughnut` (there is no pie). Element kinds:
+for a time series, Standard #2.8) and `doughnut` (there is no pie). Series are named
+directly, not in a colour-keyed legend (Standard #22): a line chart with two or more
+series names each at its last point, and a doughnut slice carries its name and share
+inside the ring, the name broken between words until it fits the slice. When a slice
+has no room for its name at any break, the doughnut names its slices in a legend
+instead and check warns which slice forced it. Only a multi-series bar chart shows a
+legend by default; `show_legend` overrides either way. An `area_line` draws its 15%
+fill under the first series only, so list the series to emphasise first. A
+`bar_stacked` chart runs its axis from 0 to its tallest stack and labels a segment
+only where the label fits inside it; check warns which labels were left off. Element kinds:
 `text`, `bullets`, `shape` (`rect`, `rounded_rect`, `oval`, `chevron`, `arrow_right`),
 `image`, `chart`, `table`, `line`. Colours are token names from `tokens.yaml`
 (`teal`, `dark_teal`, `off_white`, ...), never hex.
@@ -121,7 +144,9 @@ against the spec's folder first, then the plugin's `assets/` folder, so
 150 DPI (`components.image.min_dpi`): one too small for its slot is drawn at that
 size, centred, and check warns with the width it needs. Prefer an SVG for a large
 slot; the library's 800 px illustrations reach 5.3 in at most, while
-`illustrations/splash/*.svg` scale to any size.
+`illustrations/splash/*.svg` scale to any size. An SVG with text is measured as placed,
+because the validator cannot read text inside a picture: its smallest text under 10pt
+is a check error, under 12pt a warning, and both name the `size_in` to redraw it at.
 
 Legacy names (`thankyou`, `toc`, `bar_chart`, `pie_chart`, `charts/pie_single`,
 `covers/*`, `infographic`, `hyper_title`, `paragraphs`, `items`, `waterfall_items`,
@@ -172,7 +197,10 @@ on every run so PowerPoint proofs the text as Greek. Specs are always read as UT
 bash plugins/decks/bin/decks-py render deck.pptx outdir --dpi 110
 ```
 
-Writes `outdir/<deck>.pdf` and `outdir/slide-01.png`, `slide-02.png`, ... LibreOffice
+Writes `outdir/<deck>.pdf` and `outdir/slide-01.png`, `slide-02.png`, ... and lists
+them in `outdir/.nbg-render.json`. It deletes and overwrites only files that list
+names, so rendering again into the same folder replaces the last render, while a
+same-named file it did not write stops it with exit 2 before anything runs. LibreOffice
 runs headless in a throwaway profile; it is found on `PATH`, at
 `/Applications/LibreOffice.app/Contents/MacOS/soffice`, under `Program Files` on
 Windows or `/usr/lib/libreoffice/program`, or at `DECKS_SOFFICE`. stdout:
@@ -200,9 +228,16 @@ bash plugins/decks/bin/decks-py extract deck.pptx > deck.md
 
 For a `.pptx`: `## Slide N: <title>`, then the text in reading order with bullets as
 `- ` (indented by level), tables as markdown tables, charts as `Chart (<type>):` and a
-categories-by-series table (a waterfall as its steps and signed values), pictures as
-`[image: <alt text>]`, and `Notes: ...`. For a `.pdf`: `## Page N` and the page text.
+categories-by-series table (a waterfall as its steps and signed values), every picture
+as `[image: <alt text>]` (or `[image: no alt text, <shape name>]`, placeholder pictures
+included; only a picture marked decorative, like the builder's logos, is left out), and
+`Notes: ...`. For a `.pdf`: `## Page N` and the page text.
 A `.docx` is refused (python-docx is not a dependency): save it as PDF first.
+
+extract and render open decks from anyone, so a `.pptx` must first pass the package
+limits in `tools/nbg_package.py` (at most 5000 members, 64 MiB for any member, 16 MiB
+for one XML part, 128 MiB of XML in all, no XML part over 1 MiB compressing more than
+100 to 1). A deck past them is refused with exit 2 before anything parses it.
 
 ## record
 
@@ -211,7 +246,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" record deck.pptx deck.yaml --data "${C
 ```
 
 Writes `<data>/presentations/pending/<YYYYMMDDHHMM>_<slug>.yaml` and prints
-`{"record": <path>, "id": <id>, "slides": <n>}`. The record:
+`{"record": <path>, "id": <id>, "slides": <n>}`. `--data` must be an absolute folder: an
+empty value (an unset `CLAUDE_PLUGIN_DATA`) or a relative one exits 2 instead of
+writing the deck's spec into the current folder. The record:
 
 | Key | Value |
 |---|---|
