@@ -289,6 +289,28 @@ def test_a_row_of_kpi_tiles_shares_one_value_size_and_one_value_line(build):
     assert len({c.find(".//a:xfrm/a:off", NS).get("y") for c in captions}) == 1
 
 
+def test_a_row_of_kpi_deltas_shares_one_line_when_captions_wrap_differently(build):
+    """E2E-OUTPUT-10: each delta sat right under its own caption, so a two-line caption
+    pushed its delta below its neighbours'."""
+    slide = {
+        "type": "kpi",
+        "content": {"title": "Three numbers, deltas in line", "source": SOURCE},
+        "kpis": [
+            {"value": "2.8M", "label": "Users", "delta": "+23%", "sentiment": "positive"},
+            {
+                "value": "78%",
+                "label": "Transactions made in digital channels, all segments",
+                "delta": "+6 pts",
+                "sentiment": "positive",
+            },
+            {"value": "41", "label": "NPS", "delta": "flat"},
+        ],
+    }
+    root = slide_xml(build(deck([slide])), 2)
+    deltas = [shape_by_text(root, d) for d in ("+23%", "+6 pts", "flat")]
+    assert len({d.find(".//a:xfrm/a:off", NS).get("y") for d in deltas}) == 1
+
+
 def test_cards_mark_the_recommended_option_with_a_gold_tab(build):
     slide = {
         "type": "cards",

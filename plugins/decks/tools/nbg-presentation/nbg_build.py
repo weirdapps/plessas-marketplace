@@ -1418,13 +1418,15 @@ def _kpi_tiles(
         delta = kpi.get("delta")
         sentiment = kpi.get("sentiment", "neutral")
         ds = style("kpi_delta", color=hexc(comp["delta"][sentiment]))
-        # A row shares the tallest tile's top line; a stacked column centres each tile.
+        # A row shares the tallest tile's lines (value, caption, delta); a stacked column
+        # centres each tile on its own.
         stack = stacks[i] if vertical else max(stacks)
         cy = y + (tile_h - stack) / 2
         add_text(slide, (x + pad, cy, inner, value_h), value, vs, deck.lang, align="center")
         cy += value_h + 0.08
         add_text(slide, (x + pad, cy, inner, label_h), label, ls, deck.lang, align="center")
-        cy += label_h + 0.06
+        tallest = label_h if vertical else max(text_height(len(lines), ls) for lines in labels)
+        cy += tallest + 0.06
         if delta:
             add_text(
                 slide, (x + pad, cy, inner, delta_h), str(delta), ds, deck.lang, align="center"
