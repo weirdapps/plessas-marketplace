@@ -204,6 +204,11 @@ categories-by-series table (a waterfall as its steps and signed values), picture
 `[image: <alt text>]`, and `Notes: ...`. For a `.pdf`: `## Page N` and the page text.
 A `.docx` is refused (python-docx is not a dependency): save it as PDF first.
 
+extract and render open decks from anyone, so a `.pptx` must first pass the package
+limits in `tools/nbg_package.py` (at most 5000 members, 64 MiB for any member, 16 MiB
+for one XML part, 128 MiB of XML in all, no XML part over 1 MiB compressing more than
+100 to 1). A deck past them is refused with exit 2 before anything parses it.
+
 ## record
 
 ```bash

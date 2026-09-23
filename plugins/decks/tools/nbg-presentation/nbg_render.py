@@ -16,7 +16,8 @@ stdout is one JSON object:
 or, when nothing was rendered, {"error", "fix"}.
 
 Exit codes: 0 rendered with Aptos embedded; 4 rendered with substituted fonts;
-3 LibreOffice is not installed; 2 any other error.
+3 LibreOffice is not installed; 2 any other error, including a deck past
+nbg_package's limits, which LibreOffice never sees.
 """
 
 from __future__ import annotations
@@ -32,6 +33,9 @@ import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import nbg_package  # noqa: E402
 
 EXIT_OK = 0
 EXIT_ERROR = 2
@@ -182,6 +186,13 @@ def render(deck: Path, outdir: Path, dpi: int = DEFAULT_DPI) -> tuple[dict[str, 
     """(summary, exit code). Raises RenderError when nothing could be rendered."""
     if not deck.is_file():
         raise RenderError(f"deck not found: {deck}", "check the path")
+    try:
+        nbg_package.check_package(deck)
+    except nbg_package.PackageError as e:
+        raise RenderError(
+            f"{deck.name} was not opened: {e}",
+            "render only decks you trust; rebuild this one with decks-py build",
+        ) from e
     soffice = find_soffice()
     if soffice is None:
         raise RenderError(

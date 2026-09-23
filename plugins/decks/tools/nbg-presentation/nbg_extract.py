@@ -11,6 +11,9 @@ a .pdf: the text of each page. Replaces markitdown, which nothing installed.
 A .docx is not supported: python-docx is not one of this tool's dependencies. Save
 the document as PDF and extract that.
 
+A .pptx passes nbg_package's limits before anything opens it: a third-party deck can
+be a zip bomb.
+
 Exit codes: 0 markdown on stdout; 2 the file could not be read.
 """
 
@@ -20,6 +23,9 @@ import argparse
 import sys
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import nbg_package  # noqa: E402
 
 EXIT_OK = 0
 EXIT_ERROR = 2
@@ -171,6 +177,10 @@ def _slide_title(slide: Any) -> tuple[str, Any]:
 def extract_pptx(path: Path) -> str:
     from pptx import Presentation
 
+    try:
+        nbg_package.check_package(path)
+    except nbg_package.PackageError as e:
+        raise ExtractError(f"{path.name} was not opened: {e}") from e
     try:
         prs = Presentation(str(path))
     except Exception as e:  # noqa: BLE001 - python-pptx raises several types for a bad file

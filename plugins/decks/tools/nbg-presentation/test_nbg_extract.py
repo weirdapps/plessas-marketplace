@@ -129,6 +129,17 @@ def test_a_missing_or_damaged_file_exits_2(tmp_path, capsys):
     assert nbg_extract.main([str(broken)]) == 2
 
 
+def test_a_zip_bomb_is_refused_before_python_pptx_opens_it(tmp_path, capsys):
+    """SECURITY-PUBLIC-2: a 406 KB crafted deck drove one extract to 583 MB."""
+    import zipfile
+
+    bomb = tmp_path / "bomb.pptx"
+    with zipfile.ZipFile(bomb, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("ppt/slides/slide1.xml", " " * (3 * 2**20))
+    assert nbg_extract.main([str(bomb)]) == 2
+    assert "zip bomb" in capsys.readouterr().err
+
+
 def test_the_cli_writes_greek_as_utf8(tmp_path):
     out = tmp_path / "greek.pptx"
     nbg_build.build_presentation(EXAMPLES_DIR / "greek-deck.yaml", out, validate=False)

@@ -114,6 +114,18 @@ def test_a_missing_deck_exits_2(tmp_path, capsys):
     assert nbg_render.main([str(tmp_path / "nope.pptx"), str(tmp_path / "out")]) == 2
 
 
+def test_a_zip_bomb_is_refused_before_libreoffice_sees_it(tmp_path, fake_soffice, capsys):
+    """SECURITY-PUBLIC-2: render opened third-party decks with no package limits."""
+    import zipfile
+
+    bomb = tmp_path / "bomb.pptx"
+    with zipfile.ZipFile(bomb, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("ppt/slides/slide1.xml", " " * (3 * 2**20))
+    assert nbg_render.main([str(bomb), str(tmp_path / "out")]) == 2
+    assert "zip bomb" in json.loads(capsys.readouterr().out)["error"]
+    assert not fake_soffice.exists(), "LibreOffice must never open the file"
+
+
 def _pdf_with_font(path: Path, base_font: str, embedded: bool) -> Path:
     writer = PdfWriter()
     page = writer.add_blank_page(width=960, height=540)
