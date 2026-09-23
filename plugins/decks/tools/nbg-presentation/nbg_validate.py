@@ -1158,8 +1158,15 @@ def _build_frame(
             if node.find(f"{A}defRPr") is not None
         ]
         if font_ref is not None:
-            # A shape's p:style fontRef sits between its own lstStyle and the deck default.
-            run_defaults.insert(min(2, len(run_defaults)), _Props(font_ref, font_ref=True))
+            # A shape's p:style fontRef outranks everything the shape inherits and yields
+            # only to its own paragraph and list-style defaults, however many of those
+            # exist (none, typically, for text typed into a PowerPoint shape).
+            own = sum(
+                1
+                for node in (p_pr, _lvl(lst_style, level))
+                if node is not None and node.find(f"{A}defRPr") is not None
+            )
+            run_defaults.insert(own, _Props(font_ref, font_ref=True))
         para = Para(runs=[], level=level)
         try:
             para.mar_l = int(ppr_attr("marL") or 0) / EMU

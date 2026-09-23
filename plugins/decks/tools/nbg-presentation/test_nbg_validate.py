@@ -2115,6 +2115,29 @@ def test_a_failure_while_printing_exits_2_not_1(tmp_path, monkeypatch, golden):
     assert nv.main([str(golden)]) == 2
 
 
+def _style_colored_text(fill):
+    """An autoshape whose text takes its colour from p:style fontRef (lt1, white), with
+    no colour on the run: how PowerPoint writes text typed into a shape."""
+
+    def edit(prs):
+        shape = box(slide(prs, 2), 7.0, 5.2, 3.0, 0.6, fill)
+        run = shape.text_frame.paragraphs[0].add_run()
+        run.text = "Delivered on time"
+        run.font.size = Pt(14)
+        run.font.name = "Aptos"
+
+    return edit
+
+
+def test_shape_style_text_colour_outranks_the_deck_default(tmp_path):
+    """VALIDATOR-CODE-2: fontRef ranked below the deck default (black), so white text on
+    a teal shape failed and invisible white text on an off-white shape passed."""
+    teal = check(deck(tmp_path, _style_colored_text("007B85"), name="teal.pptx"), "Contrast")
+    assert teal.status == "pass", teal.details
+    light = check(deck(tmp_path, _style_colored_text("F5F8F6"), name="light.pptx"), "Contrast")
+    assert light.status == "fail" and "#FFFFFF on #F5F8F6" in details(light)
+
+
 def test_the_names_the_spec_checker_imports_stay_put():
     """nbg_spec imports these so `check` and this gate agree; renaming one breaks it."""
     assert nv.SOURCE_AS_OF.search("30 June 2026") and nv.SOURCE_AS_OF.search("9M25")
