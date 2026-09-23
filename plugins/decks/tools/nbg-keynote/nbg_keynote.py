@@ -27,7 +27,6 @@ import json
 import os
 import shutil
 import sys
-import unicodedata
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +39,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import nbg_tokens  # noqa: E402
 from nbg_color import contrast_ratio  # noqa: E402
 from nbg_color import relative_luminance as luminance  # noqa: E402,F401  (re-export)
+
+# Greek all-caps drops the tonos but keeps the dialytika; the one copy lives in
+# ../nbg_text.py, shared with nbg_build. Re-exported: the tests call k.greek_upper.
+from nbg_text import greek_upper  # noqa: E402,F401
 
 # ============================================================ canvas constants
 
@@ -220,21 +223,6 @@ def font(kind: str, size: int) -> ImageFont.FreeTypeFont:
     if key not in _font_cache:
         _font_cache[key] = ImageFont.truetype(str(p), size)
     return _font_cache[key]
-
-
-# Greek all-caps drops the tonos but keeps the dialytika. Python's str.upper()
-# keeps both, so 'η συναίνεση'.upper() renders as 'Η ΣΥΝΑΊΝΕΣΗ', a visible typo.
-TONOS = "́"
-DIALYTIKA = "̈"
-
-
-def greek_upper(text: str) -> str:
-    out = []
-    for ch in unicodedata.normalize("NFD", text.upper()):
-        if ch == TONOS:
-            continue
-        out.append(ch)
-    return unicodedata.normalize("NFC", "".join(out))
 
 
 def wrap(text: str, fnt: ImageFont.FreeTypeFont, maxw: int) -> list[str]:
