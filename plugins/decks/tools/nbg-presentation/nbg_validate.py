@@ -342,6 +342,9 @@ class Collector:
 MAX_MEMBERS = 5000
 MAX_PART_BYTES = 64 * 1024 * 1024
 MAX_TOTAL_BYTES = 1024 * 1024 * 1024
+# A parsed tree costs many times its text, so XML has its own, lower caps.
+MAX_XML_PART_BYTES = 16 * 1024 * 1024
+MAX_XML_TOTAL_BYTES = 128 * 1024 * 1024
 MAX_XML_RATIO = 500  # a zip bomb inflates an XML part thousands of times
 
 
@@ -369,6 +372,7 @@ class Package:
             raise DeckError(f"{path}: over {MAX_TOTAL_BYTES // 2**20} MB uncompressed")
         self._info = {i.filename: i for i in infos}
         self._xml: dict[str, Any] = {}
+        self._xml_bytes = 0
         self._rels: dict[str, dict[str, tuple[str, str | None]]] = {}
 
     def close(self) -> None:
@@ -381,16 +385,26 @@ class Package:
         info = self._info[name]
         if info.file_size > MAX_PART_BYTES:
             raise DeckError(f"{name}: {info.file_size} bytes uncompressed, over the limit")
-        xmlish = name.endswith((".xml", ".rels"))
-        if xmlish and info.compress_size and info.file_size > 2**20:
-            if info.file_size / info.compress_size > MAX_XML_RATIO:
-                raise DeckError(f"{name}: compression ratio suggests a zip bomb")
         return self._zip.read(name)
 
     def xml(self, name: str | None) -> Any:
+        """The parsed part. Every part parsed as XML, whatever its name or size, is held
+        to the XML caps and the compression-ratio test before it is inflated."""
         if not name or not self.has(name):
             return None
         if name not in self._xml:
+            info = self._info[name]
+            if info.file_size > MAX_XML_PART_BYTES:
+                raise DeckError(
+                    f"{name}: {info.file_size} bytes of XML, over the {MAX_XML_PART_BYTES // 2**20} MB part limit"
+                )
+            if info.compress_size and info.file_size / info.compress_size > MAX_XML_RATIO:
+                raise DeckError(f"{name}: compression ratio suggests a zip bomb")
+            self._xml_bytes += info.file_size
+            if self._xml_bytes > MAX_XML_TOTAL_BYTES:
+                raise DeckError(
+                    f"{name}: over {MAX_XML_TOTAL_BYTES // 2**20} MB of XML in the package"
+                )
             try:
                 self._xml[name] = ET.fromstring(self.read(name))
             except ET.ParseError as e:

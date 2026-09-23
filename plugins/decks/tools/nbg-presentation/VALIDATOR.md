@@ -159,8 +159,10 @@ runner without Aptos agree. `DECKS_FONT_DIRS` (path-separated) replaces the sear
 check's message says which measurer ran.
 
 **Package safety**: parts are read from the zip one at a time, never extracted, with limits
-on member count, part size, total size and XML compression ratio, and XML is parsed with
-defusedxml. A deck over a limit exits 2.
+on member count (5,000), part size (64 MB) and total size (1 GB). Every part parsed as XML,
+whatever its name or size, has tighter caps, because a parsed tree costs many times its
+text: 16 MB per part, 128 MB across the package, and a compression ratio of at most 500:1.
+XML is parsed with defusedxml. A deck over a limit exits 2.
 
 ## Adding a check
 

@@ -1839,6 +1839,60 @@ def test_exit_codes(tmp_path, golden):
     assert _run(junk).returncode == 2
 
 
+def _zip(path, members, compress_type=zipfile.ZIP_DEFLATED):
+    with zipfile.ZipFile(path, "w", compress_type) as zf:
+        for name, data in members.items():
+            zf.writestr(name, data)
+    return path
+
+
+def _xml_comment(n):
+    return b"<r><!--" + b"x" * n + b"--></r>"
+
+
+def test_the_xml_limits_are_the_ones_the_builder_shares():
+    assert nv.MAX_XML_PART_BYTES == 16 * 2**20
+    assert nv.MAX_XML_TOTAL_BYTES == 128 * 2**20
+
+
+def test_an_xml_part_over_16_mib_exits_2(tmp_path, golden, capsys):
+    """VALIDATOR-CODE-11: a 64 MiB XML part was allowed, and a parsed tree costs many
+    times its text (three such parts took 4.3 GB). Stored, so no ratio test fires."""
+    path = tmp_path / "big.pptx"
+    with zipfile.ZipFile(golden) as zf:
+        blobs = {n: zf.read(n) for n in zf.namelist()}
+    part = "ppt/slides/slide1.xml"
+    blobs[part] = blobs[part].replace(b"</p:sld>", b"<!--" + b"x" * (17 * 2**20) + b"--></p:sld>")
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for n, data in blobs.items():
+            zf.writestr(n, data, compress_type=zipfile.ZIP_STORED if n == part else None)
+    assert nv.main([str(path)]) == 2
+    assert "16 MB" in capsys.readouterr().err
+
+
+def test_every_parsed_part_gets_the_ratio_test_whatever_its_size_or_name(tmp_path):
+    """The ratio test ran only on .xml/.rels parts over 1 MiB."""
+    small = nv.Package(_zip(tmp_path / "small.zip", {"small.xml": _xml_comment(900 * 1024)}))
+    with pytest.raises(nv.DeckError, match="zip bomb"):
+        small.xml("small.xml")
+    odd = nv.Package(_zip(tmp_path / "odd.zip", {"slide.bin": _xml_comment(2 * 2**20)}))
+    with pytest.raises(nv.DeckError, match="zip bomb"):
+        odd.xml("slide.bin")
+    plain = nv.Package(_zip(tmp_path / "plain.zip", {"ok.xml": b"<r><a/><b/></r>"}))
+    assert plain.xml("ok.xml") is not None
+
+
+def test_parsed_xml_is_capped_across_the_package(tmp_path, monkeypatch):
+    monkeypatch.setattr(nv, "MAX_XML_TOTAL_BYTES", 2**20)
+    parts = {f"p{i}.xml": _xml_comment(400 * 1024) for i in range(3)}
+    pkg = nv.Package(_zip(tmp_path / "many.zip", parts, zipfile.ZIP_STORED))
+    pkg.xml("p0.xml")
+    pkg.xml("p1.xml")
+    pkg.xml("p0.xml")  # a part already parsed costs nothing more
+    with pytest.raises(nv.DeckError, match="of XML"):
+        pkg.xml("p2.xml")
+
+
 def test_a_missing_dependency_exits_2_not_1(tmp_path, golden):
     """VALIDATOR-6: an ImportError exited 1, the same code as a brand violation."""
     fake = tmp_path / "fake" / "defusedxml"
