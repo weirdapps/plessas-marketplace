@@ -63,8 +63,8 @@ Decision rules:
 - **Peer banks**: a comparison of the systemic banks is a `chart` (`bar` or `bar_horizontal`) or a
   `table` with the bank names (NBG, Eurobank, Piraeus, Alpha, in English or Greek) as categories,
   series or rows, and a dated `content.source`. The builder applies each bank's mandatory brand
-  colour itself, so set no `highlight_category` and choose no colours on these slides. Logos under
-  the bars only when the user asks for them: `chart.bank_logos: true`.
+  colour itself, so set no `highlight_category` and choose no colours on these slides. On a chart,
+  set `chart.bank_logos: true`: the validator requires one unstretched logo per plotted bank.
 - **Custom**: a `content.title` like every slide, then elements with geometry in inches inside the
   body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
   gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from

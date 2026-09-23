@@ -44,10 +44,10 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json --stri
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate --list-checks`.
 - Every `fail` becomes a fix, one per `details` entry (see Fixes). A `warn` does not fail Layer 1:
   list it as an advisory fix and weigh it in Layer 2 (an Action Titles warning informs criterion A).
-- **A check that examined nothing is not a pass.** A `skipped` check passed having examined zero
-  candidates. If the deck contains what it measures (a chart or table for Exhibit Sources, a bank
-  name for Bank Branding), the check did not look: report it as unverified, and the verdict cannot
-  be PASS. If the deck has none, note it and move on.
+- **A check that examined nothing is not a pass.** A `skipped` check examined zero candidates:
+  report every one as unverified. If the deck contains what it measures (a chart or table for
+  Exhibit Sources, bank names in a chart for Bank Branding), the check did not look and the verdict
+  cannot be PASS; if the deck has none, the verdict is unaffected.
 
 ## Layer 2: look at every slide
 
