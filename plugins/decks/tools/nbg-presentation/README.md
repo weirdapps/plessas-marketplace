@@ -172,7 +172,10 @@ on every run so PowerPoint proofs the text as Greek. Specs are always read as UT
 bash plugins/decks/bin/decks-py render deck.pptx outdir --dpi 110
 ```
 
-Writes `outdir/<deck>.pdf` and `outdir/slide-01.png`, `slide-02.png`, ... LibreOffice
+Writes `outdir/<deck>.pdf` and `outdir/slide-01.png`, `slide-02.png`, ... and lists
+them in `outdir/.nbg-render.json`. It deletes and overwrites only files that list
+names, so rendering again into the same folder replaces the last render, while a
+same-named file it did not write stops it with exit 2 before anything runs. LibreOffice
 runs headless in a throwaway profile; it is found on `PATH`, at
 `/Applications/LibreOffice.app/Contents/MacOS/soffice`, under `Program Files` on
 Windows or `/usr/lib/libreoffice/program`, or at `DECKS_SOFFICE`. stdout:
