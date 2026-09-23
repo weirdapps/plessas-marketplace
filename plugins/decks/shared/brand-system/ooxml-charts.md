@@ -34,9 +34,7 @@ ppt/
               xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
               xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <c:date1904 val="0"/>
-  <c:lang val="en-US"/>
-  <c:roundedCorners val="1"/>  <!-- 0 for waterfall charts -->
-  <c:style val="2"/>
+  <c:roundedCorners val="0"/>  <!-- square corners on every chart; an absent element means rounded -->
   <c:chart>
     <c:autoTitleDeleted val="1"/>  <!-- No chart title - use slide text instead -->
 ```
@@ -139,7 +137,7 @@ Above the bars: 12pt Bold `#003841`.
   </c:scaling>
   <c:delete val="0"/>
   <c:axPos val="b"/>
-  <c:majorTickMark val="out"/>
+  <c:majorTickMark val="none"/>
   <c:minorTickMark val="none"/>
   <c:tickLblPos val="low"/>
   <c:spPr>
@@ -211,7 +209,17 @@ Above the bars: 12pt Bold `#003841`.
 ### Multiple Series Colors
 
 ```xml
-<!-- Series 1: Dark Teal -->
+<!-- Series 1: Cyan, the first palette colour -->
+<c:ser>
+  <c:spPr>
+    <a:solidFill>
+      <a:srgbClr val="00ADBF"/>
+    </a:solidFill>
+  </c:spPr>
+  <!-- ... -->
+</c:ser>
+
+<!-- Series 2: Dark Teal, the second -->
 <c:ser>
   <c:spPr>
     <a:solidFill>
@@ -220,42 +228,36 @@ Above the bars: 12pt Bold `#003841`.
   </c:spPr>
   <!-- ... -->
 </c:ser>
-
-<!-- Series 2: NBG Teal -->
-<c:ser>
-  <c:spPr>
-    <a:solidFill>
-      <a:srgbClr val="007B85"/>
-    </a:solidFill>
-  </c:spPr>
-  <!-- ... -->
-</c:ser>
 ```
 
 ### Stacked Data Labels (inside the segments)
 
-Each series gets its own label colour, chosen by contrast against that series' fill: `FFFFFF`
-on `003841` and `007B85`, `202020` on `00ADBF`, `BEC1BE` and `00DFF8` (white on cyan is 2.72:1).
+Each series gets its own label colour, chosen by the contrast picker against that series' fill:
+`FFFFFF` on `003841` and `007B85`, pure black `000000` on `00ADBF`, `939793`, `BEC1BE` and
+`00DFF8` (white on cyan is 2.72:1; why black and not `#202020`: colors.md, Color Contrast Rules).
 Put the `c:dLbls` inside each `c:ser`, not once at the plot level, so every series carries the
 colour its own fill needs.
 
 ```xml
-<c:txPr>
-  <a:bodyPr wrap="square" lIns="38100" tIns="19050" rIns="38100" bIns="19050" anchor="ctr">
-    <a:spAutoFit/>
-  </a:bodyPr>
-  <a:lstStyle/>
-  <a:p>
-    <a:pPr>
-      <a:defRPr sz="1200" b="1">
-        <a:solidFill>
-          <a:srgbClr val="FFFFFF"/>  <!-- on the 003841 series; 202020 on a light series -->
-        </a:solidFill>
-        <a:latin typeface="Aptos"/>
-      </a:defRPr>
-    </a:pPr>
-  </a:p>
-</c:txPr>
+<c:dLbls>
+  <c:numFmt formatCode="#,##0" sourceLinked="0"/>
+  <c:txPr>
+    <a:bodyPr/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr>
+        <a:defRPr sz="1200" b="1">
+          <a:solidFill>
+            <a:srgbClr val="000000"/>  <!-- on the 00ADBF series; FFFFFF on 003841 -->
+          </a:solidFill>
+          <a:latin typeface="Aptos"/>
+        </a:defRPr>
+      </a:pPr>
+    </a:p>
+  </c:txPr>
+  <c:dLblPos val="ctr"/>
+  <c:showVal val="1"/>
+</c:dLbls>
 ```
 
 ---
@@ -325,27 +327,35 @@ colour its own fill needs.
 
 ---
 
-## Waterfall Chart (Stacked Bar Simulation)
+## Waterfall Chart (Stacked Column Simulation)
 
 **Use for**: Financial flows, showing how values add/subtract to reach a total
 
-Waterfall charts in OOXML are created using a stacked bar chart with three series:
+python-pptx has no native waterfall, so `nbg_chart.add_waterfall` draws a stacked column chart
+with four series:
 
-1. **Base** (invisible) - positions the colored bars
-2. **Increase** (cyan) - positive additions; total bars in this series are recoloured
-   `003841` point by point with `c:dPt` (charts.md: totals dark teal)
-3. **Decrease** (red) - subtractions
+1. **Base** (invisible): lifts each floating bar to where it starts
+2. **Above zero**: the part of each bar above zero
+3. **Below zero**: the part of each bar below zero (all zeros while the bridge stays above it)
+4. **Labels** (invisible, all zeros): a carrier stacked on top of each bar, holding the label of a
+   step that sits above zero
 
-### Data Structure (Excel)
+The two visible series colour every bar by its kind, point by point with `c:dPt`: totals
+`003841`, increases `00ADBF`, decreases `AA0028`. A bar that crosses zero puts its two halves in
+the two visible series and has no base.
 
-| Category | Base | Increase | Decrease |
-|----------|------|----------|----------|
-| Start Item | 0 | 2084 | 0 |
-| Add Item | 2084 | 1624 | 0 |
-| Subtract Item | 1269 | 0 | 2439 |
-| Net Total | 0 | 1269 | 0 |
+### Data Structure (the embedded workbook)
 
-**Base calculation**: For each row, Base = previous running total after that row's change
+| Category | Base | Above zero | Below zero | Labels |
+|----------|------|------------|------------|--------|
+| Scheme incoming (total) | 0 | 2084 | 0 | 0 |
+| DIAS incoming (+1624) | 2084 | 1624 | 0 | 0 |
+| DIAS outgoing (-2439) | 1269 | 2439 | 0 | 0 |
+| Net impact (total) | 0 | 1269 | 0 | 0 |
+
+**Base**: the lower end of a bar that sits entirely above zero, the upper end of one entirely
+below zero, and 0 for a bar that crosses zero. A decrease is still a positive height in the Above
+zero series; its red comes from its `c:dPt`.
 
 ### Chart Definition
 
@@ -353,7 +363,6 @@ Waterfall charts in OOXML are created using a stacked bar chart with three serie
 <c:barChart>
   <c:barDir val="col"/>
   <c:grouping val="stacked"/>
-  <c:varyColors val="0"/>
 
   <!-- Series 1: Base (invisible) -->
   <c:ser>
@@ -361,7 +370,7 @@ Waterfall charts in OOXML are created using a stacked bar chart with three serie
     <c:order val="0"/>
     <c:tx>
       <c:strRef>
-        <c:f>Waterfall!$B$1</c:f>
+        <c:f>Sheet1!$B$1</c:f>
         <c:strCache>
           <c:ptCount val="1"/>
           <c:pt idx="0"><c:v>Base</c:v></c:pt>
@@ -372,129 +381,111 @@ Waterfall charts in OOXML are created using a stacked bar chart with three serie
       <a:noFill/>  <!-- Invisible -->
       <a:ln><a:noFill/></a:ln>
     </c:spPr>
-    <c:invertIfNegative val="0"/>
     <!-- Category and value references... -->
   </c:ser>
 
-  <!-- Series 2: Increase (Cyan) -->
+  <!-- Series 2: Above zero, each point in its kind's colour -->
   <c:ser>
     <c:idx val="1"/>
     <c:order val="1"/>
     <c:tx>
       <c:strRef>
-        <c:f>Waterfall!$C$1</c:f>
+        <c:f>Sheet1!$C$1</c:f>
         <c:strCache>
           <c:ptCount val="1"/>
-          <c:pt idx="0"><c:v>Increase</c:v></c:pt>
+          <c:pt idx="0"><c:v>Above zero</c:v></c:pt>
         </c:strCache>
       </c:strRef>
     </c:tx>
     <c:spPr>
       <a:solidFill>
-        <a:srgbClr val="00ADBF"/>  <!-- NBG Cyan -->
+        <a:srgbClr val="003841"/>  <!-- the total colour; each point overrides it -->
       </a:solidFill>
       <a:ln><a:noFill/></a:ln>
     </c:spPr>
-    <!-- Total bars (here the first and last points) in Dark Teal -->
+    <c:invertIfNegative val="0"/>
     <c:dPt>
-      <c:idx val="0"/>
-      <c:invertIfNegative val="0"/>
-      <c:bubble3D val="0"/>
+      <c:idx val="1"/>  <!-- an increase -->
       <c:spPr>
-        <a:solidFill><a:srgbClr val="003841"/></a:solidFill>
+        <a:solidFill><a:srgbClr val="00ADBF"/></a:solidFill>
+        <a:ln><a:noFill/></a:ln>
       </c:spPr>
     </c:dPt>
-    <!-- ... same c:dPt for idx 3 ... -->
+    <c:dPt>
+      <c:idx val="2"/>  <!-- a decrease -->
+      <c:spPr>
+        <a:solidFill><a:srgbClr val="AA0028"/></a:solidFill>
+        <a:ln><a:noFill/></a:ln>
+      </c:spPr>
+    </c:dPt>
+    <!-- ... the same c:dPt in 003841 for the totals (idx 0 and 3), then c:dLbls ... -->
   </c:ser>
 
-  <!-- Series 3: Decrease (Red) -->
-  <c:ser>
-    <c:idx val="2"/>
-    <c:order val="2"/>
-    <c:tx>
-      <c:strRef>
-        <c:f>Waterfall!$D$1</c:f>
-        <c:strCache>
-          <c:ptCount val="1"/>
-          <c:pt idx="0"><c:v>Decrease</c:v></c:pt>
-        </c:strCache>
-      </c:strRef>
-    </c:tx>
-    <c:spPr>
-      <a:solidFill>
-        <a:srgbClr val="AA0028"/>  <!-- NBG Red -->
-      </a:solidFill>
-      <a:ln><a:noFill/></a:ln>
-    </c:spPr>
-    <!-- ... -->
-  </c:ser>
+  <!-- Series 3: Below zero, coloured point by point the same way -->
+  <!-- Series 4: Labels, invisible like Base, all zeros -->
 
   <c:gapWidth val="100"/>
   <c:overlap val="100"/>  <!-- Full overlap for stacking -->
 </c:barChart>
 ```
 
-### Selective Data Labels
+### Data Labels
 
-Hide labels for zero values by using individual `<c:dLbl>` elements. Labels sit inside the bars at
-12pt Bold, coloured by contrast against their bar: `202020` on the cyan increases, `FFFFFF` on the
-red decreases and the dark-teal totals. The sample below is the Increase series; the Decrease
-series repeats it with `FFFFFF`.
+Each label is a `c:dLbl` that carries its text in `c:tx/c:rich`: the signed contribution
+(`+1,624`, `-2,439`; a total is signed only when negative), formatted once, so no viewer
+re-formats it. The series-level `c:showVal val="0"` hides every point without a `c:dLbl` of its
+own. All labels are 12pt Bold.
+
+A step that sits entirely above zero, increase or decrease, is labelled on the Labels carrier at
+`inBase`, which puts the text just above its bar, in `003841`:
 
 ```xml
-<c:dLbls>
-  <!-- Delete label for index 2 (zero value) -->
-  <c:dLbl>
-    <c:idx val="2"/>
-    <c:delete val="1"/>
-  </c:dLbl>
-
-  <!-- Custom positioning for total label -->
-  <c:dLbl>
-    <c:idx val="3"/>
-    <c:layout>
-      <c:manualLayout>
-        <c:x val="0"/>
-        <c:y val="-0.19"/>  <!-- Above the bar -->
-      </c:manualLayout>
-    </c:layout>
-    <c:numFmt formatCode="#,##0" sourceLinked="0"/>
-    <c:txPr>
-      <a:bodyPr/>
-      <a:lstStyle/>
-      <a:p>
-        <a:pPr>
-          <a:defRPr sz="1400" b="1">  <!-- Larger, bold for the total, above the bar on white -->
-            <a:solidFill>
-              <a:srgbClr val="202020"/>
-            </a:solidFill>
-            <a:latin typeface="Aptos"/>
-          </a:defRPr>
-        </a:pPr>
-      </a:p>
-    </c:txPr>
-    <c:showVal val="1"/>
-  </c:dLbl>
-
-  <!-- Default labels -->
-  <c:numFmt formatCode="#,##0" sourceLinked="0"/>
-  <c:txPr>
-    <a:bodyPr/>
-    <a:lstStyle/>
-    <a:p>
-      <a:pPr>
-        <a:defRPr sz="1200" b="1">
-          <a:solidFill>
-            <a:srgbClr val="202020"/>  <!-- dark on the cyan increases (6.00:1) -->
-          </a:solidFill>
-          <a:latin typeface="Aptos"/>
-        </a:defRPr>
-      </a:pPr>
-    </a:p>
-  </c:txPr>
-  <c:showVal val="1"/>
-</c:dLbls>
+<c:ser>  <!-- Series 4: Labels -->
+  <!-- ... c:idx, c:order, c:tx, invisible c:spPr ... -->
+  <c:dLbls>
+    <c:dLbl>
+      <c:idx val="1"/>
+      <c:tx>
+        <c:rich>
+          <a:bodyPr/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr sz="1200" b="1">
+                <a:solidFill>
+                  <a:srgbClr val="003841"/>
+                </a:solidFill>
+                <a:latin typeface="Aptos"/>
+              </a:rPr>
+              <a:t>+1,624</a:t>
+            </a:r>
+          </a:p>
+        </c:rich>
+      </c:tx>
+      <c:dLblPos val="inBase"/>  <!-- the base of a zero-height point on top of the bar -->
+      <c:showLegendKey val="0"/>
+      <c:showVal val="1"/>
+      <c:showCatName val="0"/>
+      <c:showSerName val="0"/>
+      <c:showPercent val="0"/>
+      <c:showBubbleSize val="0"/>
+    </c:dLbl>
+    <c:showLegendKey val="0"/>
+    <c:showVal val="0"/>  <!-- every point without its own c:dLbl stays unlabelled -->
+    <c:showCatName val="0"/>
+    <c:showSerName val="0"/>
+    <c:showPercent val="0"/>
+    <c:showBubbleSize val="0"/>
+    <c:showLeaderLines val="1"/>
+  </c:dLbls>
+  <!-- ... c:cat, c:val ... -->
+</c:ser>
 ```
+
+A total, or a step reaching below zero, is labelled on its own visible point (the Above zero part
+when it has one) with `<c:dLblPos val="ctr"/>`, in the colour the contrast picker takes for its
+fill: `FFFFFF` on the `003841` totals and the `AA0028` decreases, `000000` on the `00ADBF`
+increases.
 
 ### Waterfall Axis (minimal)
 
@@ -572,20 +563,21 @@ Add to `[Content_Types].xml`:
 const ExcelJS = require('exceljs');
 
 const workbook = new ExcelJS.Workbook();
-const sheet = workbook.addWorksheet('Waterfall');
+const sheet = workbook.addWorksheet('Sheet1');  // the sheet the chart formulas name
 
-// Headers
+// Headers: the four waterfall series
 sheet.getCell('A1').value = 'Category';
 sheet.getCell('B1').value = 'Base';
-sheet.getCell('C1').value = 'Increase';
-sheet.getCell('D1').value = 'Decrease';
+sheet.getCell('C1').value = 'Above zero';
+sheet.getCell('D1').value = 'Below zero';
+sheet.getCell('E1').value = 'Labels';
 
 // Data rows
 const data = [
-  ['Scheme Incoming', 0, 2084, 0],
-  ['DIAS Incoming', 2084, 1624, 0],
-  ['DIAS Outgoing', 1269, 0, 2439],
-  ['Net Impact', 0, 1269, 0]
+  ['Scheme Incoming', 0, 2084, 0, 0],
+  ['DIAS Incoming', 2084, 1624, 0, 0],
+  ['DIAS Outgoing', 1269, 2439, 0, 0],
+  ['Net Impact', 0, 1269, 0, 0]
 ];
 
 data.forEach((row, i) => {
@@ -593,6 +585,7 @@ data.forEach((row, i) => {
   sheet.getCell(`B${i+2}`).value = row[1];
   sheet.getCell(`C${i+2}`).value = row[2];
   sheet.getCell(`D${i+2}`).value = row[3];
+  sheet.getCell(`E${i+2}`).value = row[4];
 });
 
 await workbook.xlsx.writeFile('Microsoft_Excel_Worksheet1.xlsx');
@@ -652,10 +645,10 @@ The same values as the chart style table in charts.md.
 | Category labels | Aptos | 12pt | No | #202020 |
 | Value-axis labels (line and area charts) | Aptos | 11pt | No | #939793 |
 | Data labels (above bars) | Aptos | 12pt | Yes | #003841 |
-| Data labels (inside a bar) | Aptos | 12pt | Yes | #FFFFFF on 003841, 007B85, AA0028; #202020 on 00ADBF, BEC1BE, 00DFF8 |
+| Data labels (inside a bar) | Aptos | 12pt | Yes | #FFFFFF on 003841, 007B85, AA0028; #000000 on 00ADBF, 939793, BEC1BE, 00DFF8 |
 | Legend text | Aptos | 12pt | No | #202020 |
-| Waterfall labels | Aptos | 12pt | Yes | as for labels inside a bar |
-| Waterfall total above its bar | Aptos | 14pt | Yes | #202020 |
+| Waterfall label, step above zero | Aptos | 12pt | Yes | #003841, just above the bar |
+| Waterfall label, total or step below zero | Aptos | 12pt | Yes | centred in the bar, as for labels inside a bar |
 
 ### Axis Line
 

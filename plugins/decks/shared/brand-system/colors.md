@@ -8,27 +8,32 @@
 >
 > **Scope of this file**: presentation-system colors only (PowerPoint/PDF decks). Body text stays `#202020` (between Pillar Black `#162020` and email body `#404040`, an intentional difference optimised for projection readability). Status reds: `#AA0028` is retained for **NBG corporate charts and segment coding** (Private banking signature); `#BE4B4B` from Pillar applies to **digital products** (alerts, error states in app UI).
 
-## Theme Colors (NBG Colors 2)
+## Theme Colors (the theme every built deck carries)
 
-### Core Theme Colors
+`nbg_build.py` writes this colour scheme, named `NBG`, into every deck it builds, with Aptos as
+the heading and body font and no effect styles. Anything that inherits from the theme, such as a
+text box or chart a colleague adds later in PowerPoint, starts on-brand. `tools/test_brand_docs.py`
+builds a deck and compares every slot with this table.
 
-| Name | Hex | RGB | Usage |
-|------|-----|-----|-------|
-| Dark 1 (Black) | `#000000` | 0, 0, 0 | Pure black text |
-| Light 1 (White) | `#FFFFFF` | 255, 255, 255 | Backgrounds |
-| Dark 2 (NBG Teal) | `#007B85` | 0, 123, 133 | Primary brand, headers |
-| Light 2 (Off-white) | `#F5F8F6` | 245, 248, 246 | Light backgrounds |
+| Slot | Hex | Token |
+|------|-----|-------|
+| Dark 1 | `#202020` | `body_text` |
+| Light 1 | `#FFFFFF` | `white` |
+| Dark 2 | `#003841` | `dark_teal` |
+| Light 2 | `#F5F8F6` | `off_white` |
+| Accent 1 | `#00ADBF` | `charts.palette`, series 1 |
+| Accent 2 | `#003841` | `charts.palette`, series 2 |
+| Accent 3 | `#007B85` | `charts.palette`, series 3 |
+| Accent 4 | `#939793` | `charts.palette`, series 4 |
+| Accent 5 | `#BEC1BE` | `charts.palette`, series 5 |
+| Accent 6 | `#00DFF8` | `charts.palette`, series 6 |
+| Hyperlink | `#0D90FF` | `extended_palettes.links.hyperlink` |
+| Followed hyperlink | `#59C3FF` | `extended_palettes.links.followed` |
 
-### Accent Colors
-
-| Accent | Hex | RGB | Usage |
-|--------|-----|-----|-------|
-| Accent 1 (Dark Teal) | `#003841` | 0, 56, 65 | Primary titles, headings |
-| Accent 2 (NBG Teal) | `#007B85` | 0, 123, 133 | Section numbers, highlights |
-| Accent 3 (Cyan) | `#00ADBF` | 0, 173, 191 | Secondary accents, bullets |
-| Accent 4 (Bright Cyan) | `#00DFF8` | 0, 223, 248 | Feature accent |
-| Accent 5 (Light Gray) | `#BEC1BE` | 190, 193, 190 | Subtle elements |
-| Accent 6 (Medium Gray) | `#939793` | 147, 151, 147 | Page numbers, muted marks (never body text) |
+The corporate PowerPoint template carries a different theme, "NBG Colors 2": Dark 1 black
+`#000000`, Dark 2 `#007B85`, and the accents in the order `#003841`, `#007B85`, `#00ADBF`,
+`#00DFF8`, `#BEC1BE`, `#939793`. Decks are never built on that template (README, Critical Rules),
+so those values only matter when you read a deck that was.
 
 ## Primary Brand Colors
 
