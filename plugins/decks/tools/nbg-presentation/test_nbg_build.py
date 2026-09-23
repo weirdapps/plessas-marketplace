@@ -258,7 +258,7 @@ def test_table_slide_writes_headers_and_rows(tmp_path):
 def _palette_hexes():
     import nbg_validate
 
-    return sorted(nbg_validate.NBG_GUIDELINES["colors"]["allowed"])
+    return sorted(nbg_validate.allowed_colors())
 
 
 def test_label_text_color_clears_aa_on_the_two_fills_that_used_to_fail():
@@ -962,11 +962,14 @@ def test_bank_branding_does_not_count_a_source_footnote_as_a_competitor(tmp_path
 
 
 def test_bank_branding_still_reads_bank_names_in_the_body(tmp_path):
-    """The exclusion must not blind the scan: same deck, NBG in the body."""
+    """The exclusion must not blind the scan: same deck, NBG in the body.
+
+    The body mention is counted, but only a chart that plots two or more banks is a
+    comparison (VALIDATOR-9, E2E-SMOKE-9); this chart plots none, so nothing fails.
+    """
     banks = _check(_bank_deck(tmp_path, "body-bank.pptx", False), "Bank Branding")
-    assert not banks.skipped, banks.message
-    assert not banks.passed, banks.message
-    assert any("Eurobank" in d for d in banks.details), banks.details
+    assert "2 bank name(s) found" in banks.message
+    assert banks.skipped, banks.message
 
 
 # ----------------------------------------------------------------- alt text

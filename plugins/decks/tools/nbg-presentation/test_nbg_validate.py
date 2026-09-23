@@ -1,0 +1,1741 @@
+"""Tests for nbg_validate.py, the NBG brand gate.
+
+Every check has one FAIL fixture and one PASS fixture, enforced mechanically:
+FAIL_CASES must name every registered check, and the golden deck (or a named PASS
+fixture) must pass every one. On top of those, each false positive and false
+negative fixed in the 2026-09 overhaul (VALIDATOR-1..15 and the related findings in
+the decks setup review) has a regression test named for the behaviour it pins.
+
+Fixtures are built with python-pptx directly, never with nbg_build.py: the builder
+is rewritten independently, and the validator's contract has to hold for any deck,
+including the PowerPoint-made ones /redesign-deck and /polish-slides receive.
+`golden_prs()` is a six-slide deck that satisfies every brand rule; each FAIL
+fixture breaks exactly one rule in a copy of it.
+
+Text-fit tests force the fallback width table (DECKS_FONT_DIRS pointed at an empty
+directory) so a laptop with Aptos installed and a CI runner without it measure the
+same thing.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import zipfile
+from pathlib import Path
+
+import pytest
+
+pytest.importorskip("yaml")
+pytest.importorskip("pptx")
+pytest.importorskip("defusedxml")
+
+from lxml import etree  # noqa: E402
+from pptx import Presentation  # noqa: E402
+from pptx.chart.data import CategoryChartData  # noqa: E402
+from pptx.dml.color import RGBColor  # noqa: E402
+from pptx.enum.chart import (  # noqa: E402
+    XL_CHART_TYPE,
+    XL_LABEL_POSITION,
+    XL_LEGEND_POSITION,
+    XL_MARKER_STYLE,
+)
+from pptx.enum.shapes import MSO_SHAPE  # noqa: E402
+from pptx.enum.text import MSO_ANCHOR, PP_ALIGN  # noqa: E402
+from pptx.oxml.ns import qn  # noqa: E402
+from pptx.util import Emu, Pt  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
+import nbg_tokens  # noqa: E402
+import nbg_validate as nv  # noqa: E402
+
+SCRIPT = HERE / "nbg_validate.py"
+ASSETS = HERE.parent.parent / "assets"
+LOGO = ASSETS / "nbg-logo-gr.png"
+EMBLEM = ASSETS / "nbg-back-cover-logo.png"
+ENGLISH_LOGO = ASSETS / "nbg-logo-fallback.png"
+BANK_LOGOS = ASSETS / "bank-logos"
+# Written as code points: a hook refuses literal em dashes in any file.
+EM_DASH = chr(0x2014)
+EN_DASH = chr(0x2013)
+BULLET = chr(0x2022)
+
+G = nbg_tokens.get("geometry")
+PEERS = nbg_tokens.get("extended_palettes.peer_banks")
+
+
+# --------------------------------------------------------------------- helpers
+
+
+def inch(value: float) -> Emu:
+    return Emu(int(round(value * 914400)))
+
+
+def new_prs():
+    prs = Presentation()
+    prs.slide_width, prs.slide_height = Emu(G["slide"]["w_emu"]), Emu(G["slide"]["h_emu"])
+    return prs
+
+
+def blank(prs):
+    return prs.slides.add_slide(prs.slide_layouts[6])
+
+
+def slide(prs, position):
+    return prs.slides[position - 1]
+
+
+def text(
+    sld,
+    x,
+    y,
+    w,
+    h,
+    content,
+    *,
+    size=14,
+    bold=False,
+    color="202020",
+    font="Aptos",
+    wrap=True,
+    anchor=MSO_ANCHOR.TOP,
+    insets=0.0,
+    align=None,
+):
+    """A text box with brand defaults: zero insets, top anchor, run-level styling.
+
+    auto_size = None drops the spAutoFit python-pptx puts on every new text box, as
+    nbg_build does, so the box keeps the height it was given.
+    """
+    shape = sld.shapes.add_textbox(inch(x), inch(y), inch(w), inch(h))
+    tf = shape.text_frame
+    tf.auto_size = None
+    tf.word_wrap = wrap
+    tf.vertical_anchor = anchor
+    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = inch(insets)
+    lines = content if isinstance(content, (list, tuple)) else [content]
+    for i, line in enumerate(lines):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        if align is not None:
+            p.alignment = align
+        run = p.add_run()
+        run.text = line
+        run.font.size = Pt(size)
+        run.font.bold = bold
+        run.font.name = font
+        run.font.color.rgb = RGBColor.from_string(color)
+    return shape
+
+
+def bullets(sld, x, y, w, h, items, *, size=14, order="schema"):
+    """Cyan bullets. order="builder" reproduces the old nbg_build child order."""
+    shape = sld.shapes.add_textbox(inch(x), inch(y), inch(w), inch(h))
+    tf = shape.text_frame
+    tf.auto_size = None
+    tf.word_wrap = True
+    tf.vertical_anchor = MSO_ANCHOR.TOP
+    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+    for i, item in enumerate(items):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p_pr = p._p.get_or_add_pPr()
+        p_pr.set("marL", "228600")
+        p_pr.set("indent", "-228600")
+        if order == "builder":
+            p.font.size = Pt(size)  # writes a:defRPr first, as nbg_build did
+        if i:
+            spc = etree.SubElement(p_pr, qn("a:spcBef"))
+            etree.SubElement(spc, qn("a:spcPts")).set("val", "1400")
+        clr = etree.SubElement(p_pr, qn("a:buClr"))
+        etree.SubElement(clr, qn("a:srgbClr")).set("val", "00ADBF")
+        etree.SubElement(p_pr, qn("a:buFont")).set("typeface", "Arial")
+        etree.SubElement(p_pr, qn("a:buChar")).set("char", BULLET)
+        run = p.add_run()
+        run.text = item
+        run.font.size = Pt(size)
+        run.font.name = "Aptos"
+        run.font.color.rgb = RGBColor.from_string("202020")
+    return shape
+
+
+def title(sld, content, *, y=0.5, x=0.374, w=12.585, h=0.4, size=24, bold=False):
+    return text(sld, x, y, w, h, content, size=size, bold=bold, color="003841")
+
+
+def no_effects(shape):
+    shape.line.fill.background()
+    shape.shadow.inherit = False
+    return shape
+
+
+def pill(sld, label, *, x=0.374, y=0.35, w=1.0, h=0.3, size=9, fill="007B85"):
+    shape = sld.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, inch(x), inch(y), inch(w), inch(h))
+    shape.adjustments[0] = 0.5
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor.from_string(fill)
+    no_effects(shape)
+    tf = shape.text_frame
+    tf.word_wrap = False
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    tf.margin_left = tf.margin_right = inch(0.1)
+    tf.margin_top = tf.margin_bottom = 0
+    run = tf.paragraphs[0].add_run()
+    run.text = label.upper()
+    run.font.size = Pt(size)
+    run.font.bold = True
+    run.font.name = "Aptos"
+    run.font.color.rgb = RGBColor.from_string("FFFFFF")
+    return shape
+
+
+def badge(sld, x, y, label, *, size=0.28):
+    shape = sld.shapes.add_shape(MSO_SHAPE.OVAL, inch(x), inch(y), inch(size), inch(size))
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor.from_string("007B85")
+    no_effects(shape)
+    tf = shape.text_frame
+    tf.word_wrap = False
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+    p = tf.paragraphs[0]
+    p.alignment = PP_ALIGN.CENTER
+    run = p.add_run()
+    run.text = label
+    run.font.size = Pt(10)
+    run.font.bold = True
+    run.font.name = "Aptos"
+    run.font.color.rgb = RGBColor.from_string("FFFFFF")
+    return shape
+
+
+def box(sld, x, y, w, h, fill, *, shape=MSO_SHAPE.RECTANGLE):
+    """A filled, text-free shape: a card, a chip background."""
+    s = sld.shapes.add_shape(shape, inch(x), inch(y), inch(w), inch(h))
+    s.fill.solid()
+    s.fill.fore_color.rgb = RGBColor.from_string(fill)
+    return no_effects(s)
+
+
+def set_alt(shape, alt):
+    shape._element.find(".//" + qn("p:cNvPr")).set("descr", alt)
+    return shape
+
+
+def logo(sld, kind="small", *, path=None, w=None, h=None):
+    spot = {"small": G["logo_small"], "large": G["logo_large"], "back": G["logo_back"]}[kind]
+    image = path or (EMBLEM if kind == "back" else LOGO)
+    return sld.shapes.add_picture(
+        str(image), inch(spot["x"]), inch(spot["y"]), inch(w or spot["w"]), inch(h or spot["h"])
+    )
+
+
+def page_number(sld, n):
+    spot = G["page_number"]
+    return text(
+        sld,
+        spot["x"],
+        spot["y"],
+        spot["w"],
+        spot["h"],
+        str(n),
+        size=10,
+        color="939793",
+        align=PP_ALIGN.RIGHT,
+        anchor=MSO_ANCHOR.MIDDLE,
+    )
+
+
+def source(sld, line="Source: NBG MIS, as of 31 December 2025", *, y=6.25, size=11):
+    return text(sld, 0.374, y, 12.585, 0.25, line, size=size, color="5A5F5A")
+
+
+def _style_axes(chart, *, font, value_visible, value_color="202020", size=12):
+    chart.font.name = font
+    chart.font.size = Pt(size)
+    cat = chart.category_axis
+    cat.tick_labels.font.size = Pt(size)
+    cat.tick_labels.font.name = font
+    cat.tick_labels.font.color.rgb = RGBColor.from_string("202020")
+    cat.format.line.color.rgb = RGBColor.from_string("BEC1BE")
+    val = chart.value_axis
+    val.has_major_gridlines = False
+    val.visible = value_visible
+    if value_visible:
+        val.tick_labels.font.size = Pt(11)
+        val.tick_labels.font.name = font
+        val.tick_labels.font.color.rgb = RGBColor.from_string(value_color)
+        val.format.line.fill.background()
+
+
+def bar_chart(
+    sld,
+    *,
+    x=0.374,
+    y=1.3,
+    w=12.585,
+    h=4.8,
+    categories=("Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025"),
+    series=(("Mobile users (M)", (2.9, 3.0, 3.2, 3.3)),),
+    colors=("00ADBF", "003841", "007B85", "939793", "BEC1BE", "00DFF8", "5A5F5A", "E6F5F6"),
+    point_colors=None,
+    font="Aptos",
+    label_size=12,
+    styled=True,
+    chart_type=XL_CHART_TYPE.COLUMN_CLUSTERED,
+    alt="Column chart of mobile users by quarter of 2025, rising from 2.9M to 3.3M.",
+):
+    data = CategoryChartData()
+    data.categories = list(categories)
+    for name, values in series:
+        data.add_series(name, values)
+    frame = sld.shapes.add_chart(chart_type, inch(x), inch(y), inch(w), inch(h), data)
+    chart = frame.chart
+    chart.has_legend = len(series) > 1
+    if chart.has_legend:
+        chart.legend.position = XL_LEGEND_POSITION.BOTTOM
+        chart.legend.include_in_layout = False
+        chart.legend.font.size = Pt(12)
+        chart.legend.font.name = font
+    plot = chart.plots[0]
+    if chart_type not in (XL_CHART_TYPE.PIE, XL_CHART_TYPE.DOUGHNUT):
+        _style_axes(chart, font=font, value_visible=False)
+    else:
+        chart.font.name = font
+        chart.font.size = Pt(12)
+    if styled:
+        for i, ser in enumerate(plot.series):
+            ser.format.fill.solid()
+            ser.format.fill.fore_color.rgb = RGBColor.from_string(colors[i % len(colors)])
+    if point_colors:
+        ser = plot.series[0]
+        for i, color in enumerate(point_colors):
+            ser.points[i].format.fill.solid()
+            ser.points[i].format.fill.fore_color.rgb = RGBColor.from_string(color)
+    plot.has_data_labels = True
+    labels = plot.data_labels
+    labels.font.size = Pt(label_size)
+    labels.font.bold = True
+    labels.font.name = font
+    labels.font.color.rgb = RGBColor.from_string("003841")
+    if chart_type == XL_CHART_TYPE.COLUMN_CLUSTERED:
+        labels.position = XL_LABEL_POSITION.OUTSIDE_END
+    set_alt(frame, alt)
+    return frame
+
+
+def line_chart(
+    sld,
+    *,
+    x=0.374,
+    y=1.3,
+    w=12.585,
+    h=4.8,
+    explicit_line=True,
+    markers="hollow",
+    alt="Line chart of digital sales share by quarter, 2024 against 2025, both rising.",
+):
+    data = CategoryChartData()
+    data.categories = ["Q1", "Q2", "Q3", "Q4"]
+    data.add_series("2024", (0.28, 0.30, 0.31, 0.33))
+    data.add_series("2025", (0.31, 0.33, 0.35, 0.36))
+    frame = sld.shapes.add_chart(
+        XL_CHART_TYPE.LINE_MARKERS, inch(x), inch(y), inch(w), inch(h), data
+    )
+    chart = frame.chart
+    chart.has_legend = True
+    chart.legend.position = XL_LEGEND_POSITION.BOTTOM
+    chart.legend.include_in_layout = False
+    chart.legend.font.size = Pt(12)
+    chart.legend.font.name = "Aptos"
+    _style_axes(chart, font="Aptos", value_visible=True, value_color="939793")
+    for ser, color in zip(chart.plots[0].series, ("00ADBF", "003841"), strict=True):
+        ser.smooth = False
+        if explicit_line:
+            ser.format.line.color.rgb = RGBColor.from_string(color)
+            ser.format.line.width = Pt(3.5)
+        if markers == "hollow":
+            ser.marker.style = XL_MARKER_STYLE.CIRCLE
+            ser.marker.size = 6
+            ser.marker.format.fill.solid()
+            ser.marker.format.fill.fore_color.rgb = RGBColor.from_string("FFFFFF")
+            ser.marker.format.line.color.rgb = RGBColor.from_string(color)
+    set_alt(frame, alt)
+    return frame
+
+
+def table(sld, rows, *, x=0.374, y=1.3, w=12.585, row_h=0.4, size=12, alt=None):
+    frame = sld.shapes.add_table(
+        len(rows), len(rows[0]), inch(x), inch(y), inch(w), inch(row_h * len(rows))
+    )
+    tbl = frame.table
+    for r, row in enumerate(rows):
+        tbl.rows[r].height = inch(row_h)
+        for c, value in enumerate(row):
+            cell = tbl.cell(r, c)
+            cell.fill.solid()
+            header = r == 0
+            fill = "003841" if header else ("F5F8F6" if r % 2 == 0 else "FFFFFF")
+            cell.fill.fore_color.rgb = RGBColor.from_string(fill)
+            cell.margin_left = cell.margin_right = inch(0.08)
+            cell.margin_top = cell.margin_bottom = inch(0.04)
+            run = cell.text_frame.paragraphs[0].add_run()
+            run.text = str(value)
+            run.font.size = Pt(size)
+            run.font.bold = header
+            run.font.name = "Aptos"
+            run.font.color.rgb = RGBColor.from_string("FFFFFF" if header else "202020")
+    set_alt(frame, alt or f"Table with columns {', '.join(rows[0])} and {len(rows) - 1} rows.")
+    return frame
+
+
+def remove(shape):
+    shape._element.getparent().remove(shape._element)
+
+
+def shape_with_text(sld, prefix):
+    for sh in sld.shapes:
+        if sh.has_text_frame and sh.text_frame.text.startswith(prefix):
+            return sh
+    raise AssertionError(f"no shape starting {prefix!r}")
+
+
+def move_slide(prs, old_index, new_index):
+    ids = prs.slides._sldIdLst
+    element = list(ids)[old_index]
+    ids.remove(element)
+    ids.insert(new_index, element)
+
+
+# ---------------------------------------------------------------- the decks
+
+COVER_TITLE = "Cards results, H1 2026"
+TITLES = {
+    2: "Card spend grew 14% on stronger travel demand",
+    3: "Mobile users rose in every quarter of 2025",
+    4: "Digital sales share climbed through 2025",
+    5: "Interchange led fee income in 2025",
+}
+NBG_THEME = {
+    "dk2": "003841",
+    "lt2": "F5F8F6",
+    "accent1": "00ADBF",
+    "accent2": "003841",
+    "accent3": "007B85",
+    "accent4": "939793",
+    "accent5": "BEC1BE",
+    "accent6": "00DFF8",
+    "hlink": "0D90FF",
+    "folHlink": "59C3FF",
+}
+
+
+def golden_prs():
+    """Six slides that satisfy every brand rule the validator checks."""
+    prs = new_prs()
+
+    s = blank(prs)  # 1 cover
+    text(s, 0.374, 1.39, 12.0, 1.0, COVER_TITLE, size=48, color="003841")
+    text(s, 0.374, 2.49, 12.0, 0.8, "Cards | Digital | Direct", size=24, color="007B85")
+    text(s, 0.374, 4.58, 8.0, 0.4, "Athens", size=14, color="003841")
+    text(s, 0.374, 4.97, 8.0, 0.4, "September 2026", size=14, color="939793")
+    logo(s, "large")
+
+    s = blank(prs)  # 2 content: pill, bullets, numbered badges
+    pill(s, "Cards")
+    title(s, TITLES[2], y=0.75)
+    bullets(
+        s,
+        0.374,
+        1.3,
+        12.585,
+        2.0,
+        [
+            "Travel spend rose 22% year on year",
+            "Commercial banking cards grew faster than retail cards",
+            "Thanks to the redesign, app ratings rose to 4.7",
+        ],
+    )
+    for i in range(3):
+        badge(s, 0.374, 3.6 + i * 0.5, str(i + 1))
+        text(s, 0.8, 3.6 + i * 0.5, 11.0, 0.3, f"Priority {i + 1} is on track for December")
+    logo(s, "small")
+    page_number(s, 2)
+
+    s = blank(prs)  # 3 bar chart
+    title(s, TITLES[3])
+    bar_chart(s)
+    source(s)
+    logo(s, "small")
+    page_number(s, 3)
+
+    s = blank(prs)  # 4 line chart
+    title(s, TITLES[4])
+    line_chart(s)
+    source(s)
+    logo(s, "small")
+    page_number(s, 4)
+
+    s = blank(prs)  # 5 table
+    title(s, TITLES[5])
+    table(
+        s,
+        [
+            ["Fee line", "2024", "2025"],
+            ["Interchange", "EUR 38M", "EUR 42M"],
+            ["Annual fees", "EUR 15M", "EUR 18M"],
+        ],
+    )
+    source(s)
+    logo(s, "small")
+    page_number(s, 5)
+
+    s = blank(prs)  # 6 back cover
+    logo(s, "back")
+    return prs
+
+
+def nbg_theme(xml: str) -> str:
+    for slot, value in NBG_THEME.items():
+        xml = re.sub(
+            rf'(<a:{slot}>)<a:srgbClr val="[0-9A-Fa-f]{{6}}"/>',
+            rf'\1<a:srgbClr val="{value}"/>',
+            xml,
+        )
+    xml = xml.replace('<a:latin typeface="Calibri"/>', '<a:latin typeface="Aptos"/>')
+    return re.sub(
+        r"<a:effectStyleLst>.*?</a:effectStyleLst>",
+        "<a:effectStyleLst>"
+        + "<a:effectStyle><a:effectLst/></a:effectStyle>" * 3
+        + "</a:effectStyleLst>",
+        xml,
+        flags=re.S,
+    )
+
+
+def patch_part(path: Path, part: str, edit) -> Path:
+    """Rewrite one XML part of a saved deck in place; refuse an edit that changes nothing."""
+    with zipfile.ZipFile(path) as zf:
+        names = zf.namelist()
+        blobs = {n: zf.read(n) for n in names}
+    before = blobs[part].decode("utf-8")
+    after = edit(before)
+    assert after != before, f"{part}: the fixture edit changed nothing"
+    blobs[part] = after.encode("utf-8")
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for n in names:
+            zf.writestr(n, blobs[n])
+    return path
+
+
+def chart_part(path: Path, marker: bytes) -> str:
+    with zipfile.ZipFile(path) as zf:
+        for name in sorted(zf.namelist()):
+            if re.match(r"ppt/charts/chart\d+\.xml$", name) and marker in zf.read(name):
+                return name
+    raise AssertionError(f"no chart part containing {marker!r}")
+
+
+def save(prs, path: Path, *, theme=True) -> Path:
+    prs.save(str(path))
+    if theme:
+        patch_part(path, "ppt/theme/theme1.xml", nbg_theme)
+    return path
+
+
+def deck(tmp_path, edit=None, *, theme=True, name="deck.pptx", patch=None):
+    prs = golden_prs()
+    if edit is not None:
+        edit(prs)
+    path = save(prs, tmp_path / name, theme=theme)
+    for part, fn in (patch or {}).items():
+        patch_part(path, part(path) if callable(part) else part, fn)
+    return path
+
+
+def results(path, only=None):
+    return {r.name: r for r in nv.validate_presentation(str(path), only=only)}
+
+
+def check(path, name):
+    found = results(path, only=[name])
+    assert name in found, f"no {name!r} check"
+    return found[name]
+
+
+def details(result):
+    return "\n".join(result.details)
+
+
+@pytest.fixture(autouse=True)
+def _fallback_fonts(tmp_path_factory, monkeypatch):
+    """Measure with the width table everywhere, so CI and a laptop agree."""
+    empty = tmp_path_factory.mktemp("no-fonts")
+    monkeypatch.setenv("DECKS_FONT_DIRS", str(empty))
+    nv.reset_font_cache()
+
+
+# ------------------------------------------------------------ the golden deck
+
+
+@pytest.fixture(scope="module")
+def golden(tmp_path_factory):
+    return deck(tmp_path_factory.mktemp("golden"))
+
+
+def test_the_golden_deck_passes_every_check_with_no_warnings(golden):
+    found = results(golden)
+    assert set(found) == set(nv.CHECK_NAMES)
+    bad = {n: (r.status, r.details) for n, r in found.items() if r.status in ("fail", "warn")}
+    assert not bad, bad
+    skipped = {n for n, r in found.items() if r.status == "skipped"}
+    assert skipped == set(PASS_CASES), skipped
+
+
+@pytest.mark.parametrize("name", sorted(nv.CHECK_NAMES))
+def test_every_check_examines_the_golden_deck_or_has_its_own_pass_fixture(name, golden, tmp_path):
+    result = check(golden, name)
+    if name in PASS_CASES:
+        result = check(PASS_CASES[name](tmp_path), name)
+    assert result.status == "pass", (result.status, result.message, result.details)
+    assert result.examined and result.examined > 0, result.message
+
+
+# --------------------------------------------------------- the FAIL fixtures
+
+
+def _add(position, *args, **kwargs):
+    return lambda prs: text(slide(prs, position), *args, **kwargs)
+
+
+def _retitle(position, new_title, *, bold=None):
+    def edit(prs):
+        sld = slide(prs, position)
+        shape = shape_with_text(sld, TITLES[position])
+        run = shape.text_frame.paragraphs[0].runs[0]
+        run.text = new_title
+        if bold is not None:
+            run.font.bold = bold
+
+    return edit
+
+
+def _remove_logo(position):
+    def edit(prs):
+        sld = slide(prs, position)
+        for sh in list(sld.shapes):
+            if sh.shape_type == 13:  # picture
+                remove(sh)
+
+    return edit
+
+
+def _add_chart(kind, **kwargs):
+    def edit(prs):
+        sld = slide(prs, 2)
+        bar_chart(sld, x=7.0, y=5.2, w=4.0, h=1.4, chart_type=kind, **kwargs)
+
+    return edit
+
+
+def _slides_case(tmp_path):
+    path = tmp_path / "empty.pptx"
+    new_prs().save(str(path))
+    return path
+
+
+def _dimensions_case(tmp_path):
+    prs = golden_prs()
+    prs.slide_width = Emu(12188952)  # Inches(13.33), a "Custom" slide size
+    return save(prs, tmp_path / "dims.pptx")
+
+
+def _dark_background(prs):
+    fill = slide(prs, 3).background.fill
+    fill.solid()
+    fill.fore_color.rgb = RGBColor(0x00, 0x38, 0x41)
+
+
+def _shadow_patch(xml):
+    return xml.replace(
+        "<a:effectLst/>",
+        '<a:effectLst><a:outerShdw blurRad="40000" dist="20000" dir="5400000">'
+        '<a:srgbClr val="000000"><a:alpha val="38000"/></a:srgbClr></a:outerShdw></a:effectLst>',
+        1,
+    )
+
+
+def _truncate_axis(xml):
+    head, sep, tail = xml.partition("<c:valAx>")
+    if "<c:scaling/>" in tail:
+        tail = tail.replace("<c:scaling/>", '<c:scaling><c:min val="30"/></c:scaling>', 1)
+    else:
+        tail = tail.replace("<c:scaling>", '<c:scaling><c:min val="30"/>', 1)
+    return head + sep + tail
+
+
+def _replace_line_chart(**kwargs):
+    def edit(prs):
+        sld = slide(prs, 4)
+        remove(sld.shapes[1])
+        line_chart(sld, **kwargs)
+
+    return edit
+
+
+def _replace_bar_chart(**kwargs):
+    def edit(prs):
+        sld = slide(prs, 3)
+        remove(sld.shapes[1])
+        bar_chart(sld, **kwargs)
+
+    return edit
+
+
+def _bank_slide(prs, *, colored, logos, categories=("NBG", "Eurobank", "Alpha", "Piraeus")):
+    sld = blank(prs)
+    title(sld, "NBG leads peers on mobile adoption")
+    keys = ("nbg", "eurobank", "alpha", "piraeus")
+    bar_chart(
+        sld,
+        h=4.0,
+        categories=categories,
+        series=(("Active mobile users (%)", (62, 55, 51, 49)),),
+        point_colors=[PEERS[k] for k in keys] if colored else None,
+        alt="Column chart of active mobile users by bank: NBG 62%, Eurobank 55%, Alpha 51%, Piraeus 49%.",
+    )
+    if logos:
+        files = ("nbg.png", "eurobank.png", "alpha-bank.png", "piraeus-bank.png")
+        for i, name in enumerate(files):
+            w = 0.542 if name == "nbg.png" else 0.35  # 96x62 and 64x64 at a 0.35" height
+            pic = sld.shapes.add_picture(
+                str(BANK_LOGOS / name), inch(1.6 + i * 3.1), inch(5.45), inch(w), inch(0.35)
+            )
+            set_alt(pic, f"{keys[i].title()} logo")
+    source(sld, "Source: bank annual reports, 2025")
+    logo(sld, "small")
+    page_number(sld, len(prs.slides))
+    move_slide(prs, len(prs.slides) - 1, len(prs.slides) - 2)  # keep the back cover last
+    return sld
+
+
+def _bank_case(tmp_path, *, colored=True, logos=True):
+    return deck(
+        tmp_path, lambda prs: _bank_slide(prs, colored=colored, logos=logos), name="banks.pptx"
+    )
+
+
+FAIL_CASES = {
+    "Slides": _slides_case,
+    "Dimensions": _dimensions_case,
+    "Theme": lambda tmp: deck(tmp, theme=False),
+    "Background": lambda tmp: deck(tmp, _dark_background),
+    "Colors": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.3, 6.0, 0.4, "Off palette text", color="FF0000")
+    ),
+    "Fonts": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.3, 6.0, 0.4, "Wrong typeface", font="Comic Sans MS")
+    ),
+    "Font Sizes": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.3, 6.0, 0.4, "Body text at nine points", size=9)
+    ),
+    "Contrast": lambda tmp: deck(tmp, _add(2, 0.374, 5.3, 6.0, 0.4, "Invisible", color="F5F8F6")),
+    "Boundaries": lambda tmp: deck(tmp, _add(2, 12.0, 5.3, 2.0, 0.4, "Past the edge")),
+    "Safe Zones": lambda tmp: deck(tmp, _add(2, 0.374, 6.4, 6.0, 0.8, "Into the footer")),
+    # The old builder's body position on a slide without a pill: 1.1", under the
+    # 1.3" floor. A box this tall is body, never the one-line subtitle allowance.
+    "Content Spacing": lambda tmp: deck(
+        tmp, _add(3, 0.374, 1.1, 6.0, 1.0, ["Crowds the title", "and the second line too"])
+    ),
+    "Text Fit": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.2, 4.0, 0.3, " ".join(["Overflowing words keep coming"] * 12))
+    ),
+    "Text Margins": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.3, 6.0, 0.4, "Default insets", insets=0.1)
+    ),
+    "Logo": lambda tmp: deck(tmp, _remove_logo(3)),
+    "Back Cover": lambda tmp: deck(tmp, lambda prs: page_number(slide(prs, 6), 6)),
+    "Thank You Check": lambda tmp: deck(tmp, _add(5, 0.374, 3.0, 6.0, 0.6, "Thank you", size=28)),
+    "Decorative": lambda tmp: deck(
+        tmp,
+        lambda prs: box(slide(prs, 2), 10.0, 4.0, 1.5, 1.5, "00ADBF", shape=MSO_SHAPE.STAR_5_POINT),
+    ),
+    "Shadows": lambda tmp: deck(tmp, patch={"ppt/slides/slide2.xml": _shadow_patch}),
+    "Em Dashes": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.3, 8.0, 0.4, f"Growth came from mobile {EM_DASH} not branches")
+    ),
+    "Title Style": lambda tmp: deck(tmp, _retitle(3, TITLES[3], bold=True)),
+    "Title Length": lambda tmp: deck(
+        tmp,
+        _retitle(
+            3,
+            "Mobile users rose in every quarter of 2025 as the redesign lifted adoption in all segments",
+        ),
+    ),
+    "Slide Titles": lambda tmp: deck(tmp, _retitle(4, TITLES[3])),
+    "Action Titles": lambda tmp: deck(tmp, _retitle(3, "Overview")),
+    "Chart Types": lambda tmp: deck(
+        tmp, _add_chart(XL_CHART_TYPE.PIE, alt="Pie chart of fee income by line.")
+    ),
+    "Chart Data": lambda tmp: deck(
+        tmp,
+        _add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            series=tuple((f"Series {i}", (1 + i, 2, 3, 4)) for i in range(10)),
+            alt="Column chart with ten series.",
+        ),
+    ),
+    "Chart Styling": lambda tmp: deck(tmp, _replace_line_chart(explicit_line=False)),
+    "Zero Baseline": lambda tmp: deck(
+        tmp, patch={(lambda p: chart_part(p, b"barChart")): _truncate_axis}
+    ),
+    "Exhibit Sources": lambda tmp: deck(
+        tmp, lambda prs: remove(shape_with_text(slide(prs, 3), "Source"))
+    ),
+    "Alt Text": lambda tmp: deck(tmp, lambda prs: set_alt(slide(prs, 3).shapes[1], "")),
+    "Bank Branding": lambda tmp: _bank_case(tmp, colored=False),
+    "Number Formats": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.3, 8.0, 0.4, "EUR 1,250,000 in new interchange")
+    ),
+    "AI Slop": lambda tmp: deck(
+        tmp,
+        _add(
+            2, 0.374, 5.3, 12.0, 0.4, "We leverage a seamless platform, and studies show it works"
+        ),
+    ),
+    "Official Name": lambda tmp: deck(
+        tmp, _add(2, 0.374, 5.3, 8.0, 0.4, "Εθνική Τράπεζα της Ελλάδος")
+    ),
+    "OOXML Order": lambda tmp: deck(
+        tmp,
+        lambda prs: bullets(
+            slide(prs, 2), 7.0, 5.2, 5.5, 1.0, ["Out of order bullet"], order="builder"
+        ),
+    ),
+}
+
+# Checks the golden deck cannot examine: each gets a deck built to pass it.
+PASS_CASES = {
+    "Bank Branding": lambda tmp: _bank_case(tmp),
+}
+
+WARNING_CHECKS = {"Theme", "Action Titles", "Number Formats", "AI Slop", "Official Name"}
+
+
+def test_every_registered_check_has_a_fail_fixture():
+    assert set(FAIL_CASES) == set(nv.CHECK_NAMES), set(nv.CHECK_NAMES) ^ set(FAIL_CASES)
+
+
+@pytest.mark.parametrize("name", sorted(FAIL_CASES))
+def test_fail_fixture(name, tmp_path):
+    result = check(FAIL_CASES[name](tmp_path), name)
+    expected = "warn" if name in WARNING_CHECKS else "fail"
+    assert result.status == expected, (result.status, result.message, result.details)
+    assert result.findings, result.message
+    assert result.examined is not None and result.examined >= (0 if name == "Slides" else 1)
+
+
+def test_the_registry_severities_match_the_warning_set():
+    declared = {spec.name for spec in nv.CHECKS if spec.severity == "warning"}
+    assert declared == WARNING_CHECKS
+
+
+# ------------------------------------------- regressions: false positives
+
+
+def test_decorative_accepts_numbered_badges_arrows_and_chevrons(tmp_path):
+    """VALIDATOR-1: the documented 0.28" numbered oval badge blocked the build."""
+
+    def edit(prs):
+        sld = slide(prs, 2)
+        box(sld, 10.0, 4.0, 0.4, 0.4, "939793", shape=MSO_SHAPE.ISOSCELES_TRIANGLE)
+        box(sld, 10.6, 4.0, 0.6, 0.4, "007B85", shape=MSO_SHAPE.CHEVRON)
+        box(sld, 11.4, 4.0, 0.6, 0.4, "007B85", shape=MSO_SHAPE.RIGHT_ARROW)
+
+    result = check(deck(tmp_path, edit), "Decorative")
+    assert result.status == "pass", result.details
+    assert result.examined >= 7  # pill + 3 badges + 3 arrow shapes
+
+
+def test_decorative_names_now_match_real_presets(tmp_path):
+    """'star' and 'oval' could never match: the presets are star5 and ellipse."""
+    blob = deck(
+        tmp_path,
+        lambda prs: box(slide(prs, 2), 9.0, 3.6, 1.2, 1.2, "E6F5F6", shape=MSO_SHAPE.OVAL),
+    )
+    result = check(blob, "Decorative")
+    assert result.status == "fail"
+    assert "ellipse" in details(result) and "Slide 2" in details(result)
+    star = check(FAIL_CASES["Decorative"](tmp_path), "Decorative")
+    assert "star5" in details(star)
+
+
+def test_thank_you_ignores_commercial_thanks_to_and_an_agenda_q_and_a(tmp_path):
+    """VALIDATOR-2 / BRAND-SSOT-11: 'commercial' failed as 'merci'. The golden deck
+    already says 'Commercial banking' and 'Thanks to the redesign' on slide 2; the
+    agenda below is a short slide, which makes it a closing candidate."""
+
+    def edit(prs):
+        sld = blank(prs)
+        title(sld, "Agenda for today")
+        bullets(sld, 0.374, 1.3, 6.0, 1.5, ["Results", "Priorities", "Q&A"])
+        logo(sld, "small")
+        page_number(sld, 7)
+        move_slide(prs, 6, 1)
+
+    result = check(deck(tmp_path, edit), "Thank You Check")
+    assert result.status == "pass", result.details
+
+
+def test_thank_you_catches_an_accented_greek_closing(tmp_path):
+    """VALIDATOR-2: 'Ευχαριστούμε' passed because the list was unaccented."""
+    closing = deck(tmp_path, _add(5, 0.374, 3.0, 8.0, 0.6, "Ευχαριστούμε! Ερωτήσεις;", size=28))
+    result = check(closing, "Thank You Check")
+    assert result.status == "fail"
+    assert "Slide 5" in details(result)
+
+
+def test_thank_you_catches_a_q_and_a_title_on_the_closing_slide(tmp_path):
+    def edit(prs):
+        sld = blank(prs)
+        title(sld, "Q&A")
+        logo(sld, "small")
+        move_slide(prs, 6, 5)
+
+    result = check(deck(tmp_path, edit), "Thank You Check")
+    assert result.status == "fail", result.details
+
+
+def test_the_builder_contents_slide_is_not_a_spacing_failure(tmp_path):
+    """VALIDATOR-3(a): 'Contents' at y=0.40 was read as first content above the title."""
+
+    def edit(prs):
+        sld = blank(prs)
+        text(sld, 0.374, 0.40, 10.0, 0.5, "Contents", size=24, color="003841")
+        for i, section in enumerate(("Results", "Digital", "Priorities")):
+            y = 1.48 + i * 0.85
+            text(sld, 0.374, y, 0.8, 0.4, f"0{i + 1}", size=18, color="007B85")
+            text(sld, 1.174, y, 8.0, 0.35, section, size=16, color="003841")
+        logo(sld, "small")
+        move_slide(prs, 6, 1)
+
+    found = results(deck(tmp_path, edit), only=["Content Spacing", "Slide Titles", "Title Style"])
+    for name, result in found.items():
+        assert result.status == "pass", (name, result.details)
+
+
+def _key_figures(prs, section, kpis):
+    sld = blank(prs)
+    pill(sld, "Cards", y=0.45, w=1.5, h=0.4, size=16, fill="003841")
+    text(sld, 2.0, 0.48, 5.0, 0.38, section, size=22, color="003841")
+    text(sld, 0.374, 1.05, 4.0, 0.3, "Unit head: the team", size=14, color="5A5F5A")
+    for cx, (value, caption) in zip((1.01, 4.92, 8.81), kpis, strict=True):
+        box(sld, cx, 2.15, 3.5, 3.0, "F5F8F6")
+        text(
+            sld,
+            cx,
+            2.65,
+            3.5,
+            1.0,
+            value,
+            size=50,
+            bold=True,
+            color="007B85",
+            align=PP_ALIGN.CENTER,
+        )
+        text(sld, cx + 0.3, 3.85, 2.9, 0.8, caption, size=16, color="5A5F5A", align=PP_ALIGN.CENTER)
+    logo(sld, "small")
+    return sld
+
+
+def test_key_figures_pages_are_titled_by_their_section_title_not_the_kpi(tmp_path):
+    """VALIDATOR-3(b): the 22pt title fell under 24pt, so the 50pt '26%' became the
+    title and two Key Figures pages with the same first KPI 'duplicated'."""
+
+    def edit(prs):
+        _key_figures(
+            prs,
+            "Key figures for cards",
+            [("26%", "Market share"), ("750K", "Live cards"), ("€70M", "Fees")],
+        )
+        _key_figures(
+            prs,
+            "Key figures for digital",
+            [("26%", "Digital share"), ("3.3M", "Active users"), ("500K", "Sales")],
+        )
+        move_slide(prs, 7, 5)
+        move_slide(prs, 6, 5)
+
+    path = deck(tmp_path, edit)
+    found = results(path, only=["Slide Titles", "Content Spacing", "Title Style"])
+    for name, result in found.items():
+        assert result.status == "pass", (name, result.details)
+    with nv.load_deck(path) as loaded:
+        found_titles = [nv.find_title(s) for s in loaded.slides]
+    texts = [t.text if t else None for t in found_titles]
+    assert "Key figures for cards" in texts and "Key figures for digital" in texts
+    assert "26%" not in texts
+
+
+def test_placeholder_titles_are_found(tmp_path):
+    """VALIDATOR-3(c): titles in a layout placeholder carry no xfrm or size of their
+    own, and every slide of a PowerPoint-made deck failed 'no title'."""
+    prs = new_prs()
+    for heading in (
+        "Revenue grew on stronger fee income",
+        "Costs fell as digital migration continued",
+    ):
+        sld = prs.slides.add_slide(prs.slide_layouts[5])  # Title Only
+        sld.shapes.title.text = heading
+        text(sld, 0.374, 2.0, 8.0, 1.0, "Body text here")
+    path = save(prs, tmp_path / "placeholders.pptx")
+    found = results(path, only=["Slide Titles", "Title Length", "Action Titles"])
+    assert found["Slide Titles"].status == "pass", found["Slide Titles"].details
+    assert found["Slide Titles"].examined == 2
+    assert found["Title Length"].examined == 2
+    assert found["Action Titles"].examined == 2
+
+
+def test_an_off_anchor_title_is_still_examined(tmp_path):
+    """VALIDATOR-3(d): a 26-word title at y=0.62 was unexamined by Title Length and
+    Action Titles and misreported as a spacing defect."""
+    long_title = (
+        "Digital channels exceeded every target we set for the year, driven by mobile "
+        "adoption, sales migration and lower cost to serve across all retail segments"
+    )
+
+    def edit(prs):
+        shape = shape_with_text(slide(prs, 3), TITLES[3])
+        shape.top = inch(0.62)
+        shape.height = inch(0.9)
+        shape.text_frame.paragraphs[0].runs[0].text = long_title
+
+    found = results(deck(tmp_path, edit), only=["Title Length", "Action Titles"])
+    assert found["Title Length"].status == "fail"
+    assert found["Action Titles"].status == "warn"
+    assert "Slide 3" in details(found["Title Length"])
+
+
+def test_banking_vocabulary_is_not_ai_slop(tmp_path):
+    """VALIDATOR-9: 'leverage ratio' and 'robust capital base' are Basel language."""
+    path = deck(
+        tmp_path,
+        _add(
+            2,
+            0.374,
+            5.3,
+            12.0,
+            0.4,
+            "Leverage ratio of 5.2% reflects a robust capital base; unlock the card in the app",
+        ),
+    )
+    result = check(path, "AI Slop")
+    assert result.status == "pass", result.details
+
+
+def test_ai_slop_is_a_warning_that_never_blocks(tmp_path):
+    result = check(FAIL_CASES["AI Slop"](tmp_path), "AI Slop")
+    assert result.status == "warn" and result.severity == "warning"
+    assert "'leverage'" in details(result) and "'seamless'" in details(result)
+
+
+def test_an_alpha_release_is_not_a_bank_comparison(tmp_path):
+    """VALIDATOR-9: 'alpha' matched inside any sentence and 'NBG' made it two banks."""
+    path = deck(
+        tmp_path,
+        _add(2, 0.374, 5.3, 12.0, 0.4, "NBG app alpha release reached 2,000 staff testers"),
+    )
+    result = check(path, "Bank Branding")
+    assert result.status == "skipped", result.details
+
+
+def test_white_text_on_a_separately_drawn_chip_is_readable(tmp_path):
+    """VALIDATOR-8: contrast was measured against the slide, not the shape underneath."""
+
+    def edit(prs):
+        sld = slide(prs, 2)
+        box(sld, 7.0, 5.2, 2.0, 0.5, "003841")
+        text(sld, 7.1, 5.3, 1.8, 0.3, "Delivered", size=16, bold=True, color="FFFFFF")
+
+    result = check(deck(tmp_path, edit), "Contrast")
+    assert result.status == "pass", result.details
+
+
+def test_dark_text_on_a_dark_card_is_caught(tmp_path):
+    def edit(prs):
+        sld = slide(prs, 2)
+        box(sld, 7.0, 5.2, 2.0, 0.5, "003841")
+        text(sld, 7.1, 5.3, 1.8, 0.3, "Invisible", size=14, color="003841")
+
+    result = check(deck(tmp_path, edit), "Contrast")
+    assert result.status == "fail"
+    assert "#003841 on #003841" in details(result)
+
+
+def test_the_muted_grey_waiver_covers_page_numbers_and_the_cover_date_only(tmp_path, golden):
+    """VALIDATOR-8 / BRAND-SSOT-10: the 939793 waiver applied to any text anywhere."""
+    assert check(golden, "Contrast").status == "pass"
+    body = check(
+        deck(tmp_path, _add(2, 0.374, 5.3, 6.0, 0.4, "Grey body copy", color="939793")), "Contrast"
+    )
+    assert body.status == "fail"
+    assert "939793" in details(body) and "Slide 2" in details(body)
+
+
+def test_a_pill_drawn_as_a_shape_plus_a_text_box_is_the_pill(tmp_path):
+    """VALIDATOR-7: the 9pt allowance only knew nbg_build's single-shape pill."""
+
+    def edit(prs):
+        sld = slide(prs, 3)
+        box(sld, 0.374, 0.12, 1.0, 0.25, "007B85", shape=MSO_SHAPE.ROUNDED_RECTANGLE)
+        text(sld, 0.474, 0.16, 0.8, 0.17, "MOBILE", size=9, bold=True, color="FFFFFF")
+
+    found = results(deck(tmp_path, edit), only=["Font Sizes", "Contrast", "Content Spacing"])
+    for name, result in found.items():
+        assert result.status == "pass", (name, result.details)
+
+
+def test_a_private_spec_pill_above_the_title_is_header_chrome(tmp_path):
+    def edit(prs):
+        sld = slide(prs, 3)
+        pill(sld, "Mobile", y=0.193, h=0.307, size=12)
+        shape_with_text(sld, TITLES[3]).top = inch(0.62)
+
+    result = check(deck(tmp_path, edit), "Content Spacing")
+    assert result.status == "pass", result.details
+
+
+# ------------------------------------------- regressions: false negatives
+
+
+def test_colors_read_chart_parts(tmp_path):
+    """VALIDATOR-4 / ASSETS-CI-4: an FF0000 series passed 'All 8 colors in palette'."""
+    result = check(deck(tmp_path, _replace_bar_chart(colors=("FF0000",))), "Colors")
+    assert result.status == "fail"
+    assert "FF0000" in details(result) and "chart" in details(result)
+
+
+def test_retired_colours_fail_with_their_reason(tmp_path):
+    path = deck(tmp_path, _add(2, 0.374, 5.3, 6.0, 0.4, "Old caption grey", color="595959"))
+    result = check(path, "Colors")
+    assert result.status == "fail"
+    assert "retired caption grey" in details(result)
+
+
+def test_fonts_read_chart_parts_and_forbid_semibold(tmp_path):
+    chart_font = deck(tmp_path, _replace_bar_chart(font="Comic Sans MS"), name="chartfont.pptx")
+    result = check(chart_font, "Fonts")
+    assert result.status == "fail" and "Comic Sans MS" in details(result)
+    semibold = check(
+        deck(tmp_path, _add(2, 0.374, 5.3, 6.0, 0.4, "Heavy", font="Aptos SemiBold")), "Fonts"
+    )
+    assert semibold.status == "fail" and "Aptos SemiBold" in details(semibold)
+
+
+def test_font_sizes_read_chart_text(tmp_path):
+    """VALIDATOR-4: 7pt chart data labels passed."""
+    result = check(deck(tmp_path, _replace_bar_chart(label_size=7)), "Font Sizes")
+    assert result.status == "fail"
+    assert "7" in details(result) and "chart" in details(result)
+
+
+def test_the_8pt_footnote_allowance_is_gone(tmp_path):
+    """PROMPTS-10 / BRAND-SSOT-10: 8pt was still accepted near the bottom of a slide."""
+    path = deck(
+        tmp_path, _add(3, 0.374, 5.95, 8.0, 0.2, "Note: restated for the 2025 change", size=8)
+    )
+    result = check(path, "Font Sizes")
+    assert result.status == "fail" and "8" in details(result)
+
+
+def test_sources_and_footnotes_need_11pt(tmp_path):
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), size=10)
+
+    result = check(deck(tmp_path, edit), "Font Sizes")
+    assert result.status == "fail"
+    assert "11" in details(result) and "Slide 3" in details(result)
+
+
+def test_charts_and_tables_count_for_boundaries_and_safe_zones(tmp_path):
+    """VALIDATOR-5: graphic frames were invisible; a chart at 7.2" passed."""
+
+    def edit(prs):
+        sld = slide(prs, 3)
+        remove(sld.shapes[1])
+        bar_chart(sld, h=5.9)  # bottom edge at 7.2"
+        frame = slide(prs, 5).shapes[1]
+        frame.left = inch(1.5)  # table right edge at 14.085"
+
+    found = results(deck(tmp_path, edit), only=["Safe Zones", "Boundaries"])
+    assert found["Safe Zones"].status == "fail"
+    assert "Slide 3" in details(found["Safe Zones"]) and "Slide 5" in details(found["Safe Zones"])
+    assert found["Boundaries"].status == "fail"
+    assert "Slide 5" in details(found["Boundaries"])
+
+
+def test_the_horizontal_gutter_is_enforced(tmp_path):
+    result = check(deck(tmp_path, _add(2, 0.05, 5.3, 6.0, 0.4, "Left of the gutter")), "Safe Zones")
+    assert result.status == "fail"
+    assert "gutter" in details(result)
+
+
+def test_sources_end_at_the_content_floor(tmp_path):
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), y=6.55)
+
+    result = check(deck(tmp_path, edit), "Safe Zones")
+    assert result.status == "fail"
+    assert "6.5" in details(result)
+
+
+def test_a_dark_slide_background_fails(tmp_path):
+    result = check(FAIL_CASES["Background"](tmp_path), "Background")
+    assert result.status == "fail"
+    assert "003841" in details(result) and "Slide 3" in details(result)
+
+
+def test_an_inherited_dark_layout_background_fails(tmp_path):
+    dark = (
+        '<p:bg><p:bgPr><a:solidFill><a:srgbClr val="003841"/></a:solidFill>'
+        "<a:effectLst/></p:bgPr></p:bg>"
+    )
+    path = deck(
+        tmp_path,
+        patch={
+            "ppt/slideLayouts/slideLayout7.xml": lambda x: x.replace(
+                '<p:cSld name="Blank">', f'<p:cSld name="Blank">{dark}'
+            )
+        },
+    )
+    result = check(path, "Background")
+    assert result.status == "fail"
+    assert "layout" in details(result)
+
+
+def test_em_dashes_in_chart_text_fail_and_spaced_en_dashes_warn(tmp_path):
+    chart = deck(
+        tmp_path,
+        _replace_bar_chart(categories=(f"Q1 {EM_DASH} old", "Q2", "Q3", "Q4")),
+        name="dash-chart.pptx",
+    )
+    result = check(chart, "Em Dashes")
+    assert result.status == "fail" and "chart" in details(result)
+    spaced = check(
+        deck(
+            tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, f"Costs fell {EN_DASH} again"), name="en.pptx"
+        ),
+        "Em Dashes",
+    )
+    assert spaced.status == "warn"
+    ranges = check(
+        deck(tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, f"Plan for 2024{EN_DASH}2025"), name="r.pptx"),
+        "Em Dashes",
+    )
+    assert ranges.status == "pass"
+
+
+def test_title_style_catches_bold_off_gutter_and_a_trailing_period(tmp_path):
+    bold = check(FAIL_CASES["Title Style"](tmp_path), "Title Style")
+    assert bold.status == "fail" and "bold" in details(bold)
+
+    def off_gutter(prs):
+        shape_with_text(slide(prs, 3), TITLES[3]).left = inch(1.2)
+
+    moved = check(deck(tmp_path, off_gutter, name="gutter.pptx"), "Title Style")
+    assert moved.status == "fail" and "0.374" in details(moved)
+    period = check(deck(tmp_path, _retitle(3, TITLES[3] + "."), name="period.pptx"), "Title Style")
+    assert period.status == "warn" and "period" in details(period)
+
+
+def test_title_style_exempts_the_divider_title_beside_its_number(tmp_path):
+    def edit(prs):
+        sld = blank(prs)
+        text(sld, 0.374, 2.84, 1.2, 1.0, "01", size=60, color="007B85")
+        text(sld, 1.574, 2.84, 9.5, 1.0, "Digital results", size=48, color="003841")
+        logo(sld, "large")
+        move_slide(prs, 6, 1)
+
+    found = results(deck(tmp_path, edit), only=["Title Style", "Slide Titles", "Logo"])
+    for name, result in found.items():
+        assert result.status == "pass", (name, result.details)
+
+
+def test_back_cover_extras_fail(tmp_path):
+    """VALIDATOR-10: an emblem plus a page number plus a corner logo passed."""
+
+    def edit(prs):
+        page_number(slide(prs, 6), 6)
+        logo(slide(prs, 6), "small")
+
+    result = check(deck(tmp_path, edit), "Back Cover")
+    assert result.status == "fail"
+    assert "Slide 6" in details(result) and "picture" in details(result)
+
+
+def test_slide_order_comes_from_the_slide_list_not_file_names(tmp_path):
+    """VALIDATOR-15: reordering moved the back cover without the checks noticing."""
+    found = results(deck(tmp_path, lambda prs: move_slide(prs, 5, 0)), only=["Back Cover", "Logo"])
+    back = found["Back Cover"]
+    assert back.status == "fail"
+    assert "Slide 6" in details(back), details(back)
+    assert found["Logo"].status == "fail"
+    assert "Slide 1" in details(found["Logo"])
+
+
+def test_any_picture_is_no_longer_a_logo(tmp_path):
+    """VALIDATOR-10: a screenshot and no NBG logo passed 'Logo'."""
+
+    def edit(prs):
+        _remove_logo(3)(prs)
+        pic = slide(prs, 3).shapes.add_picture(
+            str(BANK_LOGOS / "eurobank.png"), inch(9), inch(2), inch(1), inch(1)
+        )
+        set_alt(pic, "Eurobank logo")
+
+    result = check(deck(tmp_path, edit), "Logo")
+    assert result.status == "fail" and "Slide 3" in details(result)
+
+
+def test_logo_aspect_language_and_size_by_slide_type(tmp_path):
+    stretched = deck(
+        tmp_path, lambda prs: (_remove_logo(3)(prs), logo(slide(prs, 3), w=1.4)), name="s.pptx"
+    )
+    assert "stretched" in details(check(stretched, "Logo"))
+    english = deck(
+        tmp_path,
+        lambda prs: (_remove_logo(3)(prs), logo(slide(prs, 3), path=ENGLISH_LOGO, h=0.822 / 4.74)),
+        name="english.pptx",
+    )
+    assert "Greek" in details(check(english, "Logo"))
+    small_cover = deck(
+        tmp_path, lambda prs: (_remove_logo(1)(prs), logo(slide(prs, 1))), name="cover.pptx"
+    )
+    assert "large" in details(check(small_cover, "Logo"))
+
+
+def test_the_pie_family_fails(tmp_path):
+    def pie3d(xml):
+        return xml.replace("<c:pieChart>", "<c:pie3DChart>").replace(
+            "</c:pieChart>", "</c:pie3DChart>"
+        )
+
+    path = FAIL_CASES["Chart Types"](tmp_path)
+    patch_part(path, chart_part(path, b"pieChart"), pie3d)
+    result = check(path, "Chart Types")
+    assert result.status == "fail" and "pie3DChart" in details(result)
+
+
+def test_a_doughnut_is_the_sanctioned_part_to_whole_chart(tmp_path):
+    path = deck(
+        tmp_path, _add_chart(XL_CHART_TYPE.DOUGHNUT, alt="Doughnut chart of fee income by line.")
+    )
+    assert check(path, "Chart Types").status == "pass"
+
+
+def test_chart_series_ceiling_warns_past_six_and_fails_past_eight(tmp_path):
+    seven = deck(
+        tmp_path,
+        _add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            series=tuple((f"S{i}", (1, 2, 3, 4)) for i in range(7)),
+            alt="Column chart with seven series.",
+        ),
+        name="seven.pptx",
+    )
+    assert check(seven, "Chart Data").status == "warn"
+    assert check(FAIL_CASES["Chart Data"](tmp_path), "Chart Data").status == "fail"
+
+
+def test_a_chart_with_no_categories_fails(tmp_path):
+    def empty(xml):
+        return re.sub(r"<c:cat>.*?</c:cat>", "", xml, flags=re.S)
+
+    path = deck(tmp_path, patch={(lambda p: chart_part(p, b"barChart")): empty})
+    result = check(path, "Chart Data")
+    assert result.status == "fail" and "categor" in details(result)
+
+
+def test_line_series_without_an_explicit_line_fall_back_to_theme_colours(tmp_path):
+    """ASSETS-CI-4: the shipped quarterly-report line chart rendered Office blue and red."""
+    result = check(FAIL_CASES["Chart Styling"](tmp_path), "Chart Styling")
+    assert result.status == "fail"
+    assert "line" in details(result)
+
+
+def test_markers_that_are_not_hollow_circles_warn(tmp_path):
+    result = check(deck(tmp_path, _replace_line_chart(markers="auto")), "Chart Styling")
+    assert result.status == "warn" and "marker" in details(result)
+
+
+def test_automatic_series_colours_resolve_through_the_theme(tmp_path):
+    unstyled = _replace_bar_chart(styled=False)
+    assert check(deck(tmp_path, unstyled, name="nbg.pptx"), "Chart Styling").status == "pass"
+    office = check(deck(tmp_path, unstyled, theme=False, name="office.pptx"), "Chart Styling")
+    assert office.status == "fail" and "4F81BD" in details(office)
+
+
+def test_the_office_theme_warns(tmp_path):
+    result = check(FAIL_CASES["Theme"](tmp_path), "Theme")
+    assert result.status == "warn"
+    assert "4F81BD" in details(result) and "Calibri" in details(result)
+
+
+def test_shadows_inherited_from_the_theme_fail(tmp_path):
+    """VALIDATOR-10: an autoshape's effectRef picks up the Office theme's shadow."""
+
+    def edit(prs):
+        shape = slide(prs, 2).shapes.add_shape(
+            MSO_SHAPE.RECTANGLE, inch(9), inch(5.2), inch(1), inch(0.5)
+        )
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = RGBColor.from_string("F5F8F6")
+        shape.line.fill.background()
+
+    assert check(deck(tmp_path, edit, name="nbg.pptx"), "Shadows").status == "pass"
+    office = check(deck(tmp_path, edit, theme=False, name="office.pptx"), "Shadows")
+    assert office.status == "fail" and "theme" in details(office)
+
+
+def test_uppercase_greek_source_labels_count(tmp_path):
+    """VALIDATOR-13: 'ΠΗΓΗ:' drops the accent and did not match 'πηγή'."""
+
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), "ΠΗΓΗ: ΤτΕ, 2025")
+
+    result = check(deck(tmp_path, edit), "Exhibit Sources")
+    assert result.status == "pass", result.details
+
+
+def test_greek_number_formats_are_read_as_greek(tmp_path):
+    """VALIDATOR-13: '€1.250.000' was read as 3 decimals and '€2,3 εκ.' was ignored."""
+    mixed = deck(
+        tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, "€1.250.000 προμήθειες και €2,3 εκ. έσοδα")
+    )
+    result = check(mixed, "Number Formats")
+    assert result.status == "warn"
+    assert "raw and abbreviated" in details(result)
+    assert "3 places" not in details(result)
+
+
+def test_a_year_ending_one_bullet_is_not_the_amount_of_the_next(tmp_path):
+    """'... in 2026' then 'EUR 42M ...' once read as a raw amount '2026 EUR'."""
+
+    def edit(prs):
+        bullets(
+            slide(prs, 2),
+            0.374,
+            5.2,
+            8.0,
+            1.0,
+            ["EUR 12.5B volume in 2026", "EUR 42M fees, up 18%"],
+        )
+
+    result = check(deck(tmp_path, edit), "Number Formats")
+    assert result.status == "pass", result.details
+    assert result.examined == 6  # the two bullets plus the golden table's four amounts
+
+
+def test_text_margins_fail_on_any_violation(tmp_path):
+    """VALIDATOR-14: violations on fewer than half the slides reported a pass."""
+    result = check(FAIL_CASES["Text Margins"](tmp_path), "Text Margins")
+    assert result.status == "fail" and "Slide 2" in details(result)
+
+
+def test_the_old_bullet_child_order_is_an_ooxml_error(tmp_path):
+    result = check(FAIL_CASES["OOXML Order"](tmp_path), "OOXML Order")
+    assert result.status == "fail" and "a:pPr" in details(result)
+
+
+def test_bank_branding_reads_chart_categories(tmp_path):
+    """E2E-SMOKE-9: a four-bank chart passed as 'examined nothing'."""
+    result = check(_bank_case(tmp_path, colored=False), "Bank Branding")
+    assert result.status == "fail"
+    for bank in ("Eurobank", "Alpha", "Piraeus"):
+        assert bank in details(result)
+
+
+def test_bank_branding_wants_one_logo_per_plotted_bank(tmp_path):
+    result = check(_bank_case(tmp_path, logos=False), "Bank Branding")
+    assert result.status == "fail" and "logo" in details(result)
+
+
+def test_bank_branding_ignores_a_source_footnote(tmp_path):
+    only_source = deck(
+        tmp_path,
+        _add(2, 0.374, 5.3, 8.0, 0.25, "Source: NBG and Eurobank reports, 2025", size=11),
+    )
+    result = check(only_source, "Bank Branding")
+    assert result.status == "skipped"
+    assert "0 bank name(s) found" in result.message
+
+
+def test_the_official_name_drops_tis_ellados(tmp_path):
+    result = check(FAIL_CASES["Official Name"](tmp_path), "Official Name")
+    assert result.status == "warn" and "Εθνική Τράπεζα" in details(result)
+    fine = check(
+        deck(tmp_path, _add(2, 0.374, 5.3, 8.0, 0.4, "Εθνική Τράπεζα"), name="ok.pptx"),
+        "Official Name",
+    )
+    assert fine.status == "pass"
+
+
+# ------------------------------------------------------------------ text fit
+
+
+def test_a_fixed_width_pill_whose_text_runs_out_of_it_fails(tmp_path):
+    def edit(prs):
+        pill(slide(prs, 3), "Retail and business banking", y=0.08, w=1.0, h=0.3)
+
+    result = check(deck(tmp_path, edit), "Text Fit")
+    assert result.status == "fail"
+    assert "wider than" in details(result)
+
+
+def test_a_cover_title_that_wraps_into_the_subtitle_fails(tmp_path):
+    def edit(prs):
+        shape = shape_with_text(slide(prs, 1), COVER_TITLE)
+        shape.text_frame.paragraphs[0].runs[
+            0
+        ].text = "Cards, payments and digital banking results for the first half of 2026"
+
+    result = check(deck(tmp_path, edit), "Text Fit")
+    assert result.status == "fail" and "Slide 1" in details(result)
+
+
+def test_overlapping_text_fails(tmp_path):
+    result = check(
+        deck(tmp_path, _add(2, 0.8, 3.65, 6.0, 0.3, "Collides with a priority line")), "Text Fit"
+    )
+    assert result.status == "fail" and "overlap" in details(result)
+
+
+def test_a_table_that_grows_past_the_footer_fails(tmp_path):
+    """PowerPoint treats row height as a minimum: long cells push the table down."""
+
+    def edit(prs):
+        sld = slide(prs, 5)
+        remove(sld.shapes[1])
+        wordy = " ".join(["long cell text that wraps"] * 6)
+        table(sld, [["Line", "Notes"]] + [[f"Row {i}", wordy] for i in range(6)], w=6.0)
+
+    result = check(deck(tmp_path, edit), "Text Fit")
+    assert result.status == "fail" and "table" in details(result)
+
+
+def test_a_grow_to_fit_text_box_that_grows_into_the_footer_fails(tmp_path):
+    """python-pptx gives every new text box spAutoFit: it grows instead of overflowing."""
+
+    def edit(prs):
+        shape = slide(prs, 2).shapes.add_textbox(inch(0.374), inch(5.3), inch(4.0), inch(0.3))
+        shape.text_frame.word_wrap = True
+        run = shape.text_frame.paragraphs[0].add_run()
+        run.text = " ".join(["A paragraph that keeps on growing"] * 10)
+        run.font.size = Pt(14)
+        run.font.name = "Aptos"
+        run.font.color.rgb = RGBColor.from_string("202020")
+
+    result = check(deck(tmp_path, edit), "Text Fit")
+    assert result.status == "fail" and "grows" in details(result)
+
+
+def test_text_fit_reports_how_it_measured(golden):
+    assert "width table" in check(golden, "Text Fit").message
+
+
+def test_the_fallback_width_table_is_aptos_advance_widths():
+    measurer = nv.TextMeasurer()
+    assert measurer.font_path is None
+    # C a r d s at 1000 units per em: 692 + 531 + 334 + 561 + 486
+    assert measurer.width("Cards", 1000) == pytest.approx(2604, abs=1)
+    assert measurer.width("Cards", 1000, bold=True) > measurer.width("Cards", 1000)
+    assert measurer.line_height(10) == pytest.approx(12.21, abs=0.01)
+
+
+def test_font_discovery_searches_office_and_windows_folders(monkeypatch):
+    monkeypatch.delenv("DECKS_FONT_DIRS")
+    dirs = [str(d).replace("\\", "/") for d in nv.font_search_dirs()]
+    assert any(d.endswith("Library/Fonts") for d in dirs)
+    assert any("DFonts" in d for d in dirs)
+    assert any(d.endswith("Windows/Fonts") for d in dirs)
+
+
+def test_an_unloadable_font_file_falls_back_to_the_table(monkeypatch, tmp_path):
+    fonts = tmp_path / "fonts"
+    fonts.mkdir()
+    (fonts / "Aptos.ttf").write_bytes(b"not a font")
+    monkeypatch.setenv("DECKS_FONT_DIRS", str(fonts))
+    nv.reset_font_cache()
+    measurer = nv.TextMeasurer()
+    assert measurer.width("Cards", 1000) == pytest.approx(2604, abs=1)
+    assert "width table" in measurer.source
+
+
+def test_the_pillow_path_agrees_with_the_table_when_aptos_is_installed(monkeypatch):
+    """No skip either way: with Aptos found, Pillow must agree with the table."""
+    monkeypatch.delenv("DECKS_FONT_DIRS")
+    nv.reset_font_cache()
+    measurer = nv.TextMeasurer()
+    if measurer.font_path is None:
+        assert "width table" in measurer.source
+    else:
+        assert measurer.width("Cards", 1000) == pytest.approx(2604, rel=0.01)
+        assert "Aptos" in measurer.source
+
+
+# --------------------------------------------------------- output and gating
+
+
+def _run(path, *extra):
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), str(path), *extra],
+        capture_output=True,
+        text=True,
+        env={**os.environ},
+    )
+
+
+def _json(path, *extra):
+    proc = _run(path, "--format", "json", *extra)
+    return proc, (json.loads(proc.stdout) if proc.stdout.strip() else None)
+
+
+def test_json_output_is_the_documented_contract(tmp_path):
+    proc, report = _json(FAIL_CASES["Colors"](tmp_path))
+    assert proc.returncode == 1, proc.stderr
+    assert set(report) >= {"file", "summary", "checks"}
+    assert set(report["summary"]) >= {"passed", "failed", "warnings", "skipped"}
+    assert [c["name"] for c in report["checks"]] == list(nv.CHECK_NAMES)
+    colors = next(c for c in report["checks"] if c["name"] == "Colors")
+    assert colors["status"] == "fail" and colors["severity"] == "error"
+    assert colors["examined"] > 0
+    finding = colors["details"][0]
+    assert finding["slide"] == 2 and finding["severity"] == "error"
+    assert "FF0000" in finding["message"]
+    assert {c["status"] for c in report["checks"]} <= {"pass", "fail", "warn", "skipped"}
+    assert report["summary"]["failed"] == sum(c["status"] == "fail" for c in report["checks"])
+
+
+def test_a_zero_candidate_pass_is_skipped_in_json_and_text(golden, capsys):
+    proc, report = _json(golden)
+    assert proc.returncode == 0, proc.stdout
+    banks = next(c for c in report["checks"] if c["name"] == "Bank Branding")
+    assert banks["status"] == "skipped" and banks["examined"] == 0
+    assert nv.main([str(golden)]) == 0
+    assert "examined nothing" in capsys.readouterr().out
+
+
+def test_exit_codes(tmp_path, golden):
+    assert _json(golden)[0].returncode == 0
+    assert _json(FAIL_CASES["Colors"](tmp_path))[0].returncode == 1
+    assert _json(FAIL_CASES["AI Slop"](tmp_path))[0].returncode == 0  # a warning never blocks
+    assert _run(tmp_path / "missing.pptx").returncode == 2
+    junk = tmp_path / "junk.pptx"
+    junk.write_bytes(b"this is not a zip file")
+    assert _run(junk).returncode == 2
+
+
+def test_a_missing_dependency_exits_2_not_1(tmp_path, golden):
+    """VALIDATOR-6: an ImportError exited 1, the same code as a brand violation."""
+    fake = tmp_path / "fake" / "defusedxml"
+    fake.mkdir(parents=True)
+    (fake / "__init__.py").write_text("raise ImportError('defusedxml is broken on purpose')\n")
+    env = {**os.environ, "PYTHONPATH": str(tmp_path / "fake")}
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), str(golden)], capture_output=True, text=True, env=env
+    )
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert "defusedxml" in proc.stderr
+
+
+def test_no_ansi_colour_when_piped(tmp_path):
+    proc = _run(FAIL_CASES["Colors"](tmp_path))
+    assert proc.returncode == 1
+    assert "\x1b[" not in proc.stdout
+    assert "Colors" in proc.stdout
+
+
+def test_colour_is_used_on_a_tty():
+    class Tty:
+        def isatty(self):
+            return True
+
+    class Pipe:
+        def isatty(self):
+            return False
+
+    assert nv.use_color(Tty(), env={}) is True
+    assert nv.use_color(Pipe(), env={}) is False
+    assert nv.use_color(Tty(), env={"NO_COLOR": "1"}) is False
+
+
+def test_the_full_fix_list_is_ordered_by_slide_and_not_truncated(tmp_path):
+    """VALIDATOR-6: 12 violations printed 'Slide 10, 11, 12, 13, 2 ... and 5 more'."""
+
+    def edit(prs):
+        for _ in range(8):
+            sld = blank(prs)
+            title(sld, f"Extra slide number {len(prs.slides)} keeps its own title")
+            text(sld, 0.374, 2.0, 6.0, 0.4, "Off palette", color="FF0000")
+            logo(sld, "small")
+        move_slide(prs, 5, len(prs.slides) - 1)  # back cover last again
+
+    path = deck(tmp_path, edit)
+    result = check(path, "Colors")
+    slides = [f.slide for f in result.findings]
+    assert len(slides) == 8
+    assert slides == sorted(slides)
+    out = _run(path).stdout
+    section = out.split("Colors", 1)[1].split("\n\n", 1)[0]
+    assert "more" not in section
+    assert all(f"Slide {n}:" in section for n in slides)
+
+
+def test_list_checks_prints_every_check_with_its_rule(capsys):
+    assert nv.main(["--list-checks", "--format", "json"]) == 0
+    listed = json.loads(capsys.readouterr().out)
+    assert [c["name"] for c in listed] == list(nv.CHECK_NAMES)
+    for entry in listed:
+        assert entry["severity"] in ("error", "warning")
+        assert entry["rule"] and entry["source"] and entry["candidates"], entry
+
+
+def test_strict_fails_a_skipped_universal_check(tmp_path):
+    prs = new_prs()
+    blank(prs)  # one empty slide: nothing for most checks to examine
+    path = save(prs, tmp_path / "bare.pptx")
+    proc, report = _json(path, "--strict")
+    skipped_universal = [
+        c["name"]
+        for c in report["checks"]
+        if c["status"] == "skipped" and nv.CHECKS_BY_NAME[c["name"]].universal
+    ]
+    assert skipped_universal
+    assert proc.returncode == 1
+
+
+def test_failing_results_still_say_what_they_examined(tmp_path):
+    """VALIDATOR-14: failure paths never set examined, so '3 of N' was unknowable."""
+    result = check(FAIL_CASES["Colors"](tmp_path), "Colors")
+    assert result.examined and result.examined > 1
+
+
+def test_validator_md_documents_every_check():
+    doc = (HERE / "VALIDATOR.md").read_text(encoding="utf-8")
+    for name in nv.CHECK_NAMES:
+        assert re.search(rf"^\| {re.escape(name)} \|", doc, re.M), (
+            f"VALIDATOR.md has no row for {name}"
+        )
+
+
+def test_the_brand_comes_from_tokens_not_a_second_copy():
+    """BRAND-SSOT-10: the validator carried its own allow-list, with retired greys."""
+    assert not hasattr(nv, "NBG_GUIDELINES")
+    assert nv.allowed_colors() == nbg_tokens.allowed_colors()
+    assert "595959" not in nv.allowed_colors()
