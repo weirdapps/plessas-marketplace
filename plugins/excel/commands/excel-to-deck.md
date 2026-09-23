@@ -52,7 +52,9 @@ Bridge from data analysis to presentation creation.
 
    A `table` slide carries `table: {headers: [...], rows: [[...], ...]}` (14 rows at most), a `kpi` slide `kpis: [{value: "5.4m", label: "YTD issuing revenue"}]` (4 at most), a `content` slide `content.points` (3 to 6). Use 5-8 slides, one message each, exact numbers only. The spec carries no colours or fonts: the decks builder applies the brand.
 
-5. **Hand off to decks.** If `/decks:create-presentation` is available (the `decks` plugin is installed), invoke it through the Skill tool with the spec's absolute path and the audience. It checks the spec, confirms the outline with the user and builds the deck. If it is not available, tell the user to install the `decks` plugin and print the command to run once it is, quoting the path:
+5. **Show the outline in your reply**: one line per slide with its id, type, chart type where it has one, and the action title carrying its exact figures, followed by every open question (a missing `as_of` period above all). The user sees what will be built even when the decks plugin is not installed.
+
+6. **Hand off to decks.** If `/decks:create-presentation` is available (the `decks` plugin is installed), invoke it through the Skill tool with the spec's absolute path and the audience. It checks the spec, confirms the outline with the user and builds the deck. If it is not available, tell the user to install the `decks` plugin and print the command to run once it is, quoting the path:
 
    ```
    /decks:create-presentation ~/Downloads/202603211430_deck_spec_q1_revenue.yaml
