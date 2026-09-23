@@ -56,7 +56,7 @@ Claude produces a structured .docx file and saves it to ~/Downloads/.
 /create-presentation Q4 results summary for leadership
 ```
 
-This runs the full multi-agent pipeline: storyline → storyboard → graphics → QA. Takes a few minutes.
+This runs the full multi-agent pipeline: storyline → deck spec → build and brand check → a look at every rendered slide → QA. Takes a few minutes; the very first run adds about a minute while the deck tools set up.
 
 ### Meetings — prepare for your next meeting
 

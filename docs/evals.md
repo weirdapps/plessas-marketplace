@@ -234,7 +234,8 @@ with exit 2, and the overrun is bounded to a single agent run.
   via `{source: file, path}` does see it as an image, so the way to grade a
   rendered slide is to have the case export one. These cases grade the trace and
   the last message instead, which measures the decision and the standard applied,
-  not pixel fidelity. Pixel fidelity is `nbg_validate.py`'s job.
+  not pixel fidelity. Pixel fidelity is checked outside the evals: `nbg_validate.py`
+  checks every built deck, and `decks-py render` plus presentation-qa look at each slide.
 - **The sandbox has no project toolchain.** No `python-docx`, no `pptxgenjs`, no
   network install. Plugins that need them adapt (the `docs` run emitted Word XML
   instead of `.docx`), which is realistic behaviour but is not the production path.

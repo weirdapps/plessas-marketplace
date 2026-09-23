@@ -1,6 +1,15 @@
 # OOXML Chart Reference for NBG Presentations
 
-This document provides detailed specifications for creating and editing charts directly in Office Open XML (OOXML) format within PowerPoint presentations. Use this when editing existing presentations via XML manipulation.
+> The chart style itself lives in [charts.md](charts.md), quoting [`tokens.yaml`](tokens.yaml)
+> `charts`. The XML below writes those values; where the two ever disagree, charts.md wins.
+
+This document shows how the NBG chart style looks in Office Open XML (OOXML). New decks never need
+it: `nbg_build.py` writes their charts. Use it to read, check or repair chart XML in an existing
+presentation.
+
+Every colour here is an explicit `a:srgbClr`. Never use `a:schemeClr` (`bg1`, `tx1`) for chart
+text: it resolves against whatever theme the deck carries, and the validator's contrast check
+cannot measure it.
 
 ## Chart File Structure
 
@@ -45,6 +54,8 @@ ppt/
 | + | `AA0028` | NBG Red | Negative values/decreases |
 | + | `73AF3C` | Green | Positive/success |
 
+Series 3 and 4 are 1.70:1 apart; label them directly (Standard #22).
+
 ---
 
 ## Column Chart (Vertical Bars)
@@ -86,6 +97,8 @@ ppt/
 
 ### Data Labels (NBG Style)
 
+Above the bars: 12pt Bold `#003841`.
+
 ```xml
 <c:dLbls>
   <c:numFmt formatCode="#,##0.0" sourceLinked="0"/>
@@ -98,9 +111,9 @@ ppt/
     <a:lstStyle/>
     <a:p>
       <a:pPr>
-        <a:defRPr sz="1200" b="0">
+        <a:defRPr sz="1200" b="1">
           <a:solidFill>
-            <a:srgbClr val="202020"/>
+            <a:srgbClr val="003841"/>
           </a:solidFill>
           <a:latin typeface="Aptos"/>
         </a:defRPr>
@@ -130,7 +143,7 @@ ppt/
   <c:minorTickMark val="none"/>
   <c:tickLblPos val="low"/>
   <c:spPr>
-    <a:ln w="12700" cap="flat">
+    <a:ln w="6350" cap="flat">  <!-- 0.5pt -->
       <a:solidFill>
         <a:srgbClr val="BEC1BE"/>  <!-- Light gray axis line -->
       </a:solidFill>
@@ -143,7 +156,7 @@ ppt/
     <a:lstStyle/>
     <a:p>
       <a:pPr>
-        <a:defRPr sz="1000" b="0">
+        <a:defRPr sz="1200" b="0">
           <a:solidFill>
             <a:srgbClr val="202020"/>  <!-- Dark text -->
           </a:solidFill>
@@ -190,7 +203,7 @@ ppt/
   <c:grouping val="stacked"/>  <!-- Enable stacking -->
   <c:varyColors val="0"/>
   <!-- ... series definitions ... -->
-  <c:gapWidth val="40"/>
+  <c:gapWidth val="35"/>  <!-- the one bar gap, stacked or not -->
   <c:overlap val="100"/>  <!-- Full overlap for stacking -->
 </c:barChart>
 ```
@@ -219,7 +232,12 @@ ppt/
 </c:ser>
 ```
 
-### Stacked Data Labels (White on Bar)
+### Stacked Data Labels (inside the segments)
+
+Each series gets its own label colour, chosen by contrast against that series' fill: `FFFFFF`
+on `003841` and `007B85`, `202020` on `00ADBF`, `BEC1BE` and `00DFF8` (white on cyan is 2.72:1).
+Put the `c:dLbls` inside each `c:ser`, not once at the plot level, so every series carries the
+colour its own fill needs.
 
 ```xml
 <c:txPr>
@@ -229,9 +247,9 @@ ppt/
   <a:lstStyle/>
   <a:p>
     <a:pPr>
-      <a:defRPr sz="1200" b="0">
+      <a:defRPr sz="1200" b="1">
         <a:solidFill>
-          <a:schemeClr val="bg1"/>  <!-- White text on colored bars -->
+          <a:srgbClr val="FFFFFF"/>  <!-- on the 003841 series; 202020 on a light series -->
         </a:solidFill>
         <a:latin typeface="Aptos"/>
       </a:defRPr>
@@ -292,7 +310,7 @@ ppt/
     <a:lstStyle/>
     <a:p>
       <a:pPr>
-        <a:defRPr sz="1100">
+        <a:defRPr sz="1200">
           <a:solidFill>
             <a:srgbClr val="202020"/>
           </a:solidFill>
@@ -314,7 +332,8 @@ ppt/
 Waterfall charts in OOXML are created using a stacked bar chart with three series:
 
 1. **Base** (invisible) - positions the colored bars
-2. **Increase** (cyan) - positive additions
+2. **Increase** (cyan) - positive additions; total bars in this series are recoloured
+   `003841` point by point with `c:dPt` (charts.md: totals dark teal)
 3. **Decrease** (red) - subtractions
 
 ### Data Structure (Excel)
@@ -376,7 +395,16 @@ Waterfall charts in OOXML are created using a stacked bar chart with three serie
       </a:solidFill>
       <a:ln><a:noFill/></a:ln>
     </c:spPr>
-    <!-- ... -->
+    <!-- Total bars (here the first and last points) in Dark Teal -->
+    <c:dPt>
+      <c:idx val="0"/>
+      <c:invertIfNegative val="0"/>
+      <c:bubble3D val="0"/>
+      <c:spPr>
+        <a:solidFill><a:srgbClr val="003841"/></a:solidFill>
+      </c:spPr>
+    </c:dPt>
+    <!-- ... same c:dPt for idx 3 ... -->
   </c:ser>
 
   <!-- Series 3: Decrease (Red) -->
@@ -408,7 +436,10 @@ Waterfall charts in OOXML are created using a stacked bar chart with three serie
 
 ### Selective Data Labels
 
-Hide labels for zero values by using individual `<c:dLbl>` elements:
+Hide labels for zero values by using individual `<c:dLbl>` elements. Labels sit inside the bars at
+12pt Bold, coloured by contrast against their bar: `202020` on the cyan increases, `FFFFFF` on the
+red decreases and the dark-teal totals. The sample below is the Increase series; the Decrease
+series repeats it with `FFFFFF`.
 
 ```xml
 <c:dLbls>
@@ -433,12 +464,9 @@ Hide labels for zero values by using individual `<c:dLbl>` elements:
       <a:lstStyle/>
       <a:p>
         <a:pPr>
-          <a:defRPr sz="1400" b="1">  <!-- Larger, bold for total -->
+          <a:defRPr sz="1400" b="1">  <!-- Larger, bold for the total, above the bar on white -->
             <a:solidFill>
-              <a:schemeClr val="tx1">
-                <a:lumMod val="75000"/>
-                <a:lumOff val="25000"/>
-              </a:schemeClr>
+              <a:srgbClr val="202020"/>
             </a:solidFill>
             <a:latin typeface="Aptos"/>
           </a:defRPr>
@@ -455,9 +483,9 @@ Hide labels for zero values by using individual `<c:dLbl>` elements:
     <a:lstStyle/>
     <a:p>
       <a:pPr>
-        <a:defRPr sz="1000" b="1">
+        <a:defRPr sz="1200" b="1">
           <a:solidFill>
-            <a:schemeClr val="bg1"/>  <!-- White text inside bars -->
+            <a:srgbClr val="202020"/>  <!-- dark on the cyan increases (6.00:1) -->
           </a:solidFill>
           <a:latin typeface="Aptos"/>
         </a:defRPr>
@@ -482,7 +510,7 @@ Hide labels for zero values by using individual `<c:dLbl>` elements:
   <c:minorTickMark val="none"/>
   <c:tickLblPos val="low"/>
   <c:spPr>
-    <a:ln w="12700">
+    <a:ln w="6350">  <!-- 0.5pt -->
       <a:solidFill>
         <a:srgbClr val="BEC1BE"/>
       </a:solidFill>
@@ -493,7 +521,7 @@ Hide labels for zero values by using individual `<c:dLbl>` elements:
     <a:lstStyle/>
     <a:p>
       <a:pPr>
-        <a:defRPr sz="900">
+        <a:defRPr sz="1200">  <!-- the category-axis size; never under the 10pt floor -->
           <a:solidFill>
             <a:srgbClr val="202020"/>
           </a:solidFill>
@@ -617,18 +645,21 @@ await workbook.xlsx.writeFile('Microsoft_Excel_Worksheet1.xlsx');
 
 ### NBG Font Settings
 
+The same values as the chart style table in charts.md.
+
 | Element | Font | Size | Bold | Color |
 |---------|------|------|------|-------|
-| Category labels | Aptos | 10pt | No | #202020 |
-| Data labels (column) | Aptos | 12pt | No | #202020 |
-| Data labels (on bar) | Aptos | 12pt | No | White (bg1) |
-| Legend text | Aptos | 11pt | No | #202020 |
-| Waterfall labels | Aptos | 10pt | Yes | White (bg1) |
-| Waterfall total | Aptos | 14pt | Yes | #404040 |
+| Category labels | Aptos | 12pt | No | #202020 |
+| Value-axis labels (line and area charts) | Aptos | 11pt | No | #939793 |
+| Data labels (above bars) | Aptos | 12pt | Yes | #003841 |
+| Data labels (inside a bar) | Aptos | 12pt | Yes | #FFFFFF on 003841, 007B85, AA0028; #202020 on 00ADBF, BEC1BE, 00DFF8 |
+| Legend text | Aptos | 12pt | No | #202020 |
+| Waterfall labels | Aptos | 12pt | Yes | as for labels inside a bar |
+| Waterfall total above its bar | Aptos | 14pt | Yes | #202020 |
 
 ### Axis Line
 
-- Width: 12700 EMU (1pt)
+- Width: 6350 EMU (0.5pt)
 - Color: #BEC1BE (Light Gray)
 - Style: Solid
 

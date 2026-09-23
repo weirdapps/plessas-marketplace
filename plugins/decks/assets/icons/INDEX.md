@@ -1,6 +1,6 @@
 # NBG Iconography Library: Index
 
-**Base path:** `plugins/decks/assets/icons/`
+**Base path:** `${CLAUDE_PLUGIN_ROOT}/assets/icons/` (a deck spec writes `icons/<category>/<file>`)
 **Total:** 338 icons across 20 categories
 **Format:** PNG with transparent background
 
@@ -12,7 +12,8 @@
 - Always tint icons to an NBG brand color; never leave them black on white unless on a dark background
 - Recommended sizes: **48px** for inline/bullet icons, **64–80px** for feature callout icons
 - Pair each icon with a short label or heading; never use icons without text context
-- Icons work best on the NBG template's infographic and callout layouts
+- Icons work best on cards and process steps: in a deck spec, `cards[].icon` or `steps[].icon`
+  with a path such as `icons/money/Loan.png`
 
 ---
 
@@ -24,14 +25,14 @@ General UI and interaction icons.
 
 | Filename | Use when |
 |----------|----------|
-| `Arrow left.png` | Navigation, back actions |
+| `Arrow_left.png` | Navigation, back actions |
 | `Balloon.png` | Notifications, messages, tips |
 | `Cancel.png` | Cancellation, rejection, close |
-| `Cancel refresh.png` | Failed refresh, retry failed |
+| `Cancel_refresh.png` | Failed refresh, retry failed |
 | `Checkbox.png` | Completed items, checklists |
 | `Check.png` | Success, confirmation, approval |
 | `Download.png` | Download actions, file retrieval |
-| `Fast forward.png` | Speed, fast processing, quick actions |
+| `Fast_forward.png` | Speed, fast processing, quick actions |
 | `Flexible.png` | Flexibility, adaptability, custom options |
 | `Forward.png` | Navigation forward, next step |
 | `Heart.png` | Favourites, liked items, preferences |
@@ -41,19 +42,19 @@ General UI and interaction icons.
 | `Minus.png` | Remove, reduce, subtract |
 | `Pause.png` | Pause, hold, suspend |
 | `Plus.png` | Add, create, new item |
-| `Question mark.png` | FAQ, help, unknown |
+| `Question_mark.png` | FAQ, help, unknown |
 | `Refresh.png` | Refresh, reload, update |
 | `Reload.png` | Reload, restart, retry |
 | `Search.png` | Search, find, lookup |
-| `Sign in.png` | Login, authentication, entry |
-| `Sign out.png` | Logout, exit, leave |
+| `Sign_in.png` | Login, authentication, entry |
+| `Sign_out.png` | Logout, exit, leave |
 | `Star.png` | Rating, premium, featured |
-| `Switch off.png` | Toggle off, disable, deactivate |
+| `Switch_off.png` | Toggle off, disable, deactivate |
 | `Transfer.png` | Transfer between accounts, move funds |
 | `Upload.png` | Upload, submit, send file |
 | `Warning.png` | Warning, caution, alert |
-| `Warning circle.png` | Circular warning, mild alert |
-| `Warning Hexagon.png` | Strong warning, critical alert |
+| `Warning_circle.png` | Circular warning, mild alert |
+| `Warning_Hexagon.png` | Strong warning, critical alert |
 
 ---
 
@@ -64,37 +65,37 @@ Payments, banking, and financial transactions.
 | Filename | Use when |
 |----------|----------|
 | `ATM.png` | ATM access, cash withdrawal |
-| `ATM Money.png` | ATM with cash, physical money |
-| `Basic Calculator.png` | Calculations, loan estimates, rates |
+| `ATM_Money.png` | ATM with cash, physical money |
+| `Basic_Calculator.png` | Calculations, loan estimates, rates |
 | `Business.png` | Business banking, corporate finance |
 | `Coins.png` | Small amounts, change, savings |
-| `Contactless payments.png` | NFC/contactless payment |
-| `Contactless payments_off.png` | Contactless disabled |
-| `Credit Card bill.png` | Credit card statement, billing |
-| `Currency Exchange.png` | FX, currency conversion |
+| `Contactless_payments.png` | NFC/contactless payment |
+| `Contactless_payments_off.png` | Contactless disabled |
+| `Credit_Card_bill.png` | Credit card statement, billing |
+| `Currency_Exchange.png` | FX, currency conversion |
 | `Euro.png` | Euro currency, pricing |
-| `Euro Coin.png` | Coin, small transaction |
-| `Euro Note.png` | Cash, banknote |
-| `Hand Euro Payment.png` | Cash handover, physical payment |
-| `Household bill.png` | Utility bills, household expenses |
+| `Euro_Coin.png` | Coin, small transaction |
+| `Euro_Note.png` | Cash, banknote |
+| `Hand_Euro_Payment.png` | Cash handover, physical payment |
+| `Household_bill.png` | Utility bills, household expenses |
 | `Loan.png` | Loan products, lending |
-| `Mobile Payments.png` | Mobile pay, digital wallet |
-| `Mobile Payments Minimal.png` | Simplified mobile payment |
-| `Mobile transfers.png` | Transfer via mobile |
-| `Money Circulation.png` | Money flow, economy, circulation |
-| `Money Euros.png` | Euro amounts, funds |
-| `Money Globe.png` | International money, global payments |
-| `Money notes.png` | Cash notes, physical currency |
-| `Move Money.png` | Transfer, move funds |
+| `Mobile_Payments.png` | Mobile pay, digital wallet |
+| `Mobile_Payments_Minimal.png` | Simplified mobile payment |
+| `Mobile_transfers.png` | Transfer via mobile |
+| `Money_Circulation.png` | Money flow, economy, circulation |
+| `Money_Euros.png` | Euro amounts, funds |
+| `Money_Globe.png` | International money, global payments |
+| `Money_notes.png` | Cash notes, physical currency |
+| `Move_Money.png` | Transfer, move funds |
 | `Receipts.png` | Receipt, proof of payment |
-| `Receive Euro.png` | Incoming payment, receive funds |
-| `Receive Euro alt.png` | Alternative incoming payment icon |
+| `Receive_Euro.png` | Incoming payment, receive funds |
+| `Receive_Euro_alt.png` | Alternative incoming payment icon |
 | `RF.png` | RF/NFC, contactless tech |
-| `Send Euro.png` | Outgoing payment, send funds |
-| `Send Euro alt.png` | Alternative send payment icon |
-| `Split money.png` | Split bill, shared expenses |
+| `Send_Euro.png` | Outgoing payment, send funds |
+| `Send_Euro_alt.png` | Alternative send payment icon |
+| `Split_money.png` | Split bill, shared expenses |
 | `Wallet.png` | Wallet, stored funds |
-| `Wallet Minimal.png` | Simplified wallet icon |
+| `Wallet_Minimal.png` | Simplified wallet icon |
 
 ---
 
@@ -106,38 +107,38 @@ Documents, IDs, contracts, and records.
 |----------|----------|
 | `Attachment.png` | File attachment, linked document |
 | `Bankbook.png` | Bankbook, passbook |
-| `Bankbook add.png` | Add bankbook, open account |
+| `Bankbook_add.png` | Add bankbook, open account |
 | `Bookmark.png` | Saved item, bookmark |
-| `Bookmark book.png` | Saved document, reference |
+| `Bookmark_book.png` | Saved document, reference |
 | `Book.png` | Terms, guide, documentation |
 | `Booklet.png` | Brochure, product guide |
-| `Card application.png` | Card application form |
+| `Card_application.png` | Card application form |
 | `Car.png` | Vehicle, car-related document |
 | `Clipboard.png` | Checklist, task list |
-| `Clipboard check.png` | Completed checklist, verified list |
-| `Compose write.png` | Write, compose, draft |
+| `Clipboard_check.png` | Completed checklist, verified list |
+| `Compose_write.png` | Write, compose, draft |
 | `csv.png` | CSV file, data export |
-| `Delete Trash.png` | Delete, discard, remove |
+| `Delete_Trash.png` | Delete, discard, remove |
 | `Document.png` | Generic document |
-| `Document Cancel.png` | Cancelled document, rejected |
-| `Document Car.png` | Vehicle document, car registration |
-| `Document Check.png` | Approved document, verified |
-| `Document euro.png` | Financial document, invoice |
-| `Document Plus.png` | New document, add document |
-| `Document sign.png` | Sign document, e-signature |
+| `Document_Cancel.png` | Cancelled document, rejected |
+| `Document_Car.png` | Vehicle document, car registration |
+| `Document_Check.png` | Approved document, verified |
+| `Document_euro.png` | Financial document, invoice |
+| `Document_Plus.png` | New document, add document |
+| `Document_sign.png` | Sign document, e-signature |
 | `Documents.png` | Multiple documents, file set |
-| `Edit notes.png` | Edit, annotate, write notes |
-| `Expired bankbook.png` | Expired passbook |
-| `Expired ID.png` | Expired identity document |
+| `Edit_notes.png` | Edit, annotate, write notes |
+| `Expired_bankbook.png` | Expired passbook |
+| `Expired_ID.png` | Expired identity document |
 | `Folder.png` | Folder, file collection |
 | `Glasses.png` | Review, read carefully, inspect |
-| `ID. card.png` | Identity card, KYC |
+| `ID._card.png` | Identity card, KYC |
 | `Inbox.png` | Inbox, received items |
-| `Inbox Empty.png` | Empty inbox, no messages |
+| `Inbox_Empty.png` | Empty inbox, no messages |
 | `Notepad.png` | Notes, memo |
 | `Passport.png` | Passport, international ID |
-| `Saved application.png` | Saved form, draft application |
-| `Username password.png` | Credentials document |
+| `Saved_application.png` | Saved form, draft application |
+| `Username_password.png` | Credentials document |
 | `XML.png` | XML file, data format |
 
 ---
@@ -151,29 +152,29 @@ Cards, phones, computers, and banking terminals.
 | `Calculator.png` | Calculations, estimates |
 | `Call.png` | Phone call, customer service |
 | `Card.png` | Generic bank card |
-| `Card ATM.png` | Card at ATM |
-| `Card Euro.png` | Card with euro |
-| `Card maastercard.png` | Mastercard branded card |
-| `Card remove.png` | Cancel/remove card |
-| `Card skew.png` | Card perspective view |
+| `Card_ATM.png` | Card at ATM |
+| `Card_Euro.png` | Card with euro |
+| `Card_maastercard.png` | Mastercard branded card |
+| `Card_remove.png` | Cancel/remove card |
+| `Card_skew.png` | Card perspective view |
 | `Cards.png` | Multiple cards |
 | `Desktop.png` | Desktop computer, web banking |
-| `Desktop chart.png` | Desktop with data/analytics |
-| `Desktop minimal.png` | Simplified desktop icon |
-| `Desktop remove.png` | Remove desktop/device |
+| `Desktop_chart.png` | Desktop with data/analytics |
+| `Desktop_minimal.png` | Simplified desktop icon |
+| `Desktop_remove.png` | Remove desktop/device |
 | `Laptop.png` | Laptop, internet banking |
-| `Laptop phone.png` | Omnichannel, cross-device |
-| `New card.png` | Issue new card |
+| `Laptop_phone.png` | Omnichannel, cross-device |
+| `New_card.png` | Issue new card |
 | `Phone.png` | Mobile phone |
-| `Phone Card.png` | Mobile with card |
-| `Phone check.png` | Phone verified, mobile confirmed |
-| `Phone minimal.png` | Simple phone icon |
+| `Phone_Card.png` | Mobile with card |
+| `Phone_check.png` | Phone verified, mobile confirmed |
+| `Phone_minimal.png` | Simple phone icon |
 | `POS.png` | Point of sale terminal |
-| `Resize screen.png` | Responsive, screen size |
+| `Resize_screen.png` | Responsive, screen size |
 | `Tablet.png` | Tablet device |
-| `Video Banking.png` | Video banking service |
-| `Videobanking people.png` | Video call with agent |
-| `Videobanking Plus.png` | Enhanced video banking |
+| `Video_Banking.png` | Video banking service |
+| `Videobanking_people.png` | Video call with agent |
+| `Videobanking_Plus.png` | Enhanced video banking |
 
 ---
 
@@ -184,30 +185,30 @@ Authentication, protection, and fraud prevention.
 | Filename | Use when |
 |----------|----------|
 | `Alarm.png` | Alert, alarm triggered |
-| `Alarm Active.png` | Active alarm, live alert |
-| `Alarm off.png` | Alarm disabled |
+| `Alarm_Active.png` | Active alarm, live alert |
+| `Alarm_off.png` | Alarm disabled |
 | `Biometric.png` | Biometric authentication |
-| `Card check.png` | Card verified, card approved |
-| `Card lock.png` | Card locked, frozen card |
-| `Card Security.png` | Card security features |
-| `Card Shield.png` | Card protection |
+| `Card_check.png` | Card verified, card approved |
+| `Card_lock.png` | Card locked, frozen card |
+| `Card_Security.png` | Card security features |
+| `Card_Shield.png` | Card protection |
 | `Certificate.png` | Certificate, credential |
-| `Cyber Security.png` | Cybersecurity, online protection |
-| `Cyber Security Eye.png` | Monitoring, surveillance |
-| `Cyber Security Fingerprint.png` | Fingerprint security |
+| `Cyber_Security.png` | Cybersecurity, online protection |
+| `Cyber_Security_Eye.png` | Monitoring, surveillance |
+| `Cyber_Security_Fingerprint.png` | Fingerprint security |
 | `Detective.png` | Investigation, fraud detection |
-| `Face id.png` | Face ID, facial recognition |
+| `Face_id.png` | Face ID, facial recognition |
 | `HIde.png` | Hide, mask, privacy |
 | `Lock.png` | Locked, secure |
-| `Lock key.png` | Key & lock, access |
-| `Lock password.png` | Password lock |
+| `Lock_key.png` | Key & lock, access |
+| `Lock_password.png` | Password lock |
 | `Shield.png` | Protection, shield |
-| `Shield cancel.png` | Protection failed, unshielded |
-| `Shield check.png` | Protected and verified |
-| `Shield Lock.png` | Secured with lock |
+| `Shield_cancel.png` | Protection failed, unshielded |
+| `Shield_check.png` | Protected and verified |
+| `Shield_Lock.png` | Secured with lock |
 | `Show.png` | Reveal, show, visible |
 | `Unlock.png` | Unlocked, open access |
-| `Username password.png` | Login credentials |
+| `Username_password.png` | Login credentials |
 
 ---
 
@@ -218,32 +219,32 @@ Digital media, browsers, printing, and scanning.
 | Filename | Use when |
 |----------|----------|
 | `Browser.png` | Web browser, internet |
-| `Browser Arrow.png` | Navigate browser |
-| `Browser Lock.png` | Secure browser, HTTPS |
-| `Browser search.png` | Web search |
+| `Browser_Arrow.png` | Navigate browser |
+| `Browser_Lock.png` | Secure browser, HTTPS |
+| `Browser_search.png` | Web search |
 | `Code.png` | Code, development, API |
-| `Code minimal.png` | Simplified code icon |
+| `Code_minimal.png` | Simplified code icon |
 | `Image.png` | Image, photo, visual |
 | `Lens.png` | Camera lens, zoom |
 | `Microphone.png` | Voice, audio input |
-| `Memory card.png` | Storage, memory |
+| `Memory_card.png` | Storage, memory |
 | `Newspaper.png` | News, press, articles |
 | `OCR.png` | OCR scanning, text recognition |
 | `Photography.png` | Camera, take photo |
-| `Photography cancel.png` | Photo not allowed |
+| `Photography_cancel.png` | Photo not allowed |
 | `Podcast.png` | Audio content, podcast |
 | `Printer.png` | Print document |
-| `Printer cancel.png` | Cannot print |
-| `Printer minimal.png` | Simple printer |
+| `Printer_cancel.png` | Cannot print |
+| `Printer_minimal.png` | Simple printer |
 | `Printer_loading.png` | Printing in progress |
-| `QR code.png` | QR code |
-| `Save media.png` | Save file, download media |
-| `Scan document.png` | Scan document |
-| `Scan QR Code.png` | Scan QR |
+| `QR_code.png` | QR code |
+| `Save_media.png` | Save file, download media |
+| `Scan_document.png` | Scan document |
+| `Scan_QR_Code.png` | Scan QR |
 | `Share.png` | Share content |
-| `Size=64 px-12.png` | (generic icon) |
+| `Size64_px-12.png` | (generic icon) |
 | `Video.png` | Video content |
-| `Video File.png` | Video file |
+| `Video_File.png` | Video file |
 | `Videography.png` | Video recording |
 | `Web.png` | Web, internet, online |
 
@@ -255,25 +256,25 @@ Users, customers, groups, and personas.
 
 | Filename | Use when |
 |----------|----------|
-| `Add Person.png` | Add user, new customer |
+| `Add_Person.png` | Add user, new customer |
 | `Advisor.png` | Advisor, relationship manager |
 | `Employee.png` | Staff, employee |
-| `Face mask.png` | Health protection, pandemic context |
-| `Favourite Person.png` | Preferred contact, VIP |
+| `Face_mask.png` | Health protection, pandemic context |
+| `Favourite_Person.png` | Preferred contact, VIP |
 | `Happy.png` | Satisfied customer, positive experience |
-| `People Couple.png` | Couple, joint account |
-| `People Family.png` | Family, household |
-| `People Group.png` | Group, community, team |
+| `People_Couple.png` | Couple, joint account |
+| `People_Family.png` | Family, household |
+| `People_Group.png` | Group, community, team |
 | `Person.png` | Individual, single user |
 | `Reading.png` | Reading, self-service, research |
-| `Remove Person.png` | Remove user, close account |
-| `Search person.png` | Find customer, search user |
-| `Share couple people.png` | Share with partner |
-| `Share group.png` | Share with group |
-| `Share people.png` | Social sharing |
+| `Remove_Person.png` | Remove user, close account |
+| `Search_person.png` | Find customer, search user |
+| `Share_couple_people.png` | Share with partner |
+| `Share_group.png` | Share with group |
+| `Share_people.png` | Social sharing |
 | `Unhappy.png` | Dissatisfied, complaint |
-| `User Profile.png` | Profile, account settings |
-| `Verfiy Person.png` | KYC, verified identity |
+| `User_Profile.png` | Profile, account settings |
+| `Verfiy_Person.png` | KYC, verified identity |
 
 ---
 
@@ -285,21 +286,21 @@ Communication channels.
 |----------|----------|
 | `Apps.png` | App store, applications |
 | `Chat.png` | Chat, messaging |
-| `Chat euro.png` | Financial chat, payment conversation |
+| `Chat_euro.png` | Financial chat, payment conversation |
 | `Chatting.png` | Active chat, live support |
 | `Contacts.png` | Address book, contacts list |
 | `Conversation.png` | Two-way conversation |
-| `Email @.png` | Email address |
+| `Email_at.png` | Email address |
 | `Location.png` | Location, branch address |
 | `Mail.png` | Mail, email |
 | `Message.png` | Message, notification |
-| `Message failed.png` | Failed message, delivery error |
-| `Phone call.png` | Phone call, helpline |
-| `Send mail.png` | Send email |
+| `Message_failed.png` | Failed message, delivery error |
+| `Phone_call.png` | Phone call, helpline |
+| `Send_mail.png` | Send email |
 | `SMS.png` | SMS, text message |
-| `Undelivered mail.png` | Undelivered message |
-| `Unread mail.png` | Unread email |
-| `Video call.png` | Video call, remote meeting |
+| `Undelivered_mail.png` | Undelivered message |
+| `Unread_mail.png` | Unread email |
+| `Video_call.png` | Video call, remote meeting |
 
 ---
 
@@ -311,20 +312,20 @@ Settings, configuration, and system operations.
 |----------|----------|
 | `Cloud.png` | Cloud storage, cloud services |
 | `Dashboard.png` | Dashboard, overview panel |
-| `Download cloud.png` | Download from cloud |
-| `Electric Wave.png` | Digital signal, connectivity |
+| `Download_cloud.png` | Download from cloud |
+| `Electric_Wave.png` | Digital signal, connectivity |
 | `Gear.png` | Settings, configuration |
-| `Graph Candles.png` | Candlestick chart, trading |
+| `Graph_Candles.png` | Candlestick chart, trading |
 | `Grid.png` | Grid view, layout |
 | `Layout.png` | Layout, page structure |
 | `Pair.png` | Pair devices, link accounts |
 | `Settings.png` | Settings, preferences |
-| `Settings minimal.png` | Simple settings |
+| `Settings_minimal.png` | Simple settings |
 | `Sound.png` | Audio, sound settings |
-| `Speed high.png` | High speed, fast processing |
-| `Speed medium.png` | Medium speed |
+| `Speed_high.png` | High speed, fast processing |
+| `Speed_medium.png` | Medium speed |
 | `Switches.png` | Toggle switches, controls |
-| `Upload cloud.png` | Upload to cloud |
+| `Upload_cloud.png` | Upload to cloud |
 
 ---
 
@@ -334,19 +335,19 @@ Time, calendars, scheduling.
 
 | Filename | Use when |
 |----------|----------|
-| `AI grid.png` | AI-driven scheduling |
+| `AI_grid.png` | AI-driven scheduling |
 | `Alarm.png` | Alarm, reminder |
-| `Back in time.png` | History, past transactions |
+| `Back_in_time.png` | History, past transactions |
 | `Calendar.png` | Calendar, date selection |
-| `Calendar check.png` | Confirmed date, scheduled |
-| `Calendar clock.png` | Scheduled time |
-| `Calendar euro.png` | Payment date, financial calendar |
-| `Calendar mark date.png` | Mark date, important date |
-| `Calendar save.png` | Save date, add to calendar |
+| `Calendar_check.png` | Confirmed date, scheduled |
+| `Calendar_clock.png` | Scheduled time |
+| `Calendar_euro.png` | Payment date, financial calendar |
+| `Calendar_mark_date.png` | Mark date, important date |
+| `Calendar_save.png` | Save date, add to calendar |
 | `Clock.png` | Time, current time |
-| `Clock minimal.png` | Simple clock |
-| `Clock refresh.png` | Time refresh, update time |
-| `Ηourglass.png` | Waiting, processing, pending |
+| `Clock_minimal.png` | Simple clock |
+| `Clock_refresh.png` | Time refresh, update time |
+| `Hourglass.png` | Waiting, processing, pending |
 | `Timer.png` | Countdown, timer |
 | `Value.png` | Value over time |
 | `Watch.png` | Watch, smartwatch |
@@ -360,17 +361,17 @@ Navigation and location.
 | Filename | Use when |
 |----------|----------|
 | `Compass.png` | Direction, guidance |
-| `Location Pin.png` | Location, address |
+| `Location_Pin.png` | Location, address |
 | `Map.png` | Map, branch finder |
-| `Map pin.png` | Pin on map, specific location |
+| `Map_pin.png` | Pin on map, specific location |
 | `Pin.png` | Pin, marker |
 | `Pointer.png` | Pointer, cursor |
 | `Radar.png` | Radar, detect nearby |
 | `Signpost.png` | Signpost, guidance |
-| `Signpost directions.png` | Multiple directions, choices |
+| `Signpost_directions.png` | Multiple directions, choices |
 | `Target.png` | Target, goal |
-| `Target Map.png` | Target on map |
-| `Target time.png` | Time target, deadline |
+| `Target_Map.png` | Target on map |
+| `Target_time.png` | Time target, deadline |
 
 ---
 
@@ -381,17 +382,17 @@ Touch, gestures, and card interactions.
 | Filename | Use when |
 |----------|----------|
 | `Dislike.png` | Negative feedback, thumbs down |
-| `Hand Button.png` | Button press, tap action |
-| `Hand Buttons ATM.png` | ATM keypad interaction |
-| `Hand Card.png` | Holding card, card in hand |
-| `Hand Card CVC.png` | Card CVC entry |
-| `Hand Card Vertical.png` | Vertical card hold |
-| `Hand Mobile.png` | Mobile in hand, using phone |
-| `Hand Point.png` | Point, tap, select |
-| `Hand press.png` | Press, confirm |
+| `Hand_Button.png` | Button press, tap action |
+| `Hand_Buttons_ATM.png` | ATM keypad interaction |
+| `Hand_Card.png` | Holding card, card in hand |
+| `Hand_Card_CVC.png` | Card CVC entry |
+| `Hand_Card_Vertical.png` | Vertical card hold |
+| `Hand_Mobile.png` | Mobile in hand, using phone |
+| `Hand_Point.png` | Point, tap, select |
+| `Hand_press.png` | Press, confirm |
 | `Like.png` | Positive feedback, thumbs up |
-| `Swipe left.png` | Swipe gesture |
-| `Thumbs Up.png` | Approval, positive |
+| `Swipe_left.png` | Swipe gesture |
+| `Thumbs_Up.png` | Approval, positive |
 
 ---
 
@@ -401,7 +402,7 @@ Real estate, property, and infrastructure.
 
 | Filename | Use when |
 |----------|----------|
-| `Archived Box.png` | Archive, storage |
+| `Archived_Box.png` | Archive, storage |
 | `Bank.png` | Bank branch, physical banking |
 | `Box.png` | Package, container |
 | `Brush.png` | Renovation, decorating |
@@ -413,7 +414,7 @@ Real estate, property, and infrastructure.
 | `Leaf.png` | Green banking, sustainability |
 | `Paint.png` | Renovation, home improvement |
 | `Repairs.png` | Repairs, maintenance |
-| `Size=64 px-3.png` | (generic icon) |
+| `Size64_px-3.png` | (generic icon) |
 | `Sofa.png` | Interior, home furnishing |
 | `Tool.png` | Tools, repair, DIY |
 
@@ -425,14 +426,14 @@ Data visualization and analytics.
 
 | Filename | Use when |
 |----------|----------|
-| `Bar Chart.png` | Bar chart, comparison |
-| `Bar Chart Frame.png` | Framed bar chart |
-| `Bar Chart Frame baseline.png` | Bar chart with baseline |
-| `Bar Chart Minimal.png` | Simple bar chart |
-| `Financial profile.png` | Financial overview, profile summary |
-| `Growth Chart.png` | Growth, upward trend |
-| `Pie chart.png` | Pie chart, distribution |
-| `Pie chart bordered.png` | Bordered pie chart |
+| `Bar_Chart.png` | Bar chart, comparison |
+| `Bar_Chart_Frame.png` | Framed bar chart |
+| `Bar_Chart_Frame_baseline.png` | Bar chart with baseline |
+| `Bar_Chart_Minimal.png` | Simple bar chart |
+| `Financial_profile.png` | Financial overview, profile summary |
+| `Growth_Chart.png` | Growth, upward trend |
+| `Pie_chart.png` | Pie chart, distribution |
+| `Pie_chart_bordered.png` | Bordered pie chart |
 
 ---
 
@@ -443,17 +444,17 @@ Retail, e-commerce, and offers.
 | Filename | Use when |
 |----------|----------|
 | `Bag.png` | Shopping bag, purchase |
-| `Barcode scan.png` | Scan barcode, product lookup |
+| `Barcode_scan.png` | Scan barcode, product lookup |
 | `Cart.png` | Shopping cart |
 | `Gift.png` | Gift, bonus, reward |
-| `Online Shopping.png` | E-commerce, online purchase |
+| `Online_Shopping.png` | E-commerce, online purchase |
 | `Percentage.png` | Discount, interest rate, offer |
-| `Price tag.png` | Price, cost |
-| `Price tag euro.png` | Euro price tag |
+| `Price_tag.png` | Price, cost |
+| `Price_tag_euro.png` | Euro price tag |
 | `Sales.png` | Sales, promotions |
 | `Scissors.png` | Cut, trim, reduce costs |
-| `Shopping Cart click.png` | Add to cart action |
-| `Shopping cart.png` | Cart, basket |
+| `Shopping_Cart_click.png` | Add to cart action |
+| `Shopping_cart.png` | Cart, basket |
 | `Wifi.png` | WiFi, connectivity |
 
 ---
@@ -485,12 +486,12 @@ Vehicles and travel.
 |----------|----------|
 | `Airplane.png` | Air travel, international |
 | `Car.png` | Car, auto loan |
-| `Car cancel.png` | Car issue, vehicle problem |
+| `Car_cancel.png` | Car issue, vehicle problem |
 | `Motor.png` | Motorcycle, motor vehicle |
 | `Motorbike.png` | Motorbike loan |
-| `Paper plane.png` | Send, lightweight communication |
+| `Paper_plane.png` | Send, lightweight communication |
 | `Suitcase.png` | Travel, trip |
-| `Suitcase check.png` | Travel confirmed, trip ready |
+| `Suitcase_check.png` | Travel confirmed, trip ready |
 | `World.png` | Global, international |
 
 ---
@@ -505,7 +506,7 @@ Leisure and lifestyle.
 | `Cocktail.png` | Entertainment, nightlife spending |
 | `Restaurant.png` | Dining, restaurant spending |
 | `Ticket.png` | Events, tickets, entertainment |
-| `Water glass.png` | Hydration, hospitality |
+| `Water_glass.png` | Hydration, hospitality |
 
 ---
 
