@@ -15,26 +15,28 @@ PNG. The tool masks the screen with a flood fill, so the screenshot shows only i
   folder, such as `screenshots/retail-mobile/Home.png`, means
   `${CLAUDE_PLUGIN_ROOT}/assets/screenshots/retail-mobile/Home.png`. The product screenshot
   catalogues are `${CLAUDE_PLUGIN_ROOT}/assets/screenshots/<product>/INDEX.md`.
-- `output`: the absolute `.png` path to write.
+- `output`: the absolute `.png` path to write (in the deck's work folder when a deck asked for it).
 - `frame`: a frame key, default `16_pro_max_black`.
+- `fit`: `contain` (default), or `cover` when asked.
 
 ## Steps
 
 1. Resolve both paths to absolute paths and confirm the screenshot exists (Glob).
 2. For a frame key you do not recognise, list the valid ones and pick the closest:
    `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup --list-frames`
-3. Aspect ratio: the tool stretches the screenshot to the frame's screen, which is about 1 to 2.17
-   (width to height) on every frame. Read the screenshot's size with `file "<screenshot>"`; if its
-   ratio is more than 3 per cent off, report it, because the phone would show a squashed screen.
-4. Run:
+3. Run:
 
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup "<screenshot>" "<output>" --frame <key>
+   bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup "<screenshot>" "<output>" --frame <key> --fit <fit>
    ```
 
+   When the screenshot's shape differs from the screen's, `contain` keeps the whole screenshot and
+   fills the gap with its own edge colour, and `cover` fills the screen and crops the edges. Never
+   use `stretch`: it distorts the app. The tool prints a note when it had to fit.
+
    Exit 0: confirm the output file exists. Any other exit: return the tool's message verbatim
-   (exit 2 usually means the tool environment could not be prepared; the message says how to fix
-   it).
+   (exit 2 covers a missing screenshot or frame, an unknown frame key, or a tool environment that
+   could not be prepared; the message says which).
 
 ## Return
 
@@ -42,5 +44,5 @@ PNG. The tool masks the screen with a flood fill, so the screenshot shows only i
 mockup: <output>
 frame: <key>
 alt_text: <app and screen, e.g. "Mobile banking home screen on an iPhone">
-warnings: <aspect ratio or other problems, or "none">
+warnings: <the tool's fit note or other problems, or "none">
 ```

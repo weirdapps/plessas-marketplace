@@ -1,6 +1,6 @@
 ---
 description: "Create an iPhone device mockup from an app screenshot: the screenshot placed inside an Apple device frame, saved as a PNG"
-argument-hint: "<screenshot path> [--frame FRAME_KEY] [output path]"
+argument-hint: "<screenshot path> [--frame FRAME_KEY] [--fit contain|cover] [output path]"
 allowed-tools: Bash, Read, Glob
 ---
 
@@ -18,20 +18,19 @@ User request: $ARGUMENTS
    `${CLAUDE_PLUGIN_ROOT}/assets/screenshots/retail-mobile/Home.png`.
 2. **Choose the frame.** Use the requested key, else `16_pro_max_black`. List the valid keys with
    `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup --list-frames`.
-3. **Check the aspect ratio.** Every frame's screen is about 1 to 2.17 (width to height) and the
-   tool stretches the screenshot to fit. Read the size with `file "<screenshot>"`; if the ratio is
-   more than 3 per cent off, warn the user before running, because the phone would show a squashed
-   screen.
+3. **Choose the fit** for a screenshot whose shape differs from the phone's screen: `contain` (the
+   default) keeps the whole screenshot and fills the gap with its own edge colour; `cover` fills the
+   screen and crops the edges. Never `stretch`: it distorts the app.
 4. **Run.** Output: the path the user gave, else `$HOME/Downloads/<timestamp>_<slug>_mockup.png`,
    as an absolute path, with the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'` and the slug
    from the screenshot name.
 
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup "<screenshot>" "<output>" --frame <key>
+   bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" mockup "<screenshot>" "<output>" --frame <key> --fit <fit>
    ```
 
-   Exit 2 means the tool could not run (most often its environment could not be prepared): show
-   the message and fix it printed and stop.
-5. **Report** the output path and the frame used.
+   Exit 2 means the tool could not run (a missing screenshot or frame, an unknown frame key, or an
+   environment that could not be prepared): show the message and fix it printed and stop.
+5. **Report** the output path, the frame used, and the tool's note if it had to fit the screenshot.
 
 </process>

@@ -59,6 +59,10 @@ Decision rules:
 - **Dividers and contents**: optional; most NBG decks use neither. Keep them only in long decks
   with distinct sections.
 - **Two columns**: a column holding a chart, table or KPIs means the slide needs `content.source`.
+- **Peer banks**: a comparison of the systemic banks is a `chart` (`bar`) or `table` with the bank
+  names as categories or rows and a dated source; there is no special slide type. When logos are
+  wanted, place them as `image` or `custom` elements from `${CLAUDE_PLUGIN_ROOT}/assets/bank-logos/`
+  (relative form `bank-logos/<file>`), each at its native aspect ratio (Standard #4).
 - **Custom**: a `content.title` like every slide, then elements with geometry in inches inside the
   body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
   gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from
@@ -93,6 +97,7 @@ Prefer what the plugin ships, then plan what must be made.
       output: images/S06_home_mockup.png
       screenshot: screenshots/retail-mobile/Home.png    # relative to the plugin's assets
       frame: 16_pro_max_black
+      fit: contain                    # contain | cover
     - kind: infographic
       output: images/S07_funnel.svg
       brief: "four-stage funnel: 120k visits, 40k starts, 18k completed, 11k funded"

@@ -30,14 +30,17 @@ User request: $ARGUMENTS
    one the user named or `$HOME/Downloads`, as an absolute path.
 
 2. **Choose the route.** Read `${CLAUDE_PLUGIN_ROOT}/tools/nbg-presentation/deck.schema.json` first.
+   Every deck the validator accepts opens with a `cover` and closes with a `back_cover`, so
+   `<WORK>/deck.yaml` holds three slides: a cover titled after the visual, the visual's slide, and
+   the back cover.
    - **Native slide** (the default): the visual is a chart (`bar`, `bar_horizontal`, `bar_stacked`,
      `area_line` for a trend, `doughnut` for part of a whole), a `waterfall`, `kpi` tiles, `cards`,
-     `process` steps or a `table`. Write `<WORK>/deck.yaml` with that one slide, an action title
-     that states the insight, and its `content.source`, followed by a `back_cover` slide.
+     `process` steps or a `table`. Give it an action title that states the insight and its
+     `content.source`.
    - **Diagram**: a funnel, timeline, matrix, hierarchy or cycle that no slide type expresses.
      Dispatch `decks:infographic-specialist` with the brief, `output: <WORK>/images/<slug>.svg` and
-     `size_in: [12.0, 4.8]`. Then write `<WORK>/deck.yaml` with one `image` slide pointing at
-     `images/<slug>.svg`, the alt text the agent returned, an action title, and a `back_cover`.
+     `size_in: [12.0, 4.8]`. The visual's slide is then an `image` slide pointing at
+     `images/<slug>.svg`, with the alt text the agent returned and an action title.
    - **Generated illustration**, only when the user explicitly asks for an AI-generated image and
      `Skill(manage-nano-banana:manage-nano-banana)` is available: decorative imagery only, never a
      number or a data label, on a white background with the teal palette from
@@ -53,12 +56,12 @@ User request: $ARGUMENTS
    ```
 
    Fix the spec and repeat on a check or build exit 1 (each error names the field and a fix). Read
-   `<WORK>/render/slide-01.png` and confirm the numbers match the data, every label reads, and
-   nothing is clipped. Render exit 4 means Aptos was substituted, so text fit is unconfirmed: say
-   so; exit 3 means LibreOffice is not installed: deliver without the PNG and say the slide was not
-   visually checked.
+   `<WORK>/render/slide-02.png`, the visual's slide, and confirm the numbers match the data, every
+   label reads, and nothing is clipped. Render exit 4 means Aptos was substituted, so text fit is
+   unconfirmed: say so; exit 3 means LibreOffice is not installed: deliver without the PNG and say
+   the slide was not visually checked.
 
-4. **Deliver** to the output folder: `<deck id>.pptx` (the slide to paste into a deck),
-   `slide-01.png` as `<deck id>.png`, and on the diagram route the SVG as `<deck id>.svg`.
+4. **Deliver** to the output folder: `<deck id>.pptx` (its second slide is the one to paste into a
+   deck), `slide-02.png` as `<deck id>.png`, and on the diagram route the SVG as `<deck id>.svg`.
 
 </process>

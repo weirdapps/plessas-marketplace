@@ -67,8 +67,9 @@ It prints JSON: `pngs` (one file per slide, `slide-01.png` onwards), `slides`, `
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<pptx>"`, and the verdict can be at best
   UNVERIFIED: say that the slides were not visually verified and why.
 
-After a render (exit 0 or 4), Read EVERY file in `pngs`, in order. Their number must equal
-`slides`; name any slide that has no image. Judge each image, not the XML, against the criteria
+After a render (exit 0 or 4), Read EVERY file in `pngs`, in order. Their number must equal the
+deck's slide count (`slides` in the render JSON, or the length of `deck.yaml`'s slides); name any
+slide that has no image. Judge each image, not the XML, against the criteria
 below. After a text-only review, judge what text can show (A, B, and bullet counts).
 
 LibreOffice gets two things wrong, so never report them from the image alone: negative bar values
