@@ -42,7 +42,7 @@ which variant exists, not for placing on a slide: place the PNGs above.
 |----------|-------------|------------|----------|
 | `app.svg` | "App Logos" board: the NBG app icons side by side | White sheet | Checking which app icon variants exist |
 | `go4more.svg` | "Go4more Logos" board: Go For More wordmarks, standard and premium, light and dark | White sheet | Checking Go For More variants |
-| `nbg.svg` | "NBG Logos" board: favicon, mobile logo, horizontal Greek and English wordmarks | White sheet | Checking NBG logo variants; on slides the Greek wordmark is always `assets/nbg-logo-gr.png` |
+| `nbg.svg` | "NBG Logos" board: favicon, mobile logo, horizontal Greek and English wordmarks | White sheet | Checking NBG logo variants; on slides the Greek wordmark is always the plugin's nbg-logo-gr.png, one folder up (brand-system/README.md, Logo Assets) |
 
 ---
 

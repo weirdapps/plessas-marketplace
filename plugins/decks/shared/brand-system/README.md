@@ -49,7 +49,7 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 
 | Element | Size | Color | Weight |
 |---------|------|-------|--------|
-| Cover title | 48pt | 003841 | Regular |
+| Cover title | 48pt (44pt minimum) | 003841 | Regular |
 | Cover subtitle | **24pt** | 007B85 | Regular |
 | Divider number | 60pt | 007B85 | Regular |
 | Divider title | **48pt** | 003841 | Regular |
@@ -94,7 +94,7 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 | Position | x 0.374", y 0.35" |
 | Height | 0.3" |
 | Width | Sized to its text: text width + 2 × 0.1" inset, minimum 1.0" |
-| Corner radius | 0.15 (Standard #12) |
+| Corner radius | 0.15", half the 0.3" height, so the ends are fully rounded (Standard #12) |
 
 ### Logo Placement
 
