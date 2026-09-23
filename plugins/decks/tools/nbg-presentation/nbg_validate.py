@@ -3037,6 +3037,21 @@ def _extent(shape: Shape, frame: Frame, lay: TextLayout) -> tuple[float, float, 
     return x0, y0, x0 + width, y0 + text_h
 
 
+def _opaque(slide: Slide, shape: Shape) -> bool:
+    """A shape whose solid fill hides what lies under it: no alpha below 100%."""
+    if _fill(slide, shape)[0] != "solid":
+        return False
+    fill = _fill_child(shape.sp_pr)
+    if fill is None or _local(fill.tag) != "solidFill":
+        return True  # a fill from the shape's style or its placeholder
+    color = next((c for c in fill if _local(c.tag) in _CLR_TAGS), None)
+    alpha = color.find(f"{A}alpha") if color is not None else None
+    try:
+        return alpha is None or int(alpha.get("val", "100000")) >= 100000
+    except ValueError:
+        return True
+
+
 def check_text_fit(deck: Deck, out: Collector) -> str:
     b = brand()
     m = deck.measurer
@@ -3101,6 +3116,18 @@ def check_text_fit(deck: Deck, out: Collector) -> str:
                         s.position,
                         f'text of "{first.name}" and "{second.name}" overlap by {dy:.2f}" vertically',
                     )
+        for shape, (x0, y0, x1, y1) in extents:
+            for other in s.shapes[shape.z + 1 :]:  # drawn later, so on top
+                if other.kind != "sp" or not other.has_box or not _opaque(s, other):
+                    continue
+                dx = min(x1, other.right) - max(x0, other.x or 0.0)
+                dy = min(y1, other.bottom) - max(y0, other.y or 0.0)
+                if dx > 0.04 and dy > 0.04:
+                    out.add(
+                        s.position,
+                        f'text of "{shape.name}" is hidden under "{other.name}", an opaque shape drawn on top of it',
+                    )
+                    break
         for shape in s.shapes:
             if not shape.is_table or not shape.has_box:
                 continue
@@ -4347,7 +4374,7 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Boundaries", check_boundaries, "error", "No element extends past a slide edge.", "dimensions.md", "positioned shapes, pictures, charts, tables and connectors", True),
     CheckSpec("Safe Zones", check_safe_zones, "error", "Content stays between the 0.374in gutter and the right boundary, above the 6.85in footer line; sources end by 6.5in.", "dimensions.md; tokens geometry", "content elements (logo footprints and the page number excluded)", True),
     CheckSpec("Content Spacing", check_content_spacing, "error", "The first body element starts at 1.3in or lower and 0.15in or more below the title.", "Standard #11; tokens geometry.body_top", "slides with a content title and body content"),
-    CheckSpec("Text Fit", check_text_fit, "error", "Measured text fits its box, a pill is as wide as its text, cover titles stay on one line, text boxes do not overlap, tables do not grow into the footer.", "Standards #11, #13; dimensions.md", "text frames and tables", True),
+    CheckSpec("Text Fit", check_text_fit, "error", "Measured text fits its box, a pill is as wide as its text, cover titles stay on one line, text boxes do not overlap, no opaque shape on top hides text, tables do not grow into the footer.", "Standards #11, #13; dimensions.md", "text frames and tables", True),
     CheckSpec("Text Margins", check_text_margins, "error", "Unfilled text boxes have zero margins on all four sides.", "dimensions.md (Text Box Rules)", "unfilled text boxes carrying text"),
     CheckSpec("Logo", check_logo, "error", "Every slide but the back cover carries the Greek wordmark at the small or large position (on the slide, or its layout or master), unstretched; the cover uses the large logo.", "Standards #4, #10, #17", "slides other than the last", True),
     CheckSpec("Back Cover", check_back_cover, "error", "The last slide holds only the centred oval emblem: no text, no page number, no corner logo, counting the layout and master shapes it shows.", "Standard #19", "the last slide in presentation order", True),

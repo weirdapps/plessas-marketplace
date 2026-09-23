@@ -1979,6 +1979,43 @@ def test_chart_text_with_no_font_of_its_own_is_in_the_theme_font(tmp_path):
     assert "chart" in details(result)
 
 
+def _covered(*, on_top=True, alpha=None):
+    """Slide 2 gains a text box and a filled card over the same spot, drawn after the text
+    (hiding it) or before it (a card behind its text)."""
+
+    def edit(prs):
+        sld = slide(prs, 2)
+
+        def card():
+            shape = box(sld, 9.0, 5.2, 3.0, 0.5, "003841")
+            if alpha is not None:
+                clr = shape._element.spPr.find(qn("a:solidFill"))[0]
+                etree.SubElement(clr, qn("a:alpha")).set("val", str(alpha))
+
+        if not on_top:
+            card()
+        text(sld, 9.1, 5.3, 2.8, 0.3, "Delivered in June", size=12, color="FFFFFF")
+        if on_top:
+            card()
+
+    return edit
+
+
+def test_text_under_an_opaque_shape_drawn_on_top_fails_text_fit(tmp_path):
+    """VALIDATOR-CODE-12: a filled shape later in z-order hides the text under it, and
+    every check passed it."""
+    result = check(deck(tmp_path, _covered()), "Text Fit")
+    assert result.status == "fail" and "hidden under" in details(result)
+
+
+def test_a_card_behind_its_text_hides_nothing(tmp_path):
+    assert check(deck(tmp_path, _covered(on_top=False)), "Text Fit").status == "pass"
+
+
+def test_a_see_through_shape_on_top_hides_nothing(tmp_path):
+    assert check(deck(tmp_path, _covered(alpha=30000)), "Text Fit").status == "pass"
+
+
 def test_bank_branding_reads_chart_categories(tmp_path):
     """E2E-SMOKE-9: a four-bank chart passed as 'examined nothing'."""
     result = check(_bank_case(tmp_path, colored=False), "Bank Branding")
