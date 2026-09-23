@@ -48,8 +48,8 @@ User request: $ARGUMENTS
 3. **Review.** Create the polish's work folder, called WORK: a new deck id
    `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, the slug of the
    original name), then `mkdir -p "${CLAUDE_PLUGIN_DATA}/work/<new deck id>/images"`. On the spec
-   route, copy the spec and its files in first: `cp "<OLD>/deck.yaml" "<WORK>/"` and
-   `cp -R "<OLD>/images/." "<WORK>/images/"` (never OLD's old renders).
+   route, copy the spec and every file it references in first, keeping their relative paths:
+   `cp -R "<OLD>/." "<WORK>/"`, then `rm -rf "<WORK>/qa"` so no old render is reused.
    Dispatch `decks:presentation-qa` with `pptx: <the user's file>`, `deck: <WORK>/deck.yaml` on the
    spec route (else `none`) and `render: <WORK>/qa/0`. A PASS means there is nothing to polish: say
    so and stop.
