@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/weirdapps/plessas-marketplace/blob/master/plugins/decks/tools/nbg-presentation/deck.schema.json",
   "title": "NBG deck spec",
-  "description": "The one input contract of nbg_build.py. storyline-architect writes it, storyboard-designer and graphics-renderer refine it, nbg_build.py renders it, and `decks-py check` validates it. Legacy aliases (thankyou, toc, bar_chart, hyper_title, paragraphs, items, waterfall_items, recommended_visual) are normalised by the builder with a warning BEFORE this schema is applied, so they do not appear here. Colours are token names from shared/brand-system/tokens.yaml, never raw hex, except where noted.",
+  "description": "The one input contract of nbg_build.py. storyline-architect writes it, storyboard-designer and graphics-renderer refine it, nbg_build.py renders it, and `decks-py check` validates it. Legacy aliases (thankyou, toc, bar_chart, pie_chart, charts/*, covers/*, infographic, hyper_title, paragraphs, items, waterfall_items, recommended_visual, template; the full list is assets/slide-catalog.yaml) are normalised by the builder with a warning naming the replacement BEFORE this schema is applied, so they do not appear here. Colours are token names from shared/brand-system/tokens.yaml, never raw hex, except where noted.",
   "type": "object",
   "properties": {
     "presentation": { "$ref": "#/$defs/presentation" },
@@ -23,6 +23,7 @@
         "audience": { "type": "string" },
         "purpose": { "type": "string" },
         "main_recommendation": { "type": "string" },
+        "author": { "type": "string", "description": "Written to the file's author property. Leave it out and the property stays empty." },
         "language": { "enum": ["en", "el"], "default": "en", "description": "Drives boilerplate (Contents/Περιεχόμενα, Source/Πηγή), number formats and accent-free Greek capitals." },
         "date": { "type": "string" },
         "scqa": {
@@ -68,9 +69,9 @@
         { "if": { "properties": { "type": { "const": "kpi" } } }, "then": { "required": ["content", "kpis"], "properties": { "content": { "$ref": "#/$defs/exhibit_content" }, "kpis": { "$ref": "#/$defs/kpis" } } } },
         { "if": { "properties": { "type": { "const": "cards" } } }, "then": { "required": ["content", "cards"], "properties": { "content": { "$ref": "#/$defs/titled_content" }, "cards": { "$ref": "#/$defs/cards" }, "layout": { "enum": ["row", "grid"] } } } },
         { "if": { "properties": { "type": { "const": "process" } } }, "then": { "required": ["content", "steps"], "properties": { "content": { "$ref": "#/$defs/titled_content" }, "steps": { "$ref": "#/$defs/steps" } } } },
-        { "if": { "properties": { "type": { "const": "two_column" } } }, "then": { "required": ["content", "left", "right"], "properties": { "content": { "$ref": "#/$defs/titled_content_optional_source" }, "left": { "$ref": "#/$defs/column" }, "right": { "$ref": "#/$defs/column" } } } },
+        { "if": { "properties": { "type": { "const": "two_column" } } }, "then": { "required": ["content", "left", "right"], "properties": { "content": { "$ref": "#/$defs/titled_content_optional_source" }, "left": { "$ref": "#/$defs/column" }, "right": { "$ref": "#/$defs/column" }, "split": { "enum": ["50/50", "40/60", "60/40"], "default": "50/50", "description": "Left/right share of the content width; 40/60 is text arguing over a chart." } } } },
         { "if": { "properties": { "type": { "const": "image" } } }, "then": { "required": ["content", "image"], "properties": { "content": { "$ref": "#/$defs/titled_content_optional_source" }, "image": { "$ref": "#/$defs/image" } } } },
-        { "if": { "properties": { "type": { "const": "custom" } } }, "then": { "required": ["elements"], "properties": { "content": { "$ref": "#/$defs/custom_content" }, "elements": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/element" } } } } },
+        { "if": { "properties": { "type": { "const": "custom" } } }, "then": { "required": ["content", "elements"], "properties": { "content": { "$ref": "#/$defs/custom_content" }, "elements": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/element" } } } } },
         { "if": { "properties": { "type": { "const": "back_cover" } } }, "then": { "properties": { "content": { "type": "object", "maxProperties": 0 } } } }
       ],
       "patternProperties": { "^x-": true },
@@ -202,6 +203,8 @@
     },
     "custom_content": {
       "type": "object",
+      "required": ["title"],
+      "description": "A custom slide still carries a real title: accessibility and the validator's Slide Titles check both need one.",
       "properties": {
         "title": { "$ref": "#/$defs/title" },
         "bumper": { "$ref": "#/$defs/bumper" },

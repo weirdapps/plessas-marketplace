@@ -1,0 +1,82 @@
+# Ελληνική παρουσίαση: ο ίδιος χάρτης με τα αγγλικά παραδείγματα, στα ελληνικά.
+# presentation.language: el δίνει ελληνικό κείμενο πλαισίου (Περιεχόμενα, Πηγή),
+# κεφαλαία χωρίς τόνους στην ετικέτα ενότητας και ελληνική γλώσσα διόρθωσης.
+# Exercises: cover, contents, divider, content with an accented bumper, kpi,
+# chart (bar), back_cover. Τα στοιχεία είναι ενδεικτικά.
+
+presentation:
+  title: "Ψηφιακή τραπεζική: αποτελέσματα 2025"
+  audience: "Εκτελεστική Επιτροπή"
+  purpose: "Ετήσια ανασκόπηση ψηφιακών καναλιών"
+  language: el
+
+slides:
+  - type: cover
+    id: S01
+    content:
+      title: "Ψηφιακή τραπεζική 2025"
+      subtitle: "Λιανική Τραπεζική | Ετήσια ανασκόπηση"
+      location: "Αθήνα"
+      date: "Φεβρουάριος 2026"
+
+  - type: contents
+    id: S02
+    content:
+      sections:
+        - title: "Πού βρισκόμαστε"
+          description: "Τα βασικά μεγέθη της χρονιάς"
+        - title: "Τι προτείνουμε"
+          description: "Οι προτεραιότητες για το 2026"
+
+  - type: divider
+    id: S03
+    content:
+      number: 1
+      title: "Πού βρισκόμαστε"
+
+  - type: content
+    id: S04
+    content:
+      title: "Τα ψηφιακά κανάλια ξεπέρασαν όλους τους στόχους του 2025"
+      bumper: "Κύρια ευρήματα"
+      points:
+        - "Οι ενεργοί χρήστες κινητού έφτασαν τα 2,8 εκατ., αύξηση 23%"
+        - "Το 78% των συναλλαγών έγινε σε ψηφιακά κανάλια"
+        - "Ο δείκτης NPS των ψηφιακών πελατών ανέβηκε κατά 12 μονάδες"
+
+  - type: kpi
+    id: S05
+    content:
+      title: "Δύο μεγέθη συνοψίζουν τη χρονιά"
+      source:
+        name: "Διοικητική πληροφόρηση"
+        as_of: "31 Δεκεμβρίου 2025"
+    kpis:
+      - value: "2,8 εκατ."
+        label: "Ενεργοί χρήστες κινητού"
+        delta: "+23% σε ετήσια βάση"
+        sentiment: positive
+      - value: "78%"
+        label: "Συναλλαγές σε ψηφιακά κανάλια"
+        delta: "+6 μονάδες"
+        sentiment: positive
+
+  - type: chart
+    id: S06
+    content:
+      title: "Το κινητό κέρδισε μερίδιο σε κάθε τμήμα πελατών"
+      description: "Μερίδιο συναλλαγών μέσω κινητού, %"
+      source:
+        name: "Διοικητική πληροφόρηση"
+        as_of: "31 Δεκεμβρίου 2025"
+    chart:
+      type: bar
+      data:
+        categories: ["Λιανική", "Affluent", "Επιχειρήσεις"]
+        series:
+          - name: "2024"
+            values: [52, 55, 36]
+          - name: "2025"
+            values: [58, 61, 42]
+
+  - type: back_cover
