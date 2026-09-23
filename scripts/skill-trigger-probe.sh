@@ -211,6 +211,10 @@ run_shape_a 16 "τι λέει το χαρτοφυλάκιό μου σήμερα;
 printf "\nShape B: positive control, chat-reply must fire (17)\n"
 run_shape_b 17 "απάντησε στον Νίκο στη συνομιλία μας για το migration ότι το είδα"          "chat-reply" "teams-chat"
 
+printf "\nShape B: decks review is not learning (18-19)\n"
+run_shape_b 18 "go through the committee pack and tell me what is wrong with it, do not change anything" "review-deck"         "presentations"
+run_shape_b 19 "I reworked the deck you built me last week, pick up what I changed for next time"    "presentation-review" "presentations"
+
 # ── Summary ────────────────────────────────────────────────────────────────
 printf "\nResult: %d/%d passing\n" "$PASS" "$((PASS + FAIL))"
 [[ "$FAIL" -gt 0 ]] && exit 1
