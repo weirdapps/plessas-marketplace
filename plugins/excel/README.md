@@ -11,7 +11,7 @@ Uses `document-skills:xlsx` (Anthropic's xlsx skill) when available for best res
 | `/excel-summary <file>` | Structure + key KPIs + data quality flags + anomaly check |
 | `/excel-pivot <file>` | Build a pivot table from a natural-language description (groupings, aggregations, filters) |
 | `/excel-variance <file>` | Variance analysis between two periods, columns, or sheets |
-| `/excel-to-deck <file>` | Extract the key insights and hand off to the `decks` plugin to produce a NBG-branded PPTX |
+| `/excel-to-deck <file>` | Extract the key insights as a deck spec and run the `decks` plugin on it to produce an NBG-branded PPTX |
 
 ## How it works
 
@@ -19,7 +19,7 @@ Each command:
 
 1. Reads the workbook via `document-skills:xlsx` (preferred) or `openpyxl`/`pandas` fallback (auto-installed if missing)
 2. Runs the requested analysis (KPI extraction, pivot, variance, insight selection)
-3. Returns the result either as inline tables in the conversation, a written-out `.xlsx` file in `~/Downloads/` (with a `YYYYMMDDHHMM_*.xlsx` timestamp prefix per the global file-naming convention), or (for `/excel-to-deck`) a written deck brief plus the `decks` command to run next
+3. Returns the result either as inline tables in the conversation, a written-out `.xlsx` file in `~/Downloads/` (with a `YYYYMMDDHHMM_*.xlsx` timestamp prefix per the global file-naming convention), or (for `/excel-to-deck`) a deck spec, `~/Downloads/YYYYMMDDHHMM_deck_spec_<workbook>.yaml` in the `decks` plugin's input format, with a dated source on every slide that shows numbers. When `decks` is installed, `/excel-to-deck` then runs `/decks:create-presentation` on that spec itself, which confirms the outline with you and builds the deck; without it, the command prints the `/decks:create-presentation` line to run once `decks` is installed
 
 Variance and pivot requests are interpreted from your natural-language description. The commands do not pause to confirm that interpretation before computing, so if the output groups or aggregates the wrong way, restate the request more explicitly and re-run.
 
@@ -51,7 +51,8 @@ Quarterly review workflow:
 /excel-variance ~/Downloads/q3_results.xlsx Q3 vs Q2 by Product Line
 # … check the deltas, confirm the narrative …
 /excel-to-deck ~/Downloads/q3_results.xlsx ExCo
-# … then run the /create-presentation command that excel-to-deck prints …
+# … writes the deck spec and, with decks installed, runs /decks:create-presentation on it:
+#   confirm the outline and answer any source questions, and the deck is built …
 ```
 
 ## License
