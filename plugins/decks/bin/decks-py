@@ -1,0 +1,302 @@
+#!/usr/bin/env bash
+# decks-py: run a decks tool in its own Python environment, wherever the plugin lives.
+#
+#   bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command> [args...]
+#
+# Every decks prompt calls the Python tools through this one launcher. Before it
+# existed, prompts pointed at ${CLAUDE_PLUGIN_ROOT}/tools/*/.venv/bin/python3 while
+# the installers built those venvs in the marketplace clone, a different
+# directory, so the QA gate, /create-keynote and /create-mockup exited 127 on every
+# installed copy, the maintainer's included.
+#
+# Environments are caches, so they live outside the plugin (which is replaced at
+# every version bump) in ${DECKS_VENV_HOME:-${XDG_CACHE_HOME:-~/.cache}/nbg-decks},
+# one per tool, keyed by a hash of that tool's requirements.txt. The first call
+# builds one (with uv when it is installed, else python3.12+ -m venv and pip);
+# later calls start at once. A requirements change builds a fresh one.
+#
+# Exit codes: the tool's own code is passed through (0 ok, 1 a check failed);
+# 2 means the environment could not be prepared, with the fix printed on stderr.
+
+set -euo pipefail
+
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+VENV_HOME="${DECKS_VENV_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}/nbg-decks}"
+MIN_PY_MINOR=12
+
+die() {
+  echo "decks-py: $*" >&2
+  exit 2
+}
+
+usage() {
+  cat <<'EOF'
+usage: decks-py <command> [args...]
+
+Deck building (tools/nbg-presentation):
+  build <spec.yaml> <out.pptx>     build a deck from a deck spec; validates it (exit 1 = violations)
+  check <spec.yaml>                validate a deck spec against deck.schema.json, no build
+  validate <deck.pptx> [--format json]
+                                   brand-compliance check of any .pptx (exit 1 = violations)
+  render <deck.pptx> <outdir>      LibreOffice render to PDF + one PNG per slide, with a font check
+  extract <file.pptx|.docx|.pdf>   text, notes, tables and chart data as markdown (for redesign)
+  record <deck.pptx> <spec.yaml> --data <dir>
+                                   write the draft record /presentation-review learns from
+
+Keynote and creative tools:
+  keynote <args...>                tools/nbg-keynote/nbg_keynote.py (dark stage keynotes)
+  mockup <args...>                 bundled/creative/tools/device-mockup/iphone_mockup.py
+
+Environment:
+  setup                            build every tool environment now (the installers call this)
+  doctor                           report Python, environments, LibreOffice and Aptos fonts
+EOF
+}
+
+# --- tool table ------------------------------------------------------------
+# command -> "<tool dir relative to plugin root>|<script>|<extra leading args>"
+tool_for() {
+  case "$1" in
+    build) echo "tools/nbg-presentation|nbg_build.py|" ;;
+    check) echo "tools/nbg-presentation|nbg_build.py|--check" ;;
+    validate) echo "tools/nbg-presentation|nbg_validate.py|" ;;
+    render) echo "tools/nbg-presentation|nbg_render.py|" ;;
+    extract) echo "tools/nbg-presentation|nbg_extract.py|" ;;
+    record) echo "tools/nbg-presentation|nbg_record.py|" ;;
+    keynote) echo "tools/nbg-keynote|nbg_keynote.py|" ;;
+    mockup) echo "bundled/creative/tools/device-mockup|iphone_mockup.py|" ;;
+    *) return 1 ;;
+  esac
+}
+
+ALL_TOOL_DIRS=("tools/nbg-presentation" "tools/nbg-keynote" "bundled/creative/tools/device-mockup")
+
+# --- helpers ---------------------------------------------------------------
+sha12() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | cut -c1-12
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -c1-12
+  else
+    # cksum is POSIX; weaker, but only used as a cache key.
+    cksum "$1" | awk '{print $1}'
+  fi
+}
+
+venv_python() {
+  # POSIX and Windows (Git Bash) venv layouts.
+  if [ -x "$1/bin/python" ]; then
+    echo "$1/bin/python"
+  elif [ -f "$1/Scripts/python.exe" ]; then
+    echo "$1/Scripts/python.exe"
+  else
+    return 1
+  fi
+}
+
+py_ok() {
+  "$@" -c "import sys; sys.exit(0 if sys.version_info >= (3, $MIN_PY_MINOR) else 1)" >/dev/null 2>&1
+}
+
+find_python() {
+  # Echoes a command (possibly two words, e.g. "py -3.12") for a Python >= 3.12.
+  if [ -n "${DECKS_BASE_PYTHON:-}" ] && py_ok "$DECKS_BASE_PYTHON"; then
+    echo "$DECKS_BASE_PYTHON"
+    return 0
+  fi
+  local c
+  for c in python3.14 python3.13 python3.12 python3 python; do
+    if command -v "$c" >/dev/null 2>&1 && py_ok "$c"; then
+      echo "$c"
+      return 0
+    fi
+  done
+  if command -v py >/dev/null 2>&1; then
+    for c in 3.14 3.13 3.12; do
+      if py_ok py "-$c"; then
+        echo "py -$c"
+        return 0
+      fi
+    done
+  fi
+  return 1
+}
+
+lock_acquire() {
+  local lock="$1" waited=0
+  mkdir -p "$(dirname "$lock")"
+  until mkdir "$lock" 2>/dev/null; do
+    sleep 1
+    waited=$((waited + 1))
+    if [ "$waited" -ge 600 ]; then
+      die "timed out waiting for $lock (remove it if no other decks-py is running)"
+    fi
+  done
+}
+
+# ensure_env <tool dir> -> echoes the interpreter to use
+ensure_env() {
+  local tool_dir="$PLUGIN_ROOT/$1"
+  local req="$tool_dir/requirements.txt"
+  [ -f "$req" ] || die "missing $req; the plugin install is incomplete"
+
+  if [ -n "${DECKS_PYTHON:-}" ]; then
+    echo "$DECKS_PYTHON"
+    return 0
+  fi
+
+  local name hash venv stamp py
+  name="$(basename "$tool_dir")"
+  hash="$(sha12 "$req")"
+  venv="$VENV_HOME/$name-$hash"
+  stamp="$venv/.decks-ready"
+
+  if [ -f "$stamp" ] && py="$(venv_python "$venv")"; then
+    echo "$py"
+    return 0
+  fi
+
+  lock_acquire "$venv.lock"
+  # Another process may have finished it while we waited.
+  if [ -f "$stamp" ] && py="$(venv_python "$venv")"; then
+    rmdir "$venv.lock" 2>/dev/null || true
+    echo "$py"
+    return 0
+  fi
+  rm -rf "$venv"
+  echo "decks-py: preparing the $name environment (first run only)..." >&2
+
+  local ok=0
+  if command -v uv >/dev/null 2>&1; then
+    if uv venv -q --python ">=3.$MIN_PY_MINOR" "$venv" >&2 && py="$(venv_python "$venv")" \
+      && uv pip install -q --python "$py" -r "$req" >&2; then
+      ok=1
+    fi
+  fi
+  if [ "$ok" -eq 0 ]; then
+    rm -rf "$venv"
+    local base
+    if ! base="$(find_python)"; then
+      rmdir "$venv.lock" 2>/dev/null || true
+      die "no Python 3.$MIN_PY_MINOR+ found. Install Python 3.12 or newer (https://www.python.org/downloads/) or uv (https://docs.astral.sh/uv/), then retry. On Debian/Ubuntu also: apt install python3-venv"
+    fi
+    # shellcheck disable=SC2086  # "py -3.12" is intentionally two words
+    if $base -m venv "$venv" >&2 && py="$(venv_python "$venv")" \
+      && "$py" -m pip install -q --disable-pip-version-check -r "$req" >&2; then
+      ok=1
+    fi
+  fi
+  if [ "$ok" -eq 0 ]; then
+    rm -rf "$venv"
+    rmdir "$venv.lock" 2>/dev/null || true
+    die "could not install $req into $venv (see the pip/uv output above). Check network access or a proxy, then retry."
+  fi
+  date >"$stamp"
+  rmdir "$venv.lock" 2>/dev/null || true
+  echo "$py"
+}
+
+find_soffice() {
+  local c
+  for c in soffice libreoffice; do
+    if command -v "$c" >/dev/null 2>&1; then
+      command -v "$c"
+      return 0
+    fi
+  done
+  for c in "/Applications/LibreOffice.app/Contents/MacOS/soffice" \
+    "/c/Program Files/LibreOffice/program/soffice.exe" \
+    "/usr/lib/libreoffice/program/soffice"; do
+    if [ -x "$c" ] || [ -f "$c" ]; then
+      echo "$c"
+      return 0
+    fi
+  done
+  return 1
+}
+
+doctor() {
+  local status=0 py base
+  echo "plugin root:   $PLUGIN_ROOT"
+  echo "venv home:     $VENV_HOME"
+  if base="$(find_python)"; then
+    # shellcheck disable=SC2086
+    echo "python:        $base ($($base -c 'import sys; print(sys.version.split()[0])'))"
+  else
+    echo "python:        MISSING (need 3.$MIN_PY_MINOR+)"
+    command -v uv >/dev/null 2>&1 || status=2
+  fi
+  if command -v uv >/dev/null 2>&1; then echo "uv:            $(command -v uv)"; else echo "uv:            not installed (optional)"; fi
+  local d name hash venv
+  for d in "${ALL_TOOL_DIRS[@]}"; do
+    name="$(basename "$d")"
+    hash="$(sha12 "$PLUGIN_ROOT/$d/requirements.txt")"
+    venv="$VENV_HOME/$name-$hash"
+    if [ -f "$venv/.decks-ready" ]; then
+      echo "env $name: ready ($venv)"
+    else
+      echo "env $name: not built yet (first use builds it; or run: decks-py setup)"
+    fi
+  done
+  if py="$(find_soffice)"; then
+    echo "LibreOffice:   $py (render-and-look QA available)"
+  else
+    echo "LibreOffice:   not found; QA cannot render slides (install LibreOffice to enable it)"
+  fi
+  local fonts=()
+  local f
+  for f in "$HOME/Library/Fonts" "/Library/Fonts" \
+    "/Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts" \
+    "/c/Windows/Fonts" "${LOCALAPPDATA:-/nonexistent}/Microsoft/Windows/Fonts" \
+    "$HOME/.local/share/fonts" "/usr/share/fonts"; do
+    if ls "$f"/Aptos*.ttf >/dev/null 2>&1; then fonts+=("$f"); fi
+  done
+  if [ "${#fonts[@]}" -gt 0 ]; then
+    echo "Aptos fonts:   ${fonts[*]}"
+  else
+    echo "Aptos fonts:   not found; renders and keynotes fall back to Calibri/DejaVu"
+  fi
+  return "$status"
+}
+
+# --- main ------------------------------------------------------------------
+[ "$#" -ge 1 ] || {
+  usage >&2
+  exit 2
+}
+cmd="$1"
+shift
+
+case "$cmd" in
+  -h | --help | help)
+    usage
+    exit 0
+    ;;
+  doctor)
+    doctor
+    exit $?
+    ;;
+  setup)
+    for d in "${ALL_TOOL_DIRS[@]}"; do
+      ensure_env "$d" >/dev/null
+      echo "decks-py: $(basename "$d") ready"
+    done
+    exit 0
+    ;;
+esac
+
+spec="$(tool_for "$cmd")" || {
+  echo "decks-py: unknown command '$cmd'" >&2
+  usage >&2
+  exit 2
+}
+IFS='|' read -r tool_dir script extra <<<"$spec"
+script_path="$PLUGIN_ROOT/$tool_dir/$script"
+[ -f "$script_path" ] || die "missing $script_path; the plugin install is incomplete"
+
+py="$(ensure_env "$tool_dir")"
+if [ -n "$extra" ]; then
+  exec "$py" "$script_path" "$extra" "$@"
+else
+  exec "$py" "$script_path" "$@"
+fi

@@ -222,58 +222,33 @@ if ($found -eq 0) {
     Write-Warn 'No installed plugins in the cache yet. Expected on a first install: do the /plugin steps printed at the end, then re-run this installer. Skipping it only costs a 30-60s stall on each bundled MCP first call.'
 }
 
-# --- Install Python deps for decks ---
-# One virtualenv per tool, because each ships its own requirements.txt with a
-# different dependency set. nbg-keynote had no block at all, so /create-keynote,
-# a shipped and advertised command, died with ModuleNotFoundError on its first
-# line after a "successful" install. Every failure in here warns and continues:
-# the decks Python tools are optional, the install is not.
-function Install-PythonTool {
-    param(
-        [Parameter(Mandatory)][string]$Label,     # e.g. nbg-keynote
-        [Parameter(Mandatory)][string]$ToolDir,   # holds requirements.txt, receives .venv
-        [Parameter(Mandatory)][string]$Disables   # what the user loses if this one fails
-    )
-    $req = Join-Path $ToolDir 'requirements.txt'
-    if (-not (Test-Path $req)) { return }
-
-    $venvDir = Join-Path $ToolDir '.venv'
-    if (-not (Test-Path $venvDir)) {
-        if (-not (Invoke-Native "python -m venv ($Label)" $pythonCmd @('-m', 'venv', $venvDir) -AllowFailure)) {
-            Write-Warn "$Label virtualenv not created. $Disables."
-            return
-        }
-    }
-
-    $pip = Join-Path $venvDir 'Scripts\pip.exe'
-    if (-not (Test-Path $pip)) { $pip = Join-Path $venvDir 'bin/pip' }  # WSL/Mac fallback
-    if (-not (Test-Path $pip)) {
-        Write-Warn "$Label virtualenv has no pip. $Disables."
-        return
-    }
-
-    if (Invoke-Native "pip install ($Label)" $pip @('install', '-q', '-r', $req) -AllowFailure) {
-        Write-Ok "$Label Python deps installed"
-    } else {
-        Write-Warn "$Label Python deps failed. $Disables. Output above."
-    }
-}
-
-if ($PythonOk) {
+# --- Warm the decks Python environments ---
+# The decks prompts run every Python tool through plugins\decks\bin\decks-py (a
+# bash script; Claude Code on Windows runs its Bash tool in Git Bash, which is
+# also what runs it here). It keeps one environment per tool in
+# ~/.cache/nbg-decks, keyed by that tool's requirements.txt, and builds it on
+# first use. This step only builds them now.
+#
+# It used to build <tool>\.venv inside this marketplace clone, while Claude Code
+# runs the plugin from its version-keyed cache copy, where no venv ever existed.
+# Every failure here warns and continues: the decks Python tools are optional,
+# the install is not.
+$bashCmd = Get-Command bash -ErrorAction SilentlyContinue
+if ($PythonOk -and $bashCmd) {
     Write-Host ''
-    Write-Host 'Installing Python dependencies for decks...'
-    Install-PythonTool -Label 'nbg-presentation' `
-        -ToolDir (Join-Path $InstallDir 'plugins\decks\tools\nbg-presentation') `
-        -Disables '/create-presentation and /redesign-deck cannot build a PPTX'
-    Install-PythonTool -Label 'nbg-keynote' `
-        -ToolDir (Join-Path $InstallDir 'plugins\decks\tools\nbg-keynote') `
-        -Disables '/create-keynote cannot run'
-    Install-PythonTool -Label 'device-mockup' `
-        -ToolDir (Join-Path $InstallDir 'plugins\decks\bundled\creative\tools\device-mockup') `
-        -Disables 'the device-mockup tool cannot render screenshots'
+    Write-Host 'Preparing the decks Python environments...'
+    $launcher = Join-Path $InstallDir 'plugins\decks\bin\decks-py'
+    if (Invoke-Native 'decks-py setup' $bashCmd.Source @($launcher, 'setup') -AllowFailure) {
+        Write-Ok 'decks Python environments ready'
+    } else {
+        Write-Warn 'decks-py setup failed (output above). The decks tools will retry on first use.'
+    }
+} elseif ($PythonOk) {
+    Write-Host ''
+    Write-Warn 'bash (Git for Windows) not found, so the decks Python environments were not prepared. Claude Code needs Git Bash anyway; they build on first use once it is installed.'
 } else {
     Write-Host ''
-    Write-Warn 'Skipping the decks Python virtualenvs (see the Python line above). /create-presentation, /create-keynote and device-mockup stay unavailable; everything else installs normally.'
+    Write-Warn 'Skipping the decks Python environments (see the Python line above). They build on first use once Python 3.12+ is installed; everything else installs normally.'
 }
 
 # --- Install outlook-cli and teams-cli ---

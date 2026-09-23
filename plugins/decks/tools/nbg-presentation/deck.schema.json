@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/weirdapps/plessas-marketplace/blob/master/plugins/decks/tools/nbg-presentation/deck.schema.json",
+  "title": "NBG deck spec",
+  "description": "The one input contract of nbg_build.py. storyline-architect writes it, storyboard-designer and graphics-renderer refine it, nbg_build.py renders it, and `decks-py check` validates it. Legacy aliases (thankyou, toc, bar_chart, hyper_title, paragraphs, items, waterfall_items, recommended_visual) are normalised by the builder with a warning BEFORE this schema is applied, so they do not appear here. Colours are token names from shared/brand-system/tokens.yaml, never raw hex, except where noted.",
+  "type": "object",
+  "properties": {
+    "presentation": { "$ref": "#/$defs/presentation" },
+    "slides": { "$ref": "#/$defs/slides" }
+  },
+  "patternProperties": { "^x-": true },
+  "additionalProperties": false,
+  "anyOf": [
+    { "required": ["slides"] },
+    { "required": ["presentation"], "properties": { "presentation": { "required": ["slides"] } } }
+  ],
+  "$defs": {
+    "presentation": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "audience": { "type": "string" },
+        "purpose": { "type": "string" },
+        "main_recommendation": { "type": "string" },
+        "language": { "enum": ["en", "el"], "default": "en", "description": "Drives boilerplate (Contents/Περιεχόμενα, Source/Πηγή), number formats and accent-free Greek capitals." },
+        "date": { "type": "string" },
+        "scqa": {
+          "type": "object",
+          "properties": {
+            "situation": { "type": "string" },
+            "complication": { "type": "string" },
+            "question": { "type": "string" },
+            "answer": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "slides": { "$ref": "#/$defs/slides" }
+      },
+      "patternProperties": { "^x-": true },
+      "additionalProperties": false
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/slide" }
+    },
+    "slide": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["cover", "contents", "divider", "content", "chart", "waterfall", "table", "kpi", "cards", "process", "two_column", "image", "custom", "back_cover"]
+        },
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$", "description": "Stable id (e.g. S03) so QA findings and fix loops can name a slide." },
+        "key_message": { "type": "string", "description": "The one message this slide carries (storyline)." },
+        "so_what": { "type": "string" },
+        "notes": { "type": "string", "description": "Speaker notes, written to the slide's notes page." }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "cover" } } }, "then": { "required": ["content"], "properties": { "content": { "$ref": "#/$defs/cover_content" } } } },
+        { "if": { "properties": { "type": { "const": "contents" } } }, "then": { "required": ["content"], "properties": { "content": { "$ref": "#/$defs/contents_content" } } } },
+        { "if": { "properties": { "type": { "const": "divider" } } }, "then": { "required": ["content"], "properties": { "content": { "$ref": "#/$defs/divider_content" } } } },
+        { "if": { "properties": { "type": { "const": "content" } } }, "then": { "required": ["content"], "properties": { "content": { "$ref": "#/$defs/bullets_content" } } } },
+        { "if": { "properties": { "type": { "const": "chart" } } }, "then": { "required": ["content", "chart"], "properties": { "content": { "$ref": "#/$defs/exhibit_content" }, "chart": { "$ref": "#/$defs/chart" } } } },
+        { "if": { "properties": { "type": { "const": "waterfall" } } }, "then": { "required": ["content", "chart"], "properties": { "content": { "$ref": "#/$defs/exhibit_content" }, "chart": { "$ref": "#/$defs/waterfall_chart" } } } },
+        { "if": { "properties": { "type": { "const": "table" } } }, "then": { "required": ["content", "table"], "properties": { "content": { "$ref": "#/$defs/exhibit_content" }, "table": { "$ref": "#/$defs/table" } } } },
+        { "if": { "properties": { "type": { "const": "kpi" } } }, "then": { "required": ["content", "kpis"], "properties": { "content": { "$ref": "#/$defs/exhibit_content" }, "kpis": { "$ref": "#/$defs/kpis" } } } },
+        { "if": { "properties": { "type": { "const": "cards" } } }, "then": { "required": ["content", "cards"], "properties": { "content": { "$ref": "#/$defs/titled_content" }, "cards": { "$ref": "#/$defs/cards" }, "layout": { "enum": ["row", "grid"] } } } },
+        { "if": { "properties": { "type": { "const": "process" } } }, "then": { "required": ["content", "steps"], "properties": { "content": { "$ref": "#/$defs/titled_content" }, "steps": { "$ref": "#/$defs/steps" } } } },
+        { "if": { "properties": { "type": { "const": "two_column" } } }, "then": { "required": ["content", "left", "right"], "properties": { "content": { "$ref": "#/$defs/titled_content_optional_source" }, "left": { "$ref": "#/$defs/column" }, "right": { "$ref": "#/$defs/column" } } } },
+        { "if": { "properties": { "type": { "const": "image" } } }, "then": { "required": ["content", "image"], "properties": { "content": { "$ref": "#/$defs/titled_content_optional_source" }, "image": { "$ref": "#/$defs/image" } } } },
+        { "if": { "properties": { "type": { "const": "custom" } } }, "then": { "required": ["elements"], "properties": { "content": { "$ref": "#/$defs/custom_content" }, "elements": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/element" } } } } },
+        { "if": { "properties": { "type": { "const": "back_cover" } } }, "then": { "properties": { "content": { "type": "object", "maxProperties": 0 } } } }
+      ],
+      "patternProperties": { "^x-": true },
+      "unevaluatedProperties": false
+    },
+
+    "source": {
+      "type": "object",
+      "description": "Provenance line under every exhibit. nbg_build.py refuses an exhibit without it; nbg_validate.py fails an undated one (Exhibit Sources check).",
+      "required": ["name", "as_of"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "as_of": { "type": "string", "minLength": 1, "description": "Date or period the data refers to, e.g. '30 June 2026' or 'H1 2026'." },
+        "basis": { "type": "string", "description": "Optional caveat, e.g. 'constant currency'." }
+      },
+      "additionalProperties": false
+    },
+    "title": { "type": "string", "minLength": 1, "maxLength": 80, "description": "Action title: one sentence stating the insight. 24pt, one line at full width." },
+    "bumper": { "type": "string", "minLength": 1, "maxLength": 32, "description": "Section pill text; rendered ALL CAPS, the pill is sized to the text." },
+    "description": { "type": "string", "maxLength": 140, "description": "One-line 12pt caption under the title." },
+    "takeaway": { "type": "string", "maxLength": 120, "description": "Optional bottom takeaway strip (pale-teal bar, bold dark teal)." },
+    "color_token": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "A colour name from tokens.yaml `colors` (e.g. teal, off_white)." },
+
+    "cover_content": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "subtitle": { "type": "string", "description": "Presenting unit(s), pipe-separated, no trailing period." },
+        "location": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "contents_content": {
+      "type": "object",
+      "required": ["sections"],
+      "properties": {
+        "title": { "type": "string", "description": "Defaults to 'Contents' / 'Περιεχόμενα' by presentation.language." },
+        "sections": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["title"],
+            "properties": {
+              "number": { "type": ["string", "integer"] },
+              "title": { "type": "string", "minLength": 1 },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "divider_content": {
+      "type": "object",
+      "required": ["number", "title"],
+      "properties": {
+        "number": { "type": ["string", "integer"] },
+        "title": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "point": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "text": { "type": "string", "minLength": 1 },
+            "level": { "enum": [1, 2], "default": 1 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "points": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/point" } },
+    "bullets_content": {
+      "type": "object",
+      "required": ["title", "points"],
+      "properties": {
+        "title": { "$ref": "#/$defs/title" },
+        "bumper": { "$ref": "#/$defs/bumper" },
+        "description": { "$ref": "#/$defs/description" },
+        "takeaway": { "$ref": "#/$defs/takeaway" },
+        "points": { "$ref": "#/$defs/points" },
+        "source": { "$ref": "#/$defs/source" }
+      },
+      "additionalProperties": false
+    },
+    "exhibit_content": {
+      "type": "object",
+      "required": ["title", "source"],
+      "properties": {
+        "title": { "$ref": "#/$defs/title" },
+        "bumper": { "$ref": "#/$defs/bumper" },
+        "description": { "$ref": "#/$defs/description" },
+        "takeaway": { "$ref": "#/$defs/takeaway" },
+        "source": { "$ref": "#/$defs/source" }
+      },
+      "additionalProperties": false
+    },
+    "titled_content": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": { "$ref": "#/$defs/title" },
+        "bumper": { "$ref": "#/$defs/bumper" },
+        "description": { "$ref": "#/$defs/description" },
+        "takeaway": { "$ref": "#/$defs/takeaway" }
+      },
+      "additionalProperties": false
+    },
+    "titled_content_optional_source": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": { "$ref": "#/$defs/title" },
+        "bumper": { "$ref": "#/$defs/bumper" },
+        "description": { "$ref": "#/$defs/description" },
+        "takeaway": { "$ref": "#/$defs/takeaway" },
+        "source": { "$ref": "#/$defs/source", "description": "Required when a column holds a chart, table or kpis." }
+      },
+      "additionalProperties": false
+    },
+    "custom_content": {
+      "type": "object",
+      "properties": {
+        "title": { "$ref": "#/$defs/title" },
+        "bumper": { "$ref": "#/$defs/bumper" },
+        "description": { "$ref": "#/$defs/description" },
+        "takeaway": { "$ref": "#/$defs/takeaway" },
+        "source": { "$ref": "#/$defs/source", "description": "Required when an element is a chart or table." }
+      },
+      "additionalProperties": false
+    },
+
+    "chart": {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": {
+          "enum": ["bar", "bar_stacked", "bar_horizontal", "line", "area_line", "doughnut"],
+          "description": "Time series default to area_line (Standard #2.8). pie is not a type: part-to-whole is a doughnut."
+        },
+        "data": {
+          "type": "object",
+          "required": ["categories", "series"],
+          "properties": {
+            "categories": { "type": "array", "minItems": 1, "items": { "type": ["string", "number"] } },
+            "series": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "required": ["name", "values"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "values": { "type": "array", "minItems": 1, "items": { "type": ["number", "null"] } }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "number_format": { "type": "string", "description": "Excel number format for labels and axis, e.g. '#,##0.0' or '0%'." },
+        "unit": { "type": "string", "description": "Unit shown in the caption or axis title, e.g. 'EUR m'." },
+        "highlight_category": { "type": "string", "description": "Category drawn in the accent colour; the rest are muted." },
+        "show_legend": { "type": "boolean" },
+        "alt_text": { "type": "string", "description": "Screen-reader description. Generated from the data when absent." }
+      },
+      "additionalProperties": false
+    },
+    "waterfall_chart": {
+      "type": "object",
+      "required": ["type", "data"],
+      "properties": {
+        "type": { "const": "waterfall" },
+        "data": {
+          "type": "object",
+          "required": ["items"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "required": ["label", "value"],
+                "properties": {
+                  "label": { "type": "string" },
+                  "value": { "type": "number" },
+                  "total": { "type": "boolean", "description": "A total bar (drawn from zero). First and last items are totals by default." }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "number_format": { "type": "string" },
+        "unit": { "type": "string" },
+        "alt_text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "table": {
+      "type": "object",
+      "required": ["headers", "rows"],
+      "properties": {
+        "headers": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 14,
+          "items": { "type": "array", "items": { "type": ["string", "number", "null"] } }
+        },
+        "highlight_column": { "type": "integer", "minimum": 0 },
+        "column_align": { "type": "array", "items": { "enum": ["left", "right", "center", "auto"] } },
+        "alt_text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "kpis": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["value", "label"],
+        "properties": {
+          "value": { "type": "string", "minLength": 1, "maxLength": 12, "description": "Pre-formatted, e.g. '3.3M' or '+18%'." },
+          "label": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "delta": { "type": "string", "maxLength": 24 },
+          "sentiment": { "enum": ["positive", "negative", "neutral"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cards": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "body": { "type": "string", "maxLength": 220 },
+          "icon": { "type": "string", "description": "PNG, JPEG or SVG path; relative paths resolve against the spec file, then the plugin's assets/." },
+          "number": { "type": "integer", "minimum": 1, "description": "Draws a numbered oval badge." },
+          "highlight": { "type": "boolean" },
+          "recommended": { "type": "boolean", "description": "Gold border, cream fill and a RECOMMENDED tab (colors.md)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "body": { "type": "string", "maxLength": 160 },
+          "icon": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "image": {
+      "type": "object",
+      "required": ["path", "alt_text"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "description": "PNG, JPEG or SVG. SVG is rasterised by the builder." },
+        "alt_text": { "type": "string", "minLength": 1 },
+        "fit": { "enum": ["contain", "cover"], "default": "contain" },
+        "caption": { "type": "string", "maxLength": 140 }
+      },
+      "additionalProperties": false
+    },
+    "column": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["bullets", "text", "chart", "table", "image", "kpis"] },
+        "heading": { "type": "string", "maxLength": 60 },
+        "points": { "$ref": "#/$defs/points" },
+        "text": { "type": "string" },
+        "chart": { "$ref": "#/$defs/chart" },
+        "table": { "$ref": "#/$defs/table" },
+        "image": { "$ref": "#/$defs/image" },
+        "kpis": { "$ref": "#/$defs/kpis" }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "bullets" } } }, "then": { "required": ["points"] } },
+        { "if": { "properties": { "kind": { "const": "text" } } }, "then": { "required": ["text"] } },
+        { "if": { "properties": { "kind": { "const": "chart" } } }, "then": { "required": ["chart"] } },
+        { "if": { "properties": { "kind": { "const": "table" } } }, "then": { "required": ["table"] } },
+        { "if": { "properties": { "kind": { "const": "image" } } }, "then": { "required": ["image"] } },
+        { "if": { "properties": { "kind": { "const": "kpis" } } }, "then": { "required": ["kpis"] } }
+      ],
+      "additionalProperties": false
+    },
+    "element": {
+      "type": "object",
+      "description": "A positioned element for layouts no named slide type covers. Geometry in inches; the builder and validator still enforce the gutter, safe zones, type floor and palette.",
+      "required": ["kind", "x", "y", "w", "h"],
+      "properties": {
+        "kind": { "enum": ["text", "bullets", "shape", "image", "chart", "table", "line"] },
+        "x": { "type": "number", "minimum": 0 },
+        "y": { "type": "number", "minimum": 0 },
+        "w": { "type": "number", "exclusiveMinimum": 0 },
+        "h": { "type": "number", "minimum": 0 },
+        "role": {
+          "enum": ["title", "subtitle", "body", "body_dense", "caption", "source", "footnote", "kpi_value", "kpi_label", "card_title", "card_body", "section_title"],
+          "description": "A type-scale role from tokens.yaml; sets font size, weight and colour."
+        },
+        "text": { "type": "string" },
+        "points": { "$ref": "#/$defs/points" },
+        "align": { "enum": ["left", "center", "right"] },
+        "anchor": { "enum": ["top", "middle", "bottom"] },
+        "shape": { "enum": ["rect", "rounded_rect", "oval", "chevron", "arrow_right"] },
+        "fill": { "$ref": "#/$defs/color_token" },
+        "border": { "$ref": "#/$defs/color_token" },
+        "border_pt": { "type": "number", "minimum": 0 },
+        "text_color": { "$ref": "#/$defs/color_token" },
+        "size": { "type": "number", "minimum": 10, "description": "Point size override; the 10pt floor applies." },
+        "bold": { "type": "boolean" },
+        "path": { "type": "string" },
+        "alt_text": { "type": "string" },
+        "chart": { "$ref": "#/$defs/chart" },
+        "table": { "$ref": "#/$defs/table" }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "text" } } }, "then": { "required": ["text"] } },
+        { "if": { "properties": { "kind": { "const": "bullets" } } }, "then": { "required": ["points"] } },
+        { "if": { "properties": { "kind": { "const": "image" } } }, "then": { "required": ["path", "alt_text"] } },
+        { "if": { "properties": { "kind": { "const": "chart" } } }, "then": { "required": ["chart"] } },
+        { "if": { "properties": { "kind": { "const": "table" } } }, "then": { "required": ["table"] } },
+        { "if": { "properties": { "kind": { "const": "shape" } } }, "then": { "required": ["shape"] } }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

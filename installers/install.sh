@@ -148,52 +148,28 @@ if [ "$FOUND" -eq 0 ]; then
   warn "No installed plugins in the cache yet. Expected on a first install: do the /plugin steps printed at the end, then re-run this installer. Skipping it only costs a 30-60s stall on each bundled MCP's first call."
 fi
 
-# --- Install Python deps for decks ---
-# One virtualenv per tool, because each ships its own requirements.txt with a
-# different dependency set. nbg-keynote had no block at all, so /create-keynote
-# -- a shipped, advertised command -- died with ModuleNotFoundError on its first
-# line after a "successful" install.
+# --- Warm the decks Python environments ---
+# The decks prompts run every Python tool through plugins/decks/bin/decks-py,
+# which keeps one environment per tool in ~/.cache/nbg-decks (keyed by that
+# tool's requirements.txt) and builds it on first use. This step only builds
+# them now, so the first /create-presentation does not pay for it.
 #
-# Every failure in here warns and continues. The old device-mockup block ran a
-# bare `python3 -m venv` with no guard, so under `set -euo pipefail` a missing
-# or too-old python3 took the whole installer down before the CLIs and the
-# CLAUDE.md template at the bottom of this script, leaving a half-installed
-# state, on the strength of a dependency the prerequisite check above calls
-# optional. pip is on
-# the same footing: a resolver failure or a dead network must cost you the
-# decks Python tools, not the install.
-install_python_tool() {
-  local label="$1"      # e.g. nbg-keynote
-  local tool_dir="$2"   # holds requirements.txt, receives .venv
-  local disables="$3"   # what the user loses if this one fails
-  local req="$tool_dir/requirements.txt"
-  local venv_dir="$tool_dir/.venv"
-
-  [ -f "$req" ] || return 0
-
-  if [ ! -d "$venv_dir" ] && ! python3 -m venv "$venv_dir"; then
-    warn "python3 -m venv failed for $label - $disables. On Debian/Ubuntu: apt install python3-venv"
-    return 0
-  fi
-  if "$venv_dir/bin/pip" install -q -r "$req" 2>&1 | tail -3; then
-    ok "$label Python deps installed"
-  else
-    warn "pip install failed for $label - $disables. Output above."
-  fi
-}
-
-if [ "$PYTHON_OK" -eq 1 ]; then
+# It used to build <tool>/.venv inside this marketplace clone, while Claude Code
+# runs the plugin from its version-keyed cache copy, where no venv ever existed:
+# the QA gate, /create-keynote and /create-mockup exited 127 on every install.
+# Every failure here warns and continues: the decks Python tools are optional,
+# the install is not.
+if [ "$PYTHON_OK" -eq 1 ] || command -v uv >/dev/null 2>&1; then
   echo
-  echo "Installing Python dependencies for decks..."
-  install_python_tool "nbg-presentation" "plugins/decks/tools/nbg-presentation" \
-    "/create-presentation and /redesign-deck cannot build a PPTX"
-  install_python_tool "nbg-keynote" "plugins/decks/tools/nbg-keynote" \
-    "/create-keynote cannot run"
-  install_python_tool "device-mockup" "plugins/decks/bundled/creative/tools/device-mockup" \
-    "the device-mockup tool cannot render screenshots"
+  echo "Preparing the decks Python environments..."
+  if bash "$INSTALL_DIR/plugins/decks/bin/decks-py" setup; then
+    ok "decks Python environments ready"
+  else
+    warn "decks-py setup failed (output above). The decks tools will retry on first use; everything else installs normally."
+  fi
 else
   echo
-  warn "Skipping the decks Python virtualenvs (see the Python line above). /create-presentation, /create-keynote and device-mockup stay unavailable; everything else installs normally."
+  warn "Skipping the decks Python environments (see the Python line above). They build on first use once Python 3.12+ or uv is installed; everything else installs normally."
 fi
 
 # --- Install outlook-cli and teams-cli ---
