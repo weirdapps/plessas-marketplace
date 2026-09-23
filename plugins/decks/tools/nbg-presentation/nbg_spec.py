@@ -997,6 +997,24 @@ def svg_supported() -> bool:
     return True
 
 
+def undecodable(file: Path) -> str | None:
+    """Why an existing image file cannot be drawn, or None when it decodes: a renamed
+    HEIC or a malformed SVG exists, has the right suffix, and still cannot be placed."""
+    try:
+        if file.suffix.lower() == ".svg":
+            import resvg_py
+
+            resvg_py.svg_to_bytes(svg_path=str(file), width=16)
+        else:
+            from PIL import Image
+
+            with Image.open(file) as img:
+                img.verify()
+    except Exception as e:  # noqa: BLE001 - whatever the decoder raises, the file is unusable
+        return f"{type(e).__name__}: {e}"
+    return None
+
+
 def _check_image(raw: Any, path: str, spec_dir: Path, issues: Issues) -> None:
     if not isinstance(raw, str) or not raw.strip():
         return
@@ -1004,7 +1022,8 @@ def _check_image(raw: Any, path: str, spec_dir: Path, issues: Issues) -> None:
     if suffix not in IMAGE_SUFFIXES:
         issues.error(path, f"'{Path(raw).name}' is not a PNG, JPEG or SVG", "convert it to PNG")
         return
-    if resolve_asset(raw, spec_dir) is None:
+    found = resolve_asset(raw, spec_dir)
+    if found is None:
         issues.error(
             path,
             f"image not found: {raw}",
@@ -1016,6 +1035,12 @@ def _check_image(raw: Any, path: str, spec_dir: Path, issues: Issues) -> None:
             path,
             "SVG needs resvg-py, which is not installed",
             "run through bin/decks-py (it installs requirements.txt), or convert the SVG to PNG",
+        )
+    elif (why := undecodable(found)) is not None:
+        issues.error(
+            path,
+            f"'{found.name}' exists but cannot be read as {suffix.lstrip('.').upper()} ({why})",
+            "re-export it as a PNG, JPEG or valid SVG; a photo saved as HEIC needs converting",
         )
 
 

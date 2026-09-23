@@ -347,6 +347,43 @@ def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     )
 
 
+@pytest.mark.parametrize(
+    ("name", "content"),
+    [
+        ("photo.png", b"not a png at all"),
+        ("renamed.jpg", b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic"),
+        (
+            "broken.svg",
+            b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="44">\n</svg>',
+        ),
+    ],
+)
+def test_an_image_that_cannot_be_decoded_is_an_error_naming_slide_path_and_file(
+    tmp_path, name, content
+):
+    """PROMPTS-CONTRACTS-02: an image that exists but will not decode (a renamed HEIC,
+    a malformed agent-written SVG) crashed check with a traceback, and build exited 2
+    blaming the environment."""
+    (tmp_path / name).write_bytes(content)
+    spec = deck(
+        [
+            {
+                "type": "image",
+                "content": {"title": "A picture that will not open"},
+                "image": {"path": name, "alt_text": "Growth over five years"},
+            }
+        ]
+    )
+    report = check(tmp_path, spec)
+    error = next(i for i in report.errors if i.path == "slides[1].image.path")
+    assert name in error.message and error.slide == 2, error.format()
+    with pytest.raises(nbg_build.SpecInvalid):
+        nbg_build.build_presentation(write_spec(tmp_path, spec, "bad.yaml"), tmp_path / "bad.pptx")
+    # The renderer itself turns the decode failure into an issue, not a traceback.
+    _, errors, _ = nbg_build.render(spec, tmp_path)
+    assert any(i.path == "slides[1].image.path" and name in i.message for i in errors)
+
+
 def test_x_keys_carry_pipeline_notes_through_check_and_build_untouched(tmp_path, monkeypatch):
     """The pipeline keeps its working notes in the spec: top-level x-open-questions,
     slide-level x-assets. Neither is an error, a warning, or anything drawn."""

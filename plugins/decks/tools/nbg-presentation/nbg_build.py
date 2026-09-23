@@ -733,12 +733,20 @@ def _image_stream(
             raise deck.fit(
                 rel, "SVG needs resvg-py", "run through bin/decks-py, or use a PNG"
             ) from e
-        px = int(min(4000, max(600, width_in * 300)))
-        stream: Any = io.BytesIO(bytes(resvg_py.svg_to_bytes(svg_path=str(path), width=px)))
-    else:
-        stream = io.BytesIO(path.read_bytes())
-    with Image.open(stream) as img:
-        size = img.size
+    try:
+        if vector:
+            px = int(min(4000, max(600, width_in * 300)))
+            stream: Any = io.BytesIO(bytes(resvg_py.svg_to_bytes(svg_path=str(path), width=px)))
+        else:
+            stream = io.BytesIO(path.read_bytes())
+        with Image.open(stream) as img:
+            size = img.size
+    except Exception as e:  # noqa: BLE001 - a bad file is the spec's problem, not the environment's
+        raise deck.fit(
+            rel,
+            f"'{path.name}' exists but cannot be read ({type(e).__name__}: {e})",
+            "re-export it as a PNG, JPEG or valid SVG",
+        ) from e
     stream.seek(0)
     return stream, size, vector
 
