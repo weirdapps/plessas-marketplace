@@ -1,233 +1,153 @@
 #!/usr/bin/env python3
-"""
-NBG Table Data Injection Tool
+"""Replace the text in tables of an existing deck.
 
-Injects real data into table placeholders in NBG presentations.
-Works by editing the OOXML table XML in slide files.
+    inject_table_data.py input.pptx table_config.json output.pptx
 
-Usage:
-    python inject_table_data.py presentation.pptx table_config.json output.pptx
+table_config.json:
 
-table_config.json format:
-{
-    "tables": [
+    {
+      "tables": [
         {
-            "slide": 2,
-            "table_index": 0,
-            "data": {
-                "headers": ["Metric", "NBG", "Eurobank", "Piraeus", "Alpha"],
-                "rows": [
-                    ["Total Assets (EUR B)", "78.5", "82.1", "75.3", "71.2"],
-                    ["Deposits (EUR B)", "58.2", "52.4", "48.7", "45.1"],
-                    ["CET1 Ratio (%)", "17.2%", "15.8%", "14.9%", "15.2%"],
-                    ["NPL Ratio (%)", "3.8%", "5.2%", "6.1%", "5.8%"]
-                ]
-            },
-            "highlight_column": 1
+          "slide": 2,
+          "table_index": 0,
+          "data": {
+            "headers": ["Metric", "2025", "2026"],
+            "rows": [["Assets (EUR B)", "78.5", "82.1"], ["CET1 ratio", "17.2%", "15.8%"]]
+          },
+          "highlight_column": 2
         }
-    ]
-}
+      ]
+    }
+
+"slide" counts from 0 in presentation order; "table_index" counts from 0 in the
+slide's shape order and defaults to 0. "headers" is optional and, when given, fills
+the first row. "highlight_column" (0-based) sets that column's body cells in bold
+NBG Teal, as the builder does.
+
+The data must be exactly the table's shape, rows and columns: a template with more
+rows than the data used to keep its old rows, and one with fewer silently dropped
+data. Each cell keeps the character formatting of its first run and loses every
+other run, so no cell mixes old and new text. Nothing is written unless every entry
+matched. Exit codes: 0 written; 1 an entry did not match (each named on stderr);
+2 a file could not be read or written.
 """
 
+from __future__ import annotations
+
+import copy
 import json
 import sys
-import tempfile
-import zipfile
 from pathlib import Path
-from xml.etree.ElementTree import (  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml - only non-parsing helpers, all parse() calls use defusedxml
-    Element,
-    SubElement,
-    register_namespace,
-)
+from typing import Any
 
-import defusedxml.ElementTree as ET
-from ooxml_ns import write_preserving_namespaces
+from pptx import Presentation
+from pptx.dml.color import RGBColor
+from pptx.oxml.ns import qn
 
-# NBG Colors (without # prefix)
-NBG_COLORS = {
-    "dark_teal": "003841",
-    "teal": "007B85",
-    "cyan": "00ADBF",
-    "bright_cyan": "00DFF8",
-    "white": "FFFFFF",
-    "dark_text": "202020",
-    "light_gray": "BEC1BE",
-    "off_white": "F5F8F6",
-}
-
-# XML Namespaces
-NAMESPACES = {
-    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-    "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
-    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-}
-
-for prefix, uri in NAMESPACES.items():
-    register_namespace(prefix, uri)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import nbg_tokens  # noqa: E402
 
 
-def find_tables_in_slide(slide_file: Path) -> list:
-    """Find all tables in a slide and return their XML elements.
-
-    The raw bytes travel with the tree: they are the only record of which
-    namespace prefixes the source declared, and ElementTree renames or drops
-    every one it was not told about. See ooxml_ns.write_preserving_namespaces.
-    """
-    raw = slide_file.read_bytes()
-    tree = ET.parse(slide_file)
-    root = tree.getroot()
-
-    tables = []
-
-    # Look for graphicFrame elements containing tables
-    for gf in root.findall(".//{{{}}}graphicFrame".format(NAMESPACES["p"])):
-        tbl = gf.find(".//{{{}}}tbl".format(NAMESPACES["a"]))
-        if tbl is not None:
-            tables.append((gf, tbl, tree, slide_file, raw))
-
-    return tables
+class InjectionError(ValueError):
+    """At least one config entry did not match the deck; nothing was written."""
 
 
-def update_table_cell(cell: Element, text: str, is_header: bool = False, highlight: bool = False):
-    """Update the text content of a table cell."""
-    # Find or create the text body
-    txBody = cell.find(".//{{{}}}txBody".format(NAMESPACES["a"]))
-    if txBody is None:
-        return
-
-    # Find the first paragraph
-    p = txBody.find(".//{{{}}}p".format(NAMESPACES["a"]))
-    if p is None:
-        return
-
-    # Find or create run
-    r = p.find(".//{{{}}}r".format(NAMESPACES["a"]))
-    if r is None:
-        r = SubElement(p, "{{{}}}r".format(NAMESPACES["a"]))
-
-    # Find or create text element
-    t = r.find(".//{{{}}}t".format(NAMESPACES["a"]))
-    if t is None:
-        t = SubElement(r, "{{{}}}t".format(NAMESPACES["a"]))
-
-    t.text = text
-
-    # Apply styling for header or highlight
-    if is_header or highlight:
-        rPr = r.find(".//{{{}}}rPr".format(NAMESPACES["a"]))
-        if rPr is None:
-            rPr = Element("{{{}}}rPr".format(NAMESPACES["a"]))
-            r.insert(0, rPr)
-
-        if is_header:
-            rPr.set("b", "1")  # Bold
+def set_cell_text(cell: Any, text: str, *, highlight: bool = False) -> None:
+    """Replace a cell's text with one run that keeps the first run's formatting."""
+    txbody = cell.text_frame._txBody
+    paragraphs = txbody.findall(qn("a:p"))
+    first = paragraphs[0]
+    for extra in paragraphs[1:]:
+        txbody.remove(extra)
+    runs = first.findall(qn("a:r"))
+    template = runs[0].find(qn("a:rPr")) if runs else None
+    for child in list(first):
+        if child.tag in (qn("a:r"), qn("a:br"), qn("a:fld")):
+            first.remove(child)
+    paragraph = cell.text_frame.paragraphs[0]
+    run = paragraph.add_run()
+    run.text = text
+    if template is not None:
+        old = run._r.find(qn("a:rPr"))
+        if old is not None:
+            run._r.remove(old)
+        run._r.insert(0, copy.deepcopy(template))
+    if highlight:
+        run.font.bold = True
+        run.font.color.rgb = RGBColor.from_string(nbg_tokens.color("teal"))
 
 
-def update_table(table_elem: Element, data: dict, highlight_column: int | None = None):
-    """Update table with new data."""
-    headers = data.get("headers", [])
-    rows = data.get("rows", [])
-
-    # Find all rows in the table
-    tr_elements = table_elem.findall(".//{{{}}}tr".format(NAMESPACES["a"]))
-
-    all_data = [headers] + rows if headers else rows
-
-    for row_idx, tr in enumerate(tr_elements):
-        if row_idx >= len(all_data):
-            break
-
-        row_data = all_data[row_idx]
-        tc_elements = tr.findall(".//{{{}}}tc".format(NAMESPACES["a"]))
-
-        for col_idx, tc in enumerate(tc_elements):
-            if col_idx >= len(row_data):
-                break
-
-            is_header = row_idx == 0 and headers
-            highlight = highlight_column is not None and col_idx == highlight_column
-
-            update_table_cell(tc, str(row_data[col_idx]), is_header, highlight)
-
-
-def inject_table_data(pptx_path: str, config_path: str, output_path: str):
-    """Main function to inject table data into presentation."""
-    pptx_file = Path(pptx_path).expanduser()
-    config_file = Path(config_path).expanduser()
-    output_file = Path(output_path).expanduser()
-
-    # Load configuration
-    with open(config_file) as f:
+def inject_table_data(pptx_path: str, config_path: str, output_path: str) -> int:
+    """Apply every entry, then save. Returns the number of tables updated."""
+    prs = Presentation(str(Path(pptx_path).expanduser()))
+    with open(Path(config_path).expanduser(), encoding="utf-8") as f:
         config = json.load(f)
-
-    # Create temp directory
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        unpacked_dir = temp_path / "unpacked"
-
-        # Unpack PPTX
-        with zipfile.ZipFile(pptx_file, "r") as zf:
-            zf.extractall(unpacked_dir)
-
-        # Process each table configuration
-        for table_config in config.get("tables", []):
-            slide_num = table_config["slide"]
-            table_index = table_config.get("table_index", 0)
-            data = table_config["data"]
-            highlight_column = table_config.get("highlight_column")
-
-            slide_file = unpacked_dir / "ppt" / "slides" / f"slide{slide_num + 1}.xml"
-
-            if not slide_file.exists():
-                print(f"Warning: Slide {slide_num + 1} not found")
-                continue
-
-            tables = find_tables_in_slide(slide_file)
-
-            if table_index < len(tables):
-                gf, tbl, tree, file_path, raw = tables[table_index]
-                print(f"Updating table {table_index} on slide {slide_num + 1}")
-                update_table(tbl, data, highlight_column)
-                write_preserving_namespaces(tree, file_path, raw)
-            else:
-                print(f"Warning: Table index {table_index} not found on slide {slide_num + 1}")
-
-        # Repack PPTX
-        with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zf:
-            for file_path in unpacked_dir.rglob("*"):
-                if file_path.is_file():
-                    arc_name = file_path.relative_to(unpacked_dir)
-                    zf.write(file_path, arc_name)
-
-    print(f"\nSaved to: {output_file}")
-
-
-def main():
-    if len(sys.argv) < 4:
-        print("Usage: python inject_table_data.py <input.pptx> <config.json> <output.pptx>")
-        print("\nExample config.json:")
-        print(
-            json.dumps(
-                {
-                    "tables": [
-                        {
-                            "slide": 2,
-                            "table_index": 0,
-                            "data": {
-                                "headers": ["Metric", "Value A", "Value B"],
-                                "rows": [["Row 1", "10", "20"], ["Row 2", "30", "40"]],
-                            },
-                            "highlight_column": 1,
-                        }
-                    ]
-                },
-                indent=2,
+    problems: list[str] = []
+    updated = 0
+    for n, entry in enumerate(config.get("tables", [])):
+        where = f"tables[{n}]"
+        slide_index = entry.get("slide")
+        if not isinstance(slide_index, int) or not 0 <= slide_index < len(prs.slides):
+            problems.append(
+                f"{where}: slide {slide_index} does not exist (the deck has {len(prs.slides)} "
+                "slides, numbered from 0)"
             )
-        )
-        sys.exit(1)
+            continue
+        tables = [s for s in prs.slides[slide_index].shapes if getattr(s, "has_table", False)]
+        table_index = entry.get("table_index", 0)
+        if not isinstance(table_index, int) or not 0 <= table_index < len(tables):
+            problems.append(
+                f"{where}: table_index {table_index} does not exist (slide {slide_index} has "
+                f"{len(tables)} table(s), numbered from 0)"
+            )
+            continue
+        data = entry.get("data") or {}
+        headers = data.get("headers")
+        rows = ([headers] if headers else []) + list(data.get("rows") or [])
+        table = tables[table_index].table
+        n_rows, n_cols = len(table.rows), len(table.columns)
+        widths = {len(r) for r in rows if isinstance(r, list)}
+        if len(rows) != n_rows or widths != {n_cols} or not all(isinstance(r, list) for r in rows):
+            got_cols = max(widths) if widths else 0
+            problems.append(
+                f"{where}: the data is {len(rows)} x {got_cols}, the table on slide {slide_index} "
+                f"is {n_rows} x {n_cols} (rows x columns, headers included)"
+            )
+            continue
+        highlight = entry.get("highlight_column")
+        body_start = 1 if headers else 0
+        for r, row in enumerate(rows):
+            for c, value in enumerate(row):
+                set_cell_text(
+                    table.cell(r, c),
+                    "" if value is None else str(value),
+                    highlight=highlight == c and r >= body_start,
+                )
+        updated += 1
+    if problems:
+        raise InjectionError("\n".join(problems))
+    prs.save(str(Path(output_path).expanduser()))
+    return updated
 
-    inject_table_data(sys.argv[1], sys.argv[2], sys.argv[3])
+
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    if len(args) != 3:
+        print(
+            "usage: inject_table_data.py <input.pptx> <config.json> <output.pptx>", file=sys.stderr
+        )
+        return 2
+    try:
+        updated = inject_table_data(*args)
+    except InjectionError as e:
+        print(f"inject_table_data.py: nothing written.\n{e}", file=sys.stderr)
+        return 1
+    except (OSError, ValueError, KeyError) as e:
+        print(f"inject_table_data.py: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    print(f"Updated {updated} table(s): {args[2]}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
