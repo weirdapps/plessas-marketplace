@@ -28,7 +28,8 @@ margins:
 
 `body_top` is where the first body element **starts**, on every content slide. The 1.1" in
 Content Safe Zones below is the **floor** nothing but the title and pill may cross. Two
-quantities, not two answers.
+quantities, not two answers. `nbg_validate.py` enforces the stricter one: the first body element
+at y ≥ 1.3" and at least 0.15" below the bottom of the title, with or without a pill.
 
 The left gutter for titles and every left-aligned text block is **0.374"**, per
 `presentation-style-guide.md` Standard #15: the same vertical line the NBG logo sits on.
@@ -316,7 +317,7 @@ Elements must stay within their designated vertical zones to prevent overlap wit
 1. **No content below y=6.85"**: reserves space for logo and page number
 2. **No content above y=1.1"** unless it IS the title or section pill; body content starts at 1.3"
 3. **Content y + h must not exceed 6.85"**: if it does, reduce height or reflow
-4. **Footnotes/captions**: place at y=6.5" max (0.35" above footer zone)
+4. **Footnotes/captions**: end by y=6.5" (0.35" above footer zone); the validator's Safe Zones check enforces it
 5. **Charts/tables**: bottom edge must clear 6.85" with ≥0.1" breathing room
 
 ```yaml

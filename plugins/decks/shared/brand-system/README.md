@@ -209,7 +209,8 @@ Paths are relative to the plugin root (`${CLAUDE_PLUGIN_ROOT}`). See
 | Back Cover Logo | `assets/nbg-back-cover-logo.png` | Centered on back cover |
 
 The Greek wordmark PNG is 1200 x 348 (aspect 3.448): set its width and derive the height
-(Standard #4).
+(Standard #4). The validator recognises these logo files (and `assets/bank-logos/`) by their
+content, falling back to their pixel size: if you ever re-encode one, keep its pixel dimensions.
 
 ## Text Box Defaults
 
