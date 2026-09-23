@@ -601,6 +601,26 @@ def test_dimensions_grids_are_derived_from_gutter_width_and_gap():
     assert num(full["x"]) == gutter and num(full["w"]) == width
 
 
+def test_layouts_contents_slide_quotes_the_tokens():
+    """layouts.md put the title column at 1.10in; the builder draws it at the gutter
+    plus the number column, 1.174in."""
+    c = tok("components.contents")
+    heading = "Contents / TOC Slide"
+    header = row("layouts.md", heading, '"Contents" Header')
+    assert nums(header["Position"]) == [c["header"]["x"], c["header"]["y"]]
+    number = row("layouts.md", heading, "Section Number")
+    assert num(number["Position"]) == tok("geometry.gutter")
+    title_x = tok("geometry.gutter") + c["number_w"]
+    for label in ("Section Title", "Description"):
+        assert num(row("layouts.md", heading, label)["Position"]) == pytest.approx(
+            title_x, abs=0.001
+        )
+    spacing = section("layouts.md", "Contents / TOC Slide")
+    first = next(ln for ln in spacing.splitlines() if "First item Y" in ln)
+    step = next(ln for ln in spacing.splitlines() if "Vertical spacing" in ln)
+    assert num(first) == c["first_row_y"] and num(step) == c["row_step"]
+
+
 # ---------------------------------------------------------------- charts
 
 

@@ -179,7 +179,8 @@ bullet:
   unicode: "2022"
   font: "Arial"
   color: "#00ADBF"   # Cyan (see colors.md)
-  indent: 0.25"      # hanging: the text starts 0.25" in, wrapped lines align with it
+  indent: 0.25"      # hanging, per level: the text starts 0.25" in per level, wrapped lines align with it
+  character_l2: "–"  # level 2 uses an en dash (U+2013), same font and colour
 ```
 
 ## Number Formatting

@@ -38,6 +38,7 @@ PowerPoint afterwards also starts on-brand.
 | Area-line | The line above, plus a fill in the series colour at 15% opacity |
 | Doughnut | Hole size 55% |
 | Waterfall | Gap width 100%; totals `#003841`, increases `#00ADBF`, decreases `#AA0028` |
+| Highlight | One category in `#00ADBF`, the rest in `#BEC1BE` (`chart.highlight_category` in the deck spec) |
 | Time series | Area-line by default, never a bare line (Standard #2.8) |
 
 The muted `#939793` value-axis labels are the one sanctioned sub-AA text use in charts (2.96:1,
@@ -100,14 +101,15 @@ the KPI callout.
 
 Pair it with a **KPI callout** beside the chart: the slide keeps its 24pt Regular action title
 (Standard #16), and the callout is the Inline KPI Callout in `layouts.md` (value 18pt Bold
-`#007B85`, label 12pt `#202020`) with an optional signed delta, negative in `#AA0028` and
-positive in `#202020` (the corporate green `#73AF3C` is 2.65:1 on white and never carries text).
+`#007B85`, label 12pt `#202020`) with an optional signed delta: positive `#007B85`, negative
+`#AA0028`, neutral `#202020` (`components.kpi.delta`; the corporate green `#73AF3C` is 2.65:1 on
+white and never carries text).
 
 ### Line with markers
 
 For a trend across categories that are not a time series. Same stroke and markers as above, no
-fill; data labels above the points (12pt Bold `#003841`) when the values matter more than the
-shape.
+fill, and no value labels (line and area-line charts carry none): name each series at its line
+end or in the caption, and put the one value that matters in a KPI callout.
 
 ## Hollow "Donut" Markers (Standard #5)
 

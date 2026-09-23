@@ -220,7 +220,7 @@ The contents page is a quiet wayfinder, not a feature slide. Conventions:
 - **DO NOT include page references** (`p. 3`, `p. 5`, etc.). The contents page communicates the shape of the deck, not navigation hints.
 - **DO NOT add separator lines, rules, or boxes between rows**. Whitespace alone separates rows.
 - **DO NOT add bullets, dots, or arrows in front of numbers**. The number itself is the marker.
-- **Small NBG logo bottom-left** (per Standard #17), no page number on the contents page itself if the deck is short; otherwise it gets one like any content slide.
+- **Small NBG logo bottom-left** (per Standard #17), no page number on the contents page itself if the deck is short (under 10 slides, `tokens.yaml` `components.contents.page_number_from_slides`); otherwise it gets one like any content slide.
 
 The contents page is a moment of pause, not a heatmap. If it looks designed, it is over-designed.
 

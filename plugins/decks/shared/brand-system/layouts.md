@@ -99,8 +99,11 @@ belongs in their style preferences (`${CLAUDE_PLUGIN_DATA}/style-preferences.md`
 |---------|------|------|-------|----------|
 | "Contents" Header | Aptos | **24pt** Regular | #003841 | 0.374", 0.40" |
 | Section Number | Aptos | **18pt** Regular | #007B85 | 0.374", y (see below) |
-| Section Title | Aptos | **16pt** Regular | #003841 | 1.10", y |
-| Description | Aptos | **12pt** Regular | #5A5F5A | 1.10", y + 0.35" |
+| Section Title | Aptos | **16pt** Regular | #003841 | 1.174", y |
+| Description | Aptos | **12pt** Regular | #5A5F5A | 1.174", y + 0.35" |
+
+The title column starts at 1.174": the 0.374" gutter plus the 0.8" number column
+(`tokens.yaml` `components.contents.number_w`).
 
 ### Spacing
 
@@ -308,7 +311,7 @@ sanctioned edge stripe, because it carries meaning tied to the legend.
 | Tile | `#F5F8F6` fill, 1pt `#BEC1BE` border, tight corners, no shadow (a metric card) |
 | Value | 50pt Bold `#007B85` (`type.kpi_value`); tiles under about 2" tall use the inline KPI callout (18pt) instead |
 | Caption | The metric label under the value, per the Key Figures card above |
-| Delta (optional) | Signed (`+0.5` / `-0.5`), negative in `#AA0028`, positive in `#202020`: the corporate green `#73AF3C` is 2.65:1 on white and never carries text |
+| Delta (optional) | Signed (`+0.5` / `-0.5`), 14pt Bold: positive `#007B85`, negative `#AA0028`, neutral `#202020` (`components.kpi.delta`); the corporate green `#73AF3C` is 2.65:1 on white and never carries text |
 
 ### Warning flag: these are the risks
 
