@@ -217,7 +217,7 @@ components:
     radius_in: 0.04
     h: 3.0                   # layouts.md Key Figures card; less when the body area is shorter
     pad: 0.25
-    delta: {positive: teal, negative: alert, neutral: body_text}   # plus a sign and an arrow glyph, never colour alone
+    delta: {positive: teal, negative: alert, neutral: body_text}   # the delta text carries its sign: colour is never the only signal
   process:
     fill: off_white
     radius_in: 0.04

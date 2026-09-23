@@ -60,9 +60,21 @@ def test_every_named_colour_reference_resolves():
 
     walk(nbg_tokens.load()["components"])
     walk(nbg_tokens.load()["charts"])
+    # Colour maps whose keys are meanings rather than roles.
+    names += list(nbg_tokens.get("components.kpi.delta").values())
+    names += list(nbg_tokens.get("charts.highlight").values())
     for n in names:
         # "auto" = pick black or white by contrast against the fill (data labels).
         assert n == "auto" or n in colors or HEX.match(n.upper()), n
+
+
+def test_kpi_deltas_clear_aa_on_their_tile():
+    """The delta sits on the off-white KPI tile at 14pt bold, which is not large text."""
+    from nbg_color import contrast_ratio
+
+    tile = nbg_tokens.color(nbg_tokens.get("components.kpi.fill"))
+    for sentiment, token in nbg_tokens.get("components.kpi.delta").items():
+        assert contrast_ratio(nbg_tokens.color(token), tile) >= 4.5, sentiment
 
 
 def test_chart_palette_is_six_documented_colours():
