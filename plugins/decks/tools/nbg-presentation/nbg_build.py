@@ -1331,8 +1331,38 @@ def _kpi_tiles(
         tile_w = (frame.w - gap * (n - 1)) / n
         tile_h = min(float(comp["h"]), frame.h)
     pad = float(comp["pad"])
+    inner = tile_w - 2 * pad
     value_base = nbg_tokens.get("type.kpi_value")
     ls = style("kpi_label")
+    # Standard #20, parallel comparison: one value size for the row (the largest that
+    # fits every tile) and the values and captions on shared lines.
+    size = float(value_base["size"])
+    floor = float(value_base["min_size"])
+    values = [str(k["value"]) for k in kpis]
+    while size > floor and any(metrics().width(v, size, True) > inner * FIT for v in values):
+        size -= 1
+    for i, value in enumerate(values):
+        if metrics().width(value, size, True) > inner * FIT:
+            raise deck.fit(
+                f"{rel}[{i}].value",
+                f"'{value}' does not fit its tile even at {size:g}pt",
+                "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
+            )
+    vs = style("kpi_value", size=size)
+    value_h = text_height(1, vs)
+    labels = [lines_of(str(k["label"]), inner, ls) for k in kpis]
+    delta_h = text_height(1, style("kpi_delta"))
+    stacks = [
+        value_h + 0.08 + text_height(len(lines), ls) + (0.06 + delta_h if k.get("delta") else 0.0)
+        for lines, k in zip(labels, kpis, strict=True)
+    ]
+    for i, stack in enumerate(stacks):
+        if stack > tile_h - 2 * pad + 1e-6:
+            raise deck.fit(
+                f"{rel}[{i}].label",
+                "the tile's value, label and delta do not fit",
+                "shorten the label",
+            )
     for i, kpi in enumerate(kpis):
         x = frame.x + (0 if vertical else i * (tile_w + gap))
         y = frame.y + (i * (tile_h + gap) if vertical else (frame.h - tile_h) / 2)
@@ -1343,34 +1373,14 @@ def _kpi_tiles(
             fill=comp["fill"],
             radius_in=float(comp["radius_in"]),
         )
-        inner = tile_w - 2 * pad
-        value = str(kpi["value"])
-        size = float(value_base["size"])
-        floor = float(value_base["min_size"])
-        while metrics().width(value, size, True) > inner * FIT and size > floor:
-            size -= 1
-        if metrics().width(value, size, True) > inner * FIT:
-            raise deck.fit(
-                f"{rel}[{i}].value",
-                f"'{value}' does not fit its tile even at {size:g}pt",
-                "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
-            )
-        vs = style("kpi_value", size=size)
+        value = values[i]
         label = str(kpi["label"])
-        label_lines = lines_of(label, inner, ls)
+        label_h = text_height(len(labels[i]), ls)
         delta = kpi.get("delta")
         sentiment = kpi.get("sentiment", "neutral")
         ds = style("kpi_delta", color=hexc(comp["delta"][sentiment]))
-        value_h = text_height(1, vs)
-        label_h = text_height(len(label_lines), ls)
-        delta_h = text_height(1, ds) if delta else 0.0
-        stack = value_h + 0.08 + label_h + (0.06 + delta_h if delta else 0.0)
-        if stack > tile_h - 2 * pad + 1e-6:
-            raise deck.fit(
-                f"{rel}[{i}].label",
-                "the tile's value, label and delta do not fit",
-                "shorten the label",
-            )
+        # A row shares the tallest tile's top line; a stacked column centres each tile.
+        stack = stacks[i] if vertical else max(stacks)
         cy = y + (tile_h - stack) / 2
         add_text(slide, (x + pad, cy, inner, value_h), value, vs, deck.lang, align="center")
         cy += value_h + 0.08

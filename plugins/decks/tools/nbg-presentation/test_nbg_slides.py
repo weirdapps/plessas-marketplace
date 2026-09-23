@@ -267,6 +267,28 @@ def test_kpi_tiles_carry_value_label_and_sentiment_coloured_delta(build):
     assert colours == {"+8%": "007B85", "+2 pts": "AA0028", "flat": "202020"}
 
 
+def test_a_row_of_kpi_tiles_shares_one_value_size_and_one_value_line(build):
+    """Standard #20 parallel comparison: same positions, same type sizes. Each tile
+    centred its own stack, so a two-line caption pushed its value up out of line."""
+    slide = {
+        "type": "kpi",
+        "content": {"title": "Three numbers, one line", "source": SOURCE},
+        "kpis": [
+            {"value": "2.8M", "label": "Mobile active users"},
+            {"value": "78%", "label": "Transactions made in digital channels, all segments"},
+            {"value": "EUR 1,250M", "label": "Fee income"},
+        ],
+    }
+    root = slide_xml(build(deck([slide])), 2)
+    values = [shape_by_text(root, v) for v in ("2.8M", "78%", "EUR 1,250M")]
+    tops = {v.find(".//a:xfrm/a:off", NS).get("y") for v in values}
+    sizes = {v.find(".//a:rPr", NS).get("sz") for v in values}
+    assert len(tops) == 1, "every value on one line"
+    assert len(sizes) == 1, "every value at one size"
+    captions = [shape_by_text(root, c) for c in ("Mobile active users", "Fee income")]
+    assert len({c.find(".//a:xfrm/a:off", NS).get("y") for c in captions}) == 1
+
+
 def test_cards_mark_the_recommended_option_with_a_gold_tab(build):
     slide = {
         "type": "cards",
