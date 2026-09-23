@@ -869,6 +869,27 @@ def test_a_greek_deck_writes_greek_separators_in_tables_and_waterfall_labels(bui
     assert sorted(labels) == sorted(["1.250,50", "+1.000,25", "2.250,75"]), labels
 
 
+def test_a_numeric_table_column_takes_one_precision(build):
+    """E2E-OUTPUT-07: numbers printed at their own precision, so one column mixed 2,
+    1.5 and 3.25. A column now takes its most decimals, capped at two."""
+    table = {
+        "type": "table",
+        "content": {"title": "Rates by product", "source": SOURCE},
+        "table": {
+            "headers": ["Product", "Rate", "Count", "Share"],
+            "rows": [["A", 1.5, 12, 0.123456], ["B", 2, 7, 0.5], ["C", 3.25, 1500, 1]],
+        },
+    }
+    root = slide_xml(build(deck([table])), 2)
+    cells = [
+        ["".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in tr.iter(f"{A}tc")]
+        for tr in root.iter(f"{A}tr")
+    ][1:]
+    assert [row[1] for row in cells] == ["1.50", "2.00", "3.25"]
+    assert [row[2] for row in cells] == ["12", "7", "1,500"]
+    assert [row[3] for row in cells] == ["0.12", "0.50", "1.00"], "capped at two decimals"
+
+
 @pytest.mark.parametrize("chart_type", ["bar", "bar_horizontal", "bar_stacked"])
 def test_bars_with_close_values_start_their_axis_at_zero(build, chart_type):
     """E2E-OUTPUT-01: 93, 91, 90 and 88 drew on an axis PowerPoint started near 86, so a

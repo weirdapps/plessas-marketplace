@@ -67,7 +67,7 @@ import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_chart import LABEL_DARK_HEX, label_text_color, set_alt_text  # noqa: E402,F401
 from nbg_spec import CannotRun, Issue, Report  # noqa: E402
-from nbg_text import ASCENT_EM, caps, localise_number, metrics  # noqa: E402
+from nbg_text import ASCENT_EM, caps, format_number, metrics  # noqa: E402
 
 # ---------------------------------------------------------------- brand tokens
 
@@ -871,14 +871,25 @@ def numeric_columns(rows: list[list[str]], width: int) -> set[int]:
     return out
 
 
-def _cell_text(value: Any, lang: str = "en") -> str:
-    """A cell as text; a number takes the deck language's separators (1.234,5 in Greek)."""
+def _is_figure(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
+def _decimals(value: Any) -> int:
+    """How many decimals a number carries as written, at most two."""
+    if not isinstance(value, float) or value.is_integer():
+        return 0
+    return min(2, len(f"{value:.6f}".rstrip("0").split(".")[1]))
+
+
+def _cell_text(value: Any, lang: str = "en", decimals: int | None = None) -> str:
+    """A cell as text. A number takes its column's precision (E2E-OUTPUT-07) and the
+    deck language's separators (1.234,5 in Greek)."""
     if value is None:
         return ""
-    if isinstance(value, float) and value.is_integer():
-        return str(localise_number(f"{int(value):,}", lang))
-    if isinstance(value, int | float):
-        return str(localise_number(f"{value:,}", lang))
+    if _is_figure(value):
+        places = _decimals(value) if decimals is None else decimals
+        return str(format_number(float(value), places, lang))
     return str(value)
 
 
@@ -898,7 +909,15 @@ def add_table(deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: s
     comp = COMP["table"]
     headers = [str(h) for h in spec.get("headers") or []]
     width = max([len(headers)] + [len(r) for r in spec["rows"]])
-    rows = [[_cell_text(c, deck.lang) for c in r] + [""] * (width - len(r)) for r in spec["rows"]]
+    # One precision per column: the most decimals any figure in it carries, capped at two.
+    places = [
+        max((_decimals(r[c]) for r in spec["rows"] if c < len(r) and _is_figure(r[c])), default=0)
+        for c in range(width)
+    ]
+    rows = [
+        [_cell_text(v, deck.lang, places[c]) for c, v in enumerate(r)] + [""] * (width - len(r))
+        for r in spec["rows"]
+    ]
     headers += [""] * (width - len(headers))
     numeric = numeric_columns(rows, width)
     aligns = list(spec.get("column_align") or [])
