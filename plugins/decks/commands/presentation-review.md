@@ -71,8 +71,9 @@ speaker notes. Classify each slide:
 ### 3. Save the comparison
 
 Write `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/<record id>.review.yaml` with the record id,
-both file paths and hashes, the date, the per-slide classes with before and after titles, and the
-patterns you saw. Then set the draft record's `status` to `reviewed` and move it from `pending/`
+both file paths, the finalised deck's hash as `final_hash` (never `file_hash`, which marks a draft
+record and makes `/decks:polish-slides` treat the file as shipped unedited), the date, the
+per-slide classes with before and after titles, and the patterns you saw. Then set the draft record's `status` to `reviewed` and move it from `pending/`
 to `reviewed/`.
 
 ### 4. Update the preferences
