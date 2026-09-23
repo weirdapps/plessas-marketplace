@@ -833,6 +833,42 @@ def test_every_label_position_is_one_powerpoint_supports(tmp_path, monkeypatch):
     assert checked, "no label positions examined"
 
 
+def test_a_greek_deck_writes_greek_separators_in_tables_and_waterfall_labels(build):
+    """E2E-OUTPUT-02 / DOCS-ACCURACY-1: presentation.language el is documented to drive
+    number formats, yet table cells read 1,234.5 and waterfall steps +1,000.25."""
+    table = {
+        "type": "table",
+        "content": {"title": "Οι όγκοι ανά κανάλι", "source": SOURCE},
+        "table": {"headers": ["Κανάλι", "Όγκος", "Πελάτες"], "rows": [["Κάρτες", 1234.5, 2500000]]},
+    }
+    waterfall = {
+        "type": "waterfall",
+        "content": {"title": "Η γέφυρα των εσόδων", "source": SOURCE},
+        "chart": {
+            "type": "waterfall",
+            "data": {
+                "items": [
+                    {"label": "Αρχή", "value": 1250.5},
+                    {"label": "Άνοδος", "value": 1000.25},
+                    {"label": "Τέλος", "value": 2250.75},
+                ]
+            },
+        },
+    }
+    out = build(deck([table, waterfall], language="el"))
+    cells = [b[0] for b in shape_boxes(slide_xml(out, 2))]
+    cell_text = " ".join(
+        "".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in slide_xml(out, 2).iter(f"{A}tc")
+    )
+    assert "1.234,5" in cell_text and "2.500.000" in cell_text, (cells, cell_text)
+    labels = [
+        "".join(t.text or "" for t in dlbl.iter(f"{A}t"))
+        for dlbl in part_xml(out, chart_parts(out)[0]).iter(f"{C}dLbl")
+    ]
+    labels = [label for label in labels if label]
+    assert sorted(labels) == sorted(["1.250,50", "+1.000,25", "2.250,75"]), labels
+
+
 @pytest.mark.parametrize("chart_type", ["bar", "bar_horizontal", "bar_stacked"])
 def test_bars_with_close_values_start_their_axis_at_zero(build, chart_type):
     """E2E-OUTPUT-01: 93, 91, 90 and 88 drew on an axis PowerPoint started near 86, so a

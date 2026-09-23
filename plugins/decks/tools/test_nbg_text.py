@@ -41,6 +41,14 @@ def test_caps_follows_the_deck_language():
     assert nbg_text.caps("key finding", "en") == "KEY FINDING"
 
 
+def test_numbers_take_the_deck_languages_separators():
+    """E2E-OUTPUT-02: Greek writes 1.234.567,89 where English writes 1,234,567.89."""
+    assert nbg_text.format_number(1234567.891, 2, "el") == "1.234.567,89"
+    assert nbg_text.format_number(1234567.891, 2, "en") == "1,234,567.89"
+    assert nbg_text.format_number(-1250.5, 1, "el") == "-1.250,5"
+    assert nbg_text.localise_number("12%", "el") == "12%"
+
+
 # ---------------------------------------------------------------- font discovery
 
 

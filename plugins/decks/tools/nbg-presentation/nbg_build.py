@@ -67,7 +67,7 @@ import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_chart import LABEL_DARK_HEX, label_text_color, set_alt_text  # noqa: E402,F401
 from nbg_spec import CannotRun, Issue, Report  # noqa: E402
-from nbg_text import ASCENT_EM, caps, metrics  # noqa: E402
+from nbg_text import ASCENT_EM, caps, localise_number, metrics  # noqa: E402
 
 # ---------------------------------------------------------------- brand tokens
 
@@ -866,13 +866,14 @@ def numeric_columns(rows: list[list[str]], width: int) -> set[int]:
     return out
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: Any, lang: str = "en") -> str:
+    """A cell as text; a number takes the deck language's separators (1.234,5 in Greek)."""
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
-        return f"{int(value):,}"
+        return localise_number(f"{int(value):,}", lang)
     if isinstance(value, int | float):
-        return f"{value:,}"
+        return localise_number(f"{value:,}", lang)
     return str(value)
 
 
@@ -892,7 +893,7 @@ def add_table(deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: s
     comp = COMP["table"]
     headers = [str(h) for h in spec.get("headers") or []]
     width = max([len(headers)] + [len(r) for r in spec["rows"]])
-    rows = [[_cell_text(c) for c in r] + [""] * (width - len(r)) for r in spec["rows"]]
+    rows = [[_cell_text(c, deck.lang) for c in r] + [""] * (width - len(r)) for r in spec["rows"]]
     headers += [""] * (width - len(headers))
     numeric = numeric_columns(rows, width)
     aligns = list(spec.get("column_align") or [])

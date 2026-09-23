@@ -47,7 +47,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_color import AA_NORMAL, contrast_ratio  # noqa: E402
-from nbg_text import metrics  # noqa: E402
+from nbg_text import format_number, metrics  # noqa: E402
 
 CHARTS = nbg_tokens.load()["charts"]
 FONT = str(CHARTS["font"])
@@ -738,9 +738,9 @@ def _split(start: float, end: float) -> tuple[float, float, float]:
     return 0.0, hi, lo
 
 
-def _format_delta(value: float, kind: str, number_format: str) -> str:
+def _format_delta(value: float, kind: str, number_format: str, lang: str = "en") -> str:
     decimals = number_format.split(".")[1].count("0") if "." in number_format else 0
-    text = f"{abs(value):,.{decimals}f}"
+    text = format_number(abs(value), decimals, lang)
     if kind == "total":
         return f"-{text}" if value < 0 else text
     return f"+{text}" if value >= 0 else f"-{text}"
@@ -817,7 +817,7 @@ def add_waterfall(
             label = holder.points[index].data_label
             position, colour = XL_LABEL_POSITION.CENTER, str(label_text_color(colours[seg["kind"]]))
         tf = label.text_frame
-        tf.text = _format_delta(seg["value"], seg["kind"], number_format)
+        tf.text = _format_delta(seg["value"], seg["kind"], number_format, lang)
         for run in tf.paragraphs[0].runs:
             _set_font(run.font, "chart_data_label", color_hex=colour)
         label.position = position
@@ -831,8 +831,9 @@ def add_waterfall(
     words = ALT["el" if lang == "el" else "en"]
     default_alt = (
         f"{words['waterfall']}. {words['from']} {segments[0]['label']} "
-        f"{_format_delta(segments[0]['value'], 'total', number_format)} {words['to']} "
-        f"{segments[-1]['label']} {_format_delta(segments[-1]['value'], 'total', number_format)}, "
+        f"{_format_delta(segments[0]['value'], 'total', number_format, lang)} {words['to']} "
+        f"{segments[-1]['label']} "
+        f"{_format_delta(segments[-1]['value'], 'total', number_format, lang)}, "
         f"{len(segments)} {words['steps']}."
     )
     set_alt_text(frame, alt_text or default_alt)

@@ -56,6 +56,20 @@ def caps(text: str, language: str = "en") -> str:
     return greek_upper(text) if language == "el" else text.upper()
 
 
+_GREEK_SEPARATORS = str.maketrans(",.", ".,")
+
+
+def localise_number(text: str, language: str = "en") -> str:
+    """A number written the English way (1,234.5) in the deck's language: Greek puts a
+    point between thousands and a comma before decimals (1.234,5)."""
+    return text.translate(_GREEK_SEPARATORS) if language == "el" else text
+
+
+def format_number(value: float, decimals: int, language: str = "en") -> str:
+    """value with a thousands separator and `decimals` places, in the deck's language."""
+    return localise_number(f"{value:,.{decimals}f}", language)
+
+
 # ---------------------------------------------------------------- font discovery
 
 # Office for Mac keeps Aptos inside each app bundle, not in ~/Library/Fonts, so a
