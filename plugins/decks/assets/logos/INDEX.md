@@ -13,8 +13,8 @@
 | Filename | Description | Background | Use when |
 |----------|-------------|------------|----------|
 | `NBG.png` | NBG emblem only, the oval building icon in teal/cyan, no text | Transparent | Compact spaces, app icons, watermarks, decorative use alongside text |
-| `National_Bank_of_Greece_Light.png` | Full wordmark, "NATIONAL BANK OF GREECE" in Dark Navy with teal emblem | Transparent (light version) | Light slide backgrounds, covers, title slides |
-| `National_Bank_of_Greece_Light_dark.png` | Full wordmark, "NATIONAL BANK OF GREECE" in near-white/cream with teal emblem | Transparent (dark version) | On a dark fill only (a dark-teal panel, keynote mode); slides, dividers and back covers are always white (Standards #2, #3, #19) |
+| `National_Bank_of_Greece_Light.png` | English wordmark, "NATIONAL BANK OF GREECE" in Dark Navy with teal emblem | Transparent (light version) | Never on a slide (Standard #10). English-language material outside decks, on light backgrounds |
+| `National_Bank_of_Greece_Light_dark.png` | English wordmark, "NATIONAL BANK OF GREECE" in near-white/cream with teal emblem | Transparent (dark version) | Never on a slide, keynote mode included (it uses a white Greek wordmark). English-language material outside decks, on dark backgrounds |
 
 ### App Logos: Mobile
 
@@ -51,7 +51,7 @@ which variant exists, not for placing on a slide: place the PNGs above.
 1. **Never stretch or crop logos**: always preserve aspect ratio exactly. Scale by fixing one dimension and calculating the other proportionally.
 2. **Always match logo variant to background**: use Light versions on light backgrounds, Dark/white versions on dark backgrounds. Never place a dark-text logo on a dark background.
 3. **Never place app icon logos as decorative elements**: app icons (Retail Mobile, Business Mobile, Next, Authenticator) are only used when the slide content is specifically about that app.
-4. **NBG wordmark placement**: the full "National Bank of Greece" wordmark is for covers, title slides, and where the bank brand needs prominent identity. The `NBG.png` emblem-only is for compact placements.
+4. **NBG wordmark placement**: on a slide the builder places the Greek wordmark itself, at the small or large logo position (brand-system/README.md, Logo Assets). Never add an English wordmark to a slide: the validator fails it (Standard #10). The `NBG.png` emblem-only is for compact placements.
 5. **Go For More logo**: only use when the slide content relates to the rewards/loyalty program. Never use as a generic decorative element.
 6. **Minimum size**: never display logos smaller than 80px on their longest dimension; they become illegible.
 7. **Clearance**: always leave at least half the logo's height as whitespace around it on all sides.

@@ -25,6 +25,11 @@ Full generation rules: `../../shared/brand-system/icons.md`. To generate a new i
 - `icons-functional-library.svg` mono functional icon set
 - `sets/` 17 themed icon sets (currency, device, social, QR, PFM, card and transaction states, progress, table statuses, bank and browser logos, product icons)
 
+Every file here is a **reference sheet**: several icons per file, often a light and a dark variant
+side by side. Use the sheets to find an icon and to calibrate a new one; never place a sheet on a
+slide. A slide icon is a single PNG from `assets/icons/`, drawn in the same duotone style, or a new
+one from `create-icon`.
+
 ## Provenance
 
 Vendored from the NBG Pillar Design System (Pillar DS assets). This is an internalized copy held in this repo, with no runtime dependency on any external repository. Update by re-exporting from the Pillar DS Figma source.

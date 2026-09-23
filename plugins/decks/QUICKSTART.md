@@ -4,7 +4,7 @@ A 5-minute path from zero to "my Cards Q1 deck for ExCo is on screen, on brand, 
 
 ## What it does
 
-Turns a brief, a Word doc, an email thread, or a few rough bullets into a board-ready PowerPoint that already obeys NBG brand standards: Aptos throughout, NBG Teal `#007B85` and Dark Teal `#003841`, white background, no pie charts (doughnut only), no "Thank You" slide, one key message per slide. Behind the scenes an agent pipeline writes the storyline, a tested builder renders it, a brand validator checks it, and a QA agent looks at every slide, applying McKinsey-quality discipline (action titles, MECE structure, Pyramid Principle, the 5-7 second test on every slide). You get the polished file, not a half-finished outline.
+Turns a brief, a PDF or an existing deck, an email thread, or a few rough bullets into a board-ready PowerPoint that already obeys NBG brand standards: Aptos throughout, NBG Teal `#007B85` and Dark Teal `#003841`, white background, no pie charts (doughnut only), no "Thank You" slide, one key message per slide. Behind the scenes an agent pipeline writes the storyline, a tested builder renders it, a brand validator checks it, and a QA agent looks at every slide, applying McKinsey-quality discipline (action titles, MECE structure, Pyramid Principle, the 5-7 second test on every slide). You get the polished file, not a half-finished outline.
 
 It is not a clip-art generator. It assumes the deck will be read by people who matter and judges itself accordingly.
 
@@ -46,40 +46,29 @@ The `manage-nano-banana` image generator is **optional**. It is only present if 
 /create-presentation Cards Q1 results for ExCo: revenue +12%, fee mix shifting to credit, NPL stable, recommend doubling down on premium card acquisition
 ```
 
-Output (typical):
+It stops once before it builds anything, at the outline (Standard #14): one line per slide with
+its id, type and action title, and every open question, such as the source of a figure you gave.
+Agree, or say what to change. Output (typical):
 
+```text
+read-through:
+  S01 cover     Cards Q1 2026: premium acquisition is the unlock
+  S02 content   Three messages, three numbers
+  S03 divider   Where we landed in Q1
+  S04 chart     Revenue +12% vs plan, driven by credit fees
+  ...
+open questions:
+  S04: which report, and as of which date, gives the +12% revenue figure?
 ```
-═══════════════════════════════════════════════
-PRESENTATION GENERATED: 2026-05-10, 14:22
-═══════════════════════════════════════════════
 
-File: ~/Downloads/202605101422_cards_q1_results_exco.pptx
-Slides: 14   Duration target: 12 min   QA: PASS (validator clean, every slide reviewed)
+Once the deck has passed QA, the reply is one line:
 
-STORYLINE (Pyramid: Situation → Complication → Resolution)
-───────────────────────────────────────────────
- 1. Cover                            Cards Q1 2026: premium acquisition is the unlock
- 2. Executive summary                Three messages, three numbers
- 3. Section divider                  Where we landed in Q1
- 4. Revenue performance              Revenue +12% vs plan, driven by credit fees
- 5. Fee mix                          Credit share up 6 pts; debit flat
- 6. Portfolio quality                NPL ratio stable at 2.1%, well below peer
- 7. Section divider                  What's changing under the surface
- 8. Customer mix shift               Premium segment +18% YoY, mass-market flat
- 9. Competitive context              Revolut card spend up 24%; we are holding share
-10. Section divider                  Recommendation
-11. The ask                          Double premium card acquisition spend in H2
-12. Investment & payback             €4.2M incremental, 14-month payback
-13. Risks & mitigations              Three risks, three owners, three dates
-14. Back cover                       NBG logo, no "Thank You"
-
-INSIGHTS
-───────────────────────────────────────────────
-- Slide 11 is your single decision slide, built for the 5-7 second test
-- Charts use NBG Teal + Cyan only (no pie charts, per brand)
-- Action titles throughout (every title makes a claim, not a topic)
-═══════════════════════════════════════════════
+```text
+~/Downloads/202605101422_cards_q1_results_exco.pptx: 14 slides, QA PASS
 ```
+
+A deck that still fails QA after two fix cycles is not copied to your folder; the reply says what
+is wrong.
 
 If the result is 90% there but you want a tighter cover or a different chart on slide 5, edit the file in PowerPoint and run `/presentation-review` (see Common patterns below): the system learns your preferences.
 
@@ -111,7 +100,7 @@ The rest (`/presentation-review`, `/create-keynote`, `/create-icon`, `/create-in
 
 ```text
 /redesign-deck ~/Downloads/partner_proposal.pptx
-# Storyline kept, layout/colour/typography rebuilt to NBG standards
+# Every figure, source and speaker note kept; storyline and layout rebuilt to NBG standards
 ```
 
 **Quick polish on something you wrote yourself**:

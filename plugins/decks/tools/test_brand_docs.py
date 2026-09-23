@@ -16,6 +16,7 @@ because a check that finds nothing to compare has not checked anything.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -340,6 +341,38 @@ def test_chart_sequence_quotes_the_chart_palette(doc):
 def test_charts_md_sequence_table_quotes_the_chart_palette():
     found = [hexes(r["Hex"])[0] for r in table_rows("charts.md", "Color Sequence")]
     assert found == nbg_tokens.chart_palette()
+
+
+THEME_SLOTS = {
+    "Dark 1": "dk1",
+    "Light 1": "lt1",
+    "Dark 2": "dk2",
+    "Light 2": "lt2",
+    **{f"Accent {i}": f"accent{i}" for i in range(1, 7)},
+    "Hyperlink": "hlink",
+    "Followed hyperlink": "folHlink",
+}
+
+
+def _built_theme() -> dict[str, str]:
+    """Slot name -> hex of the colour scheme nbg_build writes, read back from the deck."""
+    pytest.importorskip("pptx")
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "nbg-presentation"))
+    import nbg_build
+    from lxml import etree
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+
+    part = nbg_build.new_presentation().slide_master.part.part_related_by(RT.THEME)
+    a = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+    scheme = etree.fromstring(part.blob).find(f".//{a}clrScheme")
+    return {slot.tag.removeprefix(a): slot.find(f"{a}srgbClr").get("val") for slot in scheme}
+
+
+def test_theme_table_quotes_the_theme_the_builder_writes():
+    built = _built_theme()
+    assert set(built) == set(THEME_SLOTS.values()), sorted(built)
+    listed = {clean(r["Slot"]): hexes(r["Hex"])[0] for r in table_rows("colors.md", "Theme Colors")}
+    assert listed == {label: built[slot] for label, slot in THEME_SLOTS.items()}
 
 
 def test_retired_colour_table_matches_the_tokens_both_ways():
