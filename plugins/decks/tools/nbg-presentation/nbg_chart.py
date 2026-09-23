@@ -24,7 +24,10 @@ exactly (a manual layout) so that nbg_build can put each logo under its own bar.
 from __future__ import annotations
 
 import copy
+import itertools
+import math
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -520,6 +523,8 @@ def _style_lines(
     plot.has_data_labels = False
     for i, series in enumerate(plot.series):
         _style_line_series(series, series_colours[i])
+    if len(spec["data"]["series"]) > 1:
+        _name_line_ends(chart, spec)
     _category_axis(chart)
     _value_axis(
         chart, visible=CHARTS["value_axis"]["line"] != "hidden", number_format=number_format
@@ -528,16 +533,48 @@ def _style_lines(
         _add_area_under_lines(chart, series_colours)
 
 
+def _name_line_ends(chart: Any, spec: dict[str, Any]) -> None:
+    """Each line named at its last point, right of it: Standard #22 wants a series
+    labelled where it is, not keyed by colour to a legend (E2E-OUTPUT-05)."""
+    for series, data in zip(chart.plots[0].series, spec["data"]["series"], strict=True):
+        points = [i for i, v in enumerate(data["values"]) if v is not None]
+        if not points:
+            continue
+        label = series.points[points[-1]].data_label
+        _point_label_shows(label, "General", series_name=True)
+        _set_font(label.font, "chart_legend")
+        label.position = XL_LABEL_POSITION.RIGHT
+
+
+def end_label_layout(spec: dict[str, Any], box: tuple[float, float, float, float]) -> AxisLayout:
+    """The plot area of a multi-series line chart, leaving the value axis its labels on
+    the left and the series names their room on the right of the last points."""
+    _, _, w, h = box
+    m = metrics()
+    values = [abs(float(v)) for v in _all_values(spec["data"]["series"])] or [0.0]
+    number_format = str(spec.get("number_format") or default_number_format(values))
+    axis_pt = float(CHARTS["value_axis"]["size"])
+    left = m.width(_value_text(max(values) * 1.25, number_format), axis_pt, False) / FIT + 0.15
+    names = [str(s.get("name", "")) for s in spec["data"]["series"]]
+    legend_pt = float(nbg_tokens.get("type.chart_legend.size"))
+    right = max(m.width(n, legend_pt, False) for n in names) / FIT + 0.25
+    top, bottom = 0.1, m.line_height(float(CHARTS["category_axis"]["size"]), 1.0) + 0.12
+    inner = (left / w, top / h, max(0.2, (w - left - right) / w), max(0.2, (h - top - bottom) / h))
+    return AxisLayout(inner, [], 0.0)
+
+
 def _add_area_under_lines(chart: Any, colours: list[str]) -> None:
-    """Put an area chart under the line chart, on the same axes: the 15% fill."""
+    """Put an area chart under the first line, on the same axes: the 15% fill. One
+    area only: under three or more lines the 15% fills blended into a grey-brown wash
+    (E2E-OUTPUT-03), so the others stay plain lines."""
     plot_area = chart._chartSpace.find(qn("c:chart")).find(qn("c:plotArea"))
     line_chart = plot_area.find(qn("c:lineChart"))
-    series = line_chart.findall(qn("c:ser"))
+    series = line_chart.findall(qn("c:ser"))[:1]
     alpha = int(round(float(CHARTS["area_line"]["fill_alpha"]) * 100000))
     area = etree.Element(qn("c:areaChart"))
     etree.SubElement(area, qn("c:grouping")).set("val", "standard")
     etree.SubElement(area, qn("c:varyColors")).set("val", "0")
-    offset = len(series)
+    offset = len(line_chart.findall(qn("c:ser")))
     for i, ser in enumerate(series):
         colour = colours[i]
         new = etree.SubElement(area, qn("c:ser"))
@@ -563,8 +600,8 @@ def _add_area_under_lines(chart: Any, colours: list[str]) -> None:
     legend = chart._chartSpace.find(qn("c:chart")).find(qn("c:legend"))
     if legend is not None:
         # Legend entries follow plot order, and the area chart comes first so it draws
-        # under the lines: entries 0..n-1 are the area copies.
-        _hide_legend_entries(legend, range(offset))
+        # under the lines: the first entries are the area copies.
+        _hide_legend_entries(legend, range(len(series)))
 
 
 def _hide_legend_entries(legend: Any, indices: Any) -> None:
@@ -578,22 +615,38 @@ def _hide_legend_entries(legend: Any, indices: Any) -> None:
         anchor = entry
 
 
-def _point_label_shows(label: Any, number_format: str, *, percent: bool) -> None:
+def _point_label_shows(
+    label: Any,
+    number_format: str,
+    *,
+    percent: bool = False,
+    category: bool = False,
+    series_name: bool = False,
+) -> None:
     """A point's own c:dLbl overrides the series labels entirely, flags included, so
-    it has to say what to show (and in which format) itself."""
+    it has to say what to show (and in which format) itself. The value shows unless
+    the share or the series name stands in for it; a category name goes on its own
+    line above the number."""
+    value = not (percent or series_name)
     dlbl = label._get_or_add_dLbl()
     flags = {
         "c:showLegendKey": "0",
-        "c:showVal": "0" if percent else "1",
-        "c:showCatName": "0",
-        "c:showSerName": "0",
+        "c:showVal": "1" if value else "0",
+        "c:showCatName": "1" if category else "0",
+        "c:showSerName": "1" if series_name else "0",
         "c:showPercent": "1" if percent else "0",
         "c:showBubbleSize": "0",
     }
-    for tag, value in flags.items():
+    for tag, flag in flags.items():
         el = dlbl.find(qn(tag))
         if el is not None:
-            el.set("val", value)
+            el.set("val", flag)
+    if category and dlbl.find(qn("c:separator")) is None:
+        separator = etree.Element(qn("c:separator"))
+        separator.text = "\n"
+        dlbl.find(qn("c:showBubbleSize")).addnext(
+            separator
+        )  # CT_DLbl: ...showBubbleSize, separator
     if dlbl.find(qn("c:numFmt")) is None:
         fmt = etree.Element(qn("c:numFmt"))
         fmt.set("formatCode", number_format)
@@ -613,7 +666,172 @@ def _point_label_shows(label: Any, number_format: str, *, percent: bool) -> None
             dlbl.append(fmt)
 
 
-def _style_doughnut(chart: Any, spec: dict[str, Any], point_colours: list[str] | None) -> None:
+@dataclass(frozen=True)
+class RingPlan:
+    """Where a doughnut sits in its frame and what each slice's label says."""
+
+    inner: tuple[float, float, float, float]  # the plot square, as fractions of the frame
+    names: list[str | None]  # each slice's name as drawn, line breaks included, or None
+    values: list[bool]  # whether each slice shows its share (or value)
+    legend: bool  # the chart's own legend names the slices
+    unnamed: list[str]  # the slices whose name has no room inside the ring
+
+
+RING_MARGIN = 0.05  # inches kept clear round the ring inside its frame
+RING_TOLERANCE = 0.02  # how far a label may cross its slice's outline, in inches
+
+
+def _slice_spans(values: list[Any]) -> list[tuple[float, float]]:
+    """Each slice's start and end angle, clockwise from 12 o'clock (firstSliceAng 0)."""
+    shares = [max(0.0, float(v or 0)) for v in values]
+    total = sum(shares) or 1.0
+    spans, start = [], 0.0
+    for share in shares:
+        end = start + share / total * 2 * math.pi
+        spans.append((start, end))
+        start = end
+    return spans
+
+
+def _off_ray(x: float, y: float, angle: float) -> float:
+    """How far (x, y) lies from the ray leaving the ring's centre at angle."""
+    ux, uy = math.sin(angle), math.cos(angle)
+    if x * ux + y * uy <= 0:
+        return math.hypot(x, y)
+    return abs(x * uy - y * ux)
+
+
+def _label_fits(w: float, h: float, span: tuple[float, float], outer: float, hole: float) -> bool:
+    """Whether a w x h label, centred on its slice at mid-angle and mid-ring as both
+    PowerPoint and LibreOffice centre it, stays on the slice: every point of its
+    outline between the hole and the rim, and between the slice's two edges."""
+    start, end = span
+    if end <= start:
+        return False
+    mid, radius = (start + end) / 2, (outer + hole) / 2
+    cx, cy = radius * math.sin(mid), radius * math.cos(mid)
+    whole = end - start >= 2 * math.pi - 1e-9
+    steps = [i / 8 for i in range(9)]
+    outline = [(cx - w / 2 + w * t, cy + s * h / 2) for t in steps for s in (-1, 1)]
+    outline += [(cx + s * w / 2, cy - h / 2 + h * t) for t in steps for s in (-1, 1)]
+    for x, y in outline:
+        r = math.hypot(x, y)
+        if r < hole - RING_TOLERANCE or r > outer + RING_TOLERANCE:
+            return False
+        if whole or (math.atan2(x, y) - start) % (2 * math.pi) <= end - start:
+            continue
+        if min(_off_ray(x, y, start), _off_ray(x, y, end)) > RING_TOLERANCE:
+            return False
+    return True
+
+
+def _name_options(name: str) -> list[list[str]]:
+    """A slice name on one line, then broken between words into two and three lines,
+    each time at the break whose widest line is narrowest."""
+    m, size = metrics(), float(nbg_tokens.get("type.chart_data_label.size"))
+    words = name.split()
+    options = [[name]]
+    for count in (2, 3):
+        if len(words) < count:
+            break
+        splits = [
+            [" ".join(words[a:b]) for a, b in zip((0, *cuts), (*cuts, len(words)), strict=True)]
+            for cuts in itertools.combinations(range(1, len(words)), count - 1)
+        ]
+        options.append(min(splits, key=lambda lines: max(m.width(t, size, True) for t in lines)))
+    return options
+
+
+def _label_box(lines: list[str]) -> tuple[float, float]:
+    m, size = metrics(), float(nbg_tokens.get("type.chart_data_label.size"))
+    w = max(m.width(t, size, True) for t in lines) / FIT + 0.04
+    return w, len(lines) * m.line_height(size) + 0.02
+
+
+def _legend_band(names: list[str], width: float) -> float:
+    """The height a bottom legend of these names takes, row wrapping included."""
+    m, size = metrics(), float(nbg_tokens.get("type.chart_legend.size"))
+    rows, used = 1, 0.0
+    for name in names:
+        entry = m.width(name, size) / FIT + 0.35  # the key, its gap, the space after
+        if used and used + entry > width - 0.2:
+            rows, used = rows + 1, 0.0
+        used += entry
+    return rows * m.line_height(size) + 0.15
+
+
+def _ring_square(
+    box: tuple[float, float, float, float], band: float
+) -> tuple[tuple[float, float, float, float], float]:
+    """The plot square centred in the frame above a legend band, and the ring's radius."""
+    _, _, w, h = box
+    side = max(0.5, min(w, h - band) - 2 * RING_MARGIN)
+    return ((w - side) / 2 / w, (h - band - side) / 2 / h, side / w, side / h), side / 2
+
+
+def ring_plan(
+    spec: dict[str, Any], box: tuple[float, float, float, float], legend: bool | None
+) -> RingPlan:
+    """Lay out a doughnut's labels. Each slice carries its name and share inside the
+    ring (Standard #22), the name broken between words until the label fits its slice.
+    When a slice has no room for its name at any break, a legend at the bottom names
+    the slices instead (charts.md allows either) and each keeps only its share.
+
+    legend is the caller's or the spec's choice: None decides by fit; False means no
+    chart legend, because something else already names the slices (a peer-bank logo
+    row) or the author said so, so the names that fit stay; True asks for the legend."""
+    names = [str(c) for c in spec["data"]["categories"]]
+    values = list(spec["data"]["series"][0]["values"])
+    spans = _slice_spans(values)
+    total = sum(max(0.0, float(v or 0)) for v in values) or 1.0
+    if spec.get("number_format"):
+        texts = [_value_text(v, str(spec["number_format"])) for v in values]
+    else:
+        texts = [f"{round(max(0.0, float(v or 0)) / total * 100)}%" for v in values]
+    hole_share = float(CHARTS["doughnut"]["hole_size"]) / 100
+
+    def fits(lines: list[str], i: int, outer: float) -> bool:
+        return _label_fits(*_label_box(lines), spans[i], outer, outer * hole_share)
+
+    unnamed: list[str] = []
+    if legend is not True:
+        inner, outer = _ring_square(box, 0.0)
+        chosen = [
+            next((o for o in _name_options(n) if fits([*o, texts[i]], i, outer)), None)
+            for i, n in enumerate(names)
+        ]
+        unnamed = [n for n, c in zip(names, chosen, strict=True) if c is None]
+        if not unnamed or legend is False:
+            shown = [c is not None or fits([texts[i]], i, outer) for i, c in enumerate(chosen)]
+            drawn = ["\n".join(c) if c else None for c in chosen]
+            return RingPlan(inner, drawn, shown, False, unnamed)
+    inner, outer = _ring_square(box, _legend_band(names, box[2]))
+    shown = [fits([texts[i]], i, outer) for i in range(len(names))]
+    return RingPlan(inner, [None] * len(names), shown, True, unnamed)
+
+
+def _warn_unnamed(warn: Callable[[str, str, str], None], ring: RingPlan) -> None:
+    quoted = ", ".join(f"'{n}'" for n in ring.unnamed)
+    room = "has no room for its name" if len(ring.unnamed) == 1 else "have no room for their names"
+    if ring.legend:
+        warn(
+            "data.categories",
+            f"{quoted} {room} inside the ring, so the doughnut names its slices in a legend"
+            " instead of on the slices",
+            "merge the smallest slices into one, shorten the names, or give the chart more room",
+        )
+    else:
+        warn(
+            "data.categories",
+            f"{quoted} {room} inside the ring and show_legend is false, so nothing names "
+            + ("it" if len(ring.unnamed) == 1 else "them"),
+            "drop show_legend: false, merge the smallest slices into one, or shorten the names",
+        )
+
+
+def _style_doughnut(
+    chart: Any, spec: dict[str, Any], point_colours: list[str] | None, ring: RingPlan
+) -> None:
     plot = chart.plots[0]
     doughnut = (
         chart._chartSpace.find(qn("c:chart")).find(qn("c:plotArea")).find(qn("c:doughnutChart"))
@@ -630,24 +848,30 @@ def _style_doughnut(chart: Any, spec: dict[str, Any], point_colours: list[str] |
     as_percent = not spec.get("number_format")
     number_format = "0%" if as_percent else str(spec["number_format"])
     series = plot.series[0]
+    slices = [str(c) for c in CHARTS["doughnut"]["slice_palette"]]
     for i, point in enumerate(series.points):
-        fill = point_colours[i] if point_colours else PALETTE[i % len(PALETTE)]
+        fill = point_colours[i] if point_colours else slices[i % len(slices)]
         point.format.fill.solid()
         point.format.fill.fore_color.rgb = RGBColor.from_string(fill)
         point.format.line.color.rgb = RGBColor.from_string("FFFFFF")
         point.format.line.width = Pt(1)
+        if not ring.values[i]:
+            _delete_point_label(point)
+            continue
         label = point.data_label
         _set_font(label.font, "chart_data_label", color_hex=str(label_text_color(fill)))
         # No position: a doughnut draws its labels on the ring, and PowerPoint does
-        # not accept dLblPos on a doughnut at all (its PDF export hung on one).
-        _point_label_shows(label, number_format, percent=as_percent)
+        # not accept dLblPos on a doughnut at all (its PDF export hung on one). Each
+        # slice names itself where it has room: a colour-keyed legend fails #22.
+        named = ring.names[i] is not None
+        _point_label_shows(label, number_format, percent=as_percent, category=named)
     plot.has_data_labels = True
     labels = plot.data_labels
     labels.number_format = number_format
     labels.number_format_is_linked = False
     labels.show_percentage = as_percent
     labels.show_value = not as_percent
-    labels.show_category_name = False
+    labels.show_category_name = any(n is not None for n in ring.names)
     labels.show_series_name = False
     labels.show_legend_key = False
     _set_font(labels.font, "chart_data_label")
@@ -662,11 +886,14 @@ def add_chart(
     *,
     legend: bool | None = None,
     layout: AxisLayout | None = None,
+    warn: Callable[[str, str, str], None] | None = None,
 ) -> Any:
     """Draw spec (a deck.schema.json `chart`) into box (x, y, w, h in inches).
 
     legend overrides the spec's show_legend (False when a logo legend replaces it);
-    layout places the plot area exactly, for logos along the category axis."""
+    layout places the plot area exactly, for logos along the category axis; warn
+    receives (path in the chart spec, message, fix) for what the chart had to give
+    up, such as a doughnut slice with no room for its name."""
     ctype = spec["type"]
     data = spec["data"]
     categories = [str(c) for c in data["categories"]]
@@ -674,7 +901,15 @@ def add_chart(
     values = _all_values(series_specs)
     number_format = str(spec.get("number_format") or default_number_format(values))
     chart_data = CategoryChartData(number_format=number_format)
-    chart_data.categories = categories
+    ring = None
+    if ctype == "doughnut":
+        ring = ring_plan(spec, box, spec.get("show_legend") if legend is None else legend)
+        if ring.unnamed and warn is not None and legend is None:
+            _warn_unnamed(warn, ring)
+    # A doughnut label shows its category, so a name broken to fit carries its breaks.
+    chart_data.categories = [
+        (ring.names[i] if ring and ring.names[i] else c) for i, c in enumerate(categories)
+    ]
     for s in series_specs:
         chart_data.add_series(str(s.get("name", "")), list(s["values"]))
     x, y, w, h = box
@@ -684,16 +919,23 @@ def add_chart(
     chart = frame.chart
     _chart_space(chart)
     series_colours, point_colours = bank_colours(spec)
-    # A doughnut's legend is what names its slices; otherwise one series needs none.
-    default_legend = ctype == "doughnut" or len(series_specs) > 1
+    # Only a multi-series bar chart needs a legend: a doughnut names its slices and a
+    # multi-series line names each line at its end (Standard #22, E2E-OUTPUT-05).
+    lines = ctype in ("line", "area_line")
+    default_legend = ctype in ("bar", "bar_stacked", "bar_horizontal") and len(series_specs) > 1
     shown = bool(spec.get("show_legend", default_legend)) if legend is None else legend
+    if ring is not None:
+        shown, layout = ring.legend, AxisLayout(ring.inner, [], 0.0)
     _legend(chart, shown)
+    if lines and len(series_specs) > 1 and layout is None:
+        layout = end_label_layout(spec, box)
     if ctype in ("bar", "bar_stacked", "bar_horizontal"):
         _style_bars(chart, spec, number_format, series_colours, point_colours)
     elif ctype in ("line", "area_line"):
         _style_lines(chart, spec, number_format, series_colours)
     else:
-        _style_doughnut(chart, spec, point_colours)
+        assert ring is not None
+        _style_doughnut(chart, spec, point_colours, ring)
     if layout is not None:
         _manual_layout(chart, layout.inner)
     set_alt_text(frame, alt_text or chart_alt_text(ctype, categories, series_specs, lang))

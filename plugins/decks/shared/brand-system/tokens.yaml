@@ -290,7 +290,11 @@ charts:
   bar: {gap_width: 35, overlap_stacked: 100}
   line: {width_pt: 3.5, smooth: false, marker: circle, marker_size: 6, marker_fill: white, marker_line_pt: 2}   # a thinner marker outline keeps the white centre (Standard #5 hollow)
   area_line: {fill_alpha: 0.15, width_pt: 3.5}
-  doughnut: {hole_size: 55}
+  doughnut:
+    hole_size: 55
+    # The palette reordered for a ring: teal 007B85 never sits beside grey 939793
+    # (1.70:1, Standard #22), including where the last slice meets the first.
+    slice_palette: ["00ADBF", "003841", "007B85", "BEC1BE", "00DFF8", "939793"]
   waterfall: {gap_width: 100, total_color: dark_teal, increase_color: cyan, decrease_color: alert}
   highlight: {accent: cyan, muted: light_grey}   # chart.highlight_category: one bar in the accent, the rest muted
   time_series_default: area_line   # Standard #2.8: never a bare line for a time series

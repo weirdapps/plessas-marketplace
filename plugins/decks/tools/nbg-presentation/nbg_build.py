@@ -1327,16 +1327,22 @@ def draw_chart(
         gap = float(GEO["caption"]["gap_below"])
         frame = Frame(frame.x, frame.y + line + gap, frame.w, frame.h - line - gap)
     alt = chart.get("alt_text")
+
+    def warn(path: str, message: str, fix: str) -> None:
+        deck.warn(f"{rel}.{path}", message, fix)
+
     plan = nbg_spec.bank_plan(chart)
     if plan is None or chart.get("bank_logos") is False:
-        return nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt)
+        return nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt, warn=warn)
     mode, banks = plan
     if mode == "categories" and chart["type"] in ("bar", "bar_horizontal"):
         try:
             layout = nbg_chart.axis_layout(chart, frame.box())
         except ValueError as e:
             raise deck.fit(rel, str(e), "give the chart more room, or compare fewer banks") from e
-        shape = nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt, layout=layout)
+        shape = nbg_chart.add_chart(
+            slide, chart, frame.box(), deck.lang, alt, layout=layout, warn=warn
+        )
         for bank, centre in zip(banks, layout.anchors, strict=True):
             if bank:
                 _bank_logo(deck, slide, bank, centre, layout.logo_h)
@@ -1353,7 +1359,9 @@ def draw_chart(
         raise deck.fit(
             rel, "no room for the chart above its logo legend", "give the chart more room"
         )
-    shape = nbg_chart.add_chart(slide, chart, chart_frame.box(), deck.lang, alt, legend=False)
+    shape = nbg_chart.add_chart(
+        slide, chart, chart_frame.box(), deck.lang, alt, legend=False, warn=warn
+    )
     _draw_bank_legend(deck, slide, rows, Frame(frame.x, chart_frame.bottom, frame.w, band))
     return shape
 

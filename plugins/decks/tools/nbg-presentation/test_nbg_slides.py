@@ -99,16 +99,22 @@ def test_each_bar_and_line_type_writes_its_own_chart_element(build, chart_type, 
         assert orientation.get("val") == "maxMin", "first category must read on top"
 
 
-def test_area_line_is_an_area_chart_under_a_line_chart(build):
-    out = build(deck([_chart_slide("area_line")]))
+def test_area_line_shades_only_under_the_first_series(build):
+    """E2E-OUTPUT-03: a 15% area under every series blended into a brown-grey wash
+    with three or more lines, bank colours worst. The area now sits under the first
+    series only, and the others are plain lines."""
+    series = [{"name": n, "values": [1, 2]} for n in ("A", "B", "C")]
+    out = build(deck([_chart_slide("area_line", series=series)]))
     root = part_xml(out, chart_parts(out)[0])
     plot_area = root.find(".//c:plotArea", NS)
     kinds = [el.tag.split("}")[1] for el in plot_area if el.tag.endswith("Chart")]
     assert kinds == ["areaChart", "lineChart"], "the area must draw under the lines"
-    alpha = root.find(".//c:areaChart/c:ser/c:spPr/a:solidFill/a:srgbClr/a:alpha", NS)
-    assert alpha.get("val") == "15000"
-    hidden = [e.find("c:idx", NS).get("val") for e in root.iter(f"{C}legendEntry")]
-    assert hidden == ["0", "1"], "the legend must show the lines, not their area copies"
+    area = root.findall(".//c:areaChart/c:ser", NS)
+    assert len(area) == 1
+    first_line = root.find(".//c:lineChart/c:ser/c:spPr/a:ln/a:solidFill/a:srgbClr", NS)
+    fill = area[0].find("c:spPr/a:solidFill/a:srgbClr", NS)
+    assert fill.get("val") == first_line.get("val")
+    assert fill.find("a:alpha", NS).get("val") == "15000"
     area_axes = [a.get("val") for a in root.findall(".//c:areaChart/c:axId", NS)]
     line_axes = [a.get("val") for a in root.findall(".//c:lineChart/c:axId", NS)]
     assert area_axes == line_axes
@@ -173,27 +179,123 @@ def test_highlight_category_paints_one_bar_in_the_accent(build):
     assert fills == {"0": "BEC1BE", "1": "00ADBF"}
 
 
-def test_the_doughnut_labels_show_percentages_on_every_slice(build):
+def test_doughnut_slices_carry_their_name_and_share_with_no_colour_only_legend(build):
+    """E2E-OUTPUT-05: a doughnut named its slices only in a colour-keyed legend
+    (Standard #22), and its fourth slice put grey #939793 beside teal #007B85 (1.70:1).
+    Each slice now shows its category and share, and the slice colours never put those
+    two side by side, the ring's wrap-around included."""
     slide = {
         "type": "chart",
         "content": {"title": "The mix", "source": SOURCE},
         "chart": {
             "type": "doughnut",
             "data": {
-                "categories": ["A", "B", "C"],
-                "series": [{"name": "Share", "values": [0.5, 0.3, 0.2]}],
+                "categories": ["A", "B", "C", "D", "E", "F"],
+                "series": [{"name": "Share", "values": [0.3, 0.2, 0.15, 0.15, 0.1, 0.1]}],
             },
         },
     }
     out = build(deck([slide]))
     root = part_xml(out, chart_parts(out)[0])
     point_labels = root.findall(".//c:ser/c:dLbls/c:dLbl", NS)
-    assert len(point_labels) == 3
+    assert len(point_labels) == 6
     for dlbl in point_labels:
         assert dlbl.find("c:showPercent", NS).get("val") == "1"
+        assert dlbl.find("c:showCatName", NS).get("val") == "1"
         assert dlbl.find("c:showVal", NS).get("val") == "0"
         assert dlbl.find("c:numFmt", NS).get("formatCode") == "0%"
-    assert root.find(".//c:legend/c:legendPos", NS).get("val") == "b"
+    assert root.find(".//c:legend", NS) is None, "the names are on the slices"
+    fills = [pt.find(".//a:srgbClr", NS).get("val") for pt in root.findall(".//c:ser/c:dPt", NS)]
+    ring = list(zip(fills, fills[1:] + fills[:1], strict=True))
+    assert ("007B85", "939793") not in ring and ("939793", "007B85") not in ring, fills
+
+
+def _doughnut(categories, values, **extra):
+    return {
+        "type": "doughnut",
+        "data": {"categories": categories, "series": [{"name": "Share", "values": values}]},
+        **extra,
+    }
+
+
+CHANNELS = (["Mobile", "Internet banking", "ATM", "Branch"], [0.56, 0.24, 0.13, 0.07])
+
+
+def test_a_slice_name_wider_than_its_ring_wraps_between_words():
+    """E2E-OUTPUT-05: 'Internet banking' ran past both edges of its dark slice on one
+    line, and the letters outside it were white on white."""
+    import nbg_chart
+
+    plan = nbg_chart.ring_plan(_doughnut(*CHANNELS), (0.374, 1.6, 12.585, 4.6), None)
+    assert plan.names == ["Mobile", "Internet\nbanking", "ATM", "Branch"]
+    assert plan.values == [True] * 4 and not plan.legend and plan.unnamed == []
+
+
+def test_a_slice_too_small_for_its_name_moves_the_names_to_a_legend():
+    """A 2% slice cannot hold a name inside the ring at any wrapping: every slice then
+    shows its share only, and the legend names them (charts.md allows either)."""
+    import nbg_chart
+
+    spec = _doughnut(["Cards", "Deposits", "Loans", "Other products"], [0.5, 0.3, 0.18, 0.02])
+    plan = nbg_chart.ring_plan(spec, (0.374, 1.6, 12.585, 4.6), None)
+    assert plan.legend and plan.unnamed == ["Other products"]
+    assert plan.names == [None] * 4
+    assert plan.values == [True, True, True, False], "2% has no room even for its share"
+
+
+def test_a_logo_legend_keeps_the_names_that_fit_and_needs_no_chart_legend():
+    """A peer-bank doughnut's logo row already names every slice (legend=False)."""
+    import nbg_chart
+
+    spec = _doughnut(["Bank A", "Bank B", "Bank C", "Bank D"], [0.5, 0.3, 0.18, 0.02])
+    plan = nbg_chart.ring_plan(spec, (0.374, 1.6, 12.585, 4.6), False)
+    assert not plan.legend and plan.unnamed == ["Bank D"]
+    assert plan.names == ["Bank A", "Bank B", "Bank C", None]
+
+
+def test_an_explicit_legend_leaves_the_slices_their_share_only():
+    import nbg_chart
+
+    plan = nbg_chart.ring_plan(_doughnut(*CHANNELS), (0.374, 1.6, 12.585, 4.6), True)
+    assert plan.legend and plan.names == [None] * 4 and plan.values == [True] * 4
+
+
+def test_the_doughnut_sits_in_a_centred_square_so_its_ring_is_measurable(build):
+    slide = {
+        "type": "chart",
+        "content": {"title": "The mix", "source": SOURCE},
+        "chart": _doughnut(*CHANNELS),
+    }
+    out = build(deck([slide]))
+    root = part_xml(out, chart_parts(out)[0])
+    names = [pt.find("c:v", NS).text for pt in root.findall(".//c:cat//c:pt", NS)]
+    assert names == ["Mobile", "Internet\nbanking", "ATM", "Branch"]
+    manual = root.find(".//c:plotArea/c:layout/c:manualLayout", NS)
+    x, y, w, h = (float(manual.find(f"c:{k}", NS).get("val")) for k in ("x", "y", "w", "h"))
+    ext = slide_xml(out, 2).find(".//p:graphicFrame/p:xfrm/a:ext", NS)
+    frame_w, frame_h = inches(ext.get("cx")), inches(ext.get("cy"))
+    assert w * frame_w == pytest.approx(h * frame_h, abs=0.01)
+    assert (x + w / 2, y + h / 2) == pytest.approx((0.5, 0.5), abs=0.001)
+
+
+def test_line_series_are_named_at_their_line_ends_not_in_a_legend(build):
+    """E2E-OUTPUT-05: lines were told apart only by a colour-keyed legend."""
+    series = [{"name": "2024", "values": [1, 2, 3]}, {"name": "2025", "values": [2, 3, 5]}]
+    slide = _chart_slide("line", series=series)
+    slide["chart"]["data"]["categories"] = ["Q1", "Q2", "Q3"]
+    out = build(deck([slide]))
+    root = part_xml(out, chart_parts(out)[0])
+    assert root.find(".//c:legend", NS) is None
+    for ser in root.findall(".//c:lineChart/c:ser", NS):
+        labels = ser.findall("c:dLbls/c:dLbl", NS)
+        assert [lbl.find("c:idx", NS).get("val") for lbl in labels] == ["2"], "the last point"
+        label = labels[0]
+        assert label.find("c:showSerName", NS).get("val") == "1"
+        assert label.find("c:showVal", NS).get("val") == "0"
+        assert label.find("c:dLblPos", NS).get("val") == "r"
+    layout = root.find(".//c:plotArea/c:layout/c:manualLayout", NS)
+    x, w = (float(layout.find(f"c:{k}", NS).get("val")) for k in ("x", "w"))
+    assert x + w < 0.97, "room is kept right of the plot for the names"
 
 
 def test_waterfall_step_labels_sit_above_the_bar_and_totals_inside(build):

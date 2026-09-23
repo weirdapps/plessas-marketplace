@@ -114,7 +114,14 @@ the caption itself when there is none), a column's heading, or a caption line ab
 chart that has neither; it is never repeated where the text already names it.
 
 Chart types: `bar`, `bar_stacked`, `bar_horizontal`, `line`, `area_line` (the default
-for a time series, Standard #2.8) and `doughnut` (there is no pie). Element kinds:
+for a time series, Standard #2.8) and `doughnut` (there is no pie). Series are named
+directly, not in a colour-keyed legend (Standard #22): a line chart with two or more
+series names each at its last point, and a doughnut slice carries its name and share
+inside the ring, the name broken between words until it fits the slice. When a slice
+has no room for its name at any break, the doughnut names its slices in a legend
+instead and check warns which slice forced it. Only a multi-series bar chart shows a
+legend by default; `show_legend` overrides either way. An `area_line` draws its 15%
+fill under the first series only, so list the series to emphasise first. Element kinds:
 `text`, `bullets`, `shape` (`rect`, `rounded_rect`, `oval`, `chevron`, `arrow_right`),
 `image`, `chart`, `table`, `line`. Colours are token names from `tokens.yaml`
 (`teal`, `dark_teal`, `off_white`, ...), never hex.

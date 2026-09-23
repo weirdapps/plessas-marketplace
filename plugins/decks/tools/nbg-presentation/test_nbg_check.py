@@ -441,6 +441,26 @@ def test_more_than_six_series_is_a_warning_and_nine_is_an_error(tmp_path):
     assert any(i.path == "slides[2].chart.data.series" for i in report.errors)
 
 
+def test_a_doughnut_slice_too_small_for_its_name_is_a_warning_naming_the_slice(tmp_path):
+    """The doughnut then names its slices in a legend: legal (charts.md) but not the
+    direct labels Standard #22 prefers, so the author hears which slice forced it."""
+    slide = {
+        "type": "chart",
+        "content": {"title": "Product mix", "source": SOURCE},
+        "chart": {
+            "type": "doughnut",
+            "data": {
+                "categories": ["Cards", "Deposits", "Loans", "Other products"],
+                "series": [{"name": "Share", "values": [0.5, 0.3, 0.18, 0.02]}],
+            },
+        },
+    }
+    report = check(tmp_path, deck([slide]))
+    assert report.ok, [i.format() for i in report.errors]
+    found = [i for i in report.warnings if i.path == "slides[1].chart.data.categories"]
+    assert found and "'Other products'" in found[0].message and "legend" in found[0].message
+
+
 def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     spec = deck(
         [
