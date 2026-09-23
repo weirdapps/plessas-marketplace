@@ -1778,7 +1778,20 @@ def _fill(slide: Slide, shape: Shape) -> tuple[str, str | None]:
 
 SOURCE_PREFIX = re.compile(r"^\s*(?:sources?|πηγ(?:η|εσ))\s*[:\-" + EN_DASH + "]")
 NOTE_PREFIX = re.compile(r"^\s*(?:notes?|σημειωσ(?:η|εισ)|σημ\.|\*|[¹²³])")
-SOURCE_AS_OF = re.compile(r"\b(?:19|20)\d{2}\b|\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b")
+# What dates a source: a four-digit year, a slashed or dotted date, or a reporting
+# period with a two-digit year, as board packs write them (FY25, 1Q26, Q2'26, 9M25,
+# 1H26, H1 '26). A period without a year ("H1", "latest") dates nothing. Public:
+# nbg_spec's `check` applies it to source.as_of, so check and this gate agree.
+_YEAR2 = r"\s?['" + chr(0x2019) + r"]?\d{2}\b"
+SOURCE_AS_OF = re.compile(
+    r"\b(?:19|20)\d{2}\b"
+    r"|\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b"
+    rf"|\b(?:FY|CY){_YEAR2}"
+    rf"|\b[1-4]Q{_YEAR2}|\bQ[1-4]{_YEAR2}"
+    rf"|\b(?:[1-9]|1[0-2])M{_YEAR2}"
+    rf"|\b[12]H{_YEAR2}|\bH[12]{_YEAR2}",
+    re.IGNORECASE,
+)
 
 
 def _is_source(text: str) -> bool:
@@ -2985,22 +2998,33 @@ def check_shadows(deck: Deck, out: Collector) -> str:
     return f"{out.examined} shape(s) and chart(s), no shadows"
 
 
-def check_em_dashes(deck: Deck, out: Collector) -> str:
-    spaced_en = f" {EN_DASH} "
+def dash_problem(text: str) -> tuple[str, str] | None:
+    """(severity, reason) when `text` breaks Standard #7, else None.
 
+    Public: nbg_spec's `check` applies the same rule to a deck spec, so a spec that
+    passes check is not failed by this gate for a dash. An em dash or " -- " is an
+    error; a spaced en dash used as a dash is a warning; "2024-2025" with an en dash
+    is a range and fine.
+    """
+    if EM_DASH in text or " -- " in text:
+        return "error", "em dash"
+    if f" {EN_DASH} " in text:
+        return "warning", "spaced en dash used as a dash"
+    return None
+
+
+def check_em_dashes(deck: Deck, out: Collector) -> str:
     def judge(position: int, text: str, where: str) -> None:
         out.count()
-        if EM_DASH in text or " -- " in text:
-            out.add(
-                position,
-                f'em dash in {where}: "{_snippet(text)}"; use a comma, colon or full stop (Standard #7)',
-            )
-        elif spaced_en in text:
-            out.add(
-                position,
-                f'spaced en dash used as a dash in {where}: "{_snippet(text)}" (Standard #7)',
-                "warning",
-            )
+        problem = dash_problem(text)
+        if problem is None:
+            return
+        severity, reason = problem
+        out.add(
+            position,
+            f'{reason} in {where}: "{_snippet(text)}"; use a comma, colon or full stop (Standard #7)',
+            severity,
+        )
 
     for s in deck.slides:
         for text in _slide_texts(s):
@@ -3351,6 +3375,25 @@ ALT_TEXT_PLACEHOLDER = re.compile(
 )
 
 
+def alt_text_problem(alt: str, captions: Iterable[str] = ()) -> str | None:
+    """Why `alt` describes nothing, or None when it is usable alt text.
+
+    Public: nbg_spec's `check` runs it on a spec's alt_text so check and this gate
+    agree. `captions` is the slide's other text; alt text identical to one of them is
+    read out twice by a screen reader.
+    """
+    text = " ".join(alt.split())
+    if not text:
+        return "no alt text"
+    if ALT_TEXT_PLACEHOLDER.match(text):
+        return f'alt text "{text}" is a filename or an autoname, not a description'
+    if ALT_TEXT_LEAD_IN.match(text):
+        return f'alt text "{_snippet(text)}" opens with "image of"; describe the content'
+    if fold(text) in {fold(c) for c in captions}:
+        return f'alt text "{_snippet(text)}" repeats a caption already on the slide'
+    return None
+
+
 _DECORATIVE_EXT = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}"
 
 
@@ -3370,7 +3413,7 @@ def _marked_decorative(shape: Shape) -> bool:
 def check_alt_text(deck: Deck, out: Collector) -> str:
     decorative = marked = 0
     for s in deck.slides:
-        captions = {fold(t) for t in _slide_texts(s)}
+        captions = list(_slide_texts(s))
         for shape in s.shapes:
             if shape.kind not in ("pic", "graphicFrame", "grpSp") or shape.depth > 0:
                 continue
@@ -3382,24 +3425,12 @@ def check_alt_text(deck: Deck, out: Collector) -> str:
                 continue
             out.count()
             nv = shape.c_nv_pr
-            alt = " ".join((nv.get("descr", "") if nv is not None else "").split())
-            name = shape.name or shape.kind
-            if not alt:
-                out.add(s.position, f"{name} has no alt text")
-            elif ALT_TEXT_PLACEHOLDER.match(alt):
+            problem = alt_text_problem(nv.get("descr", "") if nv is not None else "", captions)
+            if problem is not None:
+                name = shape.name or shape.kind
                 out.add(
                     s.position,
-                    f'{name} alt text "{alt}" is a filename or an autoname, not a description',
-                )
-            elif ALT_TEXT_LEAD_IN.match(alt):
-                out.add(
-                    s.position,
-                    f'{name} alt text "{_snippet(alt)}" opens with "image of"; describe the content',
-                )
-            elif fold(alt) in captions:
-                out.add(
-                    s.position,
-                    f'{name} alt text "{_snippet(alt)}" repeats a caption already on the slide',
+                    f"{name} has no alt text" if problem == "no alt text" else f"{name} {problem}",
                 )
     chrome = f", {decorative} brand logo(s) exempt as decorative" if decorative else ""
     if marked:

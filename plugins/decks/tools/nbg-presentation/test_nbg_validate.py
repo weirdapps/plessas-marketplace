@@ -2016,6 +2016,49 @@ def test_a_one_slide_view_plus_back_cover_passes_every_check_even_strict(tmp_pat
     assert nv.exit_code(found, strict=True) == 0
 
 
+# ------------------------------------------------- verification pass, round 2
+
+APOS = chr(0x2019)
+
+
+@pytest.mark.parametrize(
+    "as_of",
+    ["FY25", "FY 25", "1Q26", "Q2'26", f"Q2{APOS}26", "Q3 26", "9M25", "1H26", "H1 '26", "H2 26"],
+)
+def test_period_style_as_of_values_date_a_source(tmp_path, as_of):
+    """VALIDATOR-CODE-5: the schema accepts '9M25' or 'Q2'26' as as_of; the gate did not."""
+
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), f"Source: NBG MIS, {as_of}")
+
+    result = check(deck(tmp_path, edit), "Exhibit Sources")
+    assert result.status == "pass", result.details
+
+
+@pytest.mark.parametrize("as_of", ["H1", "FY", "Q3", "latest", "9M"])
+def test_a_period_without_a_year_still_dates_nothing(tmp_path, as_of):
+    def edit(prs):
+        remove(shape_with_text(slide(prs, 3), "Source"))
+        source(slide(prs, 3), f"Source: NBG MIS, {as_of}")
+
+    result = check(deck(tmp_path, edit), "Exhibit Sources")
+    assert result.status == "fail" and "no as-of date" in details(result)
+
+
+def test_the_names_the_spec_checker_imports_stay_put():
+    """nbg_spec imports these so `check` and this gate agree; renaming one breaks it."""
+    assert nv.SOURCE_AS_OF.search("30 June 2026") and nv.SOURCE_AS_OF.search("9M25")
+    assert nv.SOURCE_PREFIX.match(nv.fold("ΠΗΓΗ: ΤτΕ"))
+    assert nv.ALT_TEXT_PLACEHOLDER.match("chart-4.png") and nv.ALT_TEXT_LEAD_IN.match("Image of x")
+    assert nv.alt_text_problem("Chart 3") and nv.alt_text_problem("Volume rose 12% in 2025") is None
+    assert nv.alt_text_problem("Same text", ["same TEXT"])
+    assert nv.dash_problem(f"a {EM_DASH} b") == ("error", "em dash")
+    assert nv.dash_problem("a -- b") == ("error", "em dash")
+    assert nv.dash_problem(f"a {EN_DASH} b") == ("warning", "spaced en dash used as a dash")
+    assert nv.dash_problem(f"2024{EN_DASH}2025") is None
+
+
 # ------------------ validator tests that lived in test_nbg_build.py, ported here
 
 
