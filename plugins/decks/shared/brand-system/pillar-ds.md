@@ -1,5 +1,9 @@
 # NBG Pillar Design System Reference
 
+> Machine source for deck colours: [`tokens.yaml`](tokens.yaml). This file documents the Pillar
+> tokens of NBG's digital products; a deck uses them only where `colors.md` or `tokens.yaml`
+> adopts them (the PFM category palette, the competitor bank colours).
+
 **Source**: NBG Pillar Figma Design System
 **Purpose**: Digital product design tokens for integration with presentation brand system
 
@@ -282,7 +286,7 @@ const PILLAR_DS = {
     alpha: '0D488B',
   },
 
-  // PFM Category chart colors (Main shades — Pillar live as of 2026-05-24)
+  // PFM Category chart colors (Main shades, Pillar live as of 2026-05-24)
   chartCategoryColors: [
     'B99C34', // Eating out
     '44C7B3', // Health
