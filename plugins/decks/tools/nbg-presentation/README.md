@@ -203,8 +203,10 @@ bash plugins/decks/bin/decks-py extract deck.pptx > deck.md
 
 For a `.pptx`: `## Slide N: <title>`, then the text in reading order with bullets as
 `- ` (indented by level), tables as markdown tables, charts as `Chart (<type>):` and a
-categories-by-series table (a waterfall as its steps and signed values), pictures as
-`[image: <alt text>]`, and `Notes: ...`. For a `.pdf`: `## Page N` and the page text.
+categories-by-series table (a waterfall as its steps and signed values), every picture
+as `[image: <alt text>]` (or `[image: no alt text, <shape name>]`, placeholder pictures
+included; only a picture marked decorative, like the builder's logos, is left out), and
+`Notes: ...`. For a `.pdf`: `## Page N` and the page text.
 A `.docx` is refused (python-docx is not a dependency): save it as PDF first.
 
 extract and render open decks from anyone, so a `.pptx` must first pass the package
