@@ -35,7 +35,7 @@
 | Title | Aptos | 48pt (44pt minimum) | #003841 | Regular |
 | Subtitle | Aptos | **24pt** | #007B85 | Regular |
 | Location | Aptos | 14pt | #003841 | Regular |
-| Date | Aptos | 14pt | #939793 | Regular |
+| Date | Aptos | 14pt | #5A5F5A | Regular |
 
 The title stays on one line (Standard #13). The builder shrinks a long title to 44pt before it
 would wrap; past that, shorten the text rather than let it wrap.
@@ -89,7 +89,7 @@ Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill, no bord
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | KPI big number | Aptos | **50pt** | **#007B85** (NBG Teal) | **Bold** |
-| KPI caption | Aptos | **14pt** | **#202020** (Dark Text) | Regular |
+| KPI caption | Aptos | **16pt** | **#5A5F5A** (Caption Grey) | Regular |
 
 Examples of KPI big-number text (typical NBG executive deck): `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`.
 

@@ -248,7 +248,8 @@ Logos go into the deck through the deck spec, as `image` elements of a `custom` 
 files into `ppt/media/` by hand: `nbg_build.py` embeds them.
 
 Keep each logo's own aspect ratio (Standard #4): give every logo in a comparison the same height
-(about 0.38") and let the widths follow the files. NBG's oval emblem and the other banks'
+(0.3", tokens.yaml `components.bank_logos.h`) and let the widths follow the files. On a
+peer-bank chart the builder places the logos itself. NBG's oval emblem and the other banks'
 rectangular marks distort when forced into one square box.
 
 See `assets/bank-logos/README.md` for the bank colours that go with each logo.

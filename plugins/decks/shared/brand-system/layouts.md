@@ -89,7 +89,7 @@ belongs in their style preferences (`${CLAUDE_PLUGIN_DATA}/style-preferences.md`
 - Title: Dark Teal `#003841`
 - Subtitle: NBG Teal `#007B85`
 - Location: Dark Teal `#003841`
-- Date: Medium Gray `#939793`
+- Date: Caption Grey `#5A5F5A`
 
 ## Contents / TOC Slide
 
@@ -234,7 +234,7 @@ slide is the recommended option (gold, below); a highlighted card changes its fi
 | Element | Position (within card) | Font | Size | Color | Weight | Align |
 |---|---|---|---|---|---|---|
 | Big number | (card_x, 2.65, 3.5, 1.0) | Aptos | **50pt** | `#007B85` | **Bold** | Center |
-| Caption | (card_x + 0.30, 3.85, 2.9, 0.8) | Aptos | **14pt** | `#202020` | Regular | Center |
+| Caption | (card_x + 0.30, 3.85, 2.9, 0.8) | Aptos | **16pt** | `#5A5F5A` | Regular | Center |
 
 **Page header** (above the cards):
 
@@ -345,7 +345,7 @@ Positions: [dimensions.md → Cover Slide](dimensions.md#cover-slide) and
 | Title | Aptos | **48pt** | `#003841` | Regular |
 | Subtitle (presenting units) | Aptos | **24pt** | `#007B85` | Regular |
 | Location | Aptos | 14pt | `#003841` | Regular |
-| Date | Aptos | 14pt | `#939793` | Regular |
+| Date | Aptos | 14pt | `#5A5F5A` | Regular |
 | **NBG logo (large)** | n/a | n/a | n/a | always Greek logo (`assets/nbg-logo-gr.png`) |
 
 **Subtitle convention**: the presenting unit(s), pipe-separated, no trailing period, e.g.
