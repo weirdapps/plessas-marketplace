@@ -259,6 +259,7 @@ What changes between decks is which **elements** you place on that chassis, chos
 | this is the pick | recommended-option highlight |
 | these are the risks | warning flags (orange square + ALL-CAPS label) |
 | the bottom line | takeaway strip |
+| what we ask of another division, and what we lead ourselves | two-party ownership coding (an asks page and an our-work page, never mixed) |
 
 Each element's spec (geometry, colours, type) is in `brand-system/layouts.md` → "Element Specs".
 

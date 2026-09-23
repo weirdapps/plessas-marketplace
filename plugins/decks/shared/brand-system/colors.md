@@ -154,6 +154,20 @@ a plain positive/negative pair in a chart stays `#73AF3C` / `#AA0028`.
 | Premium | `#D9A757` | 217, 167, 87 | Premium/private banking |
 | Private | `#AA0028` | 170, 0, 40 | Private banking |
 
+## Two-Party Ownership Coding
+
+What we ask of another division, against what our division leads itself. Element spec:
+`layouts.md` → Two-party ownership coding.
+
+| Hex | Token | Use |
+|-----|-------|-----|
+| `#C8323C` | `ownership_ask` | Asks: accent bar, section header bar, badge; white text on it (5.28:1) |
+| `#FAEBEC` | `ownership_ask_fill` | Asks: card and row fill; `#202020` text on it (14.09:1) |
+| `#E6F4F5` | `ownership_band` | The footer band saying what we lead in parallel; `#003841` text on it (11.34:1) |
+
+Our division's side takes the core palette: `off_white` fill, `bright_cyan` accent bar, `teal`
+header bars.
+
 ## Link Colors
 
 | Type | Hex |

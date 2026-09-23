@@ -15,6 +15,7 @@ because a check that finds nothing to compare has not checked anything.
 
 from __future__ import annotations
 
+import importlib
 import re
 import sys
 from pathlib import Path
@@ -273,6 +274,9 @@ COLOUR_ROWS = [
     ("colors.md", "Official NBG Corporate Palette", "Alert", "alert"),
     ("colors.md", "Official NBG Corporate Palette", "Gold", "gold"),
     ("colors.md", "Official NBG Corporate Palette", "Blue", "info_blue"),
+    ("colors.md", "Two-Party Ownership Coding", "#C8323C", "ownership_ask"),
+    ("colors.md", "Two-Party Ownership Coding", "#FAEBEC", "ownership_ask_fill"),
+    ("colors.md", "Two-Party Ownership Coding", "#E6F4F5", "ownership_band"),
 ]
 
 
@@ -354,11 +358,18 @@ THEME_SLOTS = {
 }
 
 
+def _presentation_module(name: str) -> Any:
+    """A module from tools/nbg-presentation/ (the builder's folder), imported by name."""
+    folder = str(Path(__file__).resolve().parent / "nbg-presentation")
+    if folder not in sys.path:
+        sys.path.insert(0, folder)
+    return importlib.import_module(name)
+
+
 def _built_theme() -> dict[str, str]:
     """Slot name -> hex of the colour scheme nbg_build writes, read back from the deck."""
     pytest.importorskip("pptx")
-    sys.path.insert(0, str(Path(__file__).resolve().parent / "nbg-presentation"))
-    import nbg_build
+    nbg_build = _presentation_module("nbg_build")
     from lxml import etree
     from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 
@@ -373,6 +384,66 @@ def test_theme_table_quotes_the_theme_the_builder_writes():
     assert set(built) == set(THEME_SLOTS.values()), sorted(built)
     listed = {clean(r["Slot"]): hexes(r["Hex"])[0] for r in table_rows("colors.md", "Theme Colors")}
     assert listed == {label: built[slot] for label, slot in THEME_SLOTS.items()}
+
+
+OWNERSHIP = "Two-party ownership coding"
+OWNERSHIP_TOKENS = {"ownership_ask", "ownership_ask_fill", "ownership_band"}
+
+
+def test_ownership_coding_quotes_the_colour_tokens():
+    """Every `token` (`#HEX`) pair in the layouts.md element spec names a colour token
+    with that value, and all three ownership tokens are among them."""
+    text = section("layouts.md", OWNERSHIP)
+    pairs = re.findall(r"`([a-z][a-z0-9_]*)` \(`#([0-9A-Fa-f]{6})`\)", text)
+    assert pairs, "no `token` (`#hex`) pair in the ownership spec"
+    for name, value in pairs:
+        assert hex_of(name) == value.upper(), f"{name} is {hex_of(name)}; the spec says {value}"
+    assert OWNERSHIP_TOKENS <= {name for name, _ in pairs}
+
+
+# (text colour, fill, the ratio the spec quotes)
+OWNERSHIP_TEXT = [
+    ("white", "ownership_ask", 5.28),
+    ("white", "teal", 5.03),
+    ("dark_teal", "ownership_ask_fill", 11.06),
+    ("body_text", "ownership_ask_fill", 14.09),
+    ("dark_teal", "off_white", 11.96),
+    ("body_text", "off_white", 15.24),
+    ("dark_teal", "ownership_band", 11.34),
+]
+
+
+@pytest.mark.parametrize(("text", "fill", "quoted"), OWNERSHIP_TEXT)
+def test_ownership_coding_text_clears_wcag_aa(text, fill, quoted):
+    ratio = nbg_color.contrast_ratio(hex_of(text), hex_of(fill))
+    assert ratio >= nbg_color.AA_NORMAL, f"{text} on {fill} is {ratio:.2f}:1"
+    assert ratio == pytest.approx(quoted, abs=0.006), f"{text} on {fill} is {ratio:.2f}:1"
+    assert f"{quoted:.2f}:1" in section("layouts.md", OWNERSHIP), (
+        f"the ownership spec does not quote {quoted:.2f}:1 for {text} on {fill}"
+    )
+
+
+def test_ownership_coding_example_passes_the_spec_check():
+    """The spec's YAML recipe goes through the same schema and semantic check as a real
+    deck (body area, colour names), so a recipe that drifts from the schema fails here
+    rather than in a colleague's build."""
+    pytest.importorskip("jsonschema")
+    nbg_spec = _presentation_module("nbg_spec")
+    (slide,) = yaml_blocks("layouts.md", OWNERSHIP)[0]
+    deck = {
+        "presentation": {"title": "Ownership coding", "language": "en"},
+        "slides": [
+            {"type": "cover", "id": "S01", "content": {"title": "Ownership coding"}},
+            slide,
+            {"type": "back_cover", "id": "S99"},
+        ],
+    }
+    spec, issues = nbg_spec.normalise(deck)
+    issues += nbg_spec.schema_issues(spec) + nbg_spec.semantic_issues(spec, DOCS)
+    errors = [i.format() for i in issues if i.level == "error"]
+    assert not errors, errors
+    used = {el.get(key) for el in slide["elements"] for key in ("fill", "text_color")}
+    assert used >= OWNERSHIP_TOKENS
 
 
 def test_retired_colour_table_matches_the_tokens_both_ways():
