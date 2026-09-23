@@ -470,6 +470,28 @@ _PRESET_COLORS = {
     "cyan": "00FFFF",
     "magenta": "FF00FF",
 }
+_PRESET_SHORT = (("dk", "dark"), ("lt", "light"), ("med", "medium"))
+
+
+@lru_cache(maxsize=256)
+def _preset_color(name: str) -> str | None:
+    """An a:prstClr name: the CSS colour names, with the dk, lt and med short forms
+    DrawingML adds ("dkGreen" is CSS darkgreen)."""
+    if name in _PRESET_COLORS:
+        return _PRESET_COLORS[name]
+    try:
+        from PIL import ImageColor
+    except ImportError:
+        return None
+    key = name.lower()
+    for short, full in _PRESET_SHORT:
+        if key not in ImageColor.colormap and key.startswith(short):
+            key = full + key[len(short) :]
+    if key not in ImageColor.colormap:
+        return None
+    return "".join(f"{v:02X}" for v in ImageColor.getrgb(key)[:3])
+
+
 _DEFAULT_CLR_MAP = {
     "bg1": "lt1",
     "tx1": "dk1",
@@ -490,8 +512,18 @@ _THEME_SLOTS = (
 )
 
 
+def _linear(c: float) -> float:
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _gamma(c: float) -> float:
+    return c * 12.92 if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
 def _apply_modifiers(hex_: str, el: Any) -> str:
-    """Apply lumMod/lumOff/tint/shade in document order. Alpha changes no hex."""
+    """Apply lumMod/lumOff/tint/shade in document order. Alpha changes no hex. PowerPoint
+    mixes tint and shade in linear light, so a 40% tint of 4F81BD is D0D8E8, not the
+    B9CDE5 an sRGB mix gives."""
     r, g, b = (int(hex_[i : i + 2], 16) / 255 for i in (0, 2, 4))
     for mod in el:
         tag = _local(mod.tag)
@@ -504,9 +536,9 @@ def _apply_modifiers(hex_: str, el: Any) -> str:
             lum = lum * val if tag == "lumMod" else lum + val
             r, g, b = colorsys.hls_to_rgb(h, min(1.0, max(0.0, lum)), s)
         elif tag == "tint":
-            r, g, b = (c + (1 - c) * (1 - val) for c in (r, g, b))
+            r, g, b = (_gamma(_linear(c) * val + 1 - val) for c in (r, g, b))
         elif tag == "shade":
-            r, g, b = (c * val for c in (r, g, b))
+            r, g, b = (_gamma(_linear(c) * val) for c in (r, g, b))
     return "".join(f"{round(min(1.0, max(0.0, c)) * 255):02X}" for c in (r, g, b))
 
 
@@ -570,7 +602,18 @@ class ColorContext:
             else:
                 base = self.theme.colors.get(self.clr_map.get(val, val))
         elif tag == "prstClr":
-            base = _PRESET_COLORS.get(el.get("val", ""))
+            base = _preset_color(el.get("val", ""))
+        elif tag == "hslClr":
+            try:  # hue in 60000ths of a degree; saturation and luminance in 1000ths of a percent
+                hls = (
+                    int(el.get("hue", "0")) / 21600000 % 1.0,
+                    min(1.0, max(0.0, int(el.get("lum", "0")) / 100000)),
+                    min(1.0, max(0.0, int(el.get("sat", "0")) / 100000)),
+                )
+            except ValueError:
+                base = None
+            else:
+                base = "".join(f"{round(c * 255):02X}" for c in colorsys.hls_to_rgb(*hls))
         elif tag == "scrgbClr":
             try:
                 base = "".join(
@@ -660,6 +703,7 @@ class Shape:
     layout_ph: Any = None
     master_ph: Any = None
     part: str | None = None  # the layout or master that owns an inherited shape
+    parent: Shape | None = None  # the group a shape sits in
 
     @property
     def has_box(self) -> bool:
@@ -732,7 +776,9 @@ def _nv_parts(el: Any) -> tuple[str, str | None, str | None]:
     return name, ph_type, ph_idx
 
 
-def _flatten(tree: Any, xf: _Xform, depth: int, out: list[Shape]) -> list[Shape]:
+def _flatten(
+    tree: Any, xf: _Xform, depth: int, out: list[Shape], parent: Shape | None = None
+) -> list[Shape]:
     for child in tree:
         tag = _local(child.tag)
         if tag == "AlternateContent":
@@ -740,7 +786,7 @@ def _flatten(tree: Any, xf: _Xform, depth: int, out: list[Shape]) -> list[Shape]
             if branch is None:
                 branch = child.find(f"{MC}Choice")
             if branch is not None:
-                _flatten(branch, xf, depth, out)
+                _flatten(branch, xf, depth, out, parent)
             continue
         if tag not in _SHAPE_TAGS:
             continue
@@ -759,10 +805,24 @@ def _flatten(tree: Any, xf: _Xform, depth: int, out: list[Shape]) -> list[Shape]
                 x, y, w, h = ex / EMU, ey / EMU, ew / EMU, eh / EMU
             rot = int(xfrm.get("rot", "0") or 0) / 60000
         name, ph_type, ph_idx = _nv_parts(child)
-        out.append(Shape(tag, child, len(out), x, y, w, h, rot, name, ph_type, ph_idx, depth))
+        shape = Shape(tag, child, len(out), x, y, w, h, rot, name, ph_type, ph_idx, depth)
+        shape.parent = parent
+        out.append(shape)
         if tag == "grpSp":
-            _flatten(child, xf.child(xfrm) if xfrm is not None else xf, depth + 1, out)
+            _flatten(child, xf.child(xfrm) if xfrm is not None else xf, depth + 1, out, shape)
     return out
+
+
+def _group_fill(shape: Shape) -> Any:
+    """The fill an a:grpFill stands for: the nearest enclosing group's own fill (a group
+    whose fill is itself grpFill defers to its parent). None when no group sets one."""
+    group = shape.parent
+    while group is not None:
+        fill = _fill_child(group.el.find(f"{P}grpSpPr"))
+        if fill is not None and _local(fill.tag) != "grpFill":
+            return fill
+        group = group.parent
+    return None
 
 
 _TITLE_TYPES = ("title", "ctrTitle")
@@ -2051,6 +2111,10 @@ def _fill(slide: Slide, shape: Shape) -> tuple[str, str | None]:
         fill = _fill_child(holder)
         if fill is None:
             continue
+        if _local(fill.tag) == "grpFill":
+            fill = _group_fill(shape)
+            if fill is None:
+                return "none", None
         tag = _local(fill.tag)
         if tag == "solidFill":
             return "solid", slide.ctx.first(fill)
@@ -2345,21 +2409,28 @@ def check_colors(deck: Deck, out: Collector) -> str:
         if shape.kind == "grpSp":
             continue
         where = _where(shape)
-        for el in _color_elements(shape.el):
-            out.count()
-            hex_ = s.ctx.resolve(el)
-            if hex_ is None:
-                out.skip("unresolvable colour reference")
-                continue
-            verdict = _color_verdict(hex_)
-            if verdict:
-                via = f" ({s.ctx.describe(el)})" if s.ctx.describe(el) else ""
-                out.add(s.position, f"#{hex_}{via} {verdict} (in {where})")
+        own_fill = _fill_child(shape.sp_pr)
+        group_fill = (
+            _group_fill(shape)
+            if own_fill is not None and _local(own_fill.tag) == "grpFill"
+            else None
+        )
+        for source, role in ((shape.el, ""), (group_fill, "group fill, ")):
+            for el in _color_elements(source) if source is not None else ():
+                hex_ = s.ctx.resolve(el)
+                if hex_ is None:
+                    out.skip("unresolvable colour reference")
+                    continue
+                out.count()
+                verdict = _color_verdict(hex_)
+                if verdict:
+                    via = f" ({s.ctx.describe(el)})" if s.ctx.describe(el) else ""
+                    out.add(s.position, f"#{hex_}{via} {verdict} ({role}in {where})")
         for role, hex_ in _style_ref_colors(s, shape):
-            out.count()
             if hex_ is None:
                 out.skip("unresolvable style colour")
                 continue
+            out.count()
             verdict = _color_verdict(hex_)
             if verdict:
                 out.add(s.position, f"#{hex_} {verdict} ({role}, in {where}); set it explicitly")
@@ -2378,11 +2449,11 @@ def check_colors(deck: Deck, out: Collector) -> str:
                     out.add(s.position, f"#{hex_} {verdict} ({role}, in {where})")
     for chart in deck.charts():
         for el in _color_elements(chart.root):
-            out.count()
             hex_ = chart.slide.ctx.resolve(el)
             if hex_ is None:
                 out.skip("unresolvable chart colour")
                 continue
+            out.count()
             verdict = _color_verdict(hex_)
             if verdict:
                 out.add(chart.slide.position, f"#{hex_} {verdict} (in chart {chart.stem})")

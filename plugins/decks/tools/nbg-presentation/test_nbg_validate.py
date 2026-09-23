@@ -1863,6 +1863,87 @@ def test_table_style_parts_layer_in_powerpoint_order(flags, cell, parts):
     assert nv._style_parts(flags, *cell, rows=4, cols=2) == parts
 
 
+def _grouped(prs, group_fill, *, child_fill="grp"):
+    """A group on slide 2 whose one child takes the group's fill (a:grpFill) or its own."""
+    sld = slide(prs, 2)
+    grp = sld.shapes.add_group_shape()
+    child = box(grp, 9.0, 5.3, 1.0, 0.4, "007B85")
+    child.name = "Child"
+    grp_sp_pr = grp._element.find(qn("p:grpSpPr"))
+    fill = etree.SubElement(grp_sp_pr, qn("a:solidFill"))
+    etree.SubElement(fill, qn("a:srgbClr")).set("val", group_fill)
+    if child_fill == "grp":
+        sp_pr = child._element.spPr
+        sp_pr.replace(sp_pr.find(qn("a:solidFill")), etree.Element(qn("a:grpFill")))
+
+
+def test_a_child_painted_with_its_groups_fill_is_judged(tmp_path):
+    """VALIDATOR-CODE-7: Colors skipped groups, so a:grpFill hid the colour that shows."""
+    result = check(deck(tmp_path, lambda prs: _grouped(prs, "FF0000")), "Colors")
+    assert result.status == "fail" and "#FF0000" in details(result)
+    assert "group fill" in details(result)
+
+
+def test_a_group_fill_no_child_uses_is_not_drawn(tmp_path):
+    path = deck(tmp_path, lambda prs: _grouped(prs, "FF0000", child_fill="own"))
+    assert check(path, "Colors").status == "pass"
+
+
+def _run_color(position, color_xml):
+    """Slide `position` gains a text box whose run colour is `color_xml`."""
+
+    def edit(prs):
+        shape = text(slide(prs, position), 9.0, 5.3, 3.0, 0.3, "Delivered", size=12)
+        r_pr = shape._element.find(".//" + qn("a:rPr"))
+        fill = r_pr.find(qn("a:solidFill"))
+        fill.remove(fill[0])
+        fill.append(etree.fromstring(color_xml))
+
+    return edit
+
+
+@pytest.mark.parametrize(
+    ("color_xml", "hex_"),
+    [
+        (f'<a:hslClr xmlns:a="{NS_A}" hue="0" sat="100000" lum="50000"/>', "FF0000"),
+        (f'<a:prstClr xmlns:a="{NS_A}" val="dkGreen"/>', "006400"),
+        (f'<a:prstClr xmlns:a="{NS_A}" val="medVioletRed"/>', "C71585"),
+    ],
+)
+def test_hsl_and_every_preset_colour_are_judged(tmp_path, color_xml, hex_):
+    """hslClr and the presets outside a 12-name table passed as 'all NBG colours'."""
+    result = check(deck(tmp_path, _run_color(2, color_xml)), "Colors")
+    assert result.status == "fail" and f"#{hex_}" in details(result)
+
+
+def test_an_hsl_white_is_an_nbg_colour(tmp_path):
+    white = f'<a:hslClr xmlns:a="{NS_A}" hue="0" sat="0" lum="100000"/>'
+    assert check(deck(tmp_path, _run_color(2, white)), "Colors").status == "pass"
+
+
+def test_an_unresolvable_colour_is_not_counted_as_examined(tmp_path, golden):
+    before = check(golden, "Colors").examined
+    bad = f'<a:schemeClr xmlns:a="{NS_A}" val="accent9"/>'
+    result = check(deck(tmp_path, _run_color(2, bad)), "Colors")
+    assert result.examined == before
+    assert result.not_examined == {"unresolvable colour reference": 1}
+
+
+def test_tint_and_shade_work_in_linear_light_as_powerpoint_does():
+    """PowerPoint draws Medium Style 2 Accent 1 on the Office theme's 4F81BD with bands
+    D0D8E8 (tint 40%) and E9EDF4 (tint 20%); a plain sRGB mix gives B9CDE5 and DCE6F2."""
+
+    def tinted(mod, val):
+        el = etree.fromstring(
+            f'<a:srgbClr xmlns:a="{NS_A}" val="4F81BD"><a:{mod} val="{val}"/></a:srgbClr>'
+        )
+        return nv._apply_modifiers("4F81BD", el)
+
+    assert tinted("tint", 40000) == "D0D8E8"
+    assert tinted("tint", 20000) == "E9EDF4"
+    assert tinted("shade", 100000) == "4F81BD"
+
+
 def test_bank_branding_reads_chart_categories(tmp_path):
     """E2E-SMOKE-9: a four-bank chart passed as 'examined nothing'."""
     result = check(_bank_case(tmp_path, colored=False), "Bank Branding")
