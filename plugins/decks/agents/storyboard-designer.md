@@ -42,6 +42,7 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 | two things side by side, or text arguing over an exhibit | `two_column`; `split: 40/60` when text argues over an exhibit |
 | a screenshot, mockup, photo or diagram carries it | `image` |
 | an argument in a few points | `content` |
+| what we ask of another division, as against the work we lead | the two-party ownership coding element, built as `custom` slides exactly as "Two-party ownership coding" in `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/layouts.md` specifies (its asks-table recipe included): asks and our work on separate pages, asks grouped by product, a badge naming the division |
 | a layout none of the above can express | `custom`: positioned elements, last resort |
 
 Decision rules:
