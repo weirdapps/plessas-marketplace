@@ -235,6 +235,26 @@ def test_an_unknown_key_is_named_with_a_suggestion(tmp_path):
     assert "did you mean 'title'" in error.fix
 
 
+def test_a_nested_error_does_not_also_report_its_slide_keys_as_unknown(tmp_path):
+    """E2E-OUTPUT-09: an over-long KPI label failed the kpi slide's schema branch, so
+    content and kpis also came back as "unknown key 'content' ... did you mean
+    'content'? remove it", sending the fix loop to delete the slide's content."""
+    slide = {
+        "type": "kpi",
+        "content": {"title": "Numbers", "source": SOURCE},
+        "kpis": [
+            {
+                "value": "1",
+                "label": "A label far longer than the sixty characters the schema allows it",
+            }
+        ],
+    }
+    report = check(tmp_path, deck([slide]))
+    assert [i.path for i in report.errors] == ["slides[1].kpis[0].label"], [
+        i.format() for i in report.errors
+    ]
+
+
 def test_unquoted_numbers_and_dates_are_coerced_with_a_warning(tmp_path):
     path = tmp_path / "s.yaml"
     path.write_text(

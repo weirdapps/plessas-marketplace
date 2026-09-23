@@ -957,14 +957,23 @@ def schema_issues(spec: Any) -> list[Issue]:
         if path == "slides" and isinstance(error.instance, dict):
             message = "slides must be a list"
             fix = "write each slide as a list item starting with '- type:'"
-        described.append((error.validator, path, message, fix))
+        keys: list[str] = []
+        if error.validator == "unevaluatedProperties":
+            parent = format_path(error.absolute_path)
+            names = re.findall(r"'([^']+)'", error.message.split("(")[-1])
+            keys = [f"{parent}.{n}" if parent else n for n in names]
+        described.append((error.validator, path, message, fix, keys))
     seen: set[tuple[str, str]] = set()
-    for validator, path, message, fix in described:
-        # A key whose own subschema failed counts as unevaluated too, so the same
-        # mistake also surfaces as "unknown key 'content'". Report the real one.
+    for index, (validator, path, message, fix, keys) in enumerate(described):
+        # A key whose subschema failed counts as unevaluated too, so a bad KPI label
+        # also surfaced as "unknown key 'content' ... remove it" (E2E-OUTPUT-09).
+        # When any other error sits at or under one of the unexpected keys, that
+        # error is the real one: report it alone.
+        others = [d[1] for i, d in enumerate(described) if i != index]
         if validator == "unevaluatedProperties" and any(
-            other.startswith(path + ".") or other.startswith(path + "[")
-            for _, other, _, _ in described
+            other == key or other.startswith(key + ".") or other.startswith(key + "[")
+            for key in keys
+            for other in others
         ):
             continue
         if (path, message) in seen:
