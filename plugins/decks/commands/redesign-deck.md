@@ -1,104 +1,38 @@
 ---
-description: "Redesign an existing presentation to NBG standards"
-argument-hint: "[path to PPTX or paste content]"
-allowed-tools: Agent, Read, Write, Bash, Skill(document-skills:pptx)
+description: "Rebuild an existing deck (.pptx, .docx or .pdf) to NBG standards: a new storyline and layout from its extracted content, keeping every figure and source, then build, render and QA"
+argument-hint: "<path to .pptx, .docx or .pdf> [instructions] [folder to save in]"
+allowed-tools: Read, Bash, Glob, Skill(decks:create-presentation)
 ---
 
-> Path conventions: `<TEMP_DIR>` resolves to the OS temp directory (`$TMPDIR` or `/tmp` on macOS/Linux, `$env:TEMP` on Windows). Resolve before passing to tools.
-
 <objective>
-Analyze and redesign an existing presentation to meet NBG brand standards and executive-level quality.
+Rebuild the user's existing deck on the NBG format with a stronger storyline, without changing
+what it says.
 
 User request: $ARGUMENTS
 </objective>
 
 <process>
-## Redesign Workflow
 
-1. **Extract Content with MarkItDown**
-   - If the input is a file path (PPTX, PDF, DOCX), run `markitdown <filepath>` via Bash to convert it to structured Markdown
-   - This preserves slide structure, tables, headings, and hierarchy as clean Markdown that is easy to analyze
-   - Save the extracted Markdown to a temp file for reference: `<TEMP_DIR>/deck_extracted.md`
-   - Review the extracted content to identify key messages, slide count, and areas needing improvement
+1. **Find the file.** It must be an existing `.pptx`, `.docx` or `.pdf`. Pasted text with no file is
+   a new deck: run `/decks:create-presentation` with it instead. A keynote built by
+   `/decks:create-keynote` is rebuilt from its YAML, not redesigned.
+2. **Show what is off-standard** (optional, `.pptx` only): run
+   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<file>" --format json` and tell the user in
+   one line how many brand checks the original fails. Exit 2 means the tool environment could not be
+   prepared: show its printed fix and stop.
+3. **Run the pipeline** by invoking `/decks:create-presentation` through the Skill tool with these
+   arguments:
 
-2. **Evaluate Current State**
-   - Brand compliance (colors, fonts, dimensions)
-   - Visual hierarchy
-   - Message clarity
-   - Slide-by-slide assessment
+   ```text
+   <absolute path of the file>
+   mode: redesign (restructure the storyline freely; keep the meaning, every figure, every source
+   and the speaker notes; add nothing the original does not contain)
+   <the user's own instructions, if any>
+   <the folder to save in, if the user named one>
+   ```
 
-3. **Restructure Narrative**
+   `/decks:create-presentation` extracts the content, runs storyline, outline checkpoint, storyboard,
+   build and the QA gate, and delivers the new deck under a new timestamped name. The original file
+   is never modified.
 
-   Dispatch `decks:storyline-architect` with the extracted Markdown:
-   - One key message per slide
-   - Insight-driven titles
-   - Logical flow
-
-4. **Redesign Layouts**
-
-   Dispatch `decks:storyboard-designer` with the revised storyline:
-   - Apply appropriate NBG layouts
-   - Improve visual hierarchy
-   - Add proper white space
-   - Align with brand guidelines
-
-5. **Regenerate Presentation**
-
-   Dispatch `decks:graphics-renderer` with the storyboard. Apply NBG specifications:
-     - Dimensions: 13.33" x 7.5" (LAYOUT_WIDE)
-     - Font: Aptos
-     - Colors: NBG palette
-     - Small logo: 0.374", 7.071" (content slides)
-     - Large logo: 0.374", 6.271" (covers/dividers)
-     - Page numbers: 12.71", 7.1554" (content slides only)
-     - Back cover: centered oval logo (no text)
-     - Charts: doughnut only (NEVER pie)
-
-6. **QA Gate**
-
-   Dispatch `decks:presentation-qa` with the regenerated PPTX. **This is a gate, not a review: a
-   redesign does not ship until it returns PASS.** A redesign is exactly the case where the gate
-   earns its keep, because the input deck was off-standard by definition. On a fix list, dispatch
-   `decks:graphics-renderer` with it and re-run QA; maximum 2 cycles, then stop and present the
-   remaining issues rather than shipping.
 </process>
-
-<redesign_principles>
-
-## Executive Design Principles
-
-### Content Refinement (Without Changing Meaning)
-
-- Shorten long sentences
-- Turn dense text into sharp, executive bullets
-- Replace paragraphs with structured layouts
-- Make slides scannable in 5-7 seconds
-
-### Visual Enhancement
-
-- Improve layout balance and spacing
-- Reduce visual noise
-- Create clear hierarchy
-- Use alignment, grids, whitespace properly
-
-### Slide Structure
-
-- ONE clear message per slide
-- Strong, insight-driven titles
-- Logical flow from slide to slide
-</redesign_principles>
-
-<success_criteria>
-
-- [ ] Content meaning preserved
-- [ ] NBG branding applied consistently
-- [ ] Visual quality improved
-- [ ] One message per slide
-- [ ] Insight-driven titles
-- [ ] Correct dimensions and formatting (13.33" x 7.5")
-- [ ] Logo on every slide (correct size/position per type)
-- [ ] Page numbers on content slides only
-- [ ] Plain back cover with centered logo (no "Thank You")
-- [ ] Doughnut charts only (no pie charts)
-- [ ] Board-ready appearance
-</success_criteria>
