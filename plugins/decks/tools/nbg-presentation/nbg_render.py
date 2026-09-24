@@ -355,6 +355,10 @@ def render(deck: Path, outdir: Path, dpi: int = DEFAULT_DPI) -> tuple[dict[str, 
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):  # a Greek path on a Windows code page
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         prog="nbg_render.py", description="Render a deck to PDF and slide PNGs with LibreOffice."
     )

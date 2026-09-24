@@ -897,6 +897,20 @@ def test_check_cli_exit_codes_and_json(tmp_path):
     assert missing.returncode == 2
 
 
+def test_check_prints_greek_on_a_windows_code_page(tmp_path):
+    """BUILDER-CODE-03: on a cp1252 console the Greek in an issue line or a path raised
+    UnicodeEncodeError, and a clean spec exited as if it had failed."""
+    import os
+
+    spec = write_spec(tmp_path, deck([_content()]), "παρουσίαση.yaml")
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--check", str(spec)], capture_output=True, env=env
+    )
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
+    assert "παρουσίαση" in proc.stdout.decode("utf-8")
+
+
 def test_every_example_checks_clean():
     for spec in sorted((HERE.parent.parent / "examples").glob("*.yaml")):
         report = nbg_build.check(spec)

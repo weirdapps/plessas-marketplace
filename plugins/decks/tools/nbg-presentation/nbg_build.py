@@ -2471,6 +2471,13 @@ def _print_report(report: Report, fmt: str, stream: Any) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    # BUILDER-CODE-03: a Windows console or pipe defaults to the ANSI code page, where the
+    # Greek and tick marks printed below raised UnicodeEncodeError and a clean deck
+    # exited 1. The launcher sets PYTHONUTF8=1; this covers a direct run.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         prog="nbg_build.py",
         description="Build an NBG deck from a deck spec (deck.schema.json), or check one.",

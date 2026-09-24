@@ -132,6 +132,10 @@ def write_record(
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):  # a Greek path on a Windows code page
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         prog="nbg_record.py", description="Write the draft record /presentation-review learns from."
     )
