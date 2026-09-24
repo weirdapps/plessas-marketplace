@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import unicodedata
+from decimal import ROUND_HALF_UP, Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -87,9 +88,16 @@ def localise_number(text: str, language: str = "en") -> str:
     return text.translate(_GREEK_SEPARATORS) if language == "el" else text
 
 
-def format_number(value: float, decimals: int, language: str = "en") -> str:
-    """value with a thousands separator and `decimals` places, in the deck's language."""
-    return localise_number(f"{value:,.{decimals}f}", language)
+def format_number(value: float, decimals: int, language: str = "en", *, group: bool = True) -> str:
+    """value with `decimals` places, in the deck's language, grouped in thousands
+    unless group is False. It rounds as PowerPoint does: to 15 significant digits
+    first, then half away from zero (Python's own format rounds 12.5 to 12)."""
+    exact = Decimal(f"{float(value):.15g}").quantize(
+        Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP
+    )
+    if exact == 0:
+        exact = abs(exact)  # no "-0.00"
+    return localise_number(f"{exact:{',' if group else ''}.{decimals}f}", language)
 
 
 # ---------------------------------------------------------------- font discovery
