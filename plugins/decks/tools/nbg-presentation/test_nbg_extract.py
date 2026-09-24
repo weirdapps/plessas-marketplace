@@ -162,6 +162,105 @@ def test_every_picture_gets_a_marker_even_without_alt_text_or_in_a_placeholder(t
     assert text.count("[image:") == 3, "the decorative logo is not content"
 
 
+def _two_slide_deck(tmp_path, name, dress):
+    """A deck whose first slide `dress` fills, and a second with plain text, so a test
+    also sees whether extraction survives past slide 1."""
+    from pptx import Presentation
+
+    prs = Presentation()
+    first = prs.slides.add_slide(prs.slide_layouts[5])
+    first.shapes.title.text = "Market share"
+    dress(first)
+    second = prs.slides.add_slide(prs.slide_layouts[1])
+    second.shapes.title.text = "Next steps"
+    second.placeholders[1].text = "Launch the product"
+    path = tmp_path / name
+    prs.save(str(path))
+    return path
+
+
+def test_a_3d_chart_is_read_from_its_cached_values(tmp_path):
+    """BUILDER-CODE-09: python-pptx cannot read a 3-D chart, and extract crashed with
+    a traceback on the first one, so nothing of the deck came out."""
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    def pie_3d(slide):
+        data = CategoryChartData()
+        data.categories = ["A", "B", "C"]
+        data.add_series("Share", [50, 30, 20])
+        frame = slide.shapes.add_chart(
+            XL_CHART_TYPE.PIE, Inches(1), Inches(1.5), Inches(6), Inches(4), data
+        )
+        pie = frame.chart.part._element.find(".//{*}pieChart")
+        pie.tag = pie.tag.replace("pieChart", "pie3DChart")
+        for child in list(pie):
+            if child.tag.endswith("firstSliceAng"):
+                pie.remove(child)
+
+    text = nbg_extract.extract(_two_slide_deck(tmp_path, "pie3d.pptx", pie_3d))
+    assert "Chart (3-D pie):" in text
+    assert "| A | 50 |" in text and "| C | 20 |" in text
+    assert "Launch the product" in text
+
+
+def test_an_embedded_workbook_gets_a_marker(tmp_path):
+    """BUILDER-CODE-09: an embedded Excel object vanished from the markdown."""
+    import io
+
+    from pptx.enum.shapes import PROG_ID
+    from pptx.util import Inches
+
+    def workbook(slide):
+        slide.shapes.add_ole_object(
+            io.BytesIO(b"not really a workbook"), PROG_ID.XLSX, Inches(1), Inches(2)
+        )
+
+    text = nbg_extract.extract(_two_slide_deck(tmp_path, "ole.pptx", workbook))
+    assert "[embedded object: Excel.Sheet.12]" in text
+    assert "Launch the product" in text
+
+
+def test_smartart_gets_a_marker_with_its_text(tmp_path):
+    """BUILDER-CODE-09: SmartArt vanished; its words live in the diagram data part."""
+    from lxml import etree
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+    from pptx.opc.package import Part
+    from pptx.opc.packuri import PackURI
+
+    dgm = "http://schemas.openxmlformats.org/drawingml/2006/diagram"
+    a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+
+    def smartart(slide):
+        points = "".join(
+            f'<dgm:pt modelId="{i}"><dgm:t><a:bodyPr/><a:p><a:r><a:t>{word}</a:t></a:r></a:p>'
+            "</dgm:t></dgm:pt>"
+            for i, word in enumerate(["Plan", "Build", "Launch"], 1)
+        )
+        blob = f'<dgm:dataModel xmlns:dgm="{dgm}" xmlns:a="{a}"><dgm:ptLst>{points}</dgm:ptLst></dgm:dataModel>'
+        part = Part(
+            PackURI("/ppt/diagrams/data1.xml"),
+            "application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml",
+            slide.part.package,
+            blob.encode(),
+        )
+        rid = slide.part.relate_to(part, RT.DIAGRAM_DATA)
+        frame = etree.fromstring(
+            '<p:graphicFrame xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"'
+            f' xmlns:a="{a}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            '<p:nvGraphicFramePr><p:cNvPr id="40" name="Diagram 1"/><p:cNvGraphicFramePr/><p:nvPr/>'
+            '</p:nvGraphicFramePr><p:xfrm><a:off x="914400" y="1828800"/><a:ext cx="5486400" cy="1828800"/>'
+            f'</p:xfrm><a:graphic><a:graphicData uri="{dgm}"><dgm:relIds xmlns:dgm="{dgm}"'
+            f' r:dm="{rid}" r:lo="" r:qs="" r:cs=""/></a:graphicData></a:graphic></p:graphicFrame>'
+        )
+        slide.shapes._spTree.append(frame)
+
+    text = nbg_extract.extract(_two_slide_deck(tmp_path, "smartart.pptx", smartart))
+    assert "[SmartArt: Plan; Build; Launch]" in text
+    assert "Launch the product" in text
+
+
 def test_a_zip_bomb_is_refused_before_python_pptx_opens_it(tmp_path, capsys):
     """SECURITY-PUBLIC-2: a 406 KB crafted deck drove one extract to 583 MB."""
     import zipfile
