@@ -1,115 +1,169 @@
-# Strategy Deck Presentation
-# Strategic initiative proposal with infographics and process flows
-
+# Strategy deck: a three-year plan argued through a process, options and numbers.
+# Exercises: cover, divider, content (with a caption), process, cards (grid, with a
+# highlighted card), chart (bar_horizontal), table, image, custom (positioned
+# elements including a line chart), back_cover.
+# The figures and sources are synthetic, written to show the shape.
 
 presentation:
   title: "Digital Transformation Strategy 2026-2028"
   audience: "Board Strategy Committee"
-  purpose: "Present 3-year digital transformation roadmap"
-  main_recommendation: "Invest EUR 120M over 3 years to achieve digital leadership in Greek banking"
+  purpose: "Three-year digital transformation roadmap"
+  main_recommendation: "Invest EUR 120M over three years to lead Greek digital banking"
+  language: en
 
 slides:
   - type: cover
+    id: S01
     content:
       title: "Digital Transformation Strategy"
       subtitle: "Roadmap 2026-2028"
-      location: "Athens, Greece"
+      location: "Athens"
       date: "February 2026"
 
   - type: divider
+    id: S02
     content:
-      number: "01"
-      title: "Strategic Context"
+      number: 1
+      title: "Strategic context"
 
   - type: content
+    id: S03
     content:
-      title: "Digital banking is no longer optional - it determines competitive positioning"
-      bumper: "SITUATION"
+      title: "Digital channels now decide where customers open their next account"
+      bumper: "Situation"
+      description: "What changed in the last three years"
       points:
-        - "85% of Greek banking customers now prefer digital channels"
-        - "Digital-native banks are capturing 15% of new account openings"
-        - "Operational costs for digital transactions are 10x lower than branch"
-        - "Customer expectations are set by tech giants, not banks"
+        - "85% of customers prefer digital channels for everyday banking"
+        - "Digital-only providers win 15% of new account openings"
+        - "A digital transaction costs a tenth of a branch transaction"
+        - "Customers compare us with the best apps they use, not with other banks"
 
-  - type: content
+  - type: process
+    id: S04
     content:
-      title: "NBG has a strong foundation but gaps remain in key digital capabilities"
-      bumper: "COMPLICATION"
-      points:
-        - "Mobile app rated 4.2 stars vs competitors' 4.5+ average"
-        - "End-to-end digital onboarding only available for basic accounts"
-        - "AI/ML capabilities limited to fraud detection"
-        - "Legacy core banking limits real-time processing"
+      title: "The plan moves from foundations to scale in four steps"
+      bumper: "Roadmap"
+    steps:
+      - title: "Foundations"
+        body: "Cloud platform and data layer in place by mid-2026."
+      - title: "Mobile first"
+        body: "Every retail product available for mobile origination."
+      - title: "Intelligence"
+        body: "Personalisation and service automation across channels."
+      - title: "Scale"
+        body: "Open banking partners and business customers on the platform."
 
-  - type: divider
+  - type: cards
+    id: S05
+    layout: grid
     content:
-      number: "02"
-      title: "Strategic Pillars"
+      title: "Four pillars carry the transformation, with mobile as the anchor"
+      bumper: "Strategic pillars"
+    cards:
+      - title: "Mobile first"
+        body: "Redesign every customer journey for the phone first."
+        highlight: true
+      - title: "Intelligence everywhere"
+        body: "Use data for personalisation, service and operations."
+      - title: "Open banking"
+        body: "Build a partner ecosystem through a public API platform."
+      - title: "Cloud native"
+        body: "Move core systems to the cloud for speed and scale."
 
-  - type: infographic
-    recommended_visual: numbered_infographic
+  - type: chart
+    id: S06
     content:
-      title: "Four strategic pillars will drive digital transformation"
-      items:
-        - title: "Mobile First"
-          description: "Redesign all customer journeys for mobile-native experience"
-        - title: "AI Everywhere"
-          description: "Deploy AI for personalization, service, and operations"
-        - title: "Open Banking"
-          description: "Build ecosystem of partners through API platform"
-        - title: "Cloud Native"
-          description: "Migrate core systems to cloud for agility and scale"
-
-  - type: content
-    content:
-      title: "Pillar 1: Mobile First requires complete redesign of customer experience"
-      bumper: "MOBILE FIRST"
-      points:
-        - "New mobile app platform with modern tech stack (React Native)"
-        - "100% of retail products available for mobile origination"
-        - "Biometric authentication for all transactions"
-        - "Real-time notifications and personalized insights"
-
-  - type: content
-    content:
-      title: "Pillar 2: AI will transform customer engagement and operations"
-      bumper: "AI EVERYWHERE"
-      points:
-        - "AI-powered product recommendations (30% conversion lift)"
-        - "Intelligent virtual assistant for 60% first-contact resolution"
-        - "Predictive analytics for credit decisioning"
-        - "Process automation for back-office operations"
-
-  - type: divider
-    content:
-      number: "03"
-      title: "Investment & Returns"
+      title: "Cloud migration takes the largest share of the EUR 120M investment"
+      description: "Investment by area, 2026-2028"
+      source:
+        name: "Planning submission"
+        as_of: "31 January 2026"
+        basis: "budgeted spend, nominal terms"
+    chart:
+      type: bar_horizontal
+      data:
+        categories: ["Cloud migration", "Mobile platform", "Data and intelligence", "Open banking APIs"]
+        series:
+          - name: "Investment"
+            values: [42, 30, 30, 18]
+      unit: "EUR millions"
+      highlight_category: "Cloud migration"
 
   - type: table
+    id: S07
     content:
-      title: "Total investment of EUR 120M over 3 years with 2.5x ROI"
+      title: "Spending peaks in 2026 and falls as the platform matures"
       source:
-        name: "NBG planning submission"
+        name: "Planning submission"
         as_of: "31 January 2026"
         basis: "budgeted spend, nominal terms"
     table:
-      headers: ["Investment Area", "2026", "2027", "2028", "Total"]
+      headers: ["Investment area", "2026", "2027", "2028", "Total"]
       rows:
-        - ["Mobile Platform", "EUR 15M", "EUR 10M", "EUR 5M", "EUR 30M"]
-        - ["AI/ML Capabilities", "EUR 10M", "EUR 12M", "EUR 8M", "EUR 30M"]
-        - ["Open Banking APIs", "EUR 8M", "EUR 6M", "EUR 4M", "EUR 18M"]
-        - ["Cloud Migration", "EUR 15M", "EUR 18M", "EUR 9M", "EUR 42M"]
-        - ["TOTAL", "EUR 48M", "EUR 46M", "EUR 26M", "EUR 120M"]
+        - ["Mobile platform", "EUR 15M", "EUR 10M", "EUR 5M", "EUR 30M"]
+        - ["Data and intelligence", "EUR 10M", "EUR 12M", "EUR 8M", "EUR 30M"]
+        - ["Open banking APIs", "EUR 8M", "EUR 6M", "EUR 4M", "EUR 18M"]
+        - ["Cloud migration", "EUR 15M", "EUR 18M", "EUR 9M", "EUR 42M"]
+        - ["Total", "EUR 48M", "EUR 46M", "EUR 26M", "EUR 120M"]
       highlight_column: 4
 
-  - type: content
+  - type: image
+    id: S08
     content:
-      title: "Expected benefits of EUR 300M over 5 years justify the investment"
-      bumper: "EXPECTED RETURNS"
-      points:
-        - "Revenue uplift: EUR 150M from digital sales and engagement"
-        - "Cost reduction: EUR 100M from operational efficiency"
-        - "Risk avoidance: EUR 50M from improved fraud detection"
-        - "Payback period: 3 years | IRR: 35%"
+      title: "Customers will see growth in their own finances, not only in our app"
+      bumper: "Customer view"
+    image:
+      # An SVG from the illustration library: vector art scales to the slot without
+      # blurring, where an 800 px PNG would stop at 5.3 in (150 DPI) and warn.
+      path: "illustrations/splash/moneybox.svg"
+      alt_text: "Illustration of a money box with a coin dropping in"
+      caption: "Illustrative: the personal finance view shows customers their savings growing"
+
+  - type: custom
+    id: S09
+    content:
+      title: "Benefits of EUR 300M over five years justify the investment"
+      bumper: "Expected returns"
+      source:
+        name: "Planning submission"
+        as_of: "31 January 2026"
+    elements:
+      - kind: shape
+        shape: rounded_rect
+        x: 0.374
+        y: 1.3
+        w: 3.9
+        h: 4.75
+        fill: off_white
+      - kind: text
+        role: kpi_value
+        text: "EUR 300M"
+        x: 0.574
+        y: 1.6
+        w: 3.5
+        h: 0.9
+        align: center
+      - kind: text
+        role: body
+        text: "Five-year benefits: EUR 150M revenue uplift, EUR 100M cost reduction and EUR 50M fraud losses avoided."
+        x: 0.574
+        y: 2.7
+        w: 3.5
+        h: 2.2
+        align: center
+      - kind: chart
+        x: 4.6
+        y: 1.3
+        w: 8.35
+        h: 4.75
+        chart:
+          type: line
+          data:
+            categories: ["2026", "2027", "2028", "2029", "2030"]
+            series:
+              - name: "Cumulative benefit"
+                values: [20, 70, 140, 220, 300]
+              - name: "Cumulative investment"
+                values: [48, 94, 120, 120, 120]
 
   - type: back_cover

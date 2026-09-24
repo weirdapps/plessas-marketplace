@@ -12,11 +12,6 @@ name: Lint
 # Deliberately NOT here:
 #   * scripts/validate_consistency.py already runs in validate-plugins.yml.
 #     Running it twice buys nothing and doubles the noise on a failure.
-#   * scripts/sync_brand_system.sh --check is redundant with that script's
-#     check_brand_system_sync(), which compares the same *.md set between
-#     plugins/decks/shared/brand-system/ and shared/brand-system/ by name and
-#     by content. Verified 2026-09-09: same files, same comparison, same
-#     failure. Adding the shell check would be a second alarm on one wire.
 #   * scripts/skill-trigger-probe.sh spawns real `claude` invocations against a
 #     model and measures natural-language routing. It needs ambient auth and it
 #     is non-deterministic by construction. It stays a manual tool.

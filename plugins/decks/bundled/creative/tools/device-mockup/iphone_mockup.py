@@ -3,20 +3,25 @@
 iPhone Mockup Generator - Pixel Perfect
 
 Creates pixel-perfect iPhone mockups using Apple device frames.
-Uses flood-fill masking to ensure content only appears within the screen area.
+Uses flood-fill masking to ensure content only appears within the screen area,
+and never distorts the screenshot unless asked to.
 
-Part of the NBG Presentations plugin for communications-marketplace.
+Part of the decks plugin (plessas-marketplace). Run it through the plugin
+launcher, which provides Pillow and numpy:
 
 Usage:
-    python iphone_mockup.py <screenshot.png> [output.png] [--frame FRAME_KEY]
+    decks-py mockup <screenshot.png> [output.png] [--frame FRAME_KEY] [--fit MODE]
 
 Examples:
-    python iphone_mockup.py screenshot.png
-    python iphone_mockup.py screenshot.png mockup.png --frame 16_pro_max_black
+    decks-py mockup screenshot.png
+    decks-py mockup screenshot.png ~/Downloads/202609231200_home_mockup.png --frame 16_pro_max_black
 """
 
 import argparse
+import re
 import sys
+from collections import deque
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -24,8 +29,11 @@ try:
     import numpy as np
     from PIL import Image
 except ImportError:
-    print("Error: Pillow and numpy required. Install with: pip install pillow numpy")
-    sys.exit(1)
+    print(
+        "Error: Pillow and numpy are required. Run this tool through the plugin launcher "
+        "(decks-py mockup ...), which builds an environment that has them."
+    )
+    sys.exit(2)
 
 
 # Frame configurations
@@ -85,6 +93,19 @@ FRAMES: dict[str, dict[str, Any]] = {
 
 DEFAULT_FRAME = "16_pro_max_black"
 
+# How a screenshot whose aspect differs from the screen's is fitted to it.
+#   contain  the whole screenshot, scaled without distortion; the leftover bands
+#            take the colour of the screenshot's own edge (the default)
+#   cover    fills the screen without distortion; the overflow is cropped, centred
+#   stretch  fills the screen exactly, distorting the screenshot
+FITS = ("contain", "cover", "stretch")
+DEFAULT_FIT = "contain"
+ASPECT_TOLERANCE = 0.01  # within 1%, the screenshot is simply scaled to the screen
+
+# The plugin root (device-mockup -> tools -> creative -> bundled -> decks). Default
+# outputs never land under it: the installed plugin is replaced at every version bump.
+PLUGIN_ROOT = Path(__file__).resolve().parents[4]
+
 
 def _flood_fill_screen_mask(alpha, start_x, start_y, threshold=50):
     """
@@ -92,50 +113,114 @@ def _flood_fill_screen_mask(alpha, start_x, start_y, threshold=50):
 
     This finds only the INNER transparent region (screen area) and
     excludes the OUTER transparent region (corners outside the phone).
+
+    Connectivity is resolved on horizontal runs of transparent pixels rather
+    than on pixels: a frame row holds a handful of runs, so the whole screen is a
+    few thousand runs joined row to row, where a pixel-by-pixel breadth-first fill
+    visited four million pixels in Python (about 5s of CPU per mockup). Two runs
+    in neighbouring rows touch when their columns overlap, which is exactly
+    4-connectivity.
     """
-    from collections import deque
-
-    h, w = alpha.shape
+    clear = np.asarray(alpha) < threshold
+    h, w = clear.shape
     mask = np.zeros((h, w), dtype=np.uint8)
-    visited = np.zeros((h, w), dtype=bool)
+    if not clear[start_y, start_x]:
+        return mask
 
-    queue = deque([(start_x, start_y)])
-    visited[start_y, start_x] = True
+    # Each run as (start, end) columns, end exclusive, listed row by row.
+    edges = np.diff(np.pad(clear.astype(np.int8), ((0, 0), (1, 1))), axis=1)
+    run_rows, run_starts = np.nonzero(edges == 1)
+    _, run_ends = np.nonzero(edges == -1)
+    runs: list[list[tuple[int, int]]] = [[] for _ in range(h)]
+    for r, s, e in zip(run_rows.tolist(), run_starts.tolist(), run_ends.tolist(), strict=True):
+        runs[r].append((s, e))
 
+    seed = next(i for i, (s, e) in enumerate(runs[start_y]) if s <= start_x < e)
+    seen = {(start_y, seed)}
+    queue = deque([(start_y, seed)])
     while queue:
-        x, y = queue.popleft()
-
-        if alpha[y, x] < threshold:  # Transparent pixel (screen)
-            mask[y, x] = 255
-
-            # Check 4-connected neighbors
-            for nx, ny in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
-                if 0 <= nx < w and 0 <= ny < h and not visited[ny, nx]:
-                    visited[ny, nx] = True
-                    if alpha[ny, nx] < threshold:
-                        queue.append((nx, ny))
-
+        r, i = queue.popleft()
+        s, e = runs[r][i]
+        mask[r, s:e] = 255
+        for nr in (r - 1, r + 1):
+            if 0 <= nr < h:
+                for j, (ns, ne) in enumerate(runs[nr]):
+                    if ns < e and s < ne and (nr, j) not in seen:
+                        seen.add((nr, j))
+                        queue.append((nr, j))
     return mask
 
 
 def get_frames_dir():
-    """Get the device-frames asset directory."""
+    """Get the device-frames asset directory, resolved from this file, never the cwd."""
     # Navigate from tools/device-mockup to assets/device-frames
-    tool_dir = Path(__file__).parent
+    tool_dir = Path(__file__).resolve().parent
     plugin_dir = tool_dir.parent.parent
     frames_dir = plugin_dir / "assets" / "device-frames"
     return frames_dir
 
 
-def create_mockup(screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, frames_dir=None):
+def _edge_colour(img):
+    """The median colour of the screenshot's outermost pixels."""
+    a = np.asarray(img.convert("RGBA"))
+    border = np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]])
+    return tuple(int(v) for v in np.median(border, axis=0))
+
+
+def fit_screenshot(screenshot, width, height, fit=DEFAULT_FIT):
+    """The screenshot at the screen's size. Never distorted unless `fit` is 'stretch'."""
+    if fit not in FITS:
+        raise ValueError(f"unknown fit {fit!r}; use one of {FITS}")
+    sw, sh = screenshot.size
+    mismatch = (sw / sh) / (width / height) - 1
+    if fit == "stretch" or abs(mismatch) <= ASPECT_TOLERANCE:
+        return screenshot.resize((width, height), Image.Resampling.LANCZOS)
+    print(
+        f"Note: the screenshot's aspect differs from the screen's by {abs(mismatch):.1%}; "
+        f"fitted with --fit {fit} (no distortion). A screenshot from the same device fills "
+        f"the screen exactly."
+    )
+    scale = max(width / sw, height / sh) if fit == "cover" else min(width / sw, height / sh)
+    scaled = screenshot.resize(
+        (max(1, round(sw * scale)), max(1, round(sh * scale))), Image.Resampling.LANCZOS
+    )
+    if fit == "cover":
+        x, y = (scaled.width - width) // 2, (scaled.height - height) // 2
+        return scaled.crop((x, y, x + width, y + height))
+    canvas = Image.new("RGBA", (width, height), _edge_colour(screenshot))
+    canvas.paste(scaled, ((width - scaled.width) // 2, (height - scaled.height) // 2))
+    return canvas
+
+
+def default_output(screenshot_path, now=None):
+    """YYYYMMDDHHMM_<name>_mockup.png, the house naming rule, beside the screenshot.
+
+    A screenshot that is one of the plugin's own assets gets its mockup in the
+    current directory instead (or ~/Downloads), never inside the installed plugin.
+    """
+    src = Path(screenshot_path).resolve()
+    stamp = (now or datetime.now()).strftime("%Y%m%d%H%M")
+    slug = re.sub(r"[^a-z0-9]+", "_", src.stem.lower()).strip("_") or "screenshot"
+    folder = src.parent
+    if folder.is_relative_to(PLUGIN_ROOT):
+        folder = Path.cwd().resolve()
+        if folder.is_relative_to(PLUGIN_ROOT):
+            folder = Path.home() / "Downloads"
+    return folder / f"{stamp}_{slug}_mockup.png"
+
+
+def create_mockup(
+    screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, frames_dir=None, fit=DEFAULT_FIT
+):
     """
     Create a pixel-perfect iPhone mockup.
 
     Args:
         screenshot_path: Path to clean screenshot (no frame artifacts)
-        output_path: Output path (optional, defaults to <name>_mockup.png)
+        output_path: Output path (optional, defaults to default_output())
         frame_key: Which frame to use
         frames_dir: Directory containing frame PNG files
+        fit: contain (default), cover or stretch; see FITS
 
     Returns:
         Path to created mockup
@@ -149,15 +234,19 @@ def create_mockup(screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, fr
     if frame_key not in FRAMES:
         print(f"Unknown frame: {frame_key}")
         print(f"Available frames: {list(FRAMES.keys())}")
-        sys.exit(1)
+        sys.exit(2)
 
     config = FRAMES[frame_key]
     frame_path = frames_dir / config["path"]
 
     if not frame_path.exists():
         print(f"Frame not found: {frame_path}")
-        print("Make sure device-frames assets are installed in assets/device-frames/")
-        sys.exit(1)
+        print(f"The device frames ship in {get_frames_dir()}; the plugin install is incomplete.")
+        sys.exit(2)
+
+    if not Path(screenshot_path).exists():
+        print(f"Screenshot not found: {screenshot_path}")
+        sys.exit(2)
 
     # Load images
     screenshot = Image.open(screenshot_path).convert("RGBA")
@@ -175,10 +264,8 @@ def create_mockup(screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, fr
     print(f"Frame: {frame.size}")
     print(f"Content area: {content_width}x{content_height}")
 
-    # Resize screenshot to fit content area
-    screenshot_resized = screenshot.resize(
-        (content_width, content_height), Image.Resampling.LANCZOS
-    )
+    # Fit the screenshot to the content area, preserving its aspect ratio
+    screenshot_resized = fit_screenshot(screenshot, content_width, content_height, fit)
 
     # Create result canvas
     result = Image.new("RGBA", frame.size, (0, 0, 0, 0))
@@ -203,8 +290,9 @@ def create_mockup(screenshot_path, output_path=None, frame_key=DEFAULT_FRAME, fr
 
     # Determine output path
     if output_path is None:
-        ss_path = Path(screenshot_path)
-        output_path = ss_path.parent / f"{ss_path.stem}_mockup.png"
+        output_path = default_output(screenshot_path)
+    output_path = Path(output_path).expanduser()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Save result
     final.save(str(output_path), "PNG")
@@ -219,9 +307,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python iphone_mockup.py screenshot.png
-    python iphone_mockup.py screenshot.png output.png
-    python iphone_mockup.py screenshot.png --frame 16_pro_black
+    decks-py mockup screenshot.png
+    decks-py mockup screenshot.png output.png
+    decks-py mockup screenshot.png --frame 16_pro_black
+    decks-py mockup screenshot.png --fit cover
+
+Without an output path the mockup is written beside the screenshot as
+YYYYMMDDHHMM_<name>_mockup.png (in the current directory when the screenshot
+is one of the plugin's own assets).
 
 Available frames:
     16_pro_max_black (default)
@@ -242,6 +335,13 @@ Available frames:
         choices=list(FRAMES.keys()),
         help=f"iPhone frame to use (default: {DEFAULT_FRAME})",
     )
+    parser.add_argument(
+        "--fit",
+        default=DEFAULT_FIT,
+        choices=FITS,
+        help="how a screenshot of another aspect fills the screen: contain (whole, no "
+        "distortion; default), cover (fill and crop, no distortion) or stretch (distorts)",
+    )
     parser.add_argument("--list-frames", action="store_true", help="List available frames")
     parser.add_argument("--frames-dir", help="Override device-frames directory")
 
@@ -256,7 +356,7 @@ Available frames:
     if not args.screenshot:
         parser.error("the following arguments are required: screenshot")
 
-    create_mockup(args.screenshot, args.output, args.frame, args.frames_dir)
+    create_mockup(args.screenshot, args.output, args.frame, args.frames_dir, args.fit)
 
 
 if __name__ == "__main__":

@@ -1,341 +1,303 @@
-# NBG Presentation Tools
+# NBG presentation tools
 
-Tools for creating National Bank of Greece (NBG) formatted presentations.
+`nbg_build.py` turns a deck spec (YAML) into an NBG-branded `.pptx` and checks it;
+`nbg_validate.py` checks any `.pptx` against the brand; `nbg_render.py` draws the
+slides as PNGs; `nbg_extract.py` reads a deck back as markdown; `nbg_record.py`
+writes the draft record `/presentation-review` learns from. Every brand value comes
+from `shared/brand-system/tokens.yaml`; the spec contract is
+[`deck.schema.json`](deck.schema.json) (JSON Schema 2020-12).
 
-## Installation
+## Running the tools
 
-`requirements.txt` is the list: pyyaml, python-pptx, lxml and defusedxml. Python 3.12+ is a hard
-floor, not a preference.
-
-`installers/install.sh` already creates `.venv` in this directory and installs `requirements.txt`
-into it, so **the interpreter to script against is `.venv/bin/python3`**:
-
-```bash
-# from the repository root
-plugins/decks/tools/nbg-presentation/.venv/bin/python3 \
-    plugins/decks/tools/nbg-presentation/nbg_build.py outline.yaml output.pptx
-```
-
-To redo the venv by hand, or on a machine where the installer has not run:
+Always through the launcher, which builds and caches its own Python environment on
+first use (in `~/.cache/nbg-decks/`, keyed by `requirements.txt`) and needs Python
+3.12+ or [uv](https://docs.astral.sh/uv/):
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+# inside Claude Code (agents and commands)
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check deck.yaml
+
+# by hand, from the repository root
+bash plugins/decks/bin/decks-py check plugins/decks/examples/strategy-deck.yaml
+bash plugins/decks/bin/decks-py build plugins/decks/examples/strategy-deck.yaml ~/Downloads/strategy-deck.pptx
+bash plugins/decks/bin/decks-py render ~/Downloads/strategy-deck.pptx ~/Downloads/strategy-deck-render
+bash plugins/decks/bin/decks-py extract ~/Downloads/strategy-deck.pptx
+bash plugins/decks/bin/decks-py doctor
 ```
 
-A bare `pip install -r requirements.txt` fails on a PEP 668 system (Homebrew Python, most Linux
-distributions). For a throwaway run with nothing installed:
+| Command | What it does | Exit codes |
+|---|---|---|
+| `check <spec.yaml> [--format json]` | Normalises legacy names, validates the schema and the semantics, lays every slide out in a dry run. Writes nothing. | 0 valid (warnings allowed); 1 errors; 2 could not run |
+| `build <spec.yaml> <out.pptx>` | Runs `check`, renders, saves, then runs `nbg_validate.py`. Nothing is written when `check` fails. | 0 built and valid; 1 spec errors or brand violations; 2 could not run |
+| `validate <deck.pptx>` | Brand compliance of any deck: see [VALIDATOR.md](VALIDATOR.md). | 0 clean; 1 a check failed; 2 could not run |
+| `render <deck.pptx> <outdir> [--dpi N]` | LibreOffice to PDF, one PNG per slide, and a font check. | 0 rendered with Aptos; 4 fonts substituted; 3 LibreOffice missing; 2 error |
+| `extract <file.pptx or .pdf>` | Titles, text, bullets, tables, chart data, alt text and notes as markdown on stdout. | 0; 2 error |
+| `record <deck.pptx> <spec.yaml> --data <dir> [--topic T]` | Writes the draft record for `/presentation-review`. | 0; 2 error |
 
-```bash
-uv run --with pyyaml --with python-pptx --with lxml --with defusedxml \
-    python nbg_build.py outline.yaml output.pptx
+### check output
+
+Each issue names the slide (1-based position, id and type), the path in the spec and
+the fix. Text mode prints one line per issue:
+
+```text
+ERROR slide 4 (S04, chart) slides[3].chart.data.series[0].values: 3 value(s) for 4 categories. Fix: give one value per category (null for a gap).
 ```
 
-## Tools
+`--format json` prints one object:
 
-### 1. nbg_build.py - Presentation Builder
-
-Creates complete NBG-formatted presentations from YAML outlines.
-
-```bash
-python nbg_build.py outline.yaml output.pptx
-python nbg_build.py outline.yaml -o output.pptx   # same thing
+```json
+{"spec": "/abs/deck.yaml", "ok": false,
+ "errors": [{"slide": 4, "id": "S04", "type": "chart", "path": "slides[3].chart.data.series[0].values",
+             "message": "3 value(s) for 4 categories", "fix": "give one value per category (null for a gap)"}],
+ "warnings": [],
+ "image_slots": [{"slide": 8, "id": "S08", "path": "slides[7].image", "w": 12.59, "h": 4.87}]}
 ```
 
-Exit code 0 means the deck was written **and** passed `nbg_validate.py`. Non-zero means either a
-brand violation or a validator that could not run; both print why. The build no longer reports
-success on an unvalidated deck.
+`image_slots` lists the box, in inches, that each image gets on a slide that laid out
+cleanly: pass it as `size_in` when an infographic is drawn for that slide, so it is placed
+at the size it was drawn for.
 
-**Example outline.yaml:**
+Errors stop a build: a schema violation, a missing source on an exhibit, series that
+do not match their categories, a missing image, a custom element outside the body
+area, an unknown colour name, a deck that does not end on its back cover, duplicate
+titles, and anything that cannot fit (bullets that need more room than the body has
+at 14pt, a table taller than the body, a cover title or subtitle that does not stay on
+one line, Standard #13). So do the validator's own spec-level rules, applied with its
+own patterns so check never passes what the build then rejects: an em dash or a typed
+` -- ` in slide text, an exhibit whose source line carries no year or date, and alt
+text that is a filename or an autoname, opens with "image of", or repeats text on the
+slide. Warnings do not stop it: a legacy name, an unquoted number or date, a slide
+title that wraps to two lines, more than six chart series, a waterfall total that does
+not add up, a spaced en dash, an em dash in speaker notes or alt text, an undated
+source on a slide without a chart or table.
 
+## The deck spec
+
+The whole contract is [`deck.schema.json`](deck.schema.json). A spec is a mapping
+with a `slides:` list and optional `presentation:` metadata (`title`, `author`,
+`purpose`, `audience`, `language: en | el`, ...). Every slide takes `type` and may
+take `id` (so QA findings can name it), `key_message`, `so_what` and `notes` (speaker
+notes). Titled slides put their text under `content`: `title` (an action title, one
+line), `bumper` (the section pill, shown in capitals), `description` (a 12pt caption),
+`takeaway` (the pale-teal strip) and `source`. Keys starting `x-` (top level,
+`presentation`, or a slide, e.g. `x-open-questions`, `x-assets`) are working notes:
+check and build accept them silently and draw nothing from them. Slide N of the built
+deck is always `slides[N-1]`; the builder adds no slides of its own.
+
+`content.source` is required on every exhibit (chart, waterfall, table, kpi, and any
+two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders as
+"Source: name, as of as_of; basis" on one 11pt line ending at 6.5", or
+"Πηγή: name, στοιχεία as_of" in a Greek deck.
+
+| Type | Required | Optional | Draws |
+|---|---|---|---|
+| `cover` | `content.title` | `subtitle`, `location`, `date` | Title on one line at 48pt (down to 44pt), subtitle 24pt below it, large logo |
+| `contents` | `content.sections[]` (`title`) | `content.title`, section `number`, `description` | Standard #18 list; unnumbered page when the deck is under 10 slides |
+| `divider` | `content.number`, `content.title` | | Number and title on one baseline, large logo |
+| `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit; a sparse list grows toward 20pt until it fills 60% of the body (Standard #2.7) |
+| `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `bank_logos`, `alt_text` | One native chart |
+| `waterfall` | `content.title`, `content.source`, `chart.data.items[]` (`label`, `value`) | item `total`; first and last items are totals | A bridge; step labels above the bars, each written in the chart's `number_format` (percent, quoted units, Greek separators) |
+| `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align`, `row_fill` (every body row in that colour, no zebra), `header_fill` (its text turns dark on a light fill) | Header in dark teal, zebra rows, figures right-aligned; an unquoted number takes its column's precision and is grouped in thousands only when the column reaches 10,000 (years stay 2023); a short table's rows grow toward 60% of the body, to 0.55 in at most |
+| `kpi` | `content.title`, `content.source`, `kpis[]` (`value`, `label`) | `delta`, `sentiment: positive or negative or neutral` | 1 to 4 tiles |
+| `cards` | `content.title`, `cards[]` (`title`) | `layout: row or grid`, card `body`, `icon`, `number`, `highlight`, `recommended` | 2 to 6 cards; the recommended one gets a gold border and tab |
+| `process` | `content.title`, `steps[]` (`title`) | step `body`, `icon` | 2 to 6 teal step tiles joined by grey arrows, the title and body under each tile; an icon is drawn white in its tile |
+| `two_column` | `content.title`, `left`, `right` | `split: 50/50, 40/60 or 60/40`, column `heading` | Each column is `bullets`, `text`, `chart`, `table`, `image` or `kpis`; a `kpis` column stacks its tiles, shrinking the values toward 32pt, and sets three or four two to a row when a stack cannot fit |
+| `image` | `content.title`, `image.path`, `image.alt_text` | `fit: contain or cover`, `caption` | One picture |
+| `custom` | `content.title`, `elements[]` (`kind`, `x`, `y`, `w`, `h`) | per element: `text`, `points`, `shape`, `fill`, `border`, `text_color`, `role`, `size`, `path`, `chart`, `table` | Positioned elements inside the body area (x 0.374 to 12.959, y 1.3 to 6.5) |
+| `back_cover` | | | The centred oval emblem only |
+
+Peer-bank comparisons brand themselves. Name two or more of the systemic banks
+(`tokens.yaml` `banks`: NBG, Eurobank, Piraeus Bank, Alpha Bank, in English or Greek,
+any case or accents; the word "bank" alone names none, and a short form such as
+"Alpha" or "Piraeus" counts only as the whole label, so "Piraeus Port Authority" is
+not a bank) as the categories of a
+one-series `bar`, `bar_horizontal` or `doughnut` chart, or as the series of any bar or
+line chart, and each bank takes its brand colour (`extended_palettes.peer_banks`) and
+its logo: under its bar, beside a horizontal bar, or in a legend row of swatch, logo
+and name that replaces the chart's own legend. `bank_logos: false` on a comparison is a
+check error, because the validator's Bank Branding gate requires every plotted bank's
+logo. Bank categories on a line chart or with more than one series are check errors
+too, because one bank cannot be one colour there: make the banks the series instead.
+A `highlight_category` on a bank chart is ignored with a warning.
+[`examples/peer-banks.yaml`](../../examples/peer-banks.yaml) shows every layout.
+
+`chart.unit` ("EUR m") joins the slide's caption ("Fee income by quarter, EUR m", or
+the caption itself when there is none), a column's heading, or a caption line above a
+chart that has neither; it is never repeated where the text already names it.
+
+Chart types: `bar`, `bar_stacked`, `bar_horizontal`, `line`, `area_line` (the default
+for a time series, Standard #2.8) and `doughnut` (there is no pie). Series are named
+directly, not in a colour-keyed legend (Standard #22): a line chart with two or more
+series names each at its last point, and a doughnut slice carries its name and share
+inside the ring, the name broken between words until it fits the slice. When a slice
+has no room for its name at any break, the doughnut names its slices in a legend
+instead and check warns which slice forced it. Only a multi-series bar chart shows a
+legend by default; `show_legend` overrides either way. An `area_line` draws its 15%
+fill under the first series only, so list the series to emphasise first. A
+`bar_stacked` chart runs its axis from 0 to its tallest stack and labels a segment
+only where the label fits inside it; check warns which labels were left off. Element kinds:
+`text`, `bullets`, `shape` (`rect`, `rounded_rect`, `oval`, `chevron`, `arrow_right`),
+`image`, `chart`, `table`, `line`. Colours are token names from `tokens.yaml`
+(`teal`, `dark_teal`, `off_white`, ...), never hex.
+
+Images are PNG, JPEG or SVG (SVG is rasterised with resvg). A relative path resolves
+against the spec's folder first, then the plugin's `assets/` folder, so
+`illustrations/Growth.png` works from anywhere. A PNG or JPEG is never enlarged past
+150 DPI (`components.image.min_dpi`): one too small for its slot is drawn at that
+size, centred, and check warns with the width it needs. Prefer an SVG for a large
+slot; the library's 800 px illustrations reach 5.3 in at most, while
+`illustrations/splash/*.svg` scale to any size. An SVG with text is measured as placed,
+because the validator cannot read text inside a picture: its smallest text under 10pt
+is a check error, under 12pt a warning, and both name the `size_in` to redraw it at.
+
+Legacy names (`thankyou`, `toc`, `bar_chart`, `pie_chart`, `charts/pie_single`,
+`covers/*`, `infographic`, `hyper_title`, `paragraphs`, `items`, `waterfall_items`,
+`recommended_visual`, `template`) still build, each with a warning naming its
+replacement. The full list is [`assets/slide-catalog.yaml`](../../assets/slide-catalog.yaml).
+
+A minimal spec that checks and builds as written (the tests build it):
+
+<!-- readme-example -->
 ```yaml
-template: GR  # or EN
-
+presentation:
+  title: "Card payments review"
 slides:
-  - type: covers/simple_white
+  - type: cover
     content:
-      title: "National Bank of Greece"
-      subtitle: "Competitive Analysis"
-      location: "Athens, Greece"
-      date: "February 2026"
-
-  - type: content/text_with_bullets
-    content:
-      title: "Market Overview"
-      paragraphs:
-        - text: "Four systemic banks dominate the market"
-          bullet: true
-        - text: "Total assets exceed EUR 280 billion"
-          bullet: true
-
-  - type: charts/pie_single
-    content:
-      title: "Market Share"
-    chart:
-      type: doughnut
-      labels: ["NBG", "Eurobank", "Piraeus", "Alpha", "Others"]
-      values: [27, 23, 21, 19, 10]
-
-  # Multi-series charts use chart.data. This is the canonical shape and the one
-  # all three files in examples/ use; chart.labels + chart.values above is the
-  # single-series shorthand.
+      title: "Card payments review"
+      subtitle: "Payments | Q2 2026"
+      date: "July 2026"
   - type: chart
+    id: S02
     content:
-      title: "Digital channel adoption"
-      description: "Digital transaction share by segment"
+      title: "Contactless now carries most in-store card payments"
       source:
-        name: "NBG MIS"
-        as_of: "31 December 2025"
-        basis: "excludes cash advances"   # optional
+        name: "Card management information"
+        as_of: "30 June 2026"
     chart:
-      type: bar          # bar | bar_stacked | bar_horizontal | line | doughnut | pie
+      type: bar
       data:
-        categories: ["Retail", "Affluent", "Business"]
+        categories: ["Q3 25", "Q4 25", "Q1 26", "Q2 26"]
         series:
-          - name: "Q4 2024"
-            values: [68, 72, 45]
-          - name: "Q4 2025"
-            values: [78, 85, 58]
-
-  - type: tables/half_page
-    content:
-      title: "Key Metrics"
-      source:
-        name: "Published peer disclosures"
-        as_of: "31 December 2025"
-    table:
-      headers: ["Metric", "NBG", "Eurobank", "Piraeus", "Alpha"]
-      rows:
-        - ["Assets (B)", "78.5", "82.1", "75.3", "71.2"]
-        - ["CET1 %", "17.2%", "15.8%", "14.9%", "15.2%"]
-      highlight_column: 1
-
-  - type: back_covers/plain_logo
+          - name: "Contactless share, %"
+            values: [78, 81, 84, 86]
+  - type: back_cover
 ```
 
-`content.description`, where present, renders as a 12pt caption under the title and pushes the body
-down; it is not decoration and it is not dropped.
+The four specs in [`examples/`](../../examples) exercise every slide type, a waterfall
+and a Greek deck.
 
-**`content.source` is required on every chart and table slide, and the build fails without it.** An
-unsourced number in a board pack cannot be re-derived, cannot be challenged in the room and cannot
-be defended to a supervisor afterwards, so `nbg_validate.py`'s Exhibit Sources check is an error
-rather than a warning. The field is a mapping:
+## Greek decks
 
-| Key | Required | What it carries |
-|---|---|---|
-| `name` | yes | Where the number came from |
-| `as_of` | yes | When it was true. A source without one is only half a source |
-| `basis` | no | The definitional caveat: constant currency, restated, scope |
+`presentation.language: el` gives Greek boilerplate ("Περιεχόμενα", "Πηγή"), capitals
+without the tonos in the pill ("Ευρήματα" becomes "ΕΥΡΗΜΑΤΑ"), and `el-GR`
+on every run so PowerPoint proofs the text as Greek. Specs are always read as UTF-8.
 
-It renders as a single 11pt Caption Gray footnote on the content floor at y=6.55", below the
-exhibit, per `brand-system/typography.md` ("Table Notes (footnote)") and Standard #11's 11pt floor
-for sources. `source: "Source: NBG MIS, 30 June 2026"` is accepted as a plain string and taken as
-the finished line, but the mapping is the shape to write: it is what makes the as-of date hard to
-forget.
-
-**A `source` mapping with no `as_of` fails the build here, before the validator sees the deck.**
-The two halves are deliberately asymmetric. `nbg_build` can read the mapping, so it can tell a
-missing field from a badly worded sentence and is strict. `nbg_validate` reads a finished PPTX and
-can only search the rendered line for a four-digit year, which a year inside a `basis` caveat
-("restated for the 2025 change") satisfies without dating anything. Tightening the validator to
-match would false-fail hand-authored and third-party decks this builder never made, so it stays
-lenient on purpose: airtight on the path that produces almost every deck, a reasonable backstop on
-the ones it does not. A plain-string `source` carries no structure to check and is taken as written,
-on the same principle.
-
-Note on the example above: a slide that names two or more of the four Greek systemic banks trips the
-Bank Branding check unless each bank's official colour and logo are present. That check is doing its
-job; the snippet is schema documentation, not a deck that ships as-is.
-
-### 2. inject_chart_data.py - Chart Data Injection
-
-Injects real data into chart placeholders.
+## render
 
 ```bash
-python inject_chart_data.py input.pptx chart_config.json output.pptx
+bash plugins/decks/bin/decks-py render deck.pptx outdir --dpi 110
 ```
 
-**Example chart_config.json:**
+Writes `outdir/<deck>.pdf` and `outdir/slide-01.png`, `slide-02.png`, ... and lists
+them in `outdir/.nbg-render.json`. It deletes and overwrites only files that list
+names, so rendering again into the same folder replaces the last render, while a
+same-named file it did not write stops it with exit 2 before anything runs. LibreOffice
+runs headless in a throwaway profile; it is found on `PATH`, at
+`/Applications/LibreOffice.app/Contents/MacOS/soffice`, under `Program Files` on
+Windows or `/usr/lib/libreoffice/program`, or at `DECKS_SOFFICE`. stdout:
 
 ```json
-{
-  "charts": [
-    {
-      "slide": 2,
-      "chart_index": 0,
-      "type": "doughnut",
-      "title": "Market Share",
-      "data": {
-        "labels": ["NBG", "Eurobank", "Piraeus", "Alpha"],
-        "values": [27, 23, 21, 19]
-      }
-    }
-  ]
-}
+{"pdf": "/abs/outdir/deck.pdf", "pngs": ["/abs/outdir/slide-01.png"], "slides": 1,
+ "deck_slides": 1, "hidden_slides": [], "dpi": 110,
+ "fonts": [{"name": "Aptos", "embedded": true}], "font_fallback": false,
+ "substituted_fonts": [], "soffice": "/opt/homebrew/bin/soffice", "warnings": []}
 ```
 
-### 3. inject_table_data.py - Table Data Injection
+Each PNG is named for the deck slide it shows: LibreOffice exports no page for a hidden
+slide (listed in `hidden_slides`), so with slide 2 hidden the files are `slide-01.png`
+and `slide-03.png`. Exit 4 (`font_fallback: true`) means a typeface the deck asks for
+(the theme's fonts and every font set on a slide or in a chart) is not embedded in the
+PDF: `substituted_fonts` names it, LibreOffice drew it in another face, so text widths
+differ from PowerPoint and fit judgements made from the PNGs are unreliable. Every
+warning is in `warnings`; `warning` joins them for older readers. On 2 and 3, stdout is
+`{"error", "fix"}`.
 
-Injects real data into table placeholders.
+LibreOffice is not PowerPoint: line-chart markers show as solid dots in these PNGs,
+because LibreOffice's chart engine draws a symbol in one colour with no outline.
+PowerPoint shows the hollow circle the deck specifies (a white fill inside a 2pt
+ring), so a solid marker in a render is not a defect.
+
+## extract
 
 ```bash
-python inject_table_data.py input.pptx table_config.json output.pptx
+bash plugins/decks/bin/decks-py extract deck.pptx > deck.md
 ```
 
-**Example table_config.json:**
+For a `.pptx`: `## Slide N: <title>`, then the text in reading order with bullets as
+`- ` (indented by level), tables as markdown tables, charts as `Chart (<type>):` and a
+categories-by-series table (a waterfall as its steps and signed values; a 3-D, stock or
+surface chart from the values its XML caches), every picture as `[image: <alt text>]`
+(or `[image: no alt text, <shape name>]`, placeholder pictures included; only a picture
+marked decorative, like the builder's logos, is left out), an embedded object as
+`[embedded object: <progId>]`, SmartArt as `[SmartArt: <node text; ...>]`, and
+`Notes: ...`. A shape that cannot be read becomes `[shape: <name>, not read (<error>)]`
+rather than stopping the deck. For a `.pdf`: `## Page N` and the page text.
+A `.docx` is refused (python-docx is not a dependency): save it as PDF first.
 
-```json
-{
-  "tables": [
-    {
-      "slide": 1,
-      "table_index": 0,
-      "data": {
-        "headers": ["Metric", "NBG", "Eurobank"],
-        "rows": [
-          ["Assets", "78.5B", "82.1B"],
-          ["CET1", "17.2%", "15.8%"]
-        ]
-      },
-      "highlight_column": 1
-    }
-  ]
-}
-```
+extract and render open decks from anyone, so a `.pptx` must first pass the package
+limits in `tools/nbg_package.py` (at most 5000 members, 64 MiB for any member, 16 MiB
+for one XML part, 128 MiB of XML in all, no XML part over 1 MiB compressing more than
+100 to 1). A deck past them is refused with exit 2 before anything parses it.
 
-### 4. nbg_validate.py - Brand Validation
-
-Validates presentations against NBG brand guidelines.
+## record
 
 ```bash
-python nbg_validate.py presentation.pptx
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" record deck.pptx deck.yaml --data "${CLAUDE_PLUGIN_DATA}"
 ```
 
-**Output:**
+Writes `<data>/presentations/pending/<YYYYMMDDHHMM>_<slug>.yaml` and prints
+`{"record": <path>, "id": <id>, "slides": <n>}`. `--data` must be an absolute folder: an
+empty value (an unset `CLAUDE_PLUGIN_DATA`) or a relative one exits 2 instead of
+writing the deck's spec into the current folder. The record:
 
-```
-NBG Brand Validation Report
-==================================================
-File: quarterly-report.pptx
-==================================================
+| Key | Value |
+|---|---|
+| `id` | `<YYYYMMDDHHMM>_<slug>`, the file's stem |
+| `created` | ISO 8601 with the local UTC offset |
+| `status` | `pending`; a review moves the record to `presentations/reviewed/` |
+| `topic` | `--topic`, else `presentation.title`, else the cover title |
+| `file_path` | the `.pptx`, absolute |
+| `file_hash` | `sha256:<hex>` of the `.pptx` as built |
+| `spec_path` | the deck spec, absolute |
+| `slides` | `[{index, id, type, title}]`, index 1-based |
+| `spec` | the whole spec after legacy-name normalisation |
 
-✓ Slides: 11 slide(s) in presentation
-✓ Dimensions: 13.33" x 7.50" (NBG standard = LAYOUT_WIDE)
-✓ Colors: All 8 colors within NBG palette
-✓ Fonts: Fonts used: Aptos
-✓ Logo: 2 media file(s) found (verify NBG logo manually)
-✓ Back Cover: Last slide appears to be a plain back cover
-✓ Boundaries: 44 positioned element(s), all within slide boundaries
-✓ Contrast: 62 run(s) measured, all clear WCAG AA; 7 brand-mandated exception(s)
-    - Slide 1: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 14.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
-    - Slide 10: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
-    - Slide 3: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
-    - Slide 4: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
-    - Slide 5: #939793 on #FFFFFF is 2.96:1 (needs 4.5:1 at 10.0pt) [Medium Gray, brand-mandated for page numbers and cover dates]
-✓ Decorative: 44 preset shape(s), none decorative
-✓ Chart Types: 2 chart(s), no pie/doughnut
-✓ Thank You Check: 11 slide(s) scanned, no "Thank You" text (correct)
-✓ Text Margins: 33 text box(es), all with zero margins
-✓ Safe Zones: 38 element(s) across 11 slides, all within safe zones
-✓ Font Sizes: 62 sized run(s) all meet minimum sizes. Sizes used: 9.0pt, 10.0pt, 11.0pt, 12.0pt, 14.0pt, 24.0pt, 36.0pt, 48.0pt, 60.0pt
-✓ Content Spacing: 8 slide(s) with body content, all adequately spaced below the title
-✓ Title Length: 6 title(s) all fit within the 80-char single-line limit
-○ Bank Branding: 0 bank name(s) found, so no multi-bank comparison to check
-✓ Slide Titles: 10 slide(s) titled, all present and unique, 1 text-free slide(s) exempt
-✓ Exhibit Sources: 3 exhibit slide(s), all carrying a dated source line
-✓ Alt Text: 3 object(s) carry descriptive alt text, 11 brand logo(s) exempt as decorative
-✓ Zero Baseline: 1 bar/column value axis/axes, all based at zero, 1 non-bar chart(s) not subject to the rule
-✓ Number Formats: 11 currency amount(s), consistent notation and precision
-✓ AI Slop: 10 slide(s) scanned against 13 lexicon terms, none clustering 2+
-✓ Action Titles: 6 content title(s), all assertions within 15 words
+## Updating an existing deck
 
-==================================================
-Summary: 23 passed, 0 failed, 0 warning(s), 1 examined nothing
-No blocking failures; 1 check(s) marked with a circle examined nothing.
-==================================================
+`inject_chart_data.py` and `inject_table_data.py` replace the data in charts and
+tables of a deck that was not built from a spec. They are not behind the launcher; run
+them with its requirements, for example with uv:
+
+```bash
+uv run --no-project --with-requirements plugins/decks/tools/nbg-presentation/requirements.txt \
+    python plugins/decks/tools/nbg-presentation/inject_chart_data.py in.pptx charts.json out.pptx
 ```
 
-Every check reports **how many candidate elements it looked at**, and a check that looked at none
-prints a circle rather than a tick. It is not counted as a pass. Three checks used to iterate
-`a:rPr`, which `nbg_build.py` never writes (it sets fonts at paragraph level, `a:defRPr`), so they
-examined an empty set on every deck this repo produces and printed green. `Font Sizes` gave itself
-away by printing `Sizes used:` with nothing after it.
+`slide` counts from 0 in presentation order, `chart_index` and `table_index` from 0
+in the slide's shape order; the config formats are in each script's docstring. A
+chart's embedded workbook is rewritten with it, series are added or removed to match,
+table data must match the table's shape, and nothing is written unless every entry
+matched (exit 1 names the ones that did not).
 
-`Contrast` measures a real WCAG ratio for every run against the fill actually behind it: the
-nearest ancestor shape fill, then the slide background, then white. Chart data labels are measured
-against their series or point fill when the label sits on the mark, and against the slide
-background when it sits outside. One colour is listed as a brand-mandated exception rather than a
-failure, with its measured ratio shown on every run: see `BRAND_CONTRAST_EXCEPTIONS`.
+## Tests
 
-**Exit codes.** 0 clean, 1 a check failed, 2 the validator could not finish. `nbg_build.py` keeps
-those apart, so a validator that dies on a missing import is no longer indistinguishable from a
-clean deck.
+```bash
+uv run --no-project --python 3.12 \
+    --with-requirements plugins/decks/tools/nbg-presentation/requirements.txt \
+    --with pytest python -m pytest plugins/decks/tools/nbg-presentation scripts/test_ooxml_schema.py -q
+```
 
-## Slide Catalog
-
-Available slide types (see `assets/slide-catalog.yaml`):
-
-`nbg_build.py` has six renderers, and every catalog path routes to one of them. The prefix is what
-decides; the suffix is a hint for a human, not a distinct layout.
-
-| Prefix or type | Renderer | What it draws |
-|---|---|---|
-| `cover`, `covers/*` | `create_cover_slide` | Title, subtitle, location, date, large logo |
-| `divider`, `dividers/*` | `create_divider_slide` | Two-digit number plus section title |
-| `contents`, `toc` | `create_contents_slide` | Numbered section list with teasers |
-| `chart`, `charts/*`, `*_chart` | `create_chart_slide` | Bar, stacked bar, horizontal bar, line, doughnut |
-| `waterfall`, `waterfall_chart` | `create_waterfall_slide` | Stacked-bar waterfall, cyan up and red down |
-| `table`, `tables/*` | `create_table_slide` | Header row, zebra body, right-aligned numbers |
-| `back_cover`, `back_covers/*` | `create_back_cover_slide` | Centred oval logo, nothing else |
-| anything else | `create_content_slide` | Title plus cyan bullets |
-
-Two consequences worth knowing before you write a spec:
-
-- **`infographics/*` has no renderer.** It falls through to the content slide. `content.items`
-  (a list of `{title, description}`) degrades to bullets rather than being dropped, which is what
-  used to happen, but it is not a numbered grid.
-- **The suffix is ignored.** `charts/bar_dual` and `charts/bar_single` both draw one chart; the
-  number of series in `chart.data.series` is what varies. `tables/half_page` and `tables/full_page`
-  both size the table from its row count, shrinking the rows to stay inside the body area.
-
-## NBG Brand Guidelines
-
-### Dimensions
-
-- Width: 13.33 inches (LAYOUT_WIDE)
-- Height: 7.5 inches
-- Matches LAYOUT_WIDE standard
-
-### Colors
-
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Dark Teal | #003841 | Titles, headings |
-| NBG Teal | #007B85 | Primary brand |
-| Bright Cyan | #00DFF8 | Accents |
-| Cyan | #00ADBF | Charts, bullets |
-| Dark Text | #202020 | Body text |
-| White | #FFFFFF | Background |
-
-### Chart Colors (in order)
-
-1. #00ADBF - Cyan
-2. #003841 - Dark Teal
-3. #007B85 - NBG Teal
-4. #939793 - Medium Gray
-5. #BEC1BE - Light Gray
-6. #00DFF8 - Bright Cyan
-
-### Fonts
-
-- Primary: Aptos
-- Bullets: Arial
-- Fallback: Calibri, Tahoma
-
-### Rules
-
-- Always use white or off-white backgrounds
-- **Never include "Thank You" slides**
-- Always end with plain back cover with logo
-- Section numbers: "01", "02" format in NBG Teal
-- Bullets use Cyan #00ADBF
-- All text boxes: margin = 0
+`scripts/test_ooxml_schema.py` validates every slide and chart part of every built
+example against the ISO/IEC 29500 schemas in `scripts/ooxml-xsd/`: PowerPoint drops
+schema-invalid XML that LibreOffice and python-pptx both accept.

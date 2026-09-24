@@ -1,5 +1,9 @@
 # NBG Chart Specifications
 
+> Machine source: [`tokens.yaml`](tokens.yaml), section `charts` (plus `type.chart_*`). This is the
+> one home for chart styling in prose: `ooxml-charts.md` and the agents point here. The builder
+> renders every chart from these values; a value changes in tokens.yaml first.
+
 ## Critical Rules
 
 ### NEVER Use Pie Charts
@@ -12,13 +16,33 @@
 
 ### Always Specify Explicit Colors
 
-**CRITICAL:** Always specify explicit NBG colors for all chart elements to avoid PptxGenJS defaults (like #333333):
+**CRITICAL:** Every chart part carries an explicit NBG colour: series fills and lines, data
+labels, axis labels, axis lines and legend text. A part left to inherit takes the Office theme
+(`#4F81BD` blue, `#C0504D` red, Calibri), which is how line charts shipped in Office colours.
+`nbg_build.py` writes both the explicit colours and an NBG theme, so a chart a colleague adds in
+PowerPoint afterwards also starts on-brand.
 
-- `catAxisLabelColor`
-- `valAxisLabelColor`
-- `catAxisLineColor`
-- `legendColor`
-- `dataLabelColor`
+## Chart Style (tokens.yaml `charts`)
+
+| Part | Spec |
+|------|------|
+| Font | Aptos throughout |
+| Series colours | The sequence below, in order; at most 6 series (8 absolute, Standard #22) |
+| Gridlines | None |
+| Data labels | 12pt Bold `#003841`; inside a filled bar, the builder picks black or white by contrast against the fill |
+| Category axis | Labels 12pt `#202020`; axis line 0.5pt `#BEC1BE` |
+| Value axis | Hidden on bar and column charts, and pinned at zero whenever every bar is zero or more (waterfalls too); on line and area charts visible, labels 11pt `#939793`, no axis line |
+| Legend | Bottom, 12pt `#202020`, and by default only on a bar chart with several series: a doughnut names its slices in the ring and a multi-series line names each line at its last point |
+| Bar and column | Gap width 35%; stacked bars overlap 100%, their value axis runs from zero to the tallest stack, and a segment too thin for its label goes without one (`decks-py check` warns) |
+| Line | 3.5pt, straight segments (no smoothing), hollow circle markers size 6 (white fill, a 2pt ring in the series colour) |
+| Area-line | The line above, plus a 15% fill in the series colour under the first series only |
+| Doughnut | Hole size 55%; slices in the ring order `#00ADBF`, `#003841`, `#007B85`, `#BEC1BE`, `#00DFF8`, `#939793` (`charts.doughnut.slice_palette`), so NBG Teal never sits beside Medium Gray; every slice named with its share inside the ring |
+| Waterfall | Gap width 100%; totals `#003841`, increases `#00ADBF`, decreases `#AA0028` |
+| Highlight | One category in `#00ADBF`, the rest in `#BEC1BE` (`chart.highlight_category` in the deck spec) |
+| Time series | Area-line by default, never a bare line (Standard #2.8) |
+
+The muted `#939793` value-axis labels are the one sanctioned sub-AA text use in charts (2.96:1,
+Standard #22): they are secondary to the direct data labels, never the only way to read a value.
 
 ## Chart Type Hierarchy
 
@@ -28,14 +52,16 @@
 | 2 | **Column Clustered** | Comparisons, rankings, categories (vertical) |
 | 3 | **Bar Clustered** | Horizontal comparisons (same color as column, `#00ADBF`) |
 | 4 | **Stacked Column** | Composition over time (3-4 series max) |
-| 5 | **Line with markers** | Trends, time series (hollow "donut" markers) |
-| 6 | **Stacked Area** | Two overlapping trends (semi-transparent fills) |
-| 7 | **Waterfall** | Financial flows, bridges (faked via stacked column with invisible base) |
-| 8 | **Area-Line** | Single trend with subtle fill (PREFERRED over plain line for single series) |
+| 5 | **Area-Line** | Trends and time series (the default for any time series) |
+| 6 | **Waterfall** | Financial flows, bridges |
+| 7 | **Line with markers** | A trend across categories that are not a time series; still the Standard #5 stroke and markers |
+
+In a deck spec these are `chart.type`: `doughnut`, `bar`, `bar_horizontal`, `bar_stacked`,
+`area_line`, `line`, and the `waterfall` slide type.
 
 ## Color Sequence
 
-Use these colors in order for data series (no # prefix):
+Use these colors in order for data series (`tokens.yaml` `charts.palette`, no # prefix):
 
 | Order | Hex | Name | RGB |
 |-------|-----|------|-----|
@@ -46,216 +72,91 @@ Use these colors in order for data series (no # prefix):
 | 5 | `BEC1BE` | Light Gray | 190, 193, 190 |
 | 6 | `00DFF8` | Bright Cyan | 0, 223, 248 |
 
-```javascript
-const NBG_CHART_COLORS = ['00ADBF', '003841', '007B85', '939793', 'BEC1BE', '00DFF8'];
+Series 3 and 4 are only 1.70:1 apart: never let those two alone carry a distinction. Label every
+series directly rather than relying on a colour-only legend (Standard #22).
+
+## Bar and Column Charts
+
+- One series: `#00ADBF` for column AND horizontal bar charts.
+- Data labels above (or at the end of) each bar, 12pt Bold `#003841`, with a number format that
+  matches the data's precision.
+- Value axis hidden; category axis labels 12pt `#202020` with a 0.5pt `#BEC1BE` axis line.
+- Stacked: labels sit inside the segments, so each series' label colour comes from the contrast
+  picker (dark on `#00ADBF`, `#BEC1BE`, `#00DFF8`; white on `#003841`, `#007B85`). The value axis
+  runs from zero to the tallest stack. A segment too short or too narrow for its label goes
+  without one, and `decks-py check` names each: group the small series into "Other", or give the
+  chart more room.
+- A legend (bottom, 12pt `#202020`) appears by default only when a bar chart has several series.
+
+## Doughnut Charts
+
+**ALWAYS use doughnut instead of pie charts.** Hole 55%. The slices take the ring order
+(`charts.doughnut.slice_palette`: `#00ADBF`, `#003841`, `#007B85`, `#BEC1BE`, `#00DFF8`,
+`#939793`), the chart sequence reordered so NBG Teal never sits beside Medium Gray (1.70:1),
+including where the last slice meets the first. 1pt white lines separate the slices.
+
+Every slice carries its name and its share inside the ring, 12pt Bold in the contrast-picked
+colour, the name wrapping between words to fit. When a slice has no room for its name, the chart
+names the slices in a bottom legend (12pt `#202020`) instead and `decks-py check` warns.
+
+## Line and Area-Line Charts
+
+### Area-Line (the default for a time series)
+
+A line with a low-opacity fill below it: 3.5pt line, straight segments, hollow circle markers, and
+a 15% fill in the series colour under the first series only (under several lines the fills
+blended into a grey-brown wash, so the others stay plain lines). No gridlines, no axis lines,
+muted value-axis labels (11pt `#939793`), category labels 12pt `#202020`. Data labels are off:
+the value a reader needs sits in the KPI callout.
+
+Pair it with a **KPI callout** beside the chart: the slide keeps its 24pt Regular action title
+(Standard #16), and the callout is the Inline KPI Callout in `layouts.md` (value 18pt Bold
+`#007B85`, label 12pt `#202020`) with an optional signed delta: positive `#007B85`, negative
+`#AA0028`, neutral `#202020` (`components.kpi.delta`; the corporate green `#73AF3C` is 2.65:1 on
+white and never carries text).
+
+### Line with markers
+
+For a trend across categories that are not a time series. Same stroke and markers as above, no
+fill, and no value labels (line and area-line charts carry none). With several series the builder
+names each one at its last point, right of the line, and draws no legend; put the one value that
+matters in a KPI callout.
+
+## Hollow "Donut" Markers (Standard #5)
+
+The single line and marker spec for this brand system. Every line, area-line and multi-series
+line chart uses it; no other block in this file repeats these numbers.
+
+- Line width 3.5pt (44450 EMU), straight segments, never smoothed
+- Marker: circle, size 6
+- Marker fill: white (the hollow centre)
+- Marker outline: the series colour, 2pt (25400 EMU, `charts.line.marker_line_pt`). It is thinner
+  than the line on purpose: a 3.5pt ring fills a 6pt marker, which then reads as a solid dot
+
+In python-pptx (how `nbg_build.py` writes it):
+
+```python
+series.format.line.color.rgb = series_color
+series.format.line.width = Pt(3.5)
+series.smooth = False
+series.marker.style = XL_MARKER_STYLE.CIRCLE
+series.marker.size = 6
+series.marker.format.fill.solid()
+series.marker.format.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)  # white centre
+series.marker.format.line.color.rgb = series_color                       # coloured ring
+series.marker.format.line.width = Pt(2)                                 # thinner than the line
 ```
 
-## Bar Chart Configuration
+## Stacked Area Chart: existing decks only, not built by the plugin
 
-```javascript
-slide.addChart(pptx.ChartType.bar, chartData, {
-  x: 0.374, y: 1.3, w: 8.0, h: 4.8,
-  chartColors: ['00ADBF'],
+The builder has no stacked-area chart: it is not a deck-spec `chart.type`. For a new deck, show
+composition over time with `bar_stacked`, or overlapping trends with a multi-series `area_line`
+or `line`. This spec is for reading or repairing a stacked-area chart in an existing deck.
 
-  // Data labels
-  showValue: true,
-  valueFontFace: 'Aptos',
-  valueFontSize: 11,
-  valueFontBold: true,
-  valueFontColor: '202020',  // Explicit NBG color
-
-  // Bar spacing
-  barGapWidthPct: 35,
-
-  // Category axis
-  catAxisLabelFontFace: 'Aptos',
-  catAxisLabelFontSize: 12,
-  catAxisLabelColor: '202020',      // EXPLICIT - avoid defaults
-  catAxisLineColor: 'BEC1BE',       // EXPLICIT - avoid defaults
-  catAxisLineSize: 0.5,
-
-  // Value axis
-  valAxisHidden: true,
-  valAxisLabelColor: '202020',      // EXPLICIT - even if hidden
-
-  // Grid lines
-  catGridLine: { style: 'none' },
-  valGridLine: { style: 'none' },
-
-  // Legend
-  showLegend: false,
-
-  // Plot area
-  plotArea: { border: { color: 'BEC1BE', pt: 0 } },
-});
-```
-
-## Doughnut Chart Configuration
-
-**ALWAYS use doughnut instead of pie charts.**
-
-```javascript
-slide.addChart(pptx.ChartType.doughnut, chartData, {
-  x: 0.374, y: 1.4, w: 5.5, h: 4.5,
-  chartColors: ['00ADBF', '003841'],
-
-  // Doughnut settings
-  holeSize: 55,
-  showLabel: false,
-  showPercent: true,
-
-  // Data labels
-  dataLabelFontFace: 'Aptos',
-  dataLabelFontSize: 12,
-  dataLabelColor: '202020',         // EXPLICIT - avoid defaults
-
-  // Legend
-  showLegend: true,
-  legendPos: 'b',
-  legendFontFace: 'Aptos',
-  legendFontSize: 12,
-  legendColor: '202020',            // EXPLICIT - avoid defaults
-});
-```
-
-## Line Chart Configuration
-
-### Preferred Style: Area-Line (Line with Subtle Fill)
-
-**This is the preferred format for all time-series / trend charts.** Uses an area chart
-with low-opacity fill below the line, smooth curves, and visible dot markers. The result
-is a clean, modern look: no grid lines, no axis lines, muted axis labels.
-
-Pair with a **KPI callout** in the slide header: title on the left, large metric value
-on the right with a change delta (green/red) and optional YtD.
-
-```javascript
-// PREFERRED: Area-Line Chart
-slide.addChart(pptx.ChartType.area, chartData, {
-  x: 0.374, y: 1.4, w: 7.0, h: 3.8,
-  chartColors: ['007B85'],          // NBG Teal (single series)
-  chartColorsOpacity: 15,           // Subtle fill below the line
-
-  // Line and marker styling: see the "Hollow Donut Markers" section below (Standard #5).
-  // That block is the only place the line width and marker spec are written down.
-  lineSmooth: false,                // Straight segments between points (smooth only if requested)
-  lineDash: 'solid',
-
-  // Data labels — HIDE for clean look (value shown in KPI callout instead)
-  showValue: false,
-
-  // Category axis — visible labels, no axis line
-  catAxisLabelFontFace: 'Aptos',
-  catAxisLabelFontSize: 11,
-  catAxisLabelColor: '939793',      // Muted gray labels
-  catAxisLineShow: false,           // No axis line
-
-  // Value axis — visible labels (e.g. 0%, 2%, 4%), no axis line
-  valAxisHidden: false,
-  valAxisLabelFontFace: 'Aptos',
-  valAxisLabelFontSize: 11,
-  valAxisLabelColor: '939793',      // Muted gray labels
-  valAxisLineShow: false,           // No axis line
-
-  // Grid lines — NONE for clean background
-  catGridLine: { style: 'none' },
-  valGridLine: { style: 'none' },
-
-  // Legend
-  showLegend: false,
-
-  // Plot area — clean white, no border
-  plotArea: {
-    fill: { color: 'FFFFFF' },
-    border: { pt: 0 }
-  },
-});
-```
-
-#### KPI Callout Pattern (pair with area-line chart)
-
-Add text shapes above the chart for the headline metric:
-
-```javascript
-// Title (left-aligned)
-slide.addText('Αμοιβαία Κεφάλαια', {
-  x: 0.374, y: 0.9, w: 5.0, h: 0.5,
-  fontFace: 'Aptos', fontSize: 18, bold: true, color: '003841',
-});
-
-// Current value (right-aligned, large)
-slide.addText('3.8%', {
-  x: 6.5, y: 0.8, w: 2.5, h: 0.5,
-  fontFace: 'Aptos', fontSize: 28, bold: true, color: '003841',
-  align: 'right',
-});
-
-// Change delta (right-aligned, colored)
-slide.addText('-0.5', {
-  x: 7.5, y: 0.85, w: 1.5, h: 0.3,
-  fontFace: 'Aptos', fontSize: 14, color: 'AA0028',  // Red for negative
-  align: 'right',
-});
-
-// YtD label (right-aligned, muted)
-slide.addText('YtD: 4.3%', {
-  x: 7.5, y: 1.1, w: 1.5, h: 0.25,
-  fontFace: 'Aptos', fontSize: 11, color: '939793',
-  align: 'right',
-});
-```
-
-### Alternative: Plain Line Chart (no fill)
-
-Use when area fill would be misleading (e.g. multiple overlapping series) or when
-data labels on each point are needed.
-
-```javascript
-slide.addChart(pptx.ChartType.line, chartData, {
-  x: 0.374, y: 1.4, w: 7.0, h: 3.8,
-  chartColors: ['007B85'],
-
-  // Line and marker styling: see the "Hollow Donut Markers" section below (Standard #5).
-  lineSmooth: false,                // Straight segments (smooth only if requested)
-  lineDash: 'solid',
-
-  // Data labels (when needed)
-  showValue: true,
-  valueFontFace: 'Aptos',
-  valueFontSize: 11,
-  valueFontBold: true,
-  valueFontColor: '202020',
-  dataLabelPosition: 't',
-  dataLabelFontFace: 'Aptos',
-  dataLabelColor: '202020',
-
-  // Category axis
-  catAxisLabelFontFace: 'Aptos',
-  catAxisLabelFontSize: 11,
-  catAxisLabelColor: '939793',
-  catAxisLineShow: false,
-
-  // Value axis
-  valAxisHidden: false,
-  valAxisLabelFontFace: 'Aptos',
-  valAxisLabelFontSize: 11,
-  valAxisLabelColor: '939793',
-  valAxisLineShow: false,
-
-  // Grid lines — none
-  catGridLine: { style: 'none' },
-  valGridLine: { style: 'none' },
-
-  // Legend
-  showLegend: false,
-
-  // Plot area
-  plotArea: {
-    fill: { color: 'FFFFFF' },
-    border: { pt: 0 }
-  },
-});
-```
+Both series take semi-transparent fills (40% opacity) in the chart sequence (for example
+`#00ADBF` under `#BEC1BE`) and matching outlines at **2.5pt**. The 2.5pt is deliberate: this
+stroke outlines a filled region rather than carrying a value, so the 3.5pt data-line width in
+Standard #5 does not apply to it.
 
 ## Status Colors for Charts
 
@@ -272,190 +173,48 @@ colors are a different palette and never appear in a chart.
 
 ### Clean, Minimal Charts
 
-1. **Remove clutter**: Hide gridlines where possible
+1. **Remove clutter**: no gridlines
 2. **Single focus**: Each chart = ONE key message
 3. **Data labels**: Only show if they add value
-4. **Legend**: Position at bottom or right, never obscuring data
+4. **Legend**: at the bottom, never obscuring data; prefer direct labels
 5. **Colors**: 3-4 per chart is the design target. The hard categorical ceiling, and the
    OOXML trap that silently degrades a palette past six series, are in Standard #22
 
 ### Supporting Key Messages
 
 - Add callout boxes for insights (e.g., "+47%", "-800K")
-- Use roundRect shapes for highlight callouts
+- Use tight rounded rectangles (Standard #12) for highlight callouts
 - Keep subtitle explaining the data context
+- Every chart carries a dated source line (`content.source` in the deck spec)
 
 ### Layout Tips
 
-- **Two-column**: Chart on right, text/bullets on left (40/60 split)
+- **Two-column**: Chart on right, text/bullets on left (40/60 split, `dimensions.md`)
 - **Full-width**: Single important chart with annotations
-- **Bar charts**: Use `barGapWidthPct: 35` for clean spacing
 
-## Complete Chart Colors Reference
+## Tables
 
-```javascript
-const NBG = {
-  colors: {
-    // Chart series (in order)
-    cyan: '00ADBF',
-    darkTeal: '003841',
-    teal: '007B85',
-    mediumGray: '939793',
-    lightGray: 'BEC1BE',
-    brightCyan: '00DFF8',
+The full table spec (fills, borders, row heights, in-cell emphasis, alignment) lives in
+[layouts.md](layouts.md#table-styling-nbg-executive-signature). In short: header `#003841` with
+12pt Bold white, zebra `#FFFFFF` / `#F5F8F6`, 12pt `#202020` body, numbers right-aligned, 1pt
+white borders.
 
-    // Text/labels
-    darkText: '202020',
+## Waterfall: Data Labels
 
-    // Status
-    success: '73AF3C',
-    alert: 'AA0028',
+Every waterfall label is the bar's signed contribution, written into the label as text in the
+chart's `number_format` (`+1,624`, `-2,439`, `+2.5%` for `0.0%`, `+12 m` for `#,##0" m"`, and
+Greek separators in a Greek deck, `+1.624`; a total carries a sign only when it is negative), so
+it reads the same in every viewer.
+All labels are 12pt Bold (`type.chart_data_label`). Where a label sits depends on the bar:
 
-    // Backgrounds
-    white: 'FFFFFF',
-    offWhite: 'F5F8F6',
-  },
+| Bar | Label | Colour |
+|-----|-------|--------|
+| A step, increase or decrease, entirely above zero | Just above the bar | `#003841` |
+| A total, or a step reaching below zero | Centred in the bar | The contrast picker: white on `#003841` totals and `#AA0028` decreases, black on `#00ADBF` increases |
 
-  chartColors: ['00ADBF', '003841', '007B85', '939793', 'BEC1BE', '00DFF8'],
-};
-```
+A centred label inside a thin step would run over both edges of the bar, which is why the steps
+above zero carry theirs on top. The value axis is hidden and there is no legend: the labels and
+the category axis carry the chart.
 
-## Avoiding Default Colors
-
-PptxGenJS may inject default colors (like #333333) if you don't specify them explicitly. Always include these properties:
-
-```javascript
-// ALWAYS INCLUDE THESE to avoid #333333 defaults:
-catAxisLabelColor: '202020',
-valAxisLabelColor: '202020',
-catAxisLineColor: 'BEC1BE',
-legendColor: '202020',
-dataLabelColor: '202020',
-valueFontColor: '202020',
-```
-
-## Table Configuration
-
-The full table spec (fills, borders, in-cell emphasis, column sizes) lives in
-[layouts.md](layouts.md#table-styling-nbg-executive-signature). This is the PptxGenJS form of it.
-
-```javascript
-// Header row
-const headerStyle = {
-  fontFace: 'Aptos',
-  fontSize: 12,
-  bold: true,
-  color: 'FFFFFF',
-  fill: { color: '003841' },
-};
-
-// Data rows: zebra is white / off-white, no teal tints
-const cellStyle = {
-  fontFace: 'Aptos',
-  fontSize: 12,
-  color: '202020',
-  fill: { color: 'FFFFFF' },
-};
-
-// Alternating rows
-const altCellStyle = {
-  ...cellStyle,
-  fill: { color: 'F5F8F6' },
-};
-
-// Table options
-{
-  border: { pt: 1, color: 'FFFFFF' },
-  align: 'left',
-  valign: 'middle',
-}
-```
-
-## Line Chart: Hollow "Donut" Markers (Standard #5)
-
-The single line and marker spec for this brand system. Every line, area-line and
-multi-series chart uses it; no other block in this file repeats these numbers.
-Thicker lines with **hollow circle markers**: white fill, colored ring matching the line width.
-
-```javascript
-// Line styling — NBG executive preference
-lineSize: 3.5,         // thicker than default 2.5
-lineSmooth: false,     // straight segments
-
-// Hollow "donut" markers — colored ring, white center
-showMarker: true,
-markerStyle: 'circle',
-markerSize: 10,        // larger for visibility
-// Marker fill: WHITE (creates the hollow center)
-// Marker line: SAME COLOR as the series line, SAME WIDTH as the line (3.5pt)
-```
-
-In python-pptx:
-
-```python
-series.format.line.width = Pt(3.5)
-series.marker.style = 8  # circle
-series.marker.size = 10
-series.marker.format.fill.solid()
-series.marker.format.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)  # white center
-series.marker.format.line.color.rgb = series_color  # colored ring
-series.marker.format.line.width = Pt(3.5)  # match line width
-```
-
-## Stacked Area Chart (2+ series, semi-transparent)
-
-Use for showing composition trends over time. Both series should have **semi-transparent fills** (40% opacity) and matching line borders:
-
-```javascript
-// Series colors (in layer order, bottom to top)
-chartColors: ['00ADBF', 'BEC1BE'],
-chartColorsOpacity: 40,  // 40% opacity for softer, more professional look
-
-// Line borders matching each series.
-// 2.5pt is deliberate: this stroke outlines a filled region rather than carrying a
-// value, so the 3.5pt data-line width in Standard #5 does not apply to it.
-lineSize: 2.5,
-```
-
-In python-pptx, apply alpha via XML manipulation on each series' solid fill:
-
-```python
-alpha_el = etree.SubElement(color_elem, qn("a:alpha"))
-alpha_el.set("val", "40000")  # 40% = softer than 25%, more readable than 60%
-```
-
-## Table: Number Alignment Rule
-
-**CRITICAL**: numeric columns (amounts, percentages, counts) must be **right-aligned**. Text columns remain left-aligned.
-
-```javascript
-// Header: right-align numeric column headers
-// Data: right-align numeric cells
-// Text columns (Unit, Priority, etc.): LEFT align always
-```
-
-In python-pptx:
-
-```python
-numeric_cols = {1, 2, 3, 4}  # indices of numeric columns
-for p in cell.text_frame.paragraphs:
-    if col_idx in numeric_cols:
-        p.alignment = PP_ALIGN.RIGHT
-```
-
-## Waterfall: Data Label Positioning
-
-Waterfall is faked via stacked column with invisible base. Data labels should appear **inside bars** (CENTER position) with **white text** on colored bars:
-
-```javascript
-// Data labels inside bars
-dataLabelPosition: 'center',
-dataLabelColor: 'FFFFFF',  // on 003841 and 007B85 bars only
-// On Cyan 00ADBF bars use 202020: white is 2.72:1 there and fails Standard #22
-dataLabelFontSize: 12,
-dataLabelFontBold: true,
-```
-
-For bars that start from the x-axis (opening/closing totals): labels appear at CENTER inside the tall bar. For floating bars (increases/decreases): labels appear centered within the floating segment.
-
-If a bar is too small for the label to fit, the label should have a white background halo for readability.
+In a deck spec a waterfall is the `waterfall` slide type with `chart.data.items` (label, value,
+and `total: true` for the bars drawn from zero; the first and last items are totals by default).

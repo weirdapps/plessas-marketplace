@@ -1,5 +1,9 @@
 # NBG Icon Design Specifications
 
+> Slide colours come from [`tokens.yaml`](tokens.yaml). The duotone teals below belong to the icon
+> artwork itself (the vendored icon library), not to the slide palette: an icon is placed as an
+> image, and its colours are never used for slide text or fills.
+
 ## Purpose
 
 Generate SVG icons that match exactly the visual language of the NBG iconography library. Visual consistency is mandatory. Creativity is secondary.
@@ -228,30 +232,24 @@ For competitive analysis, interbank comparisons, and market context slides, exte
 
 ### Greek Bank Logos
 
-Location: `assets/bank-logos/`
+Location: `assets/bank-logos/` (under the plugin root)
 
 | Bank | File | Usage |
 |------|------|-------|
+| NBG | `nbg.png` | The NBG row in any peer comparison |
 | Alpha Bank | `alpha-bank.png` | Interbank transaction charts |
 | Piraeus Bank | `piraeus-bank.png` | Market share comparisons |
 | Eurobank | `eurobank.png` | Competitive analysis |
 
-### Usage in OOXML Editing
+### Placing Logos in a Deck
 
-When adding external logos to slides via XML:
+Logos go into the deck through the deck spec, as `image` elements of a `custom` slide or an
+`image` column, with `path: bank-logos/<file>` and an `alt_text` naming the bank. Nobody copies
+files into `ppt/media/` by hand: `nbg_build.py` embeds them.
 
-1. Copy PNG files to `ppt/media/` folder
-2. Add relationship entries in slide `.rels` file
-3. Add `<p:pic>` elements to slide XML
+Keep each logo's own aspect ratio (Standard #4): give every logo in a comparison the same height
+(0.3", tokens.yaml `components.bank_logos.h`) and let the widths follow the files. On a
+peer-bank chart the builder places the logos itself. NBG's oval emblem and the other banks'
+rectangular marks distort when forced into one square box.
 
-See `assets/bank-logos/README.md` for detailed XML snippets and positioning guidelines.
-
-### Positioning for Horizontal Bar Charts
-
-When replacing chart category labels with logos:
-
-```
-Logo size: 350,000 x 350,000 EMU (~0.38")
-X position: 450,000 EMU (aligned left)
-Y positions: Spaced at 1,300,000 EMU intervals
-```
+See `assets/bank-logos/README.md` for the bank colours that go with each logo.

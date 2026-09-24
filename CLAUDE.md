@@ -8,7 +8,7 @@ archived `communications-marketplace` (2026-05-30).
 
 | Plugin | Commands | Purpose |
 |--------|----------|---------|
-| `decks` | `/create-presentation`, `/create-keynote`, `/redesign-deck`, `/polish-slides`, `/presentation-review` | Multi-agent PPTX pipeline: storyline-architect → storyboard-designer → graphics-renderer → presentation-qa. NBG-branded; brand assets in `shared/brand-system/`. `/create-keynote` is the one dark full-bleed exception (Standard #21) — a separate Pillow compositor in `tools/nbg-keynote/`, for stage talks only. |
+| `decks` | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/review-deck`, `/presentation-review`, `/create-keynote` | Agents around ONE deterministic renderer: storyline-architect writes a deck spec (`tools/nbg-presentation/deck.schema.json`), storyboard-designer refines it, graphics-renderer runs `nbg_build.py` on it and fixes the spec until the build is clean (at most 3 builds), presentation-qa reads the validator report and every rendered slide. All Python tools run through `bin/decks-py`; brand values live in `shared/brand-system/tokens.yaml`. Contracts: `plugins/decks/ARCHITECTURE.md`. `/create-keynote` is the one dark full-bleed exception (Standard #21), rendered by `tools/nbg-keynote/` for stage talks only. |
 | `mail` | `/inbox-briefing`, `/mail-review`, `/send-mail`, `/triage-inbox`, `/reply`, `/draft-review`, `/archive-thread`, `/decisions`, `/forward`, `/folder-tree`, `/mail-doctor`, `/style-rollback`, `/style-stats`, `/style-sync`, `/auth-setup` | Outlook command center. Bundles `outlook-bridge` MCP (Node.js server in `mcp-server/`). Two agents: `email-handler` and `triage-engine`. |
 | `meetings` | `/meeting-prep`, `/meeting-debrief` | Calendar-aware briefings with attendee dossiers; post-meeting decision and action capture. Depends on `mail` plugin's bundled MCP for calendar access. Agent: `meeting-intelligence`. |
 | `chat` | `/chat-inbox`, `/chat-reply`, `/chat-summarize`, `/chat-channel-digest`, `/chat-doctor`, `/auth-setup` | Microsoft Teams reader and reply. Bundles `teams-bridge` MCP (Node.js server in `mcp-server/`). |
@@ -25,7 +25,7 @@ plugins/<name>/
   shared/                      # Brand assets, style guides loaded by commands
   mcp-server/                  # Bundled Node.js MCP server (mail, chat only)
 installers/                    # install.sh / install.ps1 + pii-gauntlet.sh
-scripts/                       # sync_brand_system.sh, validate_consistency.py
+scripts/                       # validate_consistency.py, ooxml-xsd/ (schemas for the built-deck test)
 shared/                        # Cross-plugin shared assets (brand-system, email-style-template)
 .claude-plugin/marketplace.json  # Top-level manifest listing all plugins
 ```
@@ -63,6 +63,13 @@ Three workflows run tests and checks, and all of them can go red.
   (stub the condition, confirm exactly one test goes red) because a check that has never
   been observed to fail is the same defect it exists to catch.
 
+`tests.yml` also has a `render` job: it builds every `plugins/decks/examples/*.yaml` through
+`bin/decks-py` (the same launcher the prompts use), validates it, renders it with LibreOffice and
+asserts one PNG per slide. `scripts/test_ooxml_schema.py` validates every built slide and chart
+part against the ISO/IEC 29500 schemas vendored in `scripts/ooxml-xsd/`: PowerPoint silently drops
+schema-invalid XML that LibreOffice and python-pptx both accept, which is how every builder bullet
+went missing without a single test going red.
+
 `sonarcloud.yml` still runs pytest, but only to produce `coverage.xml`. It is not the gate.
 
 Run locally before pushing:
@@ -79,7 +86,7 @@ pytest plugins scripts -q
 `uv run` form above is the reliable invocation. `scripts/skill-trigger-probe.sh` measures
 natural-language routing across the six router skills, spawns real `claude` calls, and is
 **not** wired into CI. Its case 2 is nondeterministic (four runs on identical input gave
-three fails and one pass), so treat 16/17 as the score and do not read a single run as a
+three fails and one pass), so treat 18/19 as the score and do not read a single run as a
 regression or an improvement.
 
 ## Facts about Claude Code this repo has been burned by
@@ -115,6 +122,17 @@ from documentation. They are the failure modes most likely to recur.
 - **`marketplace.json` accepts a top-level `version`, but NOT top-level `license`,
   `homepage` or `repository`.** Those are per-plugin-entry fields; at the root they are
   unknown fields, which `--strict` treats as errors.
+- **An installed plugin is its own directory and nothing else, and the session's cwd is the
+  user's project.** Install copies only `plugins/<name>/` into the version cache, so a prompt
+  path like `shared/brand-system/README.md` resolves against whatever folder the user is in,
+  and a repo-root file (the old `shared/brand-system/` mirror) is unreachable. Anchor every
+  plugin path with `${CLAUDE_PLUGIN_ROOT}`; `validate_consistency.py` now rejects bare ones in
+  agent, command and skill files (shared docs and READMEs are not scanned).
+  Testing from the repo root hides this defect completely, which is how the decks QA gate
+  pointed at a `.venv` that existed nowhere for months.
+- **The plugin directory is replaced at every version bump.** Anything a plugin writes for a
+  user (learned preferences, draft records, caches) goes to `${CLAUDE_PLUGIN_DATA}` (persistent,
+  per user, substituted in agent and command bodies) or a cache dir, never into the plugin.
 
 ## The defect this repo keeps producing
 

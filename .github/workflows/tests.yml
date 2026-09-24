@@ -81,6 +81,70 @@ jobs:
             exit 1
           fi
 
+  # The pytest job proves the XML is right; this proves the decks open and render.
+  # It builds every shipped example through the same launcher the prompts use
+  # (bin/decks-py, so a broken launcher fails here, not on a colleague's
+  # machine), renders each through LibreOffice, and checks one PNG per slide.
+  # Render exit 4 is accepted: Aptos is not redistributable, so the runner
+  # renders with a substitute font, which is exactly what exit 4 reports.
+  render:
+    name: decks build + render smoke (LibreOffice)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Install LibreOffice Impress
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libreoffice-impress
+
+      - name: Build and render every example
+        env:
+          # The launcher builds its environments with pip here (no uv on the
+          # runner). Same supply-chain rule as the pytest job: wheels only.
+          PIP_ONLY_BINARY: ':all:'
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/decks"
+          mkdir -p "$out"
+          for spec in plugins/decks/examples/*.yaml; do
+            name=$(basename "$spec" .yaml)
+            bash plugins/decks/bin/decks-py build "$spec" "$out/$name.pptx"
+            rc=0
+            bash plugins/decks/bin/decks-py render "$out/$name.pptx" "$out/$name" > "$out/$name.json" || rc=$?
+            if [ "$rc" -ne 0 ] && [ "$rc" -ne 4 ]; then
+              echo "::error::decks-py render failed for $name (exit $rc)"
+              exit 1
+            fi
+            slides=$(unzip -Z1 "$out/$name.pptx" | grep -cE '^ppt/slides/slide[0-9]+\.xml$')
+            pngs=$(find "$out/$name" -maxdepth 1 -name '*.png' | wc -l | tr -d ' ')
+            if [ "$slides" -eq 0 ] || [ "$slides" -ne "$pngs" ]; then
+              echo "::error::$name: $slides slide(s) but $pngs rendered page(s)"
+              exit 1
+            fi
+            echo "::notice::$name: $slides slides built, validated and rendered (render exit $rc)"
+          done
+
+      # The other two tool environments, built and run through the same launcher, so
+      # a dependency dropped from their requirements.txt fails here and not on a
+      # colleague's first /create-keynote or /create-mockup.
+      - name: Keynote and mockup through the launcher
+        env:
+          PIP_ONLY_BINARY: ':all:'
+        run: |
+          set -euo pipefail
+          bash plugins/decks/bin/decks-py setup
+          bash plugins/decks/bin/decks-py keynote plugins/decks/tools/nbg-keynote/example.yaml \
+            --validate --placeholder-images
+          bash plugins/decks/bin/decks-py mockup --list-frames
+          bash plugins/decks/bin/decks-py doctor
+
   node:
     name: vitest (${{ matrix.server }})
     runs-on: ubuntu-latest

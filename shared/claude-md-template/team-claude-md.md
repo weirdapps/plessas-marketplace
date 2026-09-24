@@ -129,7 +129,7 @@ In Greek: use **"Εθνική Τράπεζα"** (NOT "Εθνική Τράπεζ�
 
 ## Brand Specs
 
-NBG brand specs (colours, fonts, logos, layout grids) live in this marketplace at `shared/brand-system/`. Plugins that need brand assets reference that directory. See `shared/brand-system/README.md` for the canonical spec.
+NBG brand specs (colours, fonts, logos, layout grids) ship with the `decks` plugin, in its `shared/brand-system/` folder. The machine-readable values are in `tokens.yaml` there, and `README.md` is the human-readable spec. With the marketplace cloned to the default location that is `~/.claude/plugins/marketplaces/plessas-marketplace/plugins/decks/shared/brand-system/`.
 
 Default email/text colour: `#404040`. Default font: Aptos Light 12pt (emails); Aptos for Word docs and presentations.
 

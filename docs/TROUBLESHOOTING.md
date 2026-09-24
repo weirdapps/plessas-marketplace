@@ -75,9 +75,13 @@ Update Node to v20 or newer:
 - macOS / Linux: `brew install node@20` (or use nvm: `nvm install 20 && nvm use 20`)
 - Windows: download from <https://nodejs.org/>
 
-### `python3: command not found` (decks plugin)
+### `python3: command not found` or `decks-py: no Python 3.12+ found` (decks plugin)
 
-Install Python 3.12+ from <https://www.python.org/downloads/>. The `decks` plugin builds a virtual env on first install for its PowerPoint validation tools.
+Install Python 3.12+ from <https://www.python.org/downloads/>, or [uv](https://docs.astral.sh/uv/). The `decks` tools run through the plugin's `bin/decks-py` launcher, which builds each tool's environment on first use (in `~/.cache/nbg-decks/`). To build them now and see what the machine has:
+
+```bash
+bash ~/.claude/plugins/marketplaces/plessas-marketplace/plugins/decks/bin/decks-py doctor
+```
 
 ### `git: command not found`
 
@@ -265,9 +269,9 @@ By design — Microsoft Graph's send scope is missing for channels. Send works f
 
 `/chat-reply` auto-detects the thread's language. If the recent messages are in Greek, the draft is in Greek; English, English. If you want to force a language, mention it in the prompt: "draft in Greek" or "reply in English."
 
-### decks: PPTX validation fails with "bumper position invalid"
+### decks: a slide render reports substituted fonts
 
-Known quirk of `nbg_validate.py`. Use bumper y=0.30, h=0.19, 10pt and title y=0.55. The plugin's `graphics-renderer` agent applies these automatically; if you're hand-editing slides, match the spec.
+`decks-py render` exits 4 when LibreOffice could not find Aptos and fell back to another font, so line breaks and text fit in the render are not what PowerPoint will show. Install Aptos where LibreOffice can see it and render again. Office for Mac and Windows ship Aptos; LibreOffice does not use Office's copy.
 
 ### decks: infographics look text-only / no AI image generation
 
@@ -294,7 +298,7 @@ Aptos handles Greek correctly. If you see boxes or squares in Word, your Word in
 
 ### docs: letterhead missing
 
-Default uses NBG branding from `shared/brand-system/`. Pass `--no-letterhead` to suppress for personal letters. To customise, edit `shared/brand-system/` files (advanced — talk to the maintainer).
+Expected: the `docs` plugin ships no letterhead assets and has no `--no-letterhead` flag. `/docs-letter` builds the sender block from your prompt, or from `~/.outlook-cli/signature.html` when that file exists.
 
 ---
 

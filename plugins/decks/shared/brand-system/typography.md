@@ -1,11 +1,17 @@
 # NBG Typography
 
+> Machine source: [`tokens.yaml`](tokens.yaml) (`fonts`, `type`, `line_spacing`,
+> `components.bullets`). This file explains the type scale and quotes those values;
+> `tools/test_brand_docs.py` fails when a row here drifts from them.
+
 ## Font Family
 
 ### Primary Font (Presentations)
 
 - **Name**: Aptos
-- **Weight**: **Regular** (preferred for all elements including titles)
+- **Weight**: **Regular** (preferred for all elements including titles); Bold for emphasis only
+- **Display**: Aptos Display is allowed at display sizes; Aptos Regular is the default
+- **Never**: Aptos SemiBold
 - **Fallback**: Calibri, Tahoma
 
 ### Digital Products Font (Pillar DS)
@@ -26,15 +32,18 @@
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| Title | Aptos | 48pt | #003841 | Regular |
-| Subtitle (NBG-template covers, `13_Cover` etc.) | Aptos | **24pt** | #007B85 | Regular |
-| Subtitle (clean DIY cover on Blank, pipe-separated units list) | Aptos | **24pt** | #007B85 | Regular |
+| Title | Aptos | 48pt (44pt minimum) | #003841 | Regular |
+| Subtitle | Aptos | **24pt** | #007B85 | Regular |
 | Location | Aptos | 14pt | #003841 | Regular |
-| Date | Aptos | 14pt | #939793 | Regular |
+| Date | Aptos | 14pt | #5A5F5A | Regular |
 
-**Pipe-separated units list** (clean DIY cover signature, observed in NBG executive reference decks):
-`Cards | GoForMore | Embedded | Digital | SSB | Direct | Fraud | Controls`
-The full unit list is the subtitle, NOT a generic "Cards and Digital Business" string.
+The title stays on one line (Standard #13). The builder shrinks a long title to 44pt before it
+would wrap; past that, shorten the text rather than let it wrap.
+
+**Subtitle content**: the presenting unit(s), pipe-separated, no trailing period, for example
+`Unit A | Unit B | Unit C`. Name the units that present the deck rather than a generic department
+string. A user's own unit list lives in their style preferences
+(`${CLAUDE_PLUGIN_DATA}/style-preferences.md`), never in this file.
 
 ### Divider Slide
 
@@ -48,33 +57,41 @@ The full unit list is the subtitle, NOT a generic "Cards and Digital Business" s
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | "Contents" Header | Aptos | **24pt** | #003841 | Regular |
-| Section Number | Aptos | **18pt** | #007B85 | Bold |
-| Section Title | Aptos | **16pt** | #003841 | Bold |
+| Section Number | Aptos | **18pt** | #007B85 | Regular |
+| Section Title | Aptos | **16pt** | #003841 | Regular |
 | Section Description | Aptos | **12pt** | #5A5F5A | Regular |
+
+Contents rows are Regular throughout (Standard #18); the number carries the emphasis by colour.
 
 ### Content Slide
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | **Action Title** | Aptos | **24pt** | #003841 | Regular |
-| Body Text | Aptos | **14pt** | #202020 | Regular |
-| Bullet L1 | Aptos | 14pt | #202020 | Regular |
-| Bullet L2 | Aptos | 14pt | #202020 | Regular |
-| Bullet L3 | Aptos | 14pt | #202020 | Regular |
-| Footnotes | Aptos | 11pt | #939793 | Regular |
+| Body Text | Aptos | **16pt**, growing toward 20pt on a sparse slide | #202020 | Regular |
+| Body Text (dense slides) | Aptos | 14pt | #202020 | Regular |
+| Bullet L1 | Aptos | 16pt | #202020 | Regular |
+| Bullet L2 | Aptos | 16pt | #202020 | Regular |
+| Bullet L3 | Aptos | 16pt | #202020 | Regular |
+| Caption (under a title) | Aptos | 12pt | #5A5F5A | Regular |
+| Footnotes and sources | Aptos | 11pt | #5A5F5A | Regular |
 
-Every bullet level sits at the 14pt body minimum. Separate the levels by indent and bullet
-character, not by shrinking the type. Sizes in this file are the specified values; the
-per-element floors they must clear live in `presentation-style-guide.md` Standard #11.
+Body text is 16pt, 14pt at the least (dense slides). On a sparse content slide the builder grows
+the bullets toward 20pt (`type.body.max_size`) so the content fills the slide (Standard #2, item
+7). Every bullet level uses the body size: separate the levels by indent and bullet character,
+not by shrinking the type. Footnotes and
+sources are caption grey, never `#939793` (2.96:1 on white, Standard #22). Sizes in this file are
+the specified values; the per-element floors they must clear live in
+`presentation-style-guide.md` Standard #11.
 
 ### Metric Cards (KPIs): NBG executive signature pattern
 
-Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill). Observed 30+ times across reference decks.
+Used for "Key Figures" slides: 3-up cards (3.5" × 3.0", `#F5F8F6` fill, no border, no shadow, tight corners). Observed 30+ times across reference decks.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | KPI big number | Aptos | **50pt** | **#007B85** (NBG Teal) | **Bold** |
-| KPI caption | Aptos | **16pt** | **#5A5F5A** (Caption Gray) | Regular |
+| KPI caption | Aptos | **16pt** | **#5A5F5A** (Caption Grey) | Regular |
 
 Examples of KPI big-number text (typical NBG executive deck): `750K`, `26%`, `€70M+`, `4.5M`, `3.3M`, `500K`.
 
@@ -88,9 +105,12 @@ Used on Key Figures / Progress & Priorities slides.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| Unit pill (rounded chip: "Cards", "Digital Banking") | Aptos | **16pt** | `#FFFFFF` on `#003841` fill | **Bold** |
-| Section title (next to unit pill) | Aptos | **22pt** | `#003841` | Regular |
+| Unit chip (rounded chip naming the unit) | Aptos | **16pt** | `#FFFFFF` on `#003841` fill | **Bold** |
+| Section title (next to the unit chip) | Aptos | **22pt** | `#003841` | Regular |
 | Owner subtitle ("Head: A. Smith") | Aptos | **14pt** | `#5A5F5A` | Regular |
+
+The unit chip is not the section pill: the pill is the 9pt teal eyebrow above an action title
+(README Quick Reference), the chip a 16pt dark-teal label in the Key Figures header.
 
 ### Status Pills (NBG executive signature)
 
@@ -99,24 +119,37 @@ Used on Progress & Priorities slides.
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | Numbered bullet (oval) | Aptos | **10pt** | `#FFFFFF` on `#007B85` fill | **Bold** |
-| Status badge ("OK"/"TBD"/"H2") | Aptos | **11pt** | `#FFFFFF` on color fill | **Bold** |
+| Status badge ("OK"/"TBD"/"H2") | Aptos | **11pt** | `#FFFFFF` on `#008000` / `#CC0000`, `#202020` on `#CC9900` | **Bold** |
 | Bullet body text | Aptos | **14pt** | `#202020` | Regular |
-| "Delivered ✓" row text | Arial | **15pt** | `#008000` | **Bold** |
+| "Delivered ✓" row text | Arial | **15pt** | `#008000` on `#E8F5E9` | **Bold** |
 
 ### Charts & Tables
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| Chart Title | Aptos | **12pt** | #202020 | Bold |
-| Chart Labels | Aptos | 11pt | #202020 | Regular |
-| Chart Values | Aptos | 11pt | #202020 | Bold |
+| Chart Title (existing decks only) | Aptos | **12pt** | #202020 | Bold |
+| Category Axis Labels | Aptos | 12pt | #202020 | Regular |
+| Value Axis Labels (line and area-line charts) | Aptos | 11pt | #939793 | Regular |
+| Chart Legend | Aptos | 12pt | #202020 | Regular |
+| Chart Data Labels | Aptos | 12pt | #003841 | Bold |
 | Table Header (NBG executive pattern) | Aptos | **12pt** | `#FFFFFF` on `#003841` fill | **Bold** |
 | Table First Column (label) | Aptos | **12pt** | `#202020` | **Bold** |
 | Table Body Cell | Aptos | **12pt** | `#202020` | Regular |
 | Table Numeric Cell | Aptos | **12pt** | `#202020` | Regular |
 | Table Notes (footnote) | Aptos | **11pt** | `#5A5F5A` | Regular |
 | In-cell positive emphasis ("+1") | Aptos | 12pt | `#007B85` | Bold |
-| In-cell priority flag ("H2") | Aptos | 12pt | `#CC9900` | Bold |
+| In-cell priority flag ("H2") | Aptos | 12pt | `#202020` in a `#CC9900` badge | Bold |
+
+The builder draws no chart title and the deck spec has no field for one: the slide's action title
+and caption name the chart. The Chart Title row is for repairing a hand-built deck.
+
+Data labels inside a filled bar take the contrast-picked colour instead (charts.md). Amber text on
+white is 2.58:1, so a priority flag is dark text on an amber badge, never amber text.
+
+The value-axis row is the one sanctioned sub-AA text in a chart: `#939793` is 2.96:1 on white,
+allowed because those labels are secondary to the direct data labels and never the only way to
+read a value ([charts.md → Chart Style](charts.md#chart-style-tokensyaml-charts)). Bar and column
+charts hide their value axis.
 
 **Executive table styling rules**: fills, borders and in-cell emphasis are specified once in
 [layouts.md](layouts.md#table-styling-nbg-executive-signature). This file carries only the type sizes.
@@ -141,19 +174,13 @@ Used on Progress & Priorities slides.
 |---------|--------------|
 | Body Text | 9pt |
 | Table Cells | 9pt |
-| Bullets | 10pt (L1), 5pt (L2, L3) |
+| Bullets | 14pt (L1, every bullet after the first), 5pt (L2, L3) |
 
 ## Text Box Settings
 
-**CRITICAL**: All text boxes must use:
-
-```javascript
-{
-  margin: 0,  // or [0, 0, 0, 0]
-  valign: 'top',
-  align: 'left'  // unless specified otherwise
-}
-```
+**CRITICAL**: All text boxes use zero internal margin, top vertical anchor and left alignment
+unless a layout says otherwise. The divider number and title are the one pair aligned to a shared
+baseline instead (Standard #3).
 
 ## Bullet Points
 
@@ -162,7 +189,9 @@ bullet:
   character: "•"
   unicode: "2022"
   font: "Arial"
-  color: "#00ADBF"  # Cyan (see colors.md)
+  color: "#00ADBF"   # Cyan (see colors.md)
+  indent: 0.25"      # hanging, per level: the text starts 0.25" in per level, wrapped lines align with it
+  character_l2: "–"  # level 2 uses an en dash (U+2013), same font and colour
 ```
 
 ## Number Formatting

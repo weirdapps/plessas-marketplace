@@ -1,8 +1,8 @@
-# Creative Toolkit — Device Mockup Tool
-# Install with: pip install -r requirements.txt
+# Creative toolkit: device mockup tool (iphone_mockup.py)
+# Installed by the plugin launcher: `decks-py mockup ...` builds this environment on first use.
 
 # Image manipulation (frame compositing, masking)
 Pillow>=12.3.0
 
-# Flood-fill masking for screen-area detection
+# Screen-mask computation and fitting
 numpy>=2.5.3

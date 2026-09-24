@@ -1,5 +1,9 @@
 # NBG Pillar Design System Reference
 
+> Machine source for deck colours: [`tokens.yaml`](tokens.yaml). This file documents the Pillar
+> tokens of NBG's digital products; a deck uses them only where `colors.md` or `tokens.yaml`
+> adopts them (the PFM category palette, the competitor bank colours).
+
 **Source**: NBG Pillar Figma Design System
 **Purpose**: Digital product design tokens for integration with presentation brand system
 
@@ -282,7 +286,7 @@ const PILLAR_DS = {
     alpha: '0D488B',
   },
 
-  // PFM Category chart colors (Main shades — Pillar live as of 2026-05-24)
+  // PFM Category chart colors (Main shades, Pillar live as of 2026-05-24)
   chartCategoryColors: [
     'B99C34', // Eating out
     '44C7B3', // Health
@@ -441,10 +445,10 @@ Pillar-sourced assets live alongside the rest of the decks asset library at `plu
 **Usage rules** (apply to all Pillar assets):
 
 - All illustrations and icons assume **light backgrounds**. They will not read well on dark slides.
-- Greek wordmark preferred per standard #10: use `nbg-logo-gr.png` (already in `assets/`) over the English Pillar wordmark when language matters.
+- Standard #10: on a slide the logo is always the Greek wordmark `nbg-logo-gr.png` (in `assets/`), which the builder places. The English Pillar wordmarks in `assets/logos/` are for material outside decks; the validator fails them on a slide.
 - Dark logo variants exist in `assets/logos/` but should rarely be used given the white-backgrounds-only standard. Treat them as opt-in, not default.
 - Screenshots: use to anchor product/feature slides. Crop only with explicit reason (rounded corners on iOS/Android frames must be preserved for authenticity).
-- See each subfolder's `INDEX.md` for per-asset use cases and Python insertion helpers (aspect-ratio-preserving).
+- See each subfolder's `INDEX.md` for per-asset use cases. Placement goes through the deck spec, which keeps the aspect ratio: an `image` slide, an image column in a `two_column` slide, or a custom `image` element.
 
 ---
 

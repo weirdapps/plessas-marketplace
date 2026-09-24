@@ -2,7 +2,7 @@
 
 Comprehensive library of NBG brand assets for presentations.
 
-**Base path:** `plugins/decks/assets/`
+**Base path:** `${CLAUDE_PLUGIN_ROOT}/assets/` (every path below is relative to it)
 
 ---
 
@@ -10,10 +10,10 @@ Comprehensive library of NBG brand assets for presentations.
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Icons (PNG, legacy mono) | 338 | Brand icons in 20 categories |
+| Icons (PNG, duotone) | 338 | Brand icons in 20 categories, duotone teal on transparent |
 | Duotone icons (SVG) | 19 files | Official duotone style: library + functional + 17 themed sets |
-| Illustrations | 21 PNG + 9 SVG splash | Digital app illustrations + splash set |
-| Logos | 10 PNG + 3 SVG | App icons and wordmarks + vector NBG/App/Go4more |
+| Illustrations | 21 PNG, 1 PDF, 9 SVG splash | Digital app illustrations + splash set |
+| Logos | 10 PNG + 3 SVG | App icons and wordmarks + NBG/App/Go4more reference boards |
 | Backgrounds | 4 | Brand gradient/pattern backgrounds (SVG) |
 | Screenshots | 117 | Product UI screenshots |
 
@@ -51,10 +51,9 @@ Comprehensive library of NBG brand assets for presentations.
 
 ### Icon Usage Rules
 
-1. **Always tint icons to NBG brand colors**
-   - Dark Teal `#003841` on light backgrounds
-   - White `#FFFFFF` on dark backgrounds
-   - NBG Teal `#007B85` for accent icons
+1. **Use them as they are**: the PNGs are already duotone teal (`#087681` structure, `#13A4AD`
+   accents) on transparent. Place them on white or a light fill. The deck spec has no tint for
+   card icons or free images; only a process step redraws its icon white on its teal tile.
 
 2. **Never use icons without text**: always pair with a label or heading
 
@@ -100,7 +99,7 @@ Need an icon?
     │
     ├─> Check assets/icons/ folders first
     │       │
-    │       ├─> Found suitable icon? → USE IT (apply NBG tint)
+    │       ├─> Found suitable icon? → USE IT (as it is, no tint)
     │       │
     │       └─> No match? → Use Icon Designer agent
     │
@@ -114,7 +113,7 @@ Need an icon?
 
 **Path:** `assets/icons-duotone/`
 
-The official NBG icon style is **duotone**: stroke-based teal outlines with accent details (`#087681` primary + `#13A4AD` accent). Prefer these for digital and product-styled slides and any new icon work.
+The official NBG icon style is **duotone**: stroke-based teal outlines with accent details (`#087681` primary + `#13A4AD` accent), the same style as the PNG set above.
 
 | Asset | What it is |
 |-------|-----------|
@@ -122,7 +121,11 @@ The official NBG icon style is **duotone**: stroke-based teal outlines with acce
 | `icons-functional-library.svg` | Mono functional UI icon set (`#162020`, 1.5 stroke) |
 | `sets/*.svg` | 17 themed sets: currency, device, social, QR, PFM, card and transaction states, progress, table statuses, bank and browser logos, product |
 
-**Rules:** duotone SVGs are already brand-colored, do NOT recolor to a single tint. To generate a new duotone icon, use `/create-icon` or the `icon-designer` agent (spec in `icons.md`). The legacy PNG set under `assets/icons/` stays available (solid mono), but duotone is the current standard.
+**These are reference sheets, not slide assets.** Each file holds several icons, often in light and
+dark variants side by side, so placing one on a slide places the whole sheet. Use them to find an
+icon and to calibrate a new one. For a slide, use a single PNG from `assets/icons/`, or generate one
+with `/create-icon` or the `icon-designer` agent (spec in `icons.md`). Never recolour a duotone
+icon to a single tint.
 
 ## Backgrounds
 
@@ -133,7 +136,7 @@ The official NBG icon style is **duotone**: stroke-based teal outlines with acce
 ## Illustrations
 
 **Path:** `assets/illustrations/`
-**Total:** 21 PNG
+**Total:** 21 PNG and 1 PDF, plus the 9 SVG splash set
 **Style:** Teal line-art on transparent background, glassmorphic panels
 
 ### Available Illustrations
@@ -142,23 +145,23 @@ The official NBG icon style is **duotone**: stroke-based teal outlines with acce
 |----------|---------------|----------|
 | `Account.png` | NBG account card (glassmorphic) | Account overview, balance display |
 | `Application.png` | 5-tile app product suite | Product overview, onboarding |
-| `Application Approved.png` | Document + coins + checkmark | Loan approval, success |
-| `Application rejected.png` | Document + coins + red X | Rejection, error state |
+| `Application_Approved.png` | Document + coins + checkmark | Loan approval, success |
+| `Application_rejected.png` | Document + coins + red X | Rejection, error state |
 | `Appointment.png` | Calendar illustration | Scheduling, appointments |
 | `Approval.png` | Stacked clipboards + checkmark | General approval, verification |
 | `card.png` | Contactless bank card | Card products, virtual cards |
 | `Gift.png` | Gift box with badges | Rewards, offers, promotions |
-| `go for more.png` | Go For More logo tile | Rewards program slides |
+| `go_for_more.png` | Go For More logo tile | Rewards program slides |
 | `Growth.png` | Bar + line chart | Performance, KPIs, growth |
 | `insurance.png` | Umbrella with rain | Insurance, protection |
 | `investments.png` | 3D bar chart | Investment products, portfolio |
-| `Investments check.png` | Chart + checkmark | Confirmed investment |
-| `Loan application.png` | Document + coins (neutral) | Loan in progress, pending |
+| `Investments_check.png` | Chart + checkmark | Confirmed investment |
+| `Loan_application.png` | Document + coins (neutral) | Loan in progress, pending |
 | `moneybox.png` | Box with euro coins | Savings, deposits |
 | `notification.png` | Two envelopes | Notifications, messages |
 | `Tasks.png` | Checklist + checkmark | Task completion, onboarding |
-| `Teens card.png` | Card with teen avatars (portrait) | Youth products |
-| `Teens card horizotal.png` | Card with teen avatars (landscape) | Youth products |
+| `Teens_card.png` | Card with teen avatars (portrait) | Youth products |
+| `Teens_card_horizotal.png` | Card with teen avatars (landscape) | Youth products |
 | `Transfer.png` | Two phones + IRIS | P2P transfers, IRIS payments |
 | `unfriend.png` | Person with remove badge | Remove/unlink actions |
 
@@ -180,22 +183,22 @@ See `assets/illustrations/INDEX.md` for complete reference.
 ## Logos
 
 **Path:** `assets/logos/`
-**Total:** 10 files
+**Total:** 10 PNG logos, plus 3 SVG reference boards (`app.svg`, `go4more.svg`, `nbg.svg`: look-up sheets, not for slides)
 
 ### Available Logos
 
 | Filename | What it Is | Use On |
 |----------|-----------|--------|
 | `NBG.png` | NBG emblem only (oval) | Compact placements |
-| `National Bank of Greece Light.png` | Full wordmark, dark text | Light backgrounds |
-| `National Bank of Greece Light dark.png` | Full wordmark, light text | Dark backgrounds |
-| `Retail Mobile Banking.png` | Retail Mobile app icon | Light backgrounds |
-| `Retail Mobile Banking dark.png` | Retail Mobile app icon | Dark backgrounds |
-| `Business Mobile Banking.png` | Business Mobile app icon | Dark backgrounds |
+| `National_Bank_of_Greece_Light.png` | English wordmark, dark text | Never on slides (Standard #10); English-language material outside decks, light backgrounds |
+| `National_Bank_of_Greece_Light_dark.png` | English wordmark, light text | Never on slides (Standard #10); English-language material outside decks, dark backgrounds |
+| `Retail_Mobile_Banking.png` | Retail Mobile app icon | Light backgrounds |
+| `Retail_Mobile_Banking_dark.png` | Retail Mobile app icon | Dark backgrounds |
+| `Business_Mobile_Banking.png` | Business Mobile app icon | Dark backgrounds |
 | `Next.png` | Next app icon | Dark backgrounds |
-| `NBG authenticator.png` | Authenticator app icon | Teal backgrounds |
-| `go for more light.png` | Go For More wordmark | Light backgrounds |
-| `go for more dark.png` | Go For More wordmark | Dark backgrounds |
+| `NBG_authenticator.png` | Authenticator app icon | Teal backgrounds |
+| `go_for_more_light.png` | Go For More wordmark | Light backgrounds |
+| `go_for_more_dark.png` | Go For More wordmark | Dark backgrounds |
 
 ### Logo Rules
 
@@ -283,10 +286,10 @@ See `assets/screenshots/*/INDEX.md` for complete reference per product.
 
 | Need | Asset Type | Path |
 |------|-----------|------|
-| Visual for loan approval | Illustration | `illustrations/Application Approved.png` |
+| Visual for loan approval | Illustration | `illustrations/Application_Approved.png` |
 | Card product visual | Illustration | `illustrations/card.png` |
-| Payment flow icon | Icon | `icons/money/Payment.png` |
+| Payment flow icon | Icon | `icons/money/Mobile_Payments.png` |
 | Security feature icon | Icon | `icons/security/Shield.png` |
 | Mobile app screenshot | Screenshot | `screenshots/retail-mobile/*.png` |
 | Next app feature | Screenshot | `screenshots/next-app/*.png` |
-| NBG branding | Logo | `logos/National Bank of Greece Light.png` |
+| NBG branding on a slide | Logo (the builder places it) | `nbg-logo-gr.png`, the Greek wordmark |

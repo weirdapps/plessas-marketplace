@@ -13,17 +13,17 @@ Six Claude Code plugins for productivity at a financial-services workplace: pres
 
 A Claude Code plugin marketplace built around the desk work of an executive at National Bank of Greece (NBG): drafting mail, walking into meetings prepared, keeping up with Teams chats, shipping board-ready presentations, and reading spreadsheets and Word documents. Each plugin is self-contained, ships with the commands and agents it needs, and bundles its own MCP server when it needs to reach an external system.
 
-Everything except the `decks` brand assets is domain-neutral. If you work at a different firm, install the plugins you need, point them at your M365 tenant, and (for `decks`) swap the template and colour palette.
+Everything except the `decks` brand assets is domain-neutral. If you work at a different firm, install the plugins you need, point them at your M365 tenant, and (for `decks`) edit its brand tokens and swap the logos.
 
 Owner: [weirdapps](https://weirdapps.github.io/resume/). License: MIT.
 
-> **v2.2.1**. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace), archived 2026-05-30. Migration notes: [`docs/migration-from-communications-marketplace.md`](docs/migration-from-communications-marketplace.md).
+> **v2.3.0**. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace), archived 2026-05-30. Migration notes: [`docs/migration-from-communications-marketplace.md`](docs/migration-from-communications-marketplace.md).
 
 ## The six plugins
 
 | Plugin | What it does | Key commands |
 |--------|--------------|--------------|
-| [`decks`](plugins/decks/) | Multi-agent presentation pipeline (storyline, storyboard, graphics, QA) that ships board-ready PPTX. Bundles a creative toolkit for icons, infographics, and device mockups. NBG-branded by default; brand assets are all in one directory. | `/create-presentation`, `/create-keynote`, `/redesign-deck`, `/polish-slides`, `/presentation-review`, plus `/create-icon`, `/create-infographic`, `/create-mockup` from the bundled creative toolkit |
+| [`decks`](plugins/decks/) | Presentation pipeline that ships board-ready PPTX: agents write and refine a deck spec, one tested builder renders it, and QA checks the validator report and every rendered slide before it ships. Bundles a creative toolkit for icons, infographics, and device mockups. NBG-branded by default; the brand is one machine-readable tokens file plus its docs. | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/review-deck`, `/presentation-review`, `/create-keynote`, plus `/create-icon`, `/create-infographic`, `/create-mockup` from the bundled creative toolkit |
 | [`mail`](plugins/mail/) | Outlook command centre. Bundles the `outlook-bridge` MCP server, which shells out to the [`outlook-tool`](https://github.com/weirdapps/outlook-access) CLI (pinned via `git+https`) for M365 read and send. | `/inbox-briefing`, `/mail-review`, `/triage-inbox`, `/reply`, `/forward`, `/send-mail`, `/archive-thread`, `/decisions`, `/draft-review`, `/folder-tree`, `/mail-doctor`, `/style-sync`, `/style-stats`, `/style-rollback`, `/auth-setup` |
 | [`meetings`](plugins/meetings/) | Pre-meeting briefings with attendee dossiers built from email history; post-meeting decision and action-item capture. Reads the calendar through `mail`'s bundled MCP, so `mail` must be installed first. | `/meeting-prep`, `/meeting-debrief` |
 | [`chat`](plugins/chat/) | Microsoft Teams reader and reply. Bundles the `teams-bridge` MCP server, which shells out to the [`teams-cli`](https://github.com/weirdapps/teams-access) CLI (pinned via `git+https`). | `/chat-inbox`, `/chat-reply`, `/chat-summarize`, `/chat-channel-digest`, `/chat-doctor`, `/auth-setup` |
@@ -117,18 +117,21 @@ Bootstraps the `teams-bridge` MCP the same way. Drives `teams-cli login`, which 
 .claude-plugin/marketplace.json      # top-level manifest: name, version, plugins[]
 plugins/
   decks/
-    commands/                        # 5 deck commands + 3 creative commands (both paths are
+    commands/                        # 6 deck commands + 3 creative commands (both paths are
                                      # declared in plugin.json, because `commands` REPLACES the default scan)
-    agents/                          # 8 agents. `agents/` is the ONLY directory Claude Code
+    agents/                          # 7 agents. `agents/` is the ONLY directory Claude Code
                                      # auto-discovers, so every agent lives here: storyline-architect,
                                      # storyboard-designer, graphics-renderer, presentation-qa,
-                                     # nbg-presenter (orchestrator), icon-designer,
-                                     # infographic-specialist, device-mockup
+                                     # icon-designer, infographic-specialist, device-mockup
     skills/presentations/            # natural-language router
+    bin/decks-py                     # launcher: every Python tool runs in a cached per-tool environment
     bundled/creative/                # commands, tools and assets for the creative toolkit
-    tools/nbg-presentation/          # nbg_build.py, nbg_validate.py, chart/table injectors
-    shared/brand-system/             # colours, fonts, layouts, style guide
-    assets/                          # NBG template, logos, illustrations, icons, mockups
+    tools/nbg-presentation/          # nbg_build.py (the one renderer), nbg_validate.py, render,
+                                     # extract and record tools, deck.schema.json
+    tools/nbg-keynote/               # dark full-bleed keynote compositor (Standard #21)
+    shared/brand-system/             # tokens.yaml (the machine-readable brand) + brand docs
+    ARCHITECTURE.md                  # pipeline, contracts, where state lives
+    assets/                          # logos, illustrations, icons, screenshots
   mail/
     commands/                        # 15 slash commands (see table)
     agents/                          # email-handler, triage-engine
@@ -161,11 +164,11 @@ installers/
   pii-gauntlet.sh                    # PII scan (CI + local doctor modes)
   lib/tenant-prompt.{sh,ps1}         # SharePoint host prompt used by auth-wizard
 scripts/
-  validate_consistency.py            # manifest / command consistency checks
+  validate_consistency.py            # manifest, command, prompt-path and asset-reference checks
   check_version_bumps.py             # a changed plugin must raise its version
   bump_changed_plugins.py            # weekly patch bump of plugins changed since their last bump
-  sync_brand_system.sh               # keeps decks brand assets in sync
-shared/                              # cross-plugin templates (email-style, brand-system)
+  ooxml-xsd/                         # ISO/IEC 29500 schemas the built-deck schema test validates against
+shared/                              # cross-plugin templates (email-style, claude-md)
 .github/workflows/                   # tests, lint, validate-plugins, pii-check, rename-guard,
                                      # version-bumps, weekly-plugin-bump, sonarcloud, codeql,
                                      # dependabot-auto-merge
@@ -213,7 +216,7 @@ All six plugins work standalone. These optional pieces add richer context when p
 
 ## Brand notes
 
-- **`decks`** ships NBG branding out of the box: `plugins/decks/assets/` (logos, templates, colour palette), `plugins/decks/shared/brand-system/`, and agent prompts referencing NBG colour hex codes and font stacks. The pipeline itself (storyline, storyboard, renderer, QA) is brand-agnostic. No PowerPoint template is bundled: the builder draws every slide from scratch, so there is nothing to swap. To retarget, update `plugins/decks/shared/brand-system/` and do a project-wide rename of `NBG` to your brand.
+- **`decks`** ships NBG branding out of the box: `plugins/decks/assets/` (logos, illustrations, icons, screenshots) and `plugins/decks/shared/brand-system/`, whose `tokens.yaml` holds every colour, type size and geometry value the builder draws and the validator checks. The pipeline itself (storyline, storyboard, build, QA) is brand-agnostic. No PowerPoint template is bundled: the builder draws every slide from scratch, so there is nothing to swap. To retarget, edit `tokens.yaml` and the brand-system docs, swap the logos, and do a project-wide rename of `NBG` to your brand.
 - **`mail`**, **`meetings`**, **`chat`**, **`excel`**, and **`docs`** are fully brand-agnostic. They ship with sensible defaults you can override in your global `CLAUDE.md`.
 
 ## Development and testing
@@ -235,8 +238,11 @@ bash installers/pii-gauntlet.sh --mode=doctor
 claude plugin validate . --strict
 for p in plugins/*/; do claude plugin validate "$p" --strict; done
 
-# Python tools:
-pytest plugins -q
+# Python tools (plugins/ and scripts/, including the built-deck OOXML schema test):
+pytest plugins scripts -q
+
+# The decks tools through their launcher, as CI's render job runs them:
+bash plugins/decks/bin/decks-py doctor
 
 # Bundled MCP servers:
 (cd plugins/mail/mcp-server && npm ci && npm run typecheck && npm test)
@@ -250,7 +256,7 @@ suites; `sonarcloud.yml` also runs pytest, but only to produce `coverage.xml` fo
 
 | Workflow | Trigger | Enforces |
 |----------|---------|----------|
-| `tests.yml` | push / PR to master | `pytest plugins` on Python 3.12, and `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 20. Unconditional: no visibility gate, no token gate, no `continue-on-error`. Also asserts each server's `tests/` directory is non-empty, so a suite can never pass by being absent |
+| `tests.yml` | push / PR to master | `pytest plugins scripts` on Python 3.12 (fails on any skip); a render job that builds every `decks` example through `bin/decks-py`, renders it with LibreOffice (one PNG per slide) and runs the keynote and mockup tools through the same launcher; and `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 22. Unconditional: no visibility gate, no token gate, no `continue-on-error`. Also asserts each server's `tests/` directory is non-empty, so a suite can never pass by being absent |
 | `lint.yml` | push / PR to master | The full `.pre-commit-config.yaml` hook set (ruff, ruff-format, mypy, gitleaks, yamllint, markdownlint, hygiene), plus `claude plugin validate --strict` on all six plugins and the marketplace root |
 | `validate-plugins.yml` | push / PR to master | `marketplace.json` is valid JSON, every plugin has `plugin.json` and a README, every command file at any depth has YAML frontmatter, `scripts/validate_consistency.py` passes |
 | `pii-check.yml` | push / PR | No personal data in git-tracked file contents or filenames (runs `installers/pii-gauntlet.sh --mode=ci`) |

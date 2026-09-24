@@ -6,94 +6,48 @@ This directory contains official logos for major Greek banks, for use in competi
 
 | Bank | File | Format | Size |
 |------|------|--------|------|
+| NBG | `nbg.png` | PNG | 96x62px (oval) |
 | Alpha Bank | `alpha-bank.png` | PNG | 64x64px |
 | Piraeus Bank | `piraeus-bank.png` | PNG | 64x64px |
 | Eurobank | `eurobank.png` | PNG | 64x64px |
 | Composite (all banks) | `greek-banks-composite.svg` | SVG | - |
 
-## Usage in OOXML
+## Placing Logos in a Deck
 
-When adding bank logos to slides via XML editing:
+Logos go into a deck through the deck spec, never by editing slide XML. Use `image` elements in a
+`custom` slide (or an `image` column), with a path relative to the plugin's `assets/` folder and
+alt text naming the bank:
 
-### 1. Copy logo files to media folder
-
-```bash
-cp alpha-bank.png /path/to/unpacked/ppt/media/
+```yaml
+- kind: image
+  path: bank-logos/alpha-bank.png
+  alt_text: Alpha Bank
+  x: 0.374
+  y: 2.4
+  w: 0.3
+  h: 0.3
 ```
 
-### 2. Add relationship in slide .rels file
-
-```xml
-<Relationship Id="rId11"
-              Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
-              Target="../media/alpha-bank.png"/>
-```
-
-### 3. Add picture element to slide XML
-
-```xml
-<p:pic>
-  <p:nvPicPr>
-    <p:cNvPr id="50" name="AlphaLogo"/>
-    <p:cNvPicPr>
-      <a:picLocks noChangeAspect="1"/>
-    </p:cNvPicPr>
-    <p:nvPr/>
-  </p:nvPicPr>
-  <p:blipFill>
-    <a:blip r:embed="rId11"/>
-    <a:stretch>
-      <a:fillRect/>
-    </a:stretch>
-  </p:blipFill>
-  <p:spPr>
-    <a:xfrm>
-      <a:off x="450000" y="2200000"/>   <!-- Position in EMUs -->
-      <a:ext cx="350000" cy="350000"/>  <!-- Size in EMUs -->
-    </a:xfrm>
-    <a:prstGeom prst="rect">
-      <a:avLst/>
-    </a:prstGeom>
-  </p:spPr>
-</p:pic>
-```
-
-## Positioning Guidelines
-
-When using logos next to horizontal bar charts (e.g., interbank transaction comparison):
-
-| Bank | Y Position (EMU) | Notes |
-|------|------------------|-------|
-| First row (Alpha) | 2,200,000 | ~2.4" from top |
-| Second row (Piraeus) | 3,500,000 | ~3.8" from top |
-| Third row (Eurobank) | 4,800,000 | ~5.2" from top |
-
-Recommended size: 350,000 x 350,000 EMU (~0.38" square)
-
-## Extracting from Composite SVG
-
-If you need to extract individual logos from the composite SVG:
-
-```javascript
-const sharp = require('sharp');
-
-// Extract Alpha Bank (adjust viewBox as needed)
-await sharp('greek-banks-composite.svg')
-  .extract({ left: 0, top: 0, width: 64, height: 64 })
-  .png()
-  .toFile('alpha-bank.png');
-```
+`nbg_build.py` embeds the file. On a peer-bank chart (bank names as the categories or series) it
+also places every bank's logo and colour itself, so a spec needs no image elements there. Give
+every logo in a comparison the same height, 0.3" (tokens.yaml `components.bank_logos.h`), and let
+the width follow the file (Standard #4): NBG's mark is an oval at 96x62 (1.55:1), so at a 0.3"
+height it is 0.47" wide, never a 0.3" square.
 
 ## Brand Colors (MANDATORY for charts)
 
-When comparing systemic banks in charts/tables, each bank **MUST** use its official brand color:
+When comparing systemic banks in charts/tables, each bank **MUST** use its official brand color
+(resynced 2026-05-24 from the Pillar design system, `shared/brand-system/pillar-ds.md`):
 
 | Bank | Hex | Color |
 |------|-----|-------|
 | NBG | `#007B85` | Teal |
-| Eurobank | `#CA2029` | Red |
-| Piraeus Bank | `#FDB913` | Yellow |
-| Alpha Bank | `#02509C` | Blue |
+| Eurobank | `#DC2646` | Red |
+| Piraeus Bank | `#FFC02D` | Yellow |
+| Alpha Bank | `#0D488B` | Blue |
+
+A bank's colour never carries its identity alone: label the bar or series with the bank's name or
+logo as well (Standard #22).
 
 ## Logo Aspect Ratios
 
@@ -109,8 +63,8 @@ When comparing systemic banks in charts/tables, each bank **MUST** use its offic
 When bank logos replace text axis labels in charts:
 
 - Logos must be **centered** under/beside their respective bars
-- Use `addBankLogo()` helper to handle NBG's oval aspect ratio automatically
-- Hide the category axis text labels (`catAxisHidden: true`)
+- Keep each logo's aspect ratio (the NBG oval is wider than it is tall)
+- Hide the category axis text labels only when every category has its logo
 
 ## Legal Note
 

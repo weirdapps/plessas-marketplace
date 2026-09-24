@@ -1,15 +1,15 @@
 # NBG Presentation Style Guide
 
-This file has two parts:
-
-1. **Required NBG Brand Standards**: non-negotiable rules every NBG-branded deck must follow
-2. **Learned Preferences**: additional patterns inferred from `/presentation-review` cycles (lower-confidence, auto-updated)
+This file holds the **Required NBG Brand Standards**: the numbered, non-negotiable rules every
+NBG-branded deck follows. It ships with the plugin, is the same for every colleague, and is never
+edited by a tool. Each user's learned preferences live beside it, in their own overlay (see
+"Per-user style preferences" at the end).
 
 ---
 
-# Part 1: Required NBG Brand Standards
+# Required NBG Brand Standards
 
-These are hard rules enforced for every NBG deck. Brand-system files (`brand-system/colors.md`, `brand-system/layouts.md`, `brand-system/charts.md`, `brand-system/typography.md`) carry the detailed specs; this section codifies the must-follow rules.
+These are hard rules enforced for every NBG deck. Brand-system files (`brand-system/colors.md`, `brand-system/layouts.md`, `brand-system/charts.md`, `brand-system/typography.md`) carry the detailed specs, and `brand-system/tokens.yaml` holds every value in machine-readable form; this section codifies the must-follow rules. Where a Standard and a brand-system file disagree, the Standard wins, and tokens.yaml encodes the outcome.
 
 Where a Standard reaches into a file it does not own, it states the requirement rather than describing what that file currently says, and it pins any value it cites inline. A normative claim stays true when the other file changes; a descriptive one goes silently false the moment someone edits the target, and a Standard citing a source that now contradicts it is worse than no Standard.
 
@@ -24,11 +24,11 @@ After generating any NBG-branded artifact, scan output for `006141` or `0, 97, 6
 1. **White backgrounds on ALL slides**: cover, dividers, content, back cover. Never dark teal or colored backgrounds.
 2. **No accent/separator lines under titles**: no thin teal lines, no decorative rules. Clean whitespace only.
 3. **No tiny text**: body content ≥14pt, and nothing below the floor. Standard #11 states the one floor and the per-element minimums. Vision/summary slides go large (16-18pt+).
-4. **Org charts go to υδνση level**: show the full hierarchy from Division → Sector → Υδνση, not just sectors.
-5. **Staffing tables by υδνση**: show departures AND hiring needs at the sub-division level.
+4. **Org charts show the level the decision needs**: the full hierarchy down to the units the audience acts on, not just the top boxes.
+5. **Staffing tables show both directions**: departures AND hiring needs, at the level where the decision is taken.
 6. **Project tables need structure**. Columns: `#`, Name, Description, Status, Deadline. Not just name + status dot.
-7. **Fill the slide**: content should use 60-85% of safe area. Half-empty slides waste attention. If there's space, increase font size.
-8. **Area-line charts for time-series**: never plain line charts. Use area chart with subtle fill (15% opacity), dot markers, no grid/axis lines, muted gray labels. Pair with KPI callout (large metric value + change delta) in the header.
+7. **Fill the slide**: content should use 60-85% of safe area (`tokens.yaml` `geometry.fill`). Half-empty slides waste attention. If there's space, increase font size: the builder grows a sparse slide's bullets toward 20pt and a short table's rows toward 0.55", never past the band.
+8. **Area-line charts for time-series**: never plain line charts. Use area chart with subtle fill (15% opacity) under the first series, hollow circle markers (Standard #5), no grid/axis lines, muted gray value-axis labels. Pair with KPI callout (large metric value + change delta) beside the chart.
 
 ## 3. Section dividers: minimal, no decorations
 
@@ -41,7 +41,7 @@ NBG section divider slides contain ONLY:
 - **NO decorative line, rectangle, half-oval, or other brand shape anywhere**
 - No page number on divider slides
 
-Brand discipline = restraint, not decoration. When invoking the graphics-renderer for an NBG deck, explicitly say "horizontal number-and-title, large logo bottom-left, no decorative element" and verify in the QA pass.
+Brand discipline = restraint, not decoration. A divider is always "horizontal number-and-title, large logo bottom-left, no decorative element"; verify it in the QA pass.
 
 ## 4. Logo proportions: preserve native aspect ratio
 
@@ -55,13 +55,13 @@ When inserting any logo (NBG, peer banks, partners) into a deck, ALWAYS preserve
 
 ## 5. Line charts: hollow circle markers
 
-All line charts in NBG presentations use hollow circle markers: white fill center with a colored outline ring whose stroke width matches the line itself (typically 3.5pt / 44450 EMU).
+All line charts in NBG presentations use hollow circle markers: a white centre inside a ring in the line's colour. The ring is 2pt (25400 EMU, `tokens.yaml` `charts.line.marker_line_pt`), thinner than the 3.5pt line on purpose: at the line's own width the ring fills a 6pt marker, and every marker reads as a solid dot.
 
 - `marker.symbol = circle`, `marker.size = 6`
-- For python-pptx, set marker `spPr`: `<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>` for fill, `<a:ln w="44450"><a:solidFill><a:srgbClr val="{LINE_COLOR}"/></a:solidFill></a:ln>` for outline
+- For python-pptx, set marker `spPr`: `<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>` for fill, `<a:ln w="25400"><a:solidFill><a:srgbClr val="{LINE_COLOR}"/></a:solidFill></a:ln>` for outline
 - Apply to ALL line chart series, including area-line charts (NPE convergence style)
 - 3.5pt is the width for every **data line**, which is any stroke a reader traces to read a value
-- It does **not** cover an area **fill boundary**. On a stacked-area chart the stroke outlines a region rather than carrying the data, and `brand-system/charts.md` sets it at 2.5pt. That is correct and deliberate, not drift. A single-series area-line chart is still a data line: 3.5pt.
+- It does **not** cover an area **fill boundary**. On a stacked-area chart (found in existing decks; the plugin does not build one) the stroke outlines a region rather than carrying the data, and `brand-system/charts.md` sets it at 2.5pt. That is correct and deliberate, not drift. A single-series area-line chart is still a data line: 3.5pt.
 
 Hollow markers maintain distinction where lines converge or cross. Solid-fill markers merge visually at close proximity.
 
@@ -94,7 +94,7 @@ Acceptable framings when name is unknown: `NBG [Division] leadership`, `the rele
 
 ## 9. No version suffixes in filenames
 
-Never append `_v1`, `_v2`, `_v1_0`, `_final`, `_revised`, `_draft` suffixes to filenames. The `YYYYMMDDHHMM_` timestamp prefix IS the version. Iterating on `202604271045_credit_expansion.pptx`? Save the next version as `202604271203_credit_expansion.pptx`, NOT `202604271045_credit_expansion_v2.pptx`.
+Never append `_v1`, `_v2`, `_v1_0`, `_final`, `_revised`, `_draft` suffixes to filenames. The `YYYYMMDDHHMM_` timestamp prefix IS the version. Iterating on `202604271045_quarterly_review.pptx`? Save the next version as `202604271203_quarterly_review.pptx`, NOT `202604271045_quarterly_review_v2.pptx`.
 
 Applies to ALL file types: PPTX, PDF, SVG, HTML, RTF, PNG, JPG, CSV, MD, JSON.
 
@@ -116,20 +116,19 @@ Use `nbg-logo-gr.png` (Greek `ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ`), never the English f
   | Table headers | 12pt |
   | Footnotes, sources, phase/badge labels | 11pt |
 
-  These are minimums, not targets; where a slide has room left, spend it on size. The 8pt footnote allowance is retired: the 2026-04-03 review removed every 7pt and 8pt run in the deck. One element sits below the floor and stays there, because it is chrome rather than content: the bumper/eyebrow pill at 9pt, per `brand-system/README.md`. The page number sits on the floor at 10pt. This table is the single source for font floors; Standard #2 item 3 and Part 2 defer to it.
-- **Titles fit one line**: at 22pt Aptos in 12.59" width, ≤80 chars. Overflow to a second line looks amateurish.
-- **Breathing room below titles**: first body element at y≥1.3" (title bottom is at 0.9").
+  These are minimums, not targets; where a slide has room left, spend it on size. The 8pt footnote allowance is retired: a footnote is 11pt like any source line. One element sits below the floor and stays there, because it is chrome rather than content: the section pill (bumper/eyebrow) at 9pt, per `brand-system/README.md`. The page number sits on the floor at 10pt. This table is the single source for font floors; Standard #2 item 3 defers to it.
+- **Titles fit one line**: 24pt Aptos across the 12.59" content width, at most 80 characters (`tokens.yaml` `type.title.max_chars`). Overflow to a second line looks amateurish.
+- **Breathing room below titles**: first body element at y≥1.3" (the title box ends at 0.9", or 1.15" under a section pill).
 - **Fill the slide**: use 60–85% of safe area.
 
-`nbg_validate.py` (24 checks as of 2026-09-09) catches most of these programmatically. Its font check enforces the 10pt floor but still tolerates 8pt for text it detects as a footnote near the bottom of the slide, so it will not catch an undersized footnote. The renderer should get sizes right on the first pass rather than lean on the check.
+`nbg_validate.py` enforces the floor exactly: 10pt for every run on slides, charts and tables, 11pt for sources and footnotes, and only the section pill at 9pt. The per-element minimums above the floor (14, 16, 12pt) are a QA judgement, not a validator check. The validator cannot read text inside a picture, so the builder measures a placed SVG's smallest text (an infographic or diagram) at its placed size, in `decks-py check` and `build` alike: under 12pt it warns, under the 10pt floor it errors (`components.image.svg_label_min_pt`). Its checks are listed in `tools/nbg-presentation/VALIDATOR.md` and by `decks-py validate --list-checks`. The builder gets sizes right on the first pass rather than leaning on the check.
 
 ## 12. Tight rounded-rect corners
 
 Rounded rectangle shapes in NBG presentations (cards, KPI boxes, callout containers) use **tight corner radius**, not the default large rounding.
 
-- `python-pptx`: `shape.adjustments[0] = 0.04` on every `MSO_SHAPE.ROUNDED_RECTANGLE`
-- `PptxGenJS`: `rectRadius: 0.04` (or equivalent)
-- **Exception**: bumper pills can stay slightly more rounded (~0.15) since they're small accent elements
+- Cards, KPI tiles and callouts: corner radius **0.04"** whatever the card's size (`tokens.yaml` `components.card.radius_in`). In python-pptx that is `shape.adjustments[0] = 0.04 / min(width, height)`, both in inches; a flat `adjustments[0] = 0.04` would round a tall card several times more
+- **Exception**: section pills have fully rounded ends, radius **0.15"**, half their 0.3" height (`components.pill.radius_in`, `adjustments[0] = 0.5`), since they're small accent elements
 
 Default radius (~0.167) looks amateur and "bubbly." Tight corners give a more mature, design-professional appearance appropriate for executive decks.
 
@@ -177,7 +176,7 @@ The bottom-left NBG logo is the anchor. Its x is always 0.374; only its y and si
 Slide titles use Aptos **Regular (400)**, never Bold (700). This applies to:
 - Cover titles (44–48pt Regular)
 - Contents page heading (24pt Regular)
-- Section divider numbers + section titles (Regular at any size, including 144pt section numbers)
+- Section divider numbers + section titles (Regular: 60pt numbers, 48pt titles)
 - Content slide titles / action titles (24pt Regular)
 - Back cover title if any
 
@@ -185,11 +184,11 @@ Bold is reserved for elements that need to pop **within** the body, not for titl
 - KPI big numbers (50pt Bold #007B85, the canonical NBG executive pattern)
 - Table headers (12pt Bold)
 - Chart data labels above bars (12pt Bold #003841)
-- Chart titles (12pt Bold #202020)
+- Chart titles (12pt Bold #202020), existing decks only: the builder draws none, because the slide's action title and caption name the chart
 - Status pills text (white Bold on filled background)
 - Inline emphasis within paragraph text where genuinely needed
 
-When generating a deck programmatically: every call that creates a title-class textbox must pass `bold=False` (or omit the parameter, since the default must remain Regular). Code-review checklist: grep the build script for `bold=True` and confirm none of the matches are on a title element. Add an assert in the renderer if the validator hasn't grown a "title bold" check yet.
+In code: every title-class textbox is created Regular (`bold=False`, or no bold at all), which is what `tokens.yaml` `type.*.bold` says for every title role. The validator's Title Style check fails a bold title, and a title whose text does not start on the 0.374" gutter (a divider title beside its number and a title beside a unit chip are exempt); a closing period is a warning.
 
 Regular weight at the large title sizes (24–48pt) reads as confident and modern; bold at the same sizes reads as shouting. The NBG executive aesthetic is restraint.
 
@@ -221,7 +220,7 @@ The contents page is a quiet wayfinder, not a feature slide. Conventions:
 - **DO NOT include page references** (`p. 3`, `p. 5`, etc.). The contents page communicates the shape of the deck, not navigation hints.
 - **DO NOT add separator lines, rules, or boxes between rows**. Whitespace alone separates rows.
 - **DO NOT add bullets, dots, or arrows in front of numbers**. The number itself is the marker.
-- **Small NBG logo bottom-left** (per Standard #17), no page number on the contents page itself if the deck is short; otherwise it gets one like any content slide.
+- **Small NBG logo bottom-left** (per Standard #17), no page number on the contents page itself if the deck is short (under 10 slides, `tokens.yaml` `components.contents.page_number_from_slides`); otherwise it gets one like any content slide.
 
 The contents page is a moment of pause, not a heatmap. If it looks designed, it is over-designed.
 
@@ -244,7 +243,7 @@ This is non-negotiable and applies even to short showcase/demo decks. A 3-slide 
 
 There is a single NBG deck format. Do NOT build a different format for a different use case: there is no "business-case format", no "CEO-deck format", no "strategy-deck format". Every deck, whatever its purpose, uses the SAME chassis:
 
-- 13.33"×7.5" canvas, white background, 0.374" left gutter (Standard #15)
+- 13.333"×7.5" canvas, white background, 0.374" left gutter (Standard #15)
 - Aptos throughout; titles Regular weight (Standard #16)
 - Section pill / eyebrow, action title, subtitle
 - Bottom-left Greek logo + page number (Standards #10, #17)
@@ -257,9 +256,12 @@ What changes between decks is which **elements** you place on that chassis, chos
 | a journey / who-owns-what | process flow (icon tiles + arrows + ownership legend) |
 | here are the alternatives | parallel comparison cards/slides (identical layout, only labels/colour-coding change) |
 | here are the headline numbers | KPI / stat tiles |
-| this is the pick | recommended-option highlight (see `brand-system/layouts.md`) |
+| this is the pick | recommended-option highlight |
 | these are the risks | warning flags (orange square + ALL-CAPS label) |
 | the bottom line | takeaway strip |
+| what we ask of another division, and what we lead ourselves | two-party ownership coding (an asks page and an our-work page, never mixed) |
+
+Each element's spec (geometry, colours, type) is in `brand-system/layouts.md` → "Element Specs".
 
 Assemble elements freely: one deck can mix stat tiles, option cards, and a takeaway strip if the argument needs all three. The format holds the deck together; the elements carry the message.
 
@@ -269,7 +271,7 @@ Assemble elements freely: one deck can mix stat tiles, option cards, and a takea
 
 A keynote is a talk given from a stage, not a deck. For that case only, NBG has a second, **dark full-bleed** format: cinematic photography, teal scrims, a huge type scale, no page numbers. It deliberately breaks four rules in `brand-system/README.md`: white backgrounds only, no dark bg with light text, no shadows, content titles at 24pt.
 
-Full spec: **`brand-system/keynote.md`**. Generator: `tools/nbg-keynote/nbg_keynote.py`.
+Full spec: **`brand-system/keynote.md`**. Generator: `tools/nbg-keynote/nbg_keynote.py`, run as `decks-py keynote`.
 
 **Entry criteria (all four must hold). If any fails, use the light format:**
 
@@ -296,7 +298,7 @@ NBG decks are projected, printed, and read by colleagues with colour-vision defi
 | White on NBG Teal `#007B85` | 5.03:1 | safe |
 | White on `#008000` (OK pill) | 5.14:1 | safe |
 | White on `#CC0000` (Warn pill) | 5.89:1 | safe |
-| `#202020` on Cyan `#00ADBF` | 6.00:1 | the data-label colour for cyan bars |
+| `#202020` on Cyan `#00ADBF` | 6.00:1 | hand-set dark text on cyan; the builder's label picker takes pure black (below) |
 | `#202020` on Bright Cyan `#00DFF8` | 10.02:1 | safe |
 | White on Cyan `#00ADBF` | 2.72:1 | FAILS, use `#202020` (6.00:1) |
 | White on Bright Cyan `#00DFF8` | 1.63:1 | FAILS, use `#202020` (10.02:1) |
@@ -307,7 +309,7 @@ NBG decks are projected, printed, and read by colleagues with colour-vision defi
 
 **When a light fill needs dark text, the answer is `#202020`, the body-text colour.** It beats `#003841` on every fill above; `#003841` also clears, at 4.71:1 to 5.86:1, but with far less headroom. Do not introduce a third dark.
 
-Three brand-system specs used to put white on a light fill and have been corrected to `#202020`: the amber TBD pill and the gold RECOMMENDED tab in `colors.md`, and the waterfall data label in `charts.md`, which keeps `FFFFFF` on `#003841` and `#007B85` bars but never on `#00ADBF`. In each case the fix was the text colour, not a new fill. Keep it that way: inventing a fill to solve a contrast problem pushes the palette toward the ceiling below.
+Three brand-system specs used to put white on a light fill and have been corrected: the amber TBD pill and the gold RECOMMENDED tab in `colors.md` to `#202020`, and the waterfall data label in `charts.md`, which keeps `FFFFFF` on `#003841` and `#AA0028` bars but never on `#00ADBF`, where the builder's label picker takes pure black. In each case the fix was the text colour, not a new fill. Keep it that way: inventing a fill to solve a contrast problem pushes the palette toward the ceiling below.
 
 **Picking a label colour automatically.** The black-or-white decision threshold is relative luminance **0.179**, exactly `sqrt(0.0525) - 0.05`. That is where white-on-fill and black-on-fill contrast are equal at `sqrt(21)` = 4.58:1, so always taking the better of **pure** black and **pure** white clears AA on any fill. The guarantee is fragile in two specific ways, both of which this repo has hit:
 
@@ -318,117 +320,30 @@ Three brand-system specs used to put white on a light fill and have been correct
 
 **Categorical series ceiling: six practical, eight absolute.** Beyond eight, keeping fills distinguishable under colour-vision-deficiency simulation is not achievable. There is an OOXML trap on top of that: a native PowerPoint chart auto-generates lighter and darker variants of theme Accent 1-6 once you exceed six series, so a palette validated at six silently degrades into eight near-identical tints with no code change and no warning. Past six categories, use small multiples or group the tail into "other".
 
-**Deuteranopia-safe pairings inside the palette.** The teal chart sequence survives simulation because it separates on lightness rather than hue: `#00ADBF` against `#003841` is 4.71:1 and holds. `#007B85` against `#939793` is 1.70:1 and does not, yet `charts.md` currently lists them as consecutive series 3 and 4, so never let those two alone carry a distinction. When two fills must be told apart by colour, take them from opposite ends of the lightness range (`#003841`, `#007B85`, `#BEC1BE`, `#FFFFFF`).
+**Deuteranopia-safe pairings inside the palette.** The teal chart sequence survives simulation because it separates on lightness rather than hue: `#00ADBF` against `#003841` is 4.71:1 and holds. `#007B85` against `#939793` is 1.70:1 and does not, and the chart sequence (`tokens.yaml` `charts.palette`) puts them consecutive as series 3 and 4, so never let those two alone carry a distinction: label the series directly. When two fills must be told apart by colour, take them from opposite ends of the lightness range (`#003841`, `#007B85`, `#BEC1BE`, `#FFFFFF`).
 
 ---
 
-# Part 2: Learned Preferences
+# Per-user style preferences
 
-Learned preferences from comparing draft presentations to user-modified finals. Updated automatically by `/presentation-review`.
+What a user teaches the system lives outside the plugin, in
+`${CLAUDE_PLUGIN_DATA}/style-preferences.md` (for this plugin,
+`~/.claude/plugins/data/decks-plessas-marketplace/style-preferences.md`). The agents read it after
+this guide, on every deck. It survives plugin updates, belongs to one person, and is never
+committed to this repository. It has three parts:
 
-> **Precedence**: Part 1 wins on every conflict. Nothing in Part 2 overrides a numbered standard; where the two disagree, the standard is the answer.
->
-> **Confidence**: Preferences marked (1x) come from a single review. Every entry below is (1x), all from the review of 2026-04-03. Treat a (1x) entry as a hint to lean toward, not a rule to enforce. An entry becomes a confirmed rule after appearing in 2+ reviews.
+- **Defaults**: what the user writes by hand, such as the units on their cover subtitle, a
+  preferred sign-off, recurring audiences, their team's deck conventions.
+- **Learned**: what `/presentation-review` found by comparing a shipped draft with the version the
+  user finalised, with how often each pattern has been seen. One review is a hint to lean toward;
+  two or more make it a rule for that user.
+- **Not applied**: patterns in the user's edits that a Standard rules out, recorded so they are
+  not relearned.
 
----
+It is an overlay, never an override:
 
-## Font Sizing (1x, 2026-04-03)
-
-The user's most consistent change is increasing font sizes. The generated deck used 8-12pt for body text; the user bumped nearly everything up by 2-4pt. Standard #11 carries the floor and the per-element minimums that came out of this review; the table below is the raw observation behind it.
-
-### Target Font Sizes by Element
-
-| Element | Generated | User Preferred | Delta |
-|---------|-----------|---------------|-------|
-| Card/pillar body text | 11-12pt | **14pt** | +2-3 |
-| Card titles | 13-14pt | **16pt** | +2-3 |
-| Table cells | 10-11pt | **12-14pt** | +2-3 |
-| Table headers | 11-12pt | 12pt (kept) | 0 |
-| Foundation bar text | 12-13pt | **14-16pt** | +2-3 |
-| Bullet point text | 11pt | **14pt** | +3 |
-| Metric card values | 24pt | 24pt (kept) | 0 |
-| Cover subtitle | 36pt | **24pt** | -12 |
-
-### Key Principle
-
-**Fill the available space.** When there's white space left on a slide, increase font sizes rather than leaving it empty. The user prefers larger, more readable text over compact layouts with breathing room.
-
----
-
-## Title Style (1x, 2026-04-03)
-
-- **Style**: Direct, action-oriented full sentences that tell the story
-- **Length**: Prefer concise. The user shortened "Transforming NBG's Digital Investment Offering" to "NBG Digital Investment Offering" (dropped the verb)
-- **Cover title width**: Full width rather than left-half only. Standard #13 sets the cap.
-- **Quantification**: Use data where accurate, but don't inflate; user corrected "10M+" to "5 M+"
-- **Language**: English throughout
-
----
-
-## Content Density (1x, 2026-04-03)
-
-- **Bullet count**: Fewer is better. User reduced 4 bullets to 1 on slide 14, keeping only the strategic conclusion
-- **Bullet length**: Short sentences are acceptable
-- **Data inclusion**: Accuracy over impact; user corrected inflated numbers
-- **Footnotes/sources**: Keep if meaningful but increase font size; user removed some and enlarged others
-- **Legends**: Remove if the table is self-explanatory (user deleted the traffic-light legend row). Standard #22 bounds this: a colour-coded table still needs the status word in the cell
-
-### Less-Is-More Principle
-
-The user consistently simplifies:
-
-- Removed an entire decision card (3 → 2) because one was premature/not needed
-- Reduced bullets from 4 to 1, keeping only the strategic punch line
-- Removed the legend from a color-coded table (obvious without it)
-
----
-
-## Chart Preferences (1x, 2026-04-03)
-
-- **Comparison data**: Tables with traffic-light color coding (kept as-is)
-- **KPIs**: Metric cards with large values; 24pt is the right size
-- **Chart annotations**: Minimal; user removed some footnotes and legends
-
----
-
-## Slide Ordering (1x, 2026-04-03)
-
-- **Opening pattern**: Cover + Executive Summary (kept as-is)
-- **Section dividers**: Used for 3 sections (kept as-is)
-- **Closing pattern**: Decisions + Back Cover (user approved this pattern)
-- **Appendix usage**: No appendix, keep the deck lean
-
----
-
-## Layout Choices (1x, 2026-04-03)
-
-- **Default content layout**: Cards and visual layouts preferred over bullet lists
-- **Text/chart split**: Visual-first; user approved the insight cards replacing bullets on slide 4
-- **Decision cards**: When reducing from 3 to 2, user centered the cards (x: 2.06" and 7.05") with wider spacing rather than left-aligning
-- **Card sizing**: Cards at 3.9" wide works well for 2-3 column layouts
-- **White space**: Use it by increasing font sizes, not by leaving it empty
-
----
-
-## Narrative Structure (1x, 2026-04-03)
-
-- **Framework**: SCQA with Pyramid Principle; user kept the overall structure
-- **Executive summary**: Always include; user kept slide 2 exec summary
-- **Argument structure**: Reduce to essentials. Trim premature decisions; keep only those the audience can act on now
-- **Tone**: Bold and assertive, with direct titles and clear recommendations
-- **Owner attribution**: Prefer cross-functional ownership labels over single-unit attribution
-
----
-
-## Logo & Branding (1x, 2026-04-03)
-
-- **Logo language**: Greek only ("ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ"). Use `nbg-logo-gr.png`, never the English fallback
-- **Back cover**: Oval logo centered, no text (confirmed)
-
----
-
-## Review History
-
-| Date | Draft ID | Slides Changed | Key Patterns |
-|------|----------|---------------|--------------|
-| 2026-04-03 | 202604031945_nbg_digital_investments_exco | 1,2,4,5,6,7,8,10,11,12,13,14,16 | Font sizes +2-4pt across all body text; 3→2 decisions; cover title simplified; legend removed; bullets reduced; Greek logo only |
+- **The Standards above win on every conflict.** A preference can pick among options a Standard
+  leaves open (a density, a chart type, a phrasing, a default layout); it cannot break a Standard.
+- **Personal context goes there, not here.** This guide is public and serves every colleague.
+- **A preference reaches this guide only by a deliberate commit** that turns it into a numbered
+  Standard for everyone.

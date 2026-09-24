@@ -1,0 +1,326 @@
+# NBG brand tokens: the machine-readable single source of truth for the decks plugin.
+#
+# Who reads this file:
+#   tools/nbg_tokens.py        loader shared by every tool below
+#   tools/nbg-presentation/    nbg_build.py (renders with these values) and
+#                              nbg_validate.py (checks decks against them)
+#   tools/nbg-keynote/         nbg_keynote.py (the dark keynote tokens)
+#   tests                      assert the brand-system docs quote these values
+#
+# Precedence: the numbered Standards in shared/presentation-style-guide.md decide
+# a conflict; this file encodes their outcome, and the prose in brand-system/*.md
+# explains it. A value changes HERE first, then in the prose that quotes it.
+#
+# Units: inches for geometry, points for type and line widths, hex without "#"
+# for colours.
+
+version: 1
+
+colors:
+  # Core brand
+  dark_teal: "003841"      # titles, headings, table header fill
+  teal: "007B85"           # primary brand: subtitles, section numbers, pills, KPI values
+  cyan: "00ADBF"           # chart series 1, bullet glyphs
+  bright_cyan: "00DFF8"    # feature accent; accents on dark grounds
+  white: "FFFFFF"          # slide background, always (Standard #2)
+  off_white: "F5F8F6"      # default card and KPI-card fill
+  black: "000000"          # auto-contrast dark label on chart fills only
+
+  # Text and greys: one grey per role (colors.md "Grey hierarchy")
+  body_text: "202020"      # body text AND dark text on any light fill (Standard #22)
+  caption_grey: "5A5F5A"   # captions, sources, footnotes, TOC descriptions, table notes
+  muted_grey: "939793"     # page numbers, process arrows, line-chart value axis; never body or label text
+  light_grey: "BEC1BE"     # dividers, card borders, axis lines, hairlines
+
+  # Tints and component fills
+  takeaway_tint: "E6F5F6"  # takeaway / callout strip
+  highlight_tint: "CBFAFF" # stronger cyan highlight card
+  zebra_tint: "F5F8F6"     # alternate table rows
+
+  # Semantic
+  success: "73AF3C"
+  alert: "AA0028"
+  gold: "D9A757"           # premium accent and the recommended-option border
+  gold_tint: "FBF3E4"      # recommended-option card fill
+  info_blue: "1E478E"
+  warning: "FF7F1A"        # warning-flag square
+
+  # Two-party ownership coding (layouts.md): asks from another division vs work we lead.
+  # Owner's established set, adopted 2026-09-24; badges on it stay >= 10pt.
+  ownership_ask: "C8323C"       # asks: accent bar, section header bar, badge
+  ownership_ask_fill: "FAEBEC"  # asks: card and row fill
+  ownership_band: "E6F4F5"      # the "we lead in parallel" footer band
+
+  # Legacy but allowed (existing decks use it; do not pick it for new work)
+  teal_variant: "047A85"
+
+# Status palettes: pick ONE per slide (colors.md "Status/Semantic Colors")
+status:
+  corporate: {positive: "73AF3C", negative: "AA0028"}
+  practical:
+    ok: {fill: "008000", tint: "E8F5E9", text: "FFFFFF"}
+    tbd: {fill: "CC9900", tint: "FFFFCC", text: "202020"}
+    risk: {fill: "CC0000", text: "FFFFFF"}
+  severity_ramp: ["CB0030", "F60037", "FF7F1A", "FFDC00", "5D8D2F", "90DC48"]
+
+# Documented palettes the validator accepts in addition to `colors` and `status`.
+extended_palettes:
+  segments: {business: "0D90FF", corporate: "73AF3C", premium: "D9A757", private: "AA0028"}
+  links: {hyperlink: "0D90FF", followed: "59C3FF"}
+  logo: ["00DEF8"]
+  secondary: ["212121", "3EDEF8"]
+  # Pillar PFM category colours (pillar-ds.md): a lookup table for category
+  # colours, not licence to plot 16 series (Standard #22 ceiling still applies).
+  pfm_categories: ["B99C34", "44C7B3", "905567", "8D7349", "19B4E2", "AC1D44",
+                   "A1AC20", "4B7398", "9D4F16", "547723", "2C76BD", "D08239",
+                   "658A8D", "525CBE", "26A567", "8681B1"]
+  # Systemic-bank brand colours for peer comparisons (presentation-qa 2H). The
+  # validator's Bank Branding check requires each plotted bank in its own colour.
+  peer_banks: {nbg: "007B85", eurobank: "DC2646", alpha: "0D488B", piraeus: "FFC02D"}
+
+# The systemic banks, for peer comparisons (assets/bank-logos/README.md). When two or
+# more are a chart's categories or series, nbg_build draws each in its colour
+# (extended_palettes.peer_banks, the one colour source) with its logo. logo is
+# relative to assets/ and keeps its own aspect (NBG's oval mark is 1.55:1). Names match
+# whole-word, ignoring case and accents: `names` count anywhere, `label_aliases` only
+# as a whole chart label (optionally followed by Bank, Group or S.A.), where "Alpha"
+# beside "Eurobank" is a bank but "alpha release" in running text and "Piraeus Port
+# Authority" as a label are not (VALIDATOR-9, BUILDER-CODE-04). The word "bank" alone
+# names no bank.
+banks:
+  nbg:
+    name: "NBG"
+    logo: "bank-logos/nbg.png"
+    names: ["NBG", "National Bank of Greece", "Εθνική Τράπεζα"]
+    label_aliases: ["National Bank", "ΕΤΕ", "Εθνική"]
+  eurobank:
+    name: "Eurobank"
+    logo: "bank-logos/eurobank.png"
+    names: ["Eurobank"]
+    label_aliases: []
+  alpha:
+    name: "Alpha Bank"
+    logo: "bank-logos/alpha-bank.png"
+    names: ["Alpha Bank"]
+    label_aliases: ["Alpha", "Άλφα"]
+  piraeus:
+    name: "Piraeus Bank"
+    logo: "bank-logos/piraeus-bank.png"
+    names: ["Piraeus Bank", "Τράπεζα Πειραιώς"]
+    label_aliases: ["Piraeus", "Πειραιώς"]
+
+# Colours that must not appear: retired greys, one-off tints, the python-pptx /
+# Office 2007 theme a deck inherits when nothing overrides it, and dark grounds.
+retired_colors:
+  "595959": "retired caption grey; use caption_grey 5A5F5A"
+  "666666": "drifted grey; use caption_grey 5A5F5A"
+  "EAF4F5": "one-off tint; use takeaway_tint E6F5F6"
+  "F5F9F6": "near-duplicate of off_white F5F8F6"
+  "252D30": "dark background; slides are always white"
+  "0A091B": "dark background; slides are always white"
+  "4F81BD": "Office 2007 theme accent 1"
+  "C0504D": "Office 2007 theme accent 2"
+  "9BBB59": "Office 2007 theme accent 3"
+  "8064A2": "Office 2007 theme accent 4"
+  "4BACC6": "Office 2007 theme accent 5"
+  "F79646": "Office 2007 theme accent 6"
+  "1F497D": "Office 2007 theme dark 2"
+  "EEECE1": "Office 2007 theme light 2"
+
+fonts:
+  primary: "Aptos"
+  display: "Aptos Display"     # allowed for display sizes; Aptos Regular is the default
+  bullet_glyph: "Arial"        # the bullet character only
+  fallback: ["Calibri", "Tahoma"]
+  # What the validator accepts on any run of text.
+  allowed: ["Aptos", "Aptos Display", "Arial", "Calibri", "Tahoma"]
+  forbidden_weights: ["Aptos SemiBold"]   # brand-system README: "NOT SemiBold"
+
+# Type scale per role: size in pt, bold flag, colour token.
+type:
+  cover_title:        {size: 48, min_size: 44, bold: false, color: dark_teal}
+  cover_subtitle:     {size: 24, bold: false, color: teal}
+  cover_location:     {size: 14, bold: false, color: dark_teal}
+  cover_date:         {size: 14, bold: false, color: caption_grey}   # label text: never muted_grey (Standard #22)
+  contents_header:    {size: 24, bold: false, color: dark_teal}
+  contents_number:    {size: 18, bold: false, color: teal}
+  contents_title:     {size: 16, bold: false, color: dark_teal}
+  contents_description: {size: 12, bold: false, color: caption_grey}
+  divider_number:     {size: 60, bold: false, color: teal}
+  divider_title:      {size: 48, bold: false, color: dark_teal}
+  title:              {size: 24, bold: false, color: dark_teal, max_chars: 80}
+  section_title:      {size: 22, bold: false, color: dark_teal}   # Key Figures page header
+  subtitle:           {size: 14, bold: false, color: caption_grey}   # the owner subtitle under a Key Figures header (layouts.md)
+  body:               {size: 16, min_size: 14, max_size: 20, bold: false, color: body_text}   # a sparse content slide grows toward max_size (Standard #2.7)
+  body_dense:         {size: 14, bold: false, color: body_text}
+  caption:            {size: 12, bold: false, color: caption_grey}
+  source:             {size: 11, bold: false, color: caption_grey}
+  footnote:           {size: 11, bold: false, color: caption_grey}
+  kpi_value:          {size: 50, min_size: 32, bold: true, color: teal}   # shrinks to fit a 4-up row
+  kpi_label:          {size: 16, bold: false, color: caption_grey}   # the Key Figures caption under the value
+  kpi_delta:          {size: 14, bold: true, color: body_text}   # colour by sentiment: components.kpi.delta
+  step_number:        {size: 18, bold: false, color: teal}       # process step "01", like a contents number
+  recommended_tab:    {size: 11, bold: true, color: body_text, caps: true}   # layouts.md: 202020 on gold
+  card_title:         {size: 16, bold: true, color: dark_teal}
+  card_body:          {size: 14, bold: false, color: body_text}
+  pill:               {size: 9, bold: true, color: white, caps: true}
+  badge_number:       {size: 10, bold: true, color: white}
+  page_number:        {size: 10, bold: false, color: muted_grey}
+  table_header:       {size: 12, bold: true, color: white}
+  table_body:         {size: 12, bold: false, color: body_text}
+  chart_data_label:   {size: 12, bold: true, color: dark_teal}
+  chart_axis:         {size: 12, bold: false, color: body_text}
+  chart_legend:       {size: 12, bold: false, color: body_text}
+
+# Line spacing multiples (typography.md)
+line_spacing: {title: 0.9, body: 1.1}
+
+accessibility:
+  min_font_pt: 10            # Standard #11 floor for any text
+  pill_font_pt: 9            # the section pill is the one sanctioned exception
+  contrast_normal: 4.5       # WCAG AA, text under 18pt (14pt bold)
+  contrast_large: 3.0        # WCAG AA, large text
+  large_text_pt: 18
+  large_bold_text_pt: 14
+
+geometry:
+  slide: {w: 13.333, h: 7.5, w_emu: 12192000, h_emu: 6858000}
+  gutter: 0.374              # Standard #15: left edge of every title, pill, body, logo
+  content_w: 12.585          # slide.w - 2 * gutter (docs round it to 12.59)
+  right_boundary: 12.959     # slide.w - gutter
+  title_zone_bottom: 1.1
+  footer_top: 6.85           # nothing but logo and page number below this line
+  title: {y: 0.5, y_with_pill: 0.75, h: 0.4}
+  body_top: 1.3              # Standard #11: first body element never above 1.3
+  body_bottom: 6.5           # footnotes and sources end here (dimensions.md)
+  fill: {min: 0.6, max: 0.85}   # Standard #2.7: content uses 60-85% of the body; sparse bullets and table rows grow toward min, never past max
+  caption: {h: 0.28, gap_below: 0.12}
+  source_line: {h: 0.25, bottom: 6.5}
+  logo_small: {x: 0.374, y: 7.071, w: 0.822, h: 0.236}
+  logo_large: {x: 0.374, y: 6.271, w: 2.191, h: 0.630}
+  logo_back: {x: 5.44, y: 2.98, w: 2.45, h: 1.54}
+  logo_aspect: 3.448         # nbg-logo-gr.png is 1200x348: set width, derive height
+  page_number: {x: 12.71, y: 7.1554, w: 0.33, h: 0.152}
+  grid_gap: 0.3
+
+components:
+  pill:
+    fill: teal
+    x: 0.374
+    y: 0.35
+    h: 0.3
+    min_w: 1.0
+    pad_x: 0.1               # text inset each side; width = text width + 2 * pad_x
+    radius_in: 0.15          # Standard #12
+    word_wrap: false
+  cover:
+    title: {x: 0.374, y: 1.39, w: 12.0, h: 1.0}
+    subtitle: {x: 0.374, gap_below_title: 0.1, w: 12.0, h: 0.8}
+    location: {x: 0.374, y: 4.58, w: 8.0, h: 0.4}
+    date: {x: 0.374, y: 4.97, w: 8.0, h: 0.4}
+  contents:
+    header: {x: 0.374, y: 0.40, w: 10.0, h: 0.5}
+    first_row_y: 1.48
+    row_step: 0.85           # layouts.md: one row per 0.85" when the rows carry teasers
+    row_step_compact: 0.6    # rows with no teaser at all
+    number_w: 0.8            # the section title starts at gutter + number_w (Standard #18)
+    title_w: 10.0
+    page_number_from_slides: 10   # Standard #18: a shorter deck's contents page is unnumbered
+  divider:
+    number: {x: 0.374, y: 2.84, w: 1.2, h: 1.0}
+    title: {x: 1.574, y: 2.84, w: 9.5, h: 1.0}
+    same_baseline: true      # Standard #3: number and title share a baseline
+  bullets:
+    glyph: "•"
+    glyph_l2: "–"            # level 2 is told apart by indent and glyph, never by a smaller size
+    glyph_color: cyan
+    glyph_font: "Arial"
+    space_before_pt: 14      # layouts.md; the first bullet has none
+    space_before_l2_pt: 5    # layouts.md "Bullet L2"
+    indent_emu: 228600       # 0.25" per level: marL, with indent = -0.25" for a hanging bullet
+  card:
+    fill: off_white
+    radius_in: 0.04          # Standard #12
+    highlight_fill: highlight_tint   # a highlighted card changes its fill; only the recommended card has a border
+    recommended: {fill: gold_tint, border: gold, border_pt: 1.5}
+    recommended_tab: {fill: gold, h: 0.26, pad_x: 0.12}   # text: type.recommended_tab
+    shadow: false            # no shadows on any shape (brand-system README)
+    pad: 0.25                # inset of the title, body and icon from the card edge
+    icon: 0.6                # icon box, square
+    gap: 0.1                 # between icon, title and body
+    min_h: 1.5               # cards take their content's height, never less; the grid centres in the body
+  badge:
+    shape: oval
+    size_in: 0.28
+    fill: teal
+  takeaway_strip: {fill: takeaway_tint, text_color: dark_teal, size: 14, bold: true, h: 0.45, pad_x: 0.15, gap_above: 0.15}
+  kpi:
+    fill: off_white
+    radius_in: 0.04
+    h: 3.0                   # layouts.md Key Figures card; less when the body area is shorter
+    pad: 0.25
+    delta: {positive: teal, negative: alert, neutral: body_text}   # the delta text carries its sign: colour is never the only signal
+  process:                   # layouts.md Standard #20 process flow
+    tile: {size: 1.2, fill: teal, radius_in: 0.04, text_color: white, icon: 0.6}   # white on teal 5.03:1
+    arrow: {w: 0.3, h: 0.35, color: muted_grey}
+    gap: 0.1                 # between a tile column and an arrow
+    label_gap: 0.15          # tile to the step title under it
+    text_gap: 0.08           # step title to its line
+  bank_logos:                # peer-bank charts: a logo under, beside, or in a legend row
+    h: 0.3                   # logo height; its width follows the file (Standard #4)
+    gap: 0.08                # logo to the axis labels, and between the parts of a legend entry
+    swatch: 0.14             # the legend row's colour square
+    entry_gap: 0.3           # between legend-row entries
+  two_column:
+    gap: 0.3                 # geometry.grid_gap
+    heading_gap: 0.1
+  image:
+    caption_gap: 0.1
+    min_dpi: 150             # a raster is never enlarged past this; below it, check warns and it stays at this size
+    svg_label_min_pt: 12     # an SVG's smallest text as placed: under this check warns, under accessibility.min_font_pt it errors
+  table:
+    header_fill: dark_teal
+    header_h: 0.4
+    row_h: 0.35
+    row_h_max: 0.55          # a short table's rows grow toward geometry.fill.min, to this at most
+    cell_inset: 0.08
+    zebra_fill: zebra_tint
+    numeric_align: right
+    border: {color: white, width_pt: 1}
+
+charts:
+  palette: ["00ADBF", "003841", "007B85", "939793", "BEC1BE", "00DFF8"]
+  max_series: 6              # Standard #22 practical ceiling; past this use small multiples
+  max_series_absolute: 8
+  gridlines: false
+  font: "Aptos"
+  data_labels: {size: 12, bold: true, color: dark_teal, inside_color: auto}
+  category_axis: {size: 12, color: body_text, line: light_grey, line_pt: 0.5}
+  value_axis: {bar: hidden, line: muted, muted_color: muted_grey, size: 11}
+  legend: {position: bottom, size: 12}
+  bar: {gap_width: 35, overlap_stacked: 100}
+  line: {width_pt: 3.5, smooth: false, marker: circle, marker_size: 6, marker_fill: white, marker_line_pt: 2}   # a thinner marker outline keeps the white centre (Standard #5 hollow)
+  area_line: {fill_alpha: 0.15, width_pt: 3.5}
+  doughnut:
+    hole_size: 55
+    # The palette reordered for a ring: teal 007B85 never sits beside grey 939793
+    # (1.70:1, Standard #22), including where the last slice meets the first.
+    slice_palette: ["00ADBF", "003841", "007B85", "BEC1BE", "00DFF8", "939793"]
+  waterfall: {gap_width: 100, total_color: dark_teal, increase_color: cyan, decrease_color: alert}
+  highlight: {accent: cyan, muted: light_grey}   # chart.highlight_category: one bar in the accent, the rest muted
+  time_series_default: area_line   # Standard #2.8: never a bare line for a time series
+
+keynote:
+  gutter_px: 155             # 155 px = 0.807 in at 2560 px wide (192 px per inch)
+  canvas_px: {w: 2560, h: 1440}
+  dark:
+    ink: "FFFFFF"
+    ink_2: "DFE6E6"
+    ink_3: "96A6A8"
+    accent: "00DFF8"
+    accent_bar: "00BED2"
+    accent_mute: "008292"
+    ground_from: "00161B"
+    ground_to: "003841"
+    negative: "FF5263"
+    rule: "788C8E"

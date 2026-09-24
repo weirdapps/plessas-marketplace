@@ -2,6 +2,106 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-09-24
+
+The `decks` plugin, rebuilt around one tested renderer. A verified review (128 findings) showed
+that on an installed copy the pipeline could not do what it promised: every Python tool call
+pointed at a `.venv` no install created, the agents' brand and asset paths resolved only from the
+repo root, and the renderer in use was hand-written PptxGenJS, so the tested builder, its validator
+and CI protected a path nothing called. A second adversarial pass over the rebuilt plugin
+confirmed and fixed about 75 more findings.
+
+Versions: `decks` 1.1.1 to **2.0.0** (agent removed, pipeline and state locations changed),
+`excel` 1.1.1 to 1.2.0 (new hand-off format), `docs` 1.1.1 to 1.1.2, marketplace 2.2.1 to 2.3.0.
+
+### Changed: `decks` architecture
+
+- **One launcher.** `bin/decks-py` runs every Python tool (build, check, validate, render,
+  extract, record, keynote, mockup, setup, doctor) in a cached per-tool environment under
+  `~/.cache/nbg-decks`, keyed by its requirements, wheels only, uv when present. Prompts call
+  `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; the installers only warm the environments.
+- **One renderer, one contract.** `nbg_build.py` renders every slide type of the deck spec
+  (`tools/nbg-presentation/deck.schema.json`: cover, contents, divider, content, chart,
+  waterfall, table, kpi, cards, process, two_column, image, custom, back_cover), and
+  `decks-py check` validates a spec before anything renders. graphics-renderer is the build
+  step; no agent writes PptxGenJS, python-pptx or OOXML.
+- **One brand source.** `shared/brand-system/tokens.yaml`, read by the builder, the validator
+  and the keynote; `tools/test_brand_docs.py` fails when the brand docs stop quoting it.
+- **QA looks at the slides.** presentation-qa runs `validate --format json --strict`, then
+  `decks-py render` (LibreOffice to PDF to one PNG per slide, with a font-substitution check) and
+  reads every image. Verdicts are PASS, FAIL or UNVERIFIED, with fixes addressed to deck.yaml
+  slide ids; a failing deck is not copied to the output folder.
+- New `/review-deck`. `/presentation-review` only learns, into
+  `${CLAUDE_PLUGIN_DATA}/style-preferences.md`; draft records and working files live in
+  `${CLAUDE_PLUGIN_DATA}`, never in the plugin. The router sends "check it before it ships" to
+  `/review-deck`.
+- `nbg-presenter` removed (nothing dispatched it). Prompts shrank from 5,248 to about 1,300 lines.
+- Peer-bank charts take each bank's brand colour and logo automatically; the owner's two-party
+  ownership coding joins the palette as a documented element.
+- Tables take `row_fill` and `header_fill` colour tokens, so a two-party asks table is one table
+  element rather than rows drawn from shapes. A two-column slide takes a column of three or four
+  KPIs.
+
+### Fixed: what the decks looked like in PowerPoint
+
+- Every builder bullet and its spacing vanished (paragraph properties out of schema order); CI
+  now validates built slides against the ISO/IEC 29500 schemas.
+- Line charts came out in Office blue and red on the Office theme; decks carry the NBG theme and
+  explicitly styled series with hollow markers.
+- Cover titles printed over subtitles, section pills clipped their text, the contents slide failed
+  its own validator, stacked-bar labels were unreadable, bar axes could start above zero, and
+  PowerPoint hung exporting a doughnut label setting.
+- Greek decks: capitals kept their accents and lacked the dialytika, and numbers carried English
+  separators.
+- Waterfall labels ignored the chart's number format, table years printed as 2,023, line-chart
+  series names wrapped mid-word at the end of the line, and speaker notes carried the Office 2007
+  theme.
+
+### Fixed: the validator
+
+- 34 checks driven by tokens.yaml, each with a FAIL and a PASS fixture. It reads charts, the theme,
+  layouts and masters, table styles and SmartArt, measures text fit, and has `--format json`,
+  `--strict` and `--list-checks`; exit 2 means "could not run".
+- False positives gone ("commercial", numbered ovals, contents and Key Figures pages, ordinary
+  Greek words); false negatives closed (off-palette chart colours, dark backgrounds, shadows, em
+  dashes, truncated axes, stretched logos).
+- A short bank name (Alpha, Piraeus, Εθνική) names a bank only as the whole chart label, so
+  "Piraeus Port Authority" is not a bank comparison. The builder and the validator share the rule.
+
+### Fixed: portability and delivery
+
+- The `.venv` no install created (the QA gate, keynote and mockup exited 127 on every install),
+  bare plugin paths that resolved only from the repo root, and the undeclared markitdown
+  dependency (now `decks-py extract`).
+- Keynote fonts on a stock Mac and on Windows, UTF-8 output on Windows consoles, and a stale lock
+  that hung the launcher after an interrupted first run.
+- `decks-py render` names every substituted typeface and reports hidden slides; `extract` reads
+  3-D, stock and surface charts and no longer stops at one unreadable shape; checking a 60-column
+  table takes about a second instead of 13 minutes.
+
+### Changed: `excel`
+
+- `/excel-to-deck` writes a decks deck spec and runs `/decks:create-presentation` itself; its
+  reply shows the outline and open questions. Eval case 03 grades the new hand-off, including a
+  grader that fails an invented reporting period.
+
+### Changed: `docs`
+
+- The style guide explains why Word headings use NBG Teal while slide titles use Dark Teal.
+
+### Changed: CI
+
+- `validate_consistency.py` fails a bare plugin path in a prompt file (existing ones outside
+  `decks` are recorded as a ratchet) and an asset name that resolves to no file.
+- `tests.yml` gains a render job: every decks example is built through the launcher, rendered with
+  LibreOffice, and the keynote and mockup tools run through the same launcher.
+
+### Removed
+
+- The repo-root `shared/brand-system/` mirror and `scripts/sync_brand_system.sh` (no installed
+  plugin could read them), `nbg_chart_config.js`, `ooxml_ns.py`, and nine unreferenced iPhone frame
+  PNGs, two of which were not images.
+
 ## [2.2.1] — 2026-09-23
 
 Delivers what was merged after 2.2.0. Every plugin stayed at 1.1.0 while its files kept

@@ -1,217 +1,80 @@
 # Presentation Generation Methods
 
-This document provides guidance on when to use PptxGenJS (JavaScript library) vs OOXML editing (direct XML manipulation) vs python-pptx (Python library).
+> Machine source for every brand value a method applies: [`tokens.yaml`](tokens.yaml). The flow
+> and contracts are in the plugin's `ARCHITECTURE.md`.
+
+## CRITICAL RULE: One Renderer
+
+Every light-mode NBG deck is built by **`nbg_build.py`**, run through the plugin launcher:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check deck.yaml             # schema and semantic check, no build
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" build deck.yaml deck.pptx   # render, then validate
+```
+
+The input is a **deck spec** (`deck.yaml`), validated against
+`tools/nbg-presentation/deck.schema.json`. The builder renders it with the values in
+`tokens.yaml` and runs `nbg_validate.py` on the result; exit 1 means spec or brand violations.
+
+- **No agent writes PptxGenJS, python-pptx or OOXML by hand.** A deck made that way bypasses the
+  tested renderer, its tokens and its validator.
+- **A layout the named slide types cannot express** uses the `custom` slide type: positioned
+  elements (text, bullets, shapes, images, charts, tables) that the builder still renders with
+  brand tokens and the validator still checks.
+- **Images** (icons, infographics, mockups, logos) enter through the spec: the `image` slide type,
+  an `image` column, a `custom` image element, or `cards[].icon` / `steps[].icon`. Relative paths
+  resolve against the spec file, then the plugin's `assets/`.
+- **Keynote mode** (Standard #21) is the one exception: `decks-py keynote`, a Pillow compositor
+  with its own YAML (`keynote.md`).
 
 ## CRITICAL RULE: Always Build From Scratch, Never Use NBG Templates
 
-**Do NOT use `Presentation(template_path)` to inherit from any template file.** No template ships with this plugin, and the builder never opens one. Always create a blank presentation and add all elements manually:
+**Do NOT open a template file** (`Presentation(template_path)`). No template ships with this
+plugin, and the builder never opens one: it starts from a blank presentation at 13.333" × 7.5"
+and adds every element itself.
 
-```python
-# CORRECT — from scratch
-prs = Presentation()
-prs.slide_width = 12192000   # 13.33" in EMU
-prs.slide_height = 6858000   # 7.5" in EMU
-slide = prs.slides.add_slide(prs.slide_layouts[6])  # Blank layout
-```
+**Why**: NBG template files contain orphan "Placeholder text" textboxes, decorative freeforms, and
+colored background fills on master slides that leak into generated output as phantom artifacts.
+Building from scratch eliminates this entire class of bugs.
 
-```javascript
-// CORRECT — from scratch (PptxGenJS)
-const pptx = new PptxGenJS();
-pptx.layout = 'LAYOUT_WIDE';
-const slide = pptx.addSlide();
-```
-
-**Why**: NBG template files contain orphan "Placeholder text" textboxes, decorative freeforms, and colored background fills on master slides that leak into generated output as phantom artifacts. Building from scratch eliminates this entire class of bugs.
-
-**What you add manually per slide**:
-
-Every coordinate below is specified in [dimensions.md](dimensions.md). Read it there rather
-than from memory; this list is what to add, not where to put it.
+**What the builder adds per slide** (coordinates in [dimensions.md](dimensions.md)):
 
 - Title text box ([Content Slide](dimensions.md#content-slide))
-- Eyebrow pill if needed (rounded rect #007B85 fill, 9pt white bold ALL CAPS)
+- Section pill if the slide has a `bumper` (rounded rect #007B85, 9pt white bold ALL CAPS, sized to its text)
 - NBG Greek logo image at bottom-left ([Logo Placement](dimensions.md#logo-placement-from-template))
 - Page number at bottom-right, 10pt #939793, content slides only
   ([Page Number Placement](dimensions.md#page-number-placement))
-- Content shapes (charts, tables, text, cards, icons)
+- Content shapes (charts, tables, text, cards, icons), each exhibit with its dated source line
 - Back cover: centered NBG oval logo ([Back Cover Logo](dimensions.md#back-cover-logo---centered))
 
-This adds ~4 lines of code per slide but guarantees zero template artifacts.
+## Which Tool Does What
 
-## Quick Decision Matrix
+| Task | Method |
+|------|--------|
+| Create a new deck | Write `deck.yaml`, then `decks-py check` and `decks-py build` |
+| Redesign an existing deck | `decks-py extract old.pptx` (text, notes, tables and chart data as markdown), rewrite it as `deck.yaml`, build |
+| Check any deck before it ships | `decks-py validate deck.pptx`, then `decks-py render deck.pptx <outdir>` and look at every slide image |
+| A bespoke layout | The `custom` slide type in `deck.yaml` |
+| A stage keynote | `decks-py keynote talk.yaml` (Standard #21) |
+| An iPhone mockup of a screenshot | `decks-py mockup screenshot.png out.png`, then place it through the spec |
 
-| Scenario | Method | Why |
-|----------|--------|-----|
-| Create new presentation | **python-pptx / PptxGenJS from scratch** | Clean, zero artifacts |
-| Update chart data only | **OOXML editing** | Preserves formatting |
-| Replace text in existing deck | **OOXML editing** | Preserves layout |
-| Add new slides to existing deck | **python-pptx from scratch + merge** | More reliable |
-| Complex chart customization | **OOXML editing** | Full control over XML |
-| Batch generation | **python-pptx / PptxGenJS** | Scalable, repeatable |
+`decks-py render` needs LibreOffice. It reports when Aptos was substituted, in which case the
+render cannot be trusted for text fit (exit 4).
 
-## PptxGenJS (JavaScript)
+## Reading and Repairing Existing Decks
 
-### When to Use
+A deck a colleague edited in PowerPoint is data to read, not a file to patch: extract it, fix the
+spec, rebuild. When you must look inside one:
 
-- **Creating new presentations from scratch**
-- **Generating multiple presentations programmatically**
-- **When you control the entire output**
-- **Standard slide types** (text, bullets, charts, tables)
-
-### Advantages
-
-- Clean, readable JavaScript code
-- NBG brand constants easily applied
-- No XML manipulation required
-- Built-in chart support
-- Consistent output
-
-### Limitations
-
-- Limited to PptxGenJS chart types
-- Some advanced PowerPoint features not supported
-- Cannot edit existing presentations directly
-
-### Example
-
-```javascript
-const pptx = new PptxGenJS();
-pptx.layout = 'LAYOUT_WIDE';
-
-const slide = pptx.addSlide();
-slide.addText('Title', {
-  x: 0.374,
-  y: 0.5,
-  fontSize: 24,
-  color: '003841',
-  fontFace: 'Aptos'
-});
-
-pptx.writeFile('output.pptx');
-```
-
-## OOXML Editing (Advanced)
-
-### When to Use
-
-- **Modifying existing presentations**
-- **Injecting data into chart placeholders**
-- **When preserving original formatting is critical**
-- **Advanced chart customization** (waterfall, complex styling)
-- **Adding external images** (bank logos, etc.)
-
-### Advantages
-
-- Full control over XML structure
-- Can modify any PowerPoint feature
-- Preserves original formatting
-- Access to features not in PptxGenJS
-
-### Limitations
-
-- Requires understanding of OOXML specification
-- More error-prone
-- XML syntax must be exact
-- Relationship IDs must be managed carefully
-
-### Example
-
-```javascript
-// Unzip PPTX
-// Edit ppt/charts/chart1.xml
-// Update embedded Excel data
-// Rezip PPTX
-```
-
-### Workflow
-
-```
-1. Extract PPTX (unzip)
-   └── ppt/
-       ├── slides/
-       ├── charts/
-       ├── media/
-       └── _rels/
-
-2. Modify XML files
-   - Update values in chart XML
-   - Add new relationships
-   - Update embedded workbook
-
-3. Validate XML (critical!)
-   - Check well-formedness
-   - Verify relationship IDs match
-
-4. Repackage PPTX (zip)
-```
-
-## Hybrid Approach
-
-For complex scenarios, combine both methods:
-
-### Method A: Generate + Edit
-
-1. **Generate** base presentation with PptxGenJS
-2. **Edit** specific elements via OOXML
-
-### Method B: Template + Inject
-
-1. Create template in PowerPoint
-2. **Edit** via OOXML to inject data
-3. Preserve all original styling
-
-## Decision Flowchart
-
-```
-Need a presentation?
-    │
-    ├─> Creating from scratch?
-    │       │
-    │       └─> YES → Use PptxGenJS
-    │
-    ├─> Modifying existing deck?
-    │       │
-    │       ├─> Just updating text/numbers?
-    │       │       └─> OOXML editing
-    │       │
-    │       └─> Restructuring slides?
-    │               └─> PptxGenJS (recreate)
-    │
-    └─> Complex charts needed?
-            │
-            ├─> Standard charts (bar, line, doughnut)?
-            │       └─> PptxGenJS
-            │
-            └─> Advanced (waterfall, custom)?
-                    └─> OOXML editing
-```
-
-## Tool Selection by Task
-
-### Use `nbg_build.py` (python-pptx-based) for
-
-- Creating presentations from YAML outlines
-- Standard executive decks
-- Data-driven presentations with simple charts
-
-### Use `inject_chart_data.py` (OOXML) for
-
-- Updating chart data in existing presentations
-- Preserving original chart formatting
-- Complex chart types
-
-### Use `inject_table_data.py` (OOXML) for
-
-- Updating table data in existing presentations
-- Preserving table styling
-
-### Use direct OOXML editing for
-
-- Custom chart configurations
-- Adding bank logos to chart slides
-- Fine-grained control over positioning
+- [ooxml-charts.md](ooxml-charts.md) shows what the NBG chart style looks like in chart XML, for
+  checking or repairing a chart.
+- `tools/nbg-presentation/README.md` documents the low-level tools, including the chart and table
+  data injectors.
 
 ## python-pptx Placeholder Pitfalls
+
+This matters only when code repositions a **placeholder** in an existing deck; the builder never
+does, because it places free shapes on a blank layout.
 
 ### ⚠️ Setting `.top` on a placeholder can zero out its left/width
 
@@ -235,7 +98,7 @@ def reposition_placeholder_y(shape, new_top_emu, preserve_left_emu, preserve_wid
     Use this INSTEAD OF `shape.top = value` whenever you reposition
     a placeholder that inherits geometry from its layout. Reads
     preserve_left_emu and preserve_width_emu from the LAYOUT'S
-    placeholder definition — never guess or pass zero.
+    placeholder definition, never guess or pass zero.
     """
     spPr = shape._element.find(f'{{{P_NS}}}spPr')
     if spPr is None:
@@ -260,18 +123,14 @@ def reposition_placeholder_y(shape, new_top_emu, preserve_left_emu, preserve_wid
 
 **Retroactive repair**: if you receive a deck where placeholders are already broken (left=0, width=0), call the same function: it overwrites the bad `<a:xfrm>` with correct values.
 
-**Where this matters in NBG decks**:
-- Divider slides where the section title (60pt) wraps and shoves the subtitle off-canvas
-- Any custom layout where the title placeholder has `spAutoFit` and expands beyond its default height
-- Cover slides where you reposition the date/org line below a dynamically sized title
-
-**Detection**: after building the deck, run a sanity check that every populated text-frame placeholder has non-zero `left` and `width` (or equivalently, that `<a:xfrm>/<a:off>` and `<a:ext>` carry non-zero values whenever they exist).
+**Detection**: every populated text-frame placeholder should have non-zero `left` and `width` (or equivalently, `<a:xfrm>/<a:off>` and `<a:ext>` carry non-zero values whenever they exist).
 
 ---
 
 ## References
 
-- See `charts.md` for PptxGenJS chart configuration
-- See `ooxml-charts.md` for OOXML chart specifications
-- See `tools/nbg-presentation/README.md` for tool documentation
+- `ARCHITECTURE.md` (plugin root): the flow from brief to deck, the launcher, where state lives
+- `charts.md`: the chart specification
+- `ooxml-charts.md`: the chart style in OOXML, for existing decks
+- `tools/nbg-presentation/README.md`: builder, validator and tool documentation
 - Upstream credit for the placeholder XML fix: `pillar-presenter` skill at `github.com/thomastsop00/pillar-skills`

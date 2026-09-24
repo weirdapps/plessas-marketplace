@@ -1,150 +1,113 @@
 ---
-description: "Compare a finalized presentation against its draft to learn style preferences"
-argument-hint: "[path/to/final.pptx]"
-allowed-tools: Agent, Read, Write, Bash, Skill(document-skills:pptx), mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_get_mail, mcp__plugin_mail_outlook-bridge__outlook_download_attachments
+description: "Learn the user's presentation preferences from their own edits: compare a deck they finalised with the draft this plugin built, and record repeated patterns in their personal style preferences"
+argument-hint: "[path to the finalised .pptx]"
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_get_mail, mcp__plugin_mail_outlook-bridge__outlook_download_attachments
 ---
 
 <objective>
-Compare a user-finalized presentation against its original draft to learn presentation style preferences.
+Learn how this user edits the decks the plugin builds, so the next deck needs fewer edits. This
+command only learns from edits to a deck the plugin built. To check a deck before it ships, use
+`/decks:review-deck`.
 
 User request: $ARGUMENTS
 </objective>
 
-<process>
-## Presentation Review Workflow
+<rules>
+- Everything this command writes lives in `${CLAUDE_PLUGIN_DATA}`: the comparison records and
+  `${CLAUDE_PLUGIN_DATA}/style-preferences.md`. Never write into the plugin folder; the shipped
+  Standards change only through a deliberate commit.
+- Tools run as `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" <command>`; exit 2 means the tool could
+  not run (most often its environment could not be prepared): show the message and fix it printed
+  and stop.
+- Extract decks with `decks-py extract`, not the `document-skills:pptx` skill; if that skill loads
+  anyway, the NBG Standards override its advice.
+</rules>
 
-### Setup: Ensure Persistence Directories Exist
+<process>
+
+### 1. Find the draft record
+
+Draft records are written by `decks-py record` when a deck ships: one YAML file per deck in
+`${CLAUDE_PLUGIN_DATA}/presentations/pending/`, with `id`, `created`, `status`, `topic`,
+`file_path`, `file_hash` (`sha256:<hex>`), `spec_path`, `slides` (`index`, `id`, `type`, `title`)
+and `spec`, a full snapshot of the deck spec it was built from. If there are none, say that there
+is no draft to compare against, and stop.
+
+- A path was given: match it to the record whose `file_path` has the same file name, else list
+  the pending records (`created`, `topic`, file) and ask which one it finalises.
+- No path given: look for the finalised version of each pending record, newest first:
+  1. The file at `file_path` still exists and its hash (`shasum -a 256`) differs from
+     `file_hash`: that is the edited deck.
+  2. The mail plugin, when its tools are available: `mcp__plugin_mail_outlook-bridge__outlook_list_mail`
+     on Sent Items, then on any folder the user names, with `since` set to the record's `created`
+     and `top: 25`; `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on messages whose `.pptx`
+     attachment name shares the record's slug; keep only messages that deliver the deck (not review
+     requests); `mcp__plugin_mail_outlook-bridge__outlook_download_attachments` with
+     `out: ${CLAUDE_PLUGIN_DATA}/work/review_<record id>/` (create it with `mkdir -p` first).
+  3. Otherwise ask for the path.
+
+  Show what you found and ask the user to confirm before comparing.
+
+### 2. Compare
 
 ```bash
-mkdir -p ~/.claude/presentations/pending ~/.claude/presentations/reviewed
+bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<final.pptx>"
 ```
 
-This is idempotent: it does nothing if the directories already exist.
+The extract gives one `## Slide N: <title>` section per slide, with bullets, tables, charts as
+tables, `[image: ...]` markers and `Notes:`. Compare it with the record's `spec` and `slides`, slide
+by slide: title rewrites, reordering, points added,
+removed or reworded, slide type or chart type swaps, slides added or deleted, cover subtitle and
+speaker notes. Classify each slide:
 
-### 1. Locate Draft Record
+| Class | Meaning |
+|---|---|
+| `USED_AS_IS` | no change beyond formatting |
+| `MODIFIED` | title reworded, points edited or type changed |
+| `HEAVILY_REWRITTEN` | different content, structure or visual |
+| `NOT_USED` | deleted from the final |
+| `NEW` | added by the user |
 
-- Check `~/.claude/presentations/pending/` for a draft record matching the filename
-- If no exact match, list available draft records and ask the user to confirm
-- If no draft records exist, inform the user and offer to do a standalone style analysis
+### 3. Save the comparison
 
-### 2. Extract Final Content
+Write `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/<record id>.review.yaml` with the record id,
+both file paths, the finalised deck's hash as `final_hash` (never `file_hash`, which marks a draft
+record and makes `/decks:polish-slides` treat the file as shipped unedited), the date, the
+per-slide classes with before and after titles, and the patterns you saw. Then set the draft record's `status` to `reviewed` and move it from `pending/`
+to `reviewed/`.
 
-- Extract slide content from the final PPTX (use python-pptx or unzip + XML parsing)
-- Parse each slide: title, content, layout, chart types, element positioning
-- Compute SHA-256 hash and compare against draft record hash to confirm changes were made
+### 4. Update the preferences
 
-### 3. Slide-by-Slide Comparison
+Read every `*.review.yaml` in `${CLAUDE_PLUGIN_DATA}/presentations/reviewed/` and count, for each
+pattern, the reviews it appears in. Every pattern goes into the Learned table: seen in one review it
+is a hint the agents lean toward; seen in two or more it is a rule for this user. Write
+`${CLAUDE_PLUGIN_DATA}/style-preferences.md` in this shape, keeping the Defaults section the user
+writes by hand:
 
-Compare draft vs final for each slide:
+```markdown
+# Presentation style preferences
 
-- **Title rewrites**: Draft title vs actual title (wording, style, length)
-- **Slide reordering**: Draft sequence vs actual sequence
-- **Content additions/removals**: New points added, existing points removed or reworded
-- **Chart type swaps**: e.g., bar replaced with doughnut, line replaced with waterfall
-- **Layout changes**: e.g., full-width changed to two-column, 50/50 changed to 40/60
-- **Slides added or removed**: New slides not in draft, draft slides deleted
+Learned by /decks:presentation-review from edits to decks the plugin built. An overlay on the
+shipped Standards: a numbered Standard wins any conflict.
 
-### 4. Classify Each Slide
+## Defaults
+- Cover subtitle: <what this user puts on covers, e.g. their unit names, pipe-separated>
 
-Assign a classification to each slide:
-
-| Classification | Criteria |
-|---------------|----------|
-| `USED_AS_IS` | No meaningful changes (minor formatting only) |
-| `MODIFIED` | Title reworded, points edited, or layout tweaked |
-| `HEAVILY_REWRITTEN` | Substantially different content, structure, or visual approach |
-| `NOT_USED` | Draft slide removed entirely from final |
-| `NEW` | Slide in final that was not in draft |
-
-### 5. Save Comparison Record
-
-Save detailed comparison to `~/.claude/presentations/reviewed/`:
-
-```json
-{
-  "id": "review-YYYY-MM-DD-NNN",
-  "draft_id": "pres-YYYY-MM-DD-NNN",
-  "reviewed_at": "ISO-8601",
-  "draft_path": "/path/to/draft.pptx",
-  "final_path": "/path/to/final.pptx",
-  "draft_hash": "sha256:...",
-  "final_hash": "sha256:...",
-  "summary": {
-    "total_draft_slides": N,
-    "total_final_slides": N,
-    "used_as_is": N,
-    "modified": N,
-    "heavily_rewritten": N,
-    "not_used": N,
-    "new": N
-  },
-  "slides": [
-    {
-      "draft_index": 1,
-      "final_index": 1,
-      "classification": "MODIFIED",
-      "changes": {
-        "title": { "draft": "...", "final": "..." },
-        "content_delta": "...",
-        "layout_change": null,
-        "chart_swap": null
-      }
-    }
-  ],
-  "patterns_detected": [
-    "User prefers data-driven titles over narrative titles",
-    "User consistently adds more detail to bullet points"
-  ]
-}
+## Learned
+| Preference | Reviews | Last seen | Confidence |
+|---|---|---|---|
+| <e.g. titles lead with the number> | 3 | <date> | medium |
+| <e.g. one chart per slide, no bullets beside it> | 1 | <date> | hint |
 ```
 
-### 6. Update Presentation Style Guide
+Confidence is `hint` at 1 review, `medium` at 2 or 3, and `high` at 4 or more. A pattern that
+contradicts a numbered Standard is listed under a `## Not applied` heading with the Standard's
+number, never in the Learned table. The storyline and storyboard agents read this file on every
+build.
 
-Read `shared/presentation-style-guide.md` and update with learned preferences:
+### 5. Report
 
-- Aggregate patterns across all reviews (not just this one)
-- Only update a preference if it appears in 2+ reviews (avoid one-off noise)
-- Add confidence levels based on consistency of the pattern
+The slide counts per class, the patterns in this deck, and which rows were added or strengthened,
+naming each hint that one more review would turn into a rule.
 
-### 7. Show Delta Report
-
-Display a clear summary to the user:
-
-- Overall statistics (how many slides changed)
-- Notable patterns detected
-- Specific examples of changes made
-- New preferences added to style guide (if any)
-
-### Auto-Detection (when no path is provided)
-
-When no path is provided, find the finalized version automatically:
-
-**Priority 1, Email (primary):** The user sends finalized decks via email and CCs himself, so sent decks land in Archive. Scan it for PPTX attachments:
-
-1. `mcp__plugin_mail_outlook-bridge__outlook_list_mail` on the Archive folder, bounded by the draft record's creation date and a sane result cap. Never enumerate the whole archive.
-2. `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on each candidate to read the body and the attachment list.
-3. `mcp__plugin_mail_outlook-bridge__outlook_download_attachments` for the messages whose attachment filename matches a pending draft record, saving to a temp dir for comparison.
-
-These tools come from the `mail` plugin's bundled outlook-bridge MCP. If they are absent from your tool list, `mail` is not installed: say so and ask the user to install it. Do NOT read from macOS Mail via AppleScript. It is a separate local store that is not synced with M365, so it silently returns stale or missing mail.
-
-- Analyze email body to classify intent (final delivery vs review request vs draft for feedback)
-- Only use attachments from "final delivery" emails
-
-**Priority 2, Local file (fallback):** If PPTX still exists locally, compare SHA-256 hash against draft record.
-
-**Priority 3, Sent Items (recent only):** Fall back to Sent Items for emails sent in the last few hours (user regularly empties Sent Items).
-
-Present findings and ask user to confirm before proceeding.
 </process>
-
-<success_criteria>
-
-- [ ] Draft record found and loaded
-- [ ] Final PPTX content extracted successfully
-- [ ] Slide-by-slide comparison completed
-- [ ] Each slide classified accurately
-- [ ] Comparison record saved to ~/.claude/presentations/reviewed/
-- [ ] Draft record status updated from "pending" to "reviewed"
-- [ ] Presentation style guide updated with new patterns (if sufficient data)
-- [ ] Delta report displayed to user
-</success_criteria>

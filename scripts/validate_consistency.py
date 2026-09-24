@@ -329,43 +329,147 @@ def check_python_tools() -> None:
             error(f"{py_path.relative_to(ROOT)}: syntax error at line {e.lineno}")
 
 
-def check_brand_system_sync() -> None:
-    """No-drift guard: the marketplace-root brand-system mirror must equal the
-    canonical decks copy. Fix with scripts/sync_brand_system.sh --apply."""
-    heading("Brand-system tree sync (no-drift guard)")
-    canonical = PLUGINS_DIR / "decks" / "shared" / "brand-system"
-    mirror = ROOT / "shared" / "brand-system"
-    if not canonical.is_dir():
-        # sync_brand_system.sh exits 2 here. Nothing to compare against, and
-        # no way to repair it, so warn and move on.
-        warn("brand-system: canonical tree (decks) missing; skipping sync check")
-        return
-    if not mirror.is_dir():
-        # This used to warn and return, which meant deleting the mirror
-        # outright passed the no-drift guard while changing one byte of it
-        # failed. sync_brand_system.sh --check reports drift for every file in
-        # this case; match it.
-        error(
-            "brand-system: mirror (shared/brand-system) missing entirely; run scripts/sync_brand_system.sh"
+# Bare plugin-relative paths already in prompts outside decks when this check
+# arrived (2026-09-23). They break the same way on an installed copy, but fixing
+# them is outside the decks overhaul that introduced the check, so they are
+# recorded here instead: the check fails on any NEW bare path anywhere, and on
+# an entry below that has been fixed (delete the entry when you fix the file).
+KNOWN_BARE_PATHS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("plugins/chat/commands/auth-setup.md", "mcp-server/.last-startup.json"),
+        ("plugins/chat/commands/auth-setup.md", "mcp-server/node_modules/teams-cli/dist/cli.js"),
+        ("plugins/chat/commands/chat-doctor.md", "mcp-server/node_modules/teams-cli/"),
+        ("plugins/mail/agents/email-handler.md", "commands/send-mail.md"),
+        ("plugins/mail/agents/triage-engine.md", "docs/triage-engine/"),
+        ("plugins/mail/commands/auth-setup.md", "mcp-server/.last-startup.json"),
+        ("plugins/mail/commands/auth-setup.md", "mcp-server/node_modules/outlook-tool/dist/cli.js"),
+        ("plugins/mail/commands/draft-review.md", "commands/requests"),
+        ("plugins/mail/commands/mail-doctor.md", "mcp-server/node_modules/outlook-tool/"),
+        ("plugins/mail/commands/triage-inbox.md", "agents/triage-engine"),
+        ("plugins/meetings/agents/meeting-intelligence.md", "shared/calendar-access.md"),
+        ("plugins/meetings/commands/meeting-debrief.md", "agents/meeting-intelligence"),
+        ("plugins/meetings/commands/meeting-debrief.md", "shared/calendar-access.md"),
+        ("plugins/meetings/commands/meeting-prep.md", "agents/meeting-intelligence"),
+        ("plugins/meetings/commands/meeting-prep.md", "shared/calendar-access.md"),
+    }
+)
+
+
+def _bare_path_pattern(plugin_dir: Path) -> re.Pattern[str]:
+    """A path that starts with one of this plugin's own top-level directories
+    (or with plugins/<name>/) and is not already anchored. The lookbehind
+    rejects anything preceded by a path character, so
+    `${CLAUDE_PLUGIN_ROOT}/shared/x.md`, `~/.claude/plugins/...` and URLs pass."""
+    tops = sorted(p.name for p in plugin_dir.iterdir() if p.is_dir() and not p.name.startswith("."))
+    alternatives = "|".join(re.escape(t) for t in tops) if tops else r"(?!)"
+    return re.compile(
+        r"(?<![\w/.$}~-])((?:" + alternatives + r")/[\w./-]*|plugins/[\w-]+/[\w./-]*)"
+    )
+
+
+def check_plugin_relative_paths() -> None:
+    """Prompt files must anchor plugin paths with ${CLAUDE_PLUGIN_ROOT}.
+
+    Claude Code runs a plugin from its version cache and the session's cwd is
+    the user's project, so a bare `shared/brand-system/README.md` in an agent
+    resolves against whatever directory the user happens to be in. On the
+    maintainer's machine it worked from the repo root and nowhere else, which
+    is why testing inside the repo could never reveal it: every decks agent's
+    single source of truth, style guide and asset path were unreachable for
+    colleagues. `plugins/<name>/...` (a repo path) is rejected for the same
+    reason: the cache has no plugins/ directory."""
+    heading("Plugin paths in prompts (anchored with ${CLAUDE_PLUGIN_ROOT})")
+    found: set[tuple[str, str]] = set()
+    examined = 0
+    for plugin_dir in _plugin_dirs():
+        pat = _bare_path_pattern(plugin_dir)
+        files = sorted(
+            {
+                *_rglob(plugin_dir, "agents/*.md"),
+                *_rglob(plugin_dir, "commands/*.md"),
+                *_rglob(plugin_dir / "skills", "*.md"),
+            }
         )
-        return
-    canon = {p.name: p.read_text() for p in canonical.glob("*.md")}
-    mir = {p.name: p.read_text() for p in mirror.glob("*.md")}
-    for name in sorted(set(canon) - set(mir)):
+        for path in files:
+            examined += 1
+            rel = str(path.relative_to(ROOT))
+            for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                for m in pat.finditer(line):
+                    token = m.group(1).rstrip(".")
+                    found.add((rel, token))
+                    if (rel, token) not in KNOWN_BARE_PATHS:
+                        error(
+                            f"{rel}:{lineno}: bare plugin path `{token}`; write "
+                            f"`${{CLAUDE_PLUGIN_ROOT}}/{token}` (or the agent/command name)"
+                        )
+    for rel, token in sorted(KNOWN_BARE_PATHS - found):
         error(
-            f"brand-system: '{name}' in canonical (decks) but missing from mirror (shared/) — run scripts/sync_brand_system.sh"
+            f"{rel}: `{token}` is no longer bare; delete its KNOWN_BARE_PATHS entry "
+            "in scripts/validate_consistency.py"
         )
-    for name in sorted(set(mir) - set(canon)):
-        error(
-            f"brand-system: '{name}' in mirror (shared/) but not in canonical (decks) — run scripts/sync_brand_system.sh"
-        )
-    for name in sorted(set(canon) & set(mir)):
-        if canon[name] != mir[name]:
-            error(
-                f"brand-system: '{name}' differs between canonical (decks) and mirror (shared/) — run scripts/sync_brand_system.sh --apply"
-            )
-        else:
-            ok(f"brand-system: {name} in sync")
+    if not examined:
+        error("plugin paths: examined 0 prompt files; the plugin tree was not found")
+    else:
+        ok(f"plugin paths: {examined} prompt file(s) examined")
+
+
+ASSET_EXTENSIONS = (".png", ".svg", ".jpg", ".jpeg", ".gif", ".pdf")
+BACKTICKED_RE = re.compile(r"`([^`\n]+)`")
+
+
+def _asset_index_files() -> list[tuple[Path, Path, Path]]:
+    """(document, directory its bare filenames live under, the plugin's assets root)."""
+    triples: list[tuple[Path, Path, Path]] = []
+    for plugin_dir in _plugin_dirs():
+        assets = plugin_dir / "assets"
+        for doc in _rglob(assets, "INDEX.md") + _rglob(assets, "README.md"):
+            triples.append((doc, doc.parent, assets))
+        library = plugin_dir / "shared" / "brand-system" / "asset-library.md"
+        if library.is_file() and assets.is_dir():
+            triples.append((library, assets, assets))
+    return triples
+
+
+def check_asset_references() -> None:
+    """Every asset filename an INDEX.md, an assets README or asset-library.md
+    names must exist. When the asset library moved to underscore filenames, about
+    190 of these references kept the old spelling (spaces, a Greek capital Eta in
+    `Ηourglass.png`), so an agent that trusted the index asked for files that did
+    not exist. A path matches a file relative to the document's folder or to the
+    plugin's assets root (`icons/money/Loan.png` inside the icon index); a bare
+    filename matches by basename anywhere under the document's folder (the icon
+    index lists per-category tables of basenames)."""
+    heading("Asset references (INDEX.md, assets READMEs, asset-library.md)")
+    examined = 0
+    for doc, base, assets in _asset_index_files():
+        basenames = {p.name for p in base.rglob("*") if p.is_file()}
+        for lineno, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
+            for m in BACKTICKED_RE.finditer(line):
+                name = m.group(1).strip()
+                if "*" in name or not name.lower().endswith(ASSET_EXTENSIONS):
+                    continue
+                examined += 1
+                name = name.removeprefix("${CLAUDE_PLUGIN_ROOT}/").removeprefix("./")
+                anchored = False
+                for prefix in ("plugins/decks/assets/", "assets/"):
+                    if name.startswith(prefix):
+                        name, anchored = name[len(prefix) :], True
+                if anchored or "/" in name:
+                    if (base / name).is_file() or (assets / name).is_file():
+                        continue
+                elif name in basenames:
+                    continue
+                error(
+                    f"{doc.relative_to(ROOT)}:{lineno}: `{m.group(1)}` names no file under {base.relative_to(ROOT)}/"
+                )
+    if examined:
+        ok(f"asset references: {examined} filename(s) examined")
+    elif any((d / "assets").is_dir() for d in _plugin_dirs()):
+        # An assets/ tree with nothing examined means the indexes stopped quoting
+        # filenames the way this check reads them: "did not look", not "clean".
+        error("asset references: an assets/ folder exists but 0 filenames were examined")
+    else:
+        warn("asset references: no plugin has an assets/ folder to examine")
 
 
 def check_plugin_versions() -> None:
@@ -769,7 +873,8 @@ def main() -> None:
     check_mcp_tool_references()
     check_allowed_tools_coverage()
     check_python_tools()
-    check_brand_system_sync()
+    check_plugin_relative_paths()
+    check_asset_references()
 
     print("\n" + "=" * 52)
     if errors:

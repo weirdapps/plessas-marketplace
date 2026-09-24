@@ -155,6 +155,8 @@ For deeper diagnosis: `/mail-doctor`, `/chat-doctor` — each plugin's doctor su
 
 This is intentional: ad-hoc artefacts never pollute the marketplace repo or your project directories. Iterations get a NEW timestamp, not a `_v2` suffix.
 
+The deck commands also save to a folder you name in the request. Their working files (the deck spec, slide renders, QA output) stay in `~/.claude/plugins/data/decks-plessas-marketplace/work/`, and the style preferences `/presentation-review` learns from your edits live beside them in `style-preferences.md`: your own, kept across updates, never in the repo.
+
 ## I have feedback / a bug / a feature request
 
 File an issue: [github.com/weirdapps/plessas-marketplace/issues](https://github.com/weirdapps/plessas-marketplace/issues)

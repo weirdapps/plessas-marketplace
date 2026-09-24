@@ -13,11 +13,17 @@ Route by what the user is trying to achieve, not by the words they used.
 | a dark full-bleed deck for a stage talk | `/decks:create-keynote` |
 | an existing deck rebuilt to standard | `/decks:redesign-deck` |
 | existing slides tightened, not rebuilt | `/decks:polish-slides` |
-| a deck checked before it ships | `/decks:presentation-review` |
+| a deck checked before it ships, with nothing changed | `/decks:review-deck` |
+| the plugin to learn from their edits to a deck it built | `/decks:presentation-review` |
+| one icon, infographic or phone mockup rather than a deck | `/decks:create-icon`, `/decks:create-infographic`, `/decks:create-mockup` |
 
 The line between redesign and polish is scope: redesign changes structure and
 layout, polish leaves both alone. If the user's intent sits between the two,
 ask which they mean rather than choosing.
+
+The line between review and polish is who changes the deck: review-deck only
+reports a verdict and the fixes, polish applies them. "Check it" is review;
+"check it and fix it" is polish.
 
 ## When nothing fits
 
