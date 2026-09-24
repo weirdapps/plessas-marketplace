@@ -646,10 +646,17 @@ def test_check_applies_the_validators_own_spec_rules():
     (VALIDATOR-CODE-5 widening the as-of test, say) reaches both."""
     import nbg_validate
 
-    assert nbg_spec.EM_DASH == nbg_validate.EM_DASH
+    assert nbg_spec.dash_problem is nbg_validate.dash_problem
+    assert nbg_spec.alt_text_problem is nbg_validate.alt_text_problem
     assert nbg_spec.SOURCE_AS_OF is nbg_validate.SOURCE_AS_OF
-    assert nbg_spec.ALT_TEXT_PLACEHOLDER is nbg_validate.ALT_TEXT_PLACEHOLDER
-    assert nbg_spec.ALT_TEXT_LEAD_IN is nbg_validate.ALT_TEXT_LEAD_IN
+
+
+@pytest.mark.parametrize("as_of", ["FY2025", "Q2'26", "9M25"])
+def test_a_period_with_its_year_dates_an_exhibit_source(tmp_path, as_of):
+    """VALIDATOR-CODE-5: the validator now reads a period with a two- or four-digit
+    year as a date, and check follows it with no change of its own."""
+    report = check(tmp_path, deck([_bar_slide({"name": "Management accounts", "as_of": as_of})]))
+    assert report.ok, [i.format() for i in report.errors]
 
 
 @pytest.mark.parametrize(

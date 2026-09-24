@@ -69,6 +69,15 @@ def test_numbers_take_the_deck_languages_separators():
     assert nbg_text.localise_number("12%", "el") == "12%"
 
 
+def test_a_number_can_be_written_without_grouping_and_rounds_half_up():
+    """A year is not 2,023; and PowerPoint rounds 12.5 to 13 where Python's format
+    rounds half to even (BUILDER-CODE-01, -02)."""
+    assert nbg_text.format_number(2023, 0, "en", group=False) == "2023"
+    assert nbg_text.format_number(1234.5, 1, "el", group=False) == "1234,5"
+    assert nbg_text.format_number(12.5, 0) == "13"
+    assert nbg_text.format_number(-0.125, 2) == "-0.13"
+
+
 # ---------------------------------------------------------------- font discovery
 
 

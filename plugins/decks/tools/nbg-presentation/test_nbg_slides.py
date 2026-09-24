@@ -398,6 +398,76 @@ def test_waterfall_step_labels_sit_above_the_bar_and_totals_inside(build):
     assert "".join(t.text for t in labels[0].iter(f"{A}t")) == "+2"
 
 
+@pytest.mark.parametrize(
+    ("number_format", "value", "lang", "text"),
+    [
+        ("0.00%", 0.0245, "en", "2.45%"),
+        ("0%", 0.125, "en", "13%"),
+        ('#,##0" m"', 1234, "en", "1,234 m"),
+        ('"EUR "#,##0', 1234, "en", "EUR 1,234"),
+        ("0.0\\x", 1.5, "en", "1.5x"),
+        ("0.0", 1234.5, "en", "1234.5"),
+        ("#,##0.0", 1234.5, "el", "1.234,5"),
+        ("#,##0.0,,", 12_500_000, "en", "12.5"),
+        ("[$€-408]#,##0", 1234, "en", "€1,234"),
+        ("General", 1234.5, "el", "1234,5"),
+        ("#,##0;(#,##0)", -5, "en", "-5"),
+    ],
+)
+def test_format_value_reads_the_excel_number_formats_decks_use(number_format, value, lang, text):
+    import nbg_chart
+
+    assert nbg_chart.format_value(value, number_format, lang) == text
+
+
+def _waterfall(items, number_format=None, **presentation):
+    chart = {"type": "waterfall", "data": {"items": items}}
+    if number_format:
+        chart["number_format"] = number_format
+    slide = {
+        "type": "waterfall",
+        "content": {"title": "The bridge", "source": SOURCE},
+        "chart": chart,
+    }
+    return deck([slide], **presentation)
+
+
+def _waterfall_labels(out):
+    """Every bar's label in category order: steps above zero carry theirs on the
+    label series, totals and steps below zero on their own bars."""
+    root = part_xml(out, chart_parts(out)[0])
+    labels = {}
+    for ser in root.findall(".//c:barChart/c:ser", NS):
+        for dlbl in ser.findall("c:dLbls/c:dLbl", NS):
+            text = "".join(t.text or "" for t in dlbl.iter(f"{A}t"))
+            if text:
+                labels[int(dlbl.find("c:idx", NS).get("val"))] = text
+    return [labels[i] for i in sorted(labels)]
+
+
+def test_waterfall_labels_follow_the_charts_number_format(build):
+    """BUILDER-CODE-01: a 0.00% waterfall labelled its steps +0.00 and its totals 0.02,
+    because the labels took only the decimals from the format."""
+    items = [
+        {"label": "NIM 2025", "value": 0.0245},
+        {"label": "Rates", "value": -0.0030},
+        {"label": "Volumes", "value": 0.0045},
+        {"label": "NIM 2026", "value": 0.0260},
+    ]
+    out = build(_waterfall(items, "0.00%"))
+    assert _waterfall_labels(out) == ["2.45%", "-0.30%", "+0.45%", "2.60%"]
+
+
+def test_greek_waterfall_labels_keep_a_literal_unit_and_greek_separators(build):
+    items = [
+        {"label": "Αρχή", "value": 1200.5},
+        {"label": "Άνοδος", "value": 150},
+        {"label": "Τέλος", "value": 1350.5},
+    ]
+    out = build(_waterfall(items, '#,##0.0" εκ."', language="el"))
+    assert _waterfall_labels(out) == ["1.200,5 εκ.", "+150,0 εκ.", "1.350,5 εκ."]
+
+
 def test_a_waterfall_is_four_series_with_each_bar_coloured_by_its_kind(build):
     """The bridge was eight series (a base, six kind-and-sign columns, a label
     carrier), and the validator warns past six: QA read construction as a crowded

@@ -50,7 +50,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_color import AA_NORMAL, contrast_ratio  # noqa: E402
-from nbg_text import format_number, metrics  # noqa: E402
+from nbg_text import format_number, localise_number, metrics  # noqa: E402
 
 CHARTS = nbg_tokens.load()["charts"]
 FONT = str(CHARTS["font"])
@@ -163,14 +163,72 @@ class AxisLayout:
     logo_h: float
 
 
+_PLACEHOLDERS = set("0#?.,")
+
+
+def format_value(value: float, number_format: str | None, lang: str = "en") -> str:
+    """value as an Excel number format shows it, for the formats decks use: 0, 0.0,
+    #,##0.00, 0% and 0.0% (times 100), text in quotes or after a backslash ("EUR "#,##0,
+    #,##0" m", 0.0\\x), a currency tag ([$€-408]) and scaling commas (#,##0,, is
+    millions). Only the first ;-section is read, a negative takes a leading minus, and
+    General writes the number as it is. Greek separators when lang is el."""
+    section = (number_format or "General").split(";")[0]
+    sign = "-" if value < 0 else ""
+    magnitude = abs(float(value))
+    if section.strip().casefold() in ("general", ""):
+        return sign + localise_number(f"{magnitude:.10g}", lang)
+    parts: list[tuple[str, str]] = []
+    percent = 0
+    i = 0
+    while i < len(section):
+        ch = section[i]
+        if ch == '"':
+            end = section.find('"', i + 1)
+            end = len(section) if end < 0 else end
+            parts.append(("text", section[i + 1 : end]))
+            i = end + 1
+        elif ch == "\\" and i + 1 < len(section):
+            parts.append(("text", section[i + 1]))
+            i += 2
+        elif ch in "_*" and i + 1 < len(section):
+            i += 2  # padding and fill print nothing
+        elif ch == "[":
+            end = section.find("]", i)
+            end = len(section) if end < 0 else end
+            tag = section[i + 1 : end]
+            if tag.startswith("$"):
+                parts.append(("text", tag[1:].split("-")[0]))
+            i = end + 1
+        elif ch in _PLACEHOLDERS:
+            end = i
+            while end < len(section) and section[end] in _PLACEHOLDERS:
+                end += 1
+            parts.append(("number", section[i:end]))
+            i = end
+        else:
+            percent += ch == "%"
+            parts.append(("text", ch))
+            i += 1
+    core = "".join(p for kind, p in parts if kind == "number")
+    whole, _, fraction = core.partition(".")
+    decimals = sum(ch in "0#?" for ch in fraction)
+    scale = 1000 ** (len(core) - len(core.rstrip(",")))
+    number = format_number(
+        magnitude / scale * 100**percent, decimals, lang, group="," in whole.rstrip(",")
+    )
+    out: list[str] = []
+    for kind, p in parts:
+        if kind == "text":
+            out.append(p)
+        elif number:
+            out.append(number)
+            number = ""  # one number, however many placeholder runs
+    return sign + "".join(out)
+
+
 def _value_text(value: Any, number_format: str) -> str:
-    """Roughly what a data label shows, so its width can be measured."""
-    if value is None:
-        return ""
-    decimals = number_format.split(".")[1].count("0") if "." in number_format else 0
-    if number_format.endswith("%"):
-        return f"{float(value) * 100:,.{decimals}f}%"
-    return f"{float(value):,.{decimals}f}"
+    """What a data label shows, so its width can be measured."""
+    return "" if value is None else format_value(float(value), number_format)
 
 
 def axis_layout(spec: dict[str, Any], box: tuple[float, float, float, float]) -> AxisLayout:
@@ -1068,8 +1126,10 @@ def _split(start: float, end: float) -> tuple[float, float, float]:
 
 
 def _format_delta(value: float, kind: str, number_format: str, lang: str = "en") -> str:
-    decimals = number_format.split(".")[1].count("0") if "." in number_format else 0
-    text = format_number(abs(value), decimals, lang)
+    """A bar's label in the chart's own number format (BUILDER-CODE-01: the labels took
+    only its decimals, so 0.00% printed 0.02 and a quoted unit vanished), signed: a
+    step always, a total only when negative."""
+    text = format_value(abs(value), number_format, lang)
     if kind == "total":
         return f"-{text}" if value < 0 else text
     return f"+{text}" if value >= 0 else f"-{text}"
