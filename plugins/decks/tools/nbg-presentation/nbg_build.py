@@ -1093,8 +1093,20 @@ def add_table(
         return max(minimum, text_height(n, head_s if r < 0 else body_s) + 0.1)
 
     header_h = row_height(headers, -1, float(comp["header_h"])) if any(headers) else 0.0
-    body_hs = [row_height(r, i, float(comp["row_h"])) for i, r in enumerate(rows)]
-    total = header_h + sum(body_hs)
+    # Stop at the row that overflows: measuring every wrapped cell of a table already
+    # known not to fit is where a wide table's check spent its minutes.
+    body_hs: list[float] = []
+    total = header_h
+    for i, r in enumerate(rows):
+        body_hs.append(row_height(r, i, float(comp["row_h"])))
+        total += body_hs[-1]
+        if total > frame.h + 1e-6:
+            raise deck.fit(
+                rel,
+                f"the table does not fit the {frame.h:.2f} in the body has: its first "
+                f"{i + 1} of {len(rows)} rows already take {total:.2f} in",
+                "split the table across two slides or cut rows (12pt is the floor for cells)",
+            )
     target = float(GEO["fill"]["min"]) * frame.h
     if grow and rows and total < target:
         room = float(comp["row_h_max"]) - float(comp["row_h"])

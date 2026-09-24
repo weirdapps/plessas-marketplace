@@ -606,6 +606,20 @@ def test_an_element_with_no_height_is_an_error_not_a_crash(tmp_path):
     ]
 
 
+def test_a_table_taller_than_the_body_stops_at_the_row_that_overflows(tmp_path):
+    """add_table measured every row before comparing with the body; the error now says
+    where the table ran out of room."""
+    rows = [["A label " * 60, "1"] for _ in range(14)]
+    slide = {
+        "type": "table",
+        "content": {"title": "Too much table", "source": SOURCE},
+        "table": {"headers": ["Item", "Value"], "rows": rows},
+    }
+    report = check(tmp_path, deck([slide]))
+    found = [i for i in report.errors if i.path == "slides[1].table"]
+    assert found and "of 14 rows" in found[0].message, [i.format() for i in report.issues]
+
+
 def test_unquoted_numbers_as_row_labels_are_a_warning(tmp_path):
     """BUILDER-CODE-02: YAML hands back 2023 (and 010 as 8) as numbers, which the
     builder then formats and right-aligns as figures. A row label is text."""

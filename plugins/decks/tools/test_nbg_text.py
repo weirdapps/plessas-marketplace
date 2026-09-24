@@ -69,6 +69,26 @@ def test_numbers_take_the_deck_languages_separators():
     assert nbg_text.localise_number("12%", "el") == "12%"
 
 
+def test_breaking_a_long_word_measures_it_logarithmically(monkeypatch):
+    """A word wider than its line was cut one character at a time and re-measured each
+    time, so check on a 60-column table of long URLs ran 13 minutes."""
+    m = nbg_text.TextMetrics()
+    real = m.width
+    calls = 0
+
+    def counting(text, size_pt, bold=False):
+        nonlocal calls
+        calls += 1
+        return real(text, size_pt, bold)
+
+    monkeypatch.setattr(m, "width", counting)
+    word = "https://example.org/" + "x" * 1980
+    lines = m.wrap(word, 0.3, 12)
+    assert "".join(lines) == word
+    assert all(real(line, 12) <= 0.3 for line in lines)
+    assert calls < 20 * len(lines), (calls, len(lines))
+
+
 def test_a_number_can_be_written_without_grouping_and_rounds_half_up():
     """A year is not 2,023; and PowerPoint rounds 12.5 to 13 where Python's format
     rounds half to even (BUILDER-CODE-01, -02)."""

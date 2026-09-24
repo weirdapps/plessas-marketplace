@@ -397,12 +397,26 @@ class TextMetrics:
                     continue
                 if current:
                     lines.append(current)
-                while self.width(word, size_pt, bold) > width_in and len(word) > 1:
-                    cut = len(word) - 1
-                    while cut > 1 and self.width(word[:cut], size_pt, bold) > width_in:
-                        cut -= 1
-                    lines.append(word[:cut])
-                    word = word[cut:]
+                last = 8
+                while len(word) > 1:
+                    # The longest prefix that fits, found by halving inside a window
+                    # about twice the last line: a prefix only widens as it lengthens.
+                    # Trying one character shorter at a time, then re-measuring the whole
+                    # rest of the word per line, made a table of URLs take minutes.
+                    hi = min(len(word), 2 * last)
+                    while hi < len(word) and self.width(word[:hi], size_pt, bold) <= width_in:
+                        hi = min(len(word), 2 * hi)
+                    if hi == len(word) and self.width(word, size_pt, bold) <= width_in:
+                        break
+                    lo, top = 1, hi - 1
+                    while lo < top:
+                        mid = (lo + top + 1) // 2
+                        if self.width(word[:mid], size_pt, bold) <= width_in:
+                            lo = mid
+                        else:
+                            top = mid - 1
+                    lines.append(word[:lo])
+                    word, last = word[lo:], lo
                 current = word
             lines.append(current)
         return lines
