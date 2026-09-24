@@ -51,9 +51,9 @@ Decision rules:
   comparison; see Peer banks). Six series at most (Standard #22); past that, split into small
   multiples or group the tail into "Other". `area_line` shades only its first series, so list the
   series to emphasise first. A multi-series line names each line at its end instead of a legend,
-  so keep series names short. State the unit in `content.description` ("Mobile active users,
-  millions"): the builder does not draw `chart.unit` today. Set `number_format` when the data
-  needs it.
+  so keep series names short. Put the unit in `chart.unit` (`EUR m`, `millions`) and keep it out of
+  `content.description`: the builder adds it to the caption, or as a caption line above the chart.
+  Set `number_format` when the data needs it.
 - **Colour is never the only signal** (Standard #22): series need names, statuses need words.
 - **Density**: a content slide fills 60 to 85 per cent of the safe area (Standard #2 item 7). Two
   short bullets floating at the top are too sparse: use a stronger type (`kpi`, `cards`) or merge

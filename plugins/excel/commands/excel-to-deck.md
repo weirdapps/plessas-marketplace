@@ -21,7 +21,7 @@ Bridge from data analysis to presentation creation.
    - Any anomalies or risks
    - A recommended narrative arc (what story does this data tell?)
 
-3. **Find the provenance.** Every slide that shows numbers needs a source: the workbook's file name and sheet, and the period the figures describe (`as_of`, e.g. `YTD August 2026`), with a full date or a four-digit year: `FY2025` or `H1'26` alone fails the decks check, so write `FY 2025` or `H1 2026`. Take the period from the workbook itself (sheet names, headers, a date cell). If the workbook does not state it, ask the user; never guess one.
+3. **Find the provenance.** Every slide that shows numbers needs a source: the workbook's file name and sheet, and the period the figures describe (`as_of`, e.g. `YTD August 2026`). It must carry its year, and the full form reads best (`FY 2025`, `H1 2026`); a period without a year fails the decks check. Take the period from the workbook itself (sheet names, headers, a date cell). If the workbook does not state it, ask the user; never guess one.
 
 4. **Write the deck spec** to `$HOME/Downloads/YYYYMMDDHHMM_deck_spec_<workbook-slug>.yaml` (as an absolute path), taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. It is the decks plugin's input format (`deck.schema.json` in that plugin), in this shape:
 
@@ -40,13 +40,14 @@ Bridge from data analysis to presentation creation.
        so_what: "<why the audience cares>"
        content:
          title: "<action title: a full sentence with the number, 80 chars max>"
-         description: "<what the chart measures, with its unit, e.g. YTD revenue by unit, EUR m>"
+         description: "<what the chart measures, e.g. YTD revenue by unit>"
          source: {name: "<workbook.xlsx, sheet Summary>", as_of: "<period with its year>"}
        chart:
          type: bar           # bar | bar_horizontal | bar_stacked | area_line (trends) | doughnut (never pie)
          data:
            categories: ["Issuing", "Acquiring"]
            series: [{name: "YTD actual", values: [5.42, 4.71]}]
+         unit: "EUR m"       # the builder adds it to the caption
      - {id: S09, type: back_cover}
    ```
 
