@@ -183,6 +183,30 @@ def test_every_deck_carries_the_nbg_theme(build):
     assert b"4F81BD" not in zipfile.ZipFile(out).read("ppt/theme/theme1.xml")
 
 
+def test_speaker_notes_carry_the_nbg_theme_and_the_deck_language(build):
+    """BUILDER-CODE-12: a deck with speaker notes carried python-pptx's Office 2007
+    theme (Calibri, 4F81BD) in the notes master's theme part, and untagged notes runs."""
+    slide = {**_content("Τρία πράγματα άλλαξαν", ["Ένα"]), "notes": "Πείτε τον αριθμό αργά"}
+    out = build(deck([slide], language="el"))
+    with zipfile.ZipFile(out) as zf:
+        themes = [n for n in zf.namelist() if n.startswith("ppt/theme/") and n.endswith(".xml")]
+        blobs = {n: zf.read(n) for n in themes}
+    assert len(themes) == 2, themes
+    for name, blob in blobs.items():
+        fonts = etree_from(blob).find(".//a:fontScheme", NS)
+        assert fonts.find("a:minorFont/a:latin", NS).get("typeface") == "Aptos", name
+        assert b"4F81BD" not in blob, name
+    notes = part_xml(out, "ppt/notesSlides/notesSlide1.xml")
+    runs = [r for r in notes.iter(f"{A}r") if "".join(t.text or "" for t in r.iter(f"{A}t"))]
+    assert runs and all(r.find("a:rPr", NS).get("lang") == "el-GR" for r in runs)
+
+
+def etree_from(blob):
+    from lxml import etree
+
+    return etree.fromstring(blob)
+
+
 # =============================================================== BUILD-CODE-6
 
 

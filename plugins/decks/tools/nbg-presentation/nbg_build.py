@@ -2122,11 +2122,17 @@ RENDERERS = {
 
 
 def _theme(prs: Any) -> None:
-    """Rewrite theme1.xml: NBG colours and Aptos, no effect styles.
+    """Rewrite every theme part: NBG colours and Aptos, no effect styles.
 
     Anything that inherits from the theme (a text box or chart a colleague adds in
-    PowerPoint, a chart series with no explicit colour) follows it (BRAND-SSOT-6)."""
-    part = prs.slide_master.part.part_related_by(RT.THEME)
+    PowerPoint, a chart series with no explicit colour) follows it (BRAND-SSOT-6). The
+    notes master is made here, so its theme is rewritten too: created later, with the
+    first speaker notes, it carried the Office 2007 theme and Calibri (BUILDER-CODE-12)."""
+    for master in (prs.slide_master, prs.notes_master):
+        _theme_part(master.part.part_related_by(RT.THEME))
+
+
+def _theme_part(part: Any) -> None:
     root = etree.fromstring(part.blob)
     ns = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
     scheme = root.find(".//a:clrScheme", ns)
@@ -2155,7 +2161,10 @@ def _theme(prs: Any) -> None:
         for child in list(effect):
             effect.remove(child)
         etree.SubElement(effect, qn("a:effectLst"))
-    part._blob = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
+    if hasattr(part, "_element"):  # python-pptx makes the notes theme an XmlPart
+        part._element = root
+    else:
+        part._blob = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
 def _widen_layouts(prs: Any, from_width: int) -> None:
@@ -2279,7 +2288,10 @@ def render(
             ) from e
         notes = slide_spec.get("notes")
         if notes:
-            slide.notes_slide.notes_text_frame.text = str(notes)
+            frame = slide.notes_slide.notes_text_frame
+            frame.text = str(notes)
+            for run in (r for p in frame.paragraphs for r in p.runs):
+                run._r.get_or_add_rPr().set("lang", LANG_TAG[lang])
     _core_properties(prs, spec, lang)
     return prs, sorted(errors + deck.errors, key=lambda i: i.slide or 0), deck.warnings
 
