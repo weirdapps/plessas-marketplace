@@ -56,10 +56,13 @@ from typing import Any
 try:
     import defusedxml.ElementTree as ET  # noqa: N817
 
-    # nbg_tokens and nbg_color sit one level up, shared with nbg_build and nbg-keynote.
+    # nbg_tokens, nbg_color and nbg_package sit one level up, shared with nbg_build and
+    # nbg-keynote.
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    import nbg_package
     import nbg_tokens
     from nbg_color import contrast_ratio, min_ratio
+    from nbg_package import MAX_XML_PART_BYTES, MAX_XML_RATIO, MAX_XML_TOTAL_BYTES
 except ImportError as exc:  # exit 2, not 1: a missing module is not a brand violation
     if __name__ != "__main__":
         raise
@@ -349,13 +352,9 @@ class Collector:
 # Content the validator cannot see at all; --strict fails a deck that has any.
 SMARTART_UNREAD = "SmartArt diagram with no drawing part"
 
-MAX_MEMBERS = 5000
-MAX_PART_BYTES = 64 * 1024 * 1024
+# The package limits live in tools/nbg_package.py, shared with extract and render.
+# The validator also hashes every picture it checks, so it caps the whole package too.
 MAX_TOTAL_BYTES = 1024 * 1024 * 1024
-# A parsed tree costs many times its text, so XML has its own, lower caps.
-MAX_XML_PART_BYTES = 16 * 1024 * 1024
-MAX_XML_TOTAL_BYTES = 128 * 1024 * 1024
-MAX_XML_RATIO = 100  # a zip bomb inflates XML thousands of times; real parts stay under 50
 
 
 class DeckError(Exception):
@@ -366,20 +365,23 @@ class Package:
     """Reads members straight from the zip, with size limits, never extracting.
 
     /redesign-deck and /polish-slides open decks somebody else made, so the input is
-    untrusted: every part is size-checked before it is inflated, and XML is parsed
-    with defusedxml.
+    untrusted: the shared pre-flight (nbg_package.check_package) bounds every member
+    before anything is inflated, every part parsed as XML is checked again whatever
+    its name, and XML is parsed with defusedxml.
     """
 
     def __init__(self, path: Path):
+        try:
+            nbg_package.check_package(path)
+        except nbg_package.PackageError as e:
+            raise DeckError(f"{path}: {e}") from e
         try:
             self._zip = zipfile.ZipFile(path)
         except (zipfile.BadZipFile, OSError) as e:
             raise DeckError(f"{path}: not a .pptx ({e})") from e
         infos = self._zip.infolist()
-        if len(infos) > MAX_MEMBERS:
-            raise DeckError(f"{path}: {len(infos)} package members, over the {MAX_MEMBERS} limit")
         if sum(i.file_size for i in infos) > MAX_TOTAL_BYTES:
-            raise DeckError(f"{path}: over {MAX_TOTAL_BYTES // 2**20} MB uncompressed")
+            raise DeckError(f"{path}: over {MAX_TOTAL_BYTES // 2**20} MiB uncompressed")
         self._info = {i.filename: i for i in infos}
         self._xml: dict[str, Any] = {}
         self._xml_bytes = 0
@@ -392,28 +394,26 @@ class Package:
         return bool(name) and name in self._info
 
     def read(self, name: str) -> bytes:
-        info = self._info[name]
-        if info.file_size > MAX_PART_BYTES:
-            raise DeckError(f"{name}: {info.file_size} bytes uncompressed, over the limit")
-        return self._zip.read(name)
+        return self._zip.read(name)  # the pre-flight bounded every member's size
 
     def xml(self, name: str | None) -> Any:
-        """The parsed part. Every part parsed as XML, whatever its name or size, is held
-        to the XML caps and the compression-ratio test before it is inflated."""
+        """The parsed part. The pre-flight skips members named as media, so every part
+        parsed as XML, whatever its name or size, is held to the XML caps and the
+        compression-ratio test again before it is inflated."""
         if not name or not self.has(name):
             return None
         if name not in self._xml:
             info = self._info[name]
             if info.file_size > MAX_XML_PART_BYTES:
                 raise DeckError(
-                    f"{name}: {info.file_size} bytes of XML, over the {MAX_XML_PART_BYTES // 2**20} MB part limit"
+                    f"{name} is {info.file_size} bytes of XML, over {MAX_XML_PART_BYTES // 2**20} MiB for one part"
                 )
             if info.compress_size and info.file_size / info.compress_size > MAX_XML_RATIO:
                 raise DeckError(f"{name}: compression ratio suggests a zip bomb")
             self._xml_bytes += info.file_size
             if self._xml_bytes > MAX_XML_TOTAL_BYTES:
                 raise DeckError(
-                    f"{name}: over {MAX_XML_TOTAL_BYTES // 2**20} MB of XML in the package"
+                    f"{name}: over {MAX_XML_TOTAL_BYTES // 2**20} MiB of XML in the package"
                 )
             try:
                 self._xml[name] = ET.fromstring(self.read(name))
