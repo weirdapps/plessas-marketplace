@@ -2793,6 +2793,33 @@ def test_negative_bars_need_zero_at_the_top(tmp_path):
     assert check(path, "Zero Baseline").status == "pass"
 
 
+@pytest.mark.parametrize(
+    "series",
+    [
+        (("Inflow", (12, 15, 9, 14)), ("Outflow", (-18, -11, -7, -16))),  # stacks reach -18
+        (("Inflow", (12, 15, 9, 14)),),  # nothing below zero: room below, still no truncation
+    ],
+)
+def test_an_explicit_negative_minimum_keeps_zero_on_the_axis(tmp_path, series):
+    """Builder's case: c:min -20 on a stack reaching -18 starts every bar at zero. The
+    rule is that the axis includes zero, so a negative minimum never truncates."""
+
+    def edit(prs):
+        sld = slide(prs, 3)
+        remove(sld.shapes[1])
+        frame = bar_chart(
+            sld,
+            series=series,
+            zero_based=False,
+            chart_type=XL_CHART_TYPE.COLUMN_STACKED,
+            alt="Stacked column chart of inflows and outflows by quarter of 2025.",
+        )
+        frame.chart.value_axis.minimum_scale = -20
+
+    result = check(deck(tmp_path, edit), "Zero Baseline")
+    assert result.status == "pass", result.details
+
+
 def test_the_names_the_spec_checker_imports_stay_put():
     """nbg_spec imports these so `check` and this gate agree; renaming one breaks it."""
     assert nv.SOURCE_AS_OF.search("30 June 2026") and nv.SOURCE_AS_OF.search("9M25")
