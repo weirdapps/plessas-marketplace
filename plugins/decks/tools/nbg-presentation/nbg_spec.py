@@ -1275,6 +1275,20 @@ def _table_issues(table: Any, path: str, issues: Issues) -> None:
                     f"YAML read this unquoted cell as {str(cell).lower()}",
                     'quote it, e.g. "Yes"',
                 )
+    labels = [
+        row[0]
+        for row in (rows if isinstance(rows, list) else [])
+        if isinstance(row, list) and row and _is_number(row[0])
+    ]
+    if labels:
+        # BUILDER-CODE-02: YAML hands back 2023 (and 010 as 8) as a number, which the
+        # builder formats and right-aligns as a figure.
+        issues.warning(
+            f"{path}.rows",
+            f"the first column holds unquoted numbers ({', '.join(map(str, labels[:3]))}), "
+            "which are drawn as figures, but a row label is text",
+            f'quote them, e.g. "{labels[0]}"',
+        )
     highlight = table.get("highlight_column")
     if isinstance(highlight, int) and width and highlight >= width:
         issues.error(

@@ -1001,14 +1001,16 @@ def _decimals(value: Any) -> int:
     return min(2, len(f"{value:.6f}".rstrip("0").split(".")[1]))
 
 
-def _cell_text(value: Any, lang: str = "en", decimals: int | None = None) -> str:
-    """A cell as text. A number takes its column's precision (E2E-OUTPUT-07) and the
-    deck language's separators (1.234,5 in Greek)."""
+def _cell_text(
+    value: Any, lang: str = "en", decimals: int | None = None, group: bool = True
+) -> str:
+    """A cell as text. A number takes its column's precision (E2E-OUTPUT-07), its
+    column's grouping, and the deck language's separators (1.234,5 in Greek)."""
     if value is None:
         return ""
     if _is_figure(value):
         places = _decimals(value) if decimals is None else decimals
-        return str(format_number(float(value), places, lang))
+        return str(format_number(float(value), places, lang, group=group))
     return str(value)
 
 
@@ -1038,8 +1040,16 @@ def add_table(
         max((_decimals(r[c]) for r in spec["rows"] if c < len(r) and _is_figure(r[c])), default=0)
         for c in range(width)
     ]
+    # Thousands grouping per column, only once its largest figure reaches 10,000: so a
+    # column's figures agree, and years and four-digit codes stay as written
+    # (BUILDER-CODE-02: every number was grouped, and 2023 printed as 2,023).
+    grouped = [
+        any(abs(r[c]) >= 10000 for r in spec["rows"] if c < len(r) and _is_figure(r[c]))
+        for c in range(width)
+    ]
     rows = [
-        [_cell_text(v, deck.lang, places[c]) for c, v in enumerate(r)] + [""] * (width - len(r))
+        [_cell_text(v, deck.lang, places[c], grouped[c]) for c, v in enumerate(r)]
+        + [""] * (width - len(r))
         for r in spec["rows"]
     ]
     headers += [""] * (width - len(headers))

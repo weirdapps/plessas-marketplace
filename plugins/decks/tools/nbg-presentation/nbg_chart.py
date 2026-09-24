@@ -176,7 +176,7 @@ def format_value(value: float, number_format: str | None, lang: str = "en") -> s
     sign = "-" if value < 0 else ""
     magnitude = abs(float(value))
     if section.strip().casefold() in ("general", ""):
-        return sign + localise_number(f"{magnitude:.10g}", lang)
+        return sign + str(localise_number(f"{magnitude:.10g}", lang))
     parts: list[tuple[str, str]] = []
     percent = 0
     i = 0

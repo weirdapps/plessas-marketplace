@@ -839,7 +839,10 @@ def test_a_greek_deck_writes_greek_separators_in_tables_and_waterfall_labels(bui
     table = {
         "type": "table",
         "content": {"title": "Οι όγκοι ανά κανάλι", "source": SOURCE},
-        "table": {"headers": ["Κανάλι", "Όγκος", "Πελάτες"], "rows": [["Κάρτες", 1234.5, 2500000]]},
+        "table": {
+            "headers": ["Κανάλι", "Όγκος", "Πελάτες"],
+            "rows": [["Κάρτες", 12345.5, 2500000]],
+        },
     }
     waterfall = {
         "type": "waterfall",
@@ -860,7 +863,7 @@ def test_a_greek_deck_writes_greek_separators_in_tables_and_waterfall_labels(bui
     cell_text = " ".join(
         "".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in slide_xml(out, 2).iter(f"{A}tc")
     )
-    assert "1.234,5" in cell_text and "2.500.000" in cell_text, (cells, cell_text)
+    assert "12.345,5" in cell_text and "2.500.000" in cell_text, (cells, cell_text)
     labels = [
         "".join(t.text or "" for t in dlbl.iter(f"{A}t"))
         for dlbl in part_xml(out, chart_parts(out)[0]).iter(f"{C}dLbl")
@@ -886,8 +889,44 @@ def test_a_numeric_table_column_takes_one_precision(build):
         for tr in root.iter(f"{A}tr")
     ][1:]
     assert [row[1] for row in cells] == ["1.50", "2.00", "3.25"]
-    assert [row[2] for row in cells] == ["12", "7", "1,500"]
+    assert [row[2] for row in cells] == ["12", "7", "1500"], "grouped only from 10,000"
     assert [row[3] for row in cells] == ["0.12", "0.50", "1.00"], "capped at two decimals"
+
+
+def _table_cells(out):
+    root = slide_xml(out, 2)
+    return [
+        ["".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in tr.iter(f"{A}tc")]
+        for tr in root.iter(f"{A}tr")
+    ][1:]
+
+
+YEAR_ROWS = [[2023, 410.5, 9500], [2024, 455, 12500], [2025, 498.25, 15000]]
+
+
+@pytest.mark.parametrize(
+    ("lang", "revenue", "accounts"),
+    [
+        ("en", ["410.50", "455.00", "498.25"], ["9,500", "12,500", "15,000"]),
+        ("el", ["410,50", "455,00", "498,25"], ["9.500", "12.500", "15.000"]),
+    ],
+)
+def test_table_years_stay_years_and_a_column_groups_from_ten_thousand(
+    build, lang, revenue, accounts
+):
+    """BUILDER-CODE-02: every unquoted number took a thousands separator, so years
+    printed as 2,023. A column is grouped only when its largest value reaches 10,000,
+    so its figures agree, and years and four-digit codes stay as written."""
+    table = {
+        "type": "table",
+        "content": {"title": "Revenue rose every year", "source": SOURCE},
+        "table": {"headers": ["Year", "Revenue", "Accounts"], "rows": YEAR_ROWS},
+    }
+    presentation = {"language": lang} if lang == "el" else {}
+    cells = _table_cells(build(deck([table], **presentation)))
+    assert [row[0] for row in cells] == ["2023", "2024", "2025"]
+    assert [row[1] for row in cells] == revenue
+    assert [row[2] for row in cells] == accounts
 
 
 @pytest.mark.parametrize("chart_type", ["bar", "bar_horizontal", "bar_stacked"])

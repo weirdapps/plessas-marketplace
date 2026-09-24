@@ -556,6 +556,19 @@ def test_check_json_reports_every_image_slot(tmp_path):
     ]
 
 
+def test_unquoted_numbers_as_row_labels_are_a_warning(tmp_path):
+    """BUILDER-CODE-02: YAML hands back 2023 (and 010 as 8) as numbers, which the
+    builder then formats and right-aligns as figures. A row label is text."""
+    slide = {
+        "type": "table",
+        "content": {"title": "Revenue rose every year", "source": SOURCE},
+        "table": {"headers": ["Year", "Revenue"], "rows": [[2023, 410.5], [2024, 455]]},
+    }
+    report = check(tmp_path, deck([slide]))
+    found = [i for i in report.warnings if i.path == "slides[1].table.rows"]
+    assert report.ok and found and "2023" in found[0].message and '"2023"' in found[0].fix
+
+
 def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     spec = deck(
         [
