@@ -38,6 +38,9 @@ Versions: `decks` 1.1.1 to **2.0.0** (agent removed, pipeline and state location
 - `nbg-presenter` removed (nothing dispatched it). Prompts shrank from 5,248 to about 1,300 lines.
 - Peer-bank charts take each bank's brand colour and logo automatically; the owner's two-party
   ownership coding joins the palette as a documented element.
+- Tables take `row_fill` and `header_fill` colour tokens, so a two-party asks table is one table
+  element rather than rows drawn from shapes. A two-column slide takes a column of three or four
+  KPIs.
 
 ### Fixed: what the decks looked like in PowerPoint
 
@@ -50,6 +53,9 @@ Versions: `decks` 1.1.1 to **2.0.0** (agent removed, pipeline and state location
   PowerPoint hung exporting a doughnut label setting.
 - Greek decks: capitals kept their accents and lacked the dialytika, and numbers carried English
   separators.
+- Waterfall labels ignored the chart's number format, table years printed as 2,023, line-chart
+  series names wrapped mid-word at the end of the line, and speaker notes carried the Office 2007
+  theme.
 
 ### Fixed: the validator
 
@@ -59,6 +65,8 @@ Versions: `decks` 1.1.1 to **2.0.0** (agent removed, pipeline and state location
 - False positives gone ("commercial", numbered ovals, contents and Key Figures pages, ordinary
   Greek words); false negatives closed (off-palette chart colours, dark backgrounds, shadows, em
   dashes, truncated axes, stretched logos).
+- A short bank name (Alpha, Piraeus, Εθνική) names a bank only as the whole chart label, so
+  "Piraeus Port Authority" is not a bank comparison. The builder and the validator share the rule.
 
 ### Fixed: portability and delivery
 
@@ -67,6 +75,9 @@ Versions: `decks` 1.1.1 to **2.0.0** (agent removed, pipeline and state location
   dependency (now `decks-py extract`).
 - Keynote fonts on a stock Mac and on Windows, UTF-8 output on Windows consoles, and a stale lock
   that hung the launcher after an interrupted first run.
+- `decks-py render` names every substituted typeface and reports hidden slides; `extract` reads
+  3-D, stock and surface charts and no longer stops at one unreadable shape; checking a 60-column
+  table takes about a second instead of 13 minutes.
 
 ### Changed: `excel`
 

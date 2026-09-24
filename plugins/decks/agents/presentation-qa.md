@@ -59,22 +59,25 @@ bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" validate "<pptx>" --format json --stri
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" render "<pptx>" "<render>"
 ```
 
-It prints JSON: `pngs` (one file per slide, `slide-01.png` onwards), `deck_slides`, `pdf`, `fonts`,
-`font_fallback` and sometimes a `warning`; on exit 2 or 3 it prints `error` and `fix` instead.
+It prints JSON: `pngs` (one file per rendered slide, each named for the deck slide it shows,
+`slide-01.png` onwards), `deck_slides`, `hidden_slides`, `pdf`, `fonts`, `font_fallback`,
+`substituted_fonts` and `warnings` (a list, empty when there is nothing to report); on exit 2 or 3
+it prints `error` and `fix` instead.
 
-- Exit 0: rendered with Aptos. Judge everything.
-- Exit 4: rendered, but Aptos was substituted (`font_fallback: true`). Judge colour, layout and
-  message, and say that text-fit and wrapping judgements are unreliable because the render did not
-  use Aptos.
+- Exit 0: rendered with every typeface the deck asks for. Judge everything.
+- Exit 4: rendered, but LibreOffice substituted a typeface (`font_fallback: true`;
+  `substituted_fonts` names it). Judge colour, layout and message, and say that text-fit and
+  wrapping judgements are unreliable because the render did not use the deck's fonts.
 - Exit 3: LibreOffice is not installed, so nothing can be rendered. Exit 2: the render failed. In
   both cases quote `error` and `fix`, review the text only, from
   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<pptx>"`, and the verdict can be at best
   UNVERIFIED: say that the slides were not visually verified and why.
 
-After a render (exit 0 or 4), Read EVERY file in `pngs`, in order, and quote the JSON's `warning`
-if it has one. The number of PNGs must equal the deck's slide count (`deck_slides` in the render
-JSON, or the length of `deck.yaml`'s slides); name any slide that has no image. Judge each image, not the XML, against the criteria
-below. After a text-only review, judge what text can show (A, B, and bullet counts).
+After a render (exit 0 or 4), Read EVERY file in `pngs`, in order, and quote every entry in the
+JSON's `warnings`. The number of PNGs must equal the deck's slide count less its hidden slides
+(`deck_slides` minus the length of `hidden_slides`); name any visible slide that has no image, and
+list the hidden slides as not reviewed. Judge each image, not the XML, against the criteria below.
+After a text-only review, judge what text can show (A, B, and bullet counts).
 
 LibreOffice gets three things wrong, so never report them from the image alone: negative bar
 values drawn as positive bars (trust the data labels and the spec); a faint drop shadow under a
