@@ -342,10 +342,10 @@ seconds whether an item is an ask or a commitment.
 | Part | Asks (the other division) | Our division |
 |---|---|---|
 | Card and row fill | `ownership_ask_fill` (`#FAEBEC`) | `off_white` (`#F5F8F6`) |
-| Left accent bar, 0.08" wide, the card's or row's full height | `ownership_ask` (`#C8323C`) | `bright_cyan` (`#00DFF8`) |
+| Left accent bar on a card, 0.08" wide, its full height | `ownership_ask` (`#C8323C`) | `bright_cyan` (`#00DFF8`) |
 | Section header bar, full content width, 0.35" tall | `ownership_ask`, white 12pt Bold text (5.28:1) | `teal` (`#007B85`), white 12pt Bold text (5.03:1) |
 | Badge naming the division | An `ownership_ask` box, 0.3" tall, the division's name in white 11pt Bold | A `teal` box, the same |
-| Table rows | All `ownership_ask_fill`, never zebra-striped: every row is an ask | Alternating `off_white` and `white` |
+| Table rows | All `ownership_ask_fill` (`row_fill: ownership_ask_fill`), never zebra-striped: every row is an ask | Alternating `off_white` and `white` (the table default) |
 | Card text | Title 16pt Bold `dark_teal` (11.06:1), body 14pt `body_text` (14.09:1) | Title 16pt Bold `dark_teal` (11.96:1), body 14pt `body_text` (15.24:1) |
 
 **Footer band.** `ownership_band` (`#E6F4F5`) at full content width (x 0.374", w 12.585"), 0.45"
@@ -370,13 +370,15 @@ on that page, never sits beside one: the two tints are 1.01:1 apart and would re
   both carry a meaning that a label also states.
 
 Built with the `custom` slide type: `shape` and `text` elements take these colour token names in
-`fill` and `text_color`. A `table` element always stripes its rows (`white` and `zebra_tint`,
-which is the `off_white` value), which is right for our division's tables. Draw an asks table as
-rows instead: per row a `rect` in `ownership_ask_fill`, 0.36" tall with a 0.04" gap, its accent
-bar, and its cells as 12pt `text` elements with `anchor: middle` (first column Bold), all under a
-column-header row in `dark_teal` with white 12pt Bold text. Those rows are shapes, so the builder
-does not ask for a source: give the slide `content.source` whenever they carry figures. An asks
-page with one card, repeated per ask:
+`fill` and `text_color`. A table is one `table` element. An asks table sets
+`row_fill: ownership_ask_fill`, which fills every body row and turns the zebra off; our division's
+tables keep the default stripes (`white` and `zebra_tint`, which is the `off_white` value). The
+header row stays `dark_teal` with white 12pt Bold text; `header_fill` takes another colour token
+if a page needs one, and the builder then picks white or dark header text by contrast. A table is
+an exhibit, so its slide carries `content.source`. A table's rows take no accent bar: the section
+header bar above it names the party.
+
+An asks page with one card, repeated per ask:
 
 ```yaml
 - type: custom
@@ -394,6 +396,32 @@ page with one card, repeated per ask:
     - {kind: text, role: card_body, x: 0.624, y: 2.37, w: 5.74, h: 0.66, text: "Why it matters, in two lines at most"}
     # footer band: what our division leads in parallel
     - {kind: shape, shape: rect, x: 0.374, y: 6.05, w: 12.585, h: 0.45, fill: ownership_band, text: "In parallel, our division leads the rest of the product plan.", text_color: dark_teal, size: 14, align: left}
+```
+
+An asks table, one element under its section header bar; the source line moves the footer band
+up to end at 6.15":
+
+```yaml
+- type: custom
+  id: S13
+  content:
+    title: "Product A's three asks of the other division fit one table"
+    source: {name: "Illustrative figures", as_of: "September 2026"}
+  elements:
+    - {kind: shape, shape: rect, x: 0.374, y: 1.3, w: 12.585, h: 0.35, fill: ownership_ask, text: "PRODUCT A: 3 ASKS", text_color: white, size: 12, bold: true, align: left}
+    - kind: table
+      x: 0.374
+      y: 1.75
+      w: 12.585
+      h: 1.6
+      table:
+        headers: ["Ask", "Why it matters", "Decision by"]
+        rows:
+          - ["First ask", "Unlocks the first action", "Q1 2027"]
+          - ["Second ask", "Unlocks the second action", "Q2 2027"]
+          - ["Third ask", "Unlocks the third action", "Q3 2027"]
+        row_fill: ownership_ask_fill
+    - {kind: shape, shape: rect, x: 0.374, y: 5.7, w: 12.585, h: 0.45, fill: ownership_band, text: "In parallel, our division leads the rest of the product plan.", text_color: dark_teal, size: 14, align: left}
 ```
 
 ## Clean Executive Cover: signature
