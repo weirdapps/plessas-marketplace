@@ -556,6 +556,56 @@ def test_check_json_reports_every_image_slot(tmp_path):
     ]
 
 
+def test_a_folded_yaml_title_is_one_line(tmp_path):
+    """YAML's `title: >` keeps a trailing newline, which the builder read as a second
+    line, so a ten-character cover title was refused as too long."""
+    spec_path = tmp_path / "folded.yaml"
+    spec_path.write_text(
+        "slides:\n"
+        "  - type: cover\n"
+        "    content:\n"
+        "      title: >\n"
+        "        Q3 results\n"
+        "  - type: content\n"
+        "    content:\n"
+        "      title: >\n"
+        "        Revenue grew twelve per cent in the quarter\n"
+        "      points:\n"
+        "        - >\n"
+        "          One point\n"
+        "  - type: back_cover\n",
+        encoding="utf-8",
+    )
+    report = nbg_build.check(spec_path)
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+    assert report.spec is not None
+    assert report.spec["slides"][0]["content"]["title"] == "Q3 results"
+
+
+def test_an_element_with_no_height_is_an_error_not_a_crash(tmp_path):
+    """BUILDER-CODE-07: an image element with h: 0 passed the schema and crashed the
+    builder with ZeroDivisionError (exit 2, 'a builder defect')."""
+    slide = {
+        "type": "custom",
+        "content": {"title": "A picture with no height"},
+        "elements": [
+            {
+                "kind": "image",
+                "path": "illustrations/Growth.png",
+                "alt_text": "Growth over five years",
+                "x": 0.374,
+                "y": 1.5,
+                "w": 4,
+                "h": 0,
+            }
+        ],
+    }
+    report = check(tmp_path, deck([slide]))
+    assert [i.path for i in report.errors] == ["slides[1].elements[0].h"], [
+        i.format() for i in report.issues
+    ]
+
+
 def test_unquoted_numbers_as_row_labels_are_a_warning(tmp_path):
     """BUILDER-CODE-02: YAML hands back 2023 (and 010 as 8) as numbers, which the
     builder then formats and right-aligns as figures. A row label is text."""

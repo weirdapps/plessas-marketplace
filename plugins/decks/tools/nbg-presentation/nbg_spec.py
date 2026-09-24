@@ -403,6 +403,10 @@ def _walk_text(node: Any, path: str, issues: Issues, key: str = "") -> Any:
         # "value", which is not in TEXT_KEYS, so each is handled by its own pass.
         node = _coerce_scalar(node, path, issues)
     if isinstance(node, str):
+        if node.endswith("\n"):
+            # A YAML block scalar (title: >) ends in a newline the author never meant,
+            # and the builder read it as a second line (BUILDER-CODE, folded title).
+            node = node.rstrip()
         bad = _CONTROL.search(node)
         if bad:
             issues.error(
@@ -1333,6 +1337,14 @@ def _element_issues(element: dict[str, Any], path: str, has_source: bool, issues
         x, y, w, h = (float(element[k]) for k in ("x", "y", "w", "h"))
     except (KeyError, TypeError, ValueError):
         return
+    if h <= 0 and element.get("kind") != "line":
+        # The schema lets h be 0 for a rule; any other element crashed the builder
+        # with ZeroDivisionError (BUILDER-CODE-07).
+        issues.error(
+            f"{path}.h",
+            f"a {element.get('kind')} element needs a height above 0",
+            "give it a height; only a line may have h: 0",
+        )
     left, right = float(g["gutter"]), float(g["right_boundary"])
     top, bottom = float(g["body_top"]), body_bottom(has_source)
     area = f"x {left:g} to {right:g}, y {top:g} to {bottom:.2f}"
