@@ -66,6 +66,7 @@ import nbg_chart  # noqa: E402
 import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_chart import LABEL_DARK_HEX, label_text_color, set_alt_text  # noqa: E402,F401
+from nbg_color import contrast_ratio  # noqa: E402
 from nbg_spec import CannotRun, Issue, Report  # noqa: E402
 from nbg_text import ASCENT_EM, caps, format_number, metrics  # noqa: E402
 
@@ -1153,15 +1154,23 @@ def add_table(
         run.text = text
         _style_run(run, s, deck.lang)
 
+    # row_fill paints every body row one colour with no zebra (an asks table in the
+    # two-party ownership coding, layouts.md); header_fill replaces dark teal, and the
+    # header text takes whichever of white and body text reads better on it.
+    header_fill = spec.get("header_fill") or comp["header_fill"]
+    if spec.get("header_fill"):
+        on_white = contrast_ratio(hexc(header_fill), hexc("white"))
+        if on_white < contrast_ratio(hexc(header_fill), hexc("body_text")):
+            head_s = style("table_header", color=hexc("body_text"))
     r0 = 0
     if header_h:
         table.rows[0].height = Inches(header_h)
         for c in range(width):
-            fill_cell(table.cell(0, c), headers[c], head_s, comp["header_fill"], align_of(c))
+            fill_cell(table.cell(0, c), headers[c], head_s, header_fill, align_of(c))
         r0 = 1
     for i, row in enumerate(rows):
         table.rows[r0 + i].height = Inches(body_hs[i])
-        fill = comp["zebra_fill"] if i % 2 else "white"
+        fill = spec.get("row_fill") or (comp["zebra_fill"] if i % 2 else "white")
         for c in range(width):
             fill_cell(table.cell(r0 + i, c), row[c], col_style(i, c), fill, align_of(c))
     set_alt_text(gf, spec.get("alt_text") or _table_alt_text(headers, rows, deck.lang))

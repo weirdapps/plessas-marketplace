@@ -1292,6 +1292,9 @@ def _table_issues(table: Any, path: str, issues: Issues) -> None:
                     f"YAML read this unquoted cell as {str(cell).lower()}",
                     'quote it, e.g. "Yes"',
                 )
+    for key in ("row_fill", "header_fill"):
+        if key in table:
+            _colour_issue(table[key], f"{path}.{key}", issues)
     labels = [
         row[0]
         for row in (rows if isinstance(rows, list) else [])

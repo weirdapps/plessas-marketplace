@@ -331,6 +331,46 @@ def test_a_short_table_grows_its_rows_toward_the_fill_band(build):
     assert all(0.35 < h <= 0.55 + 1e-6 for h in heights[1:]), heights
 
 
+def _asks_table(**colours):
+    return {
+        "type": "table",
+        "content": {"title": "Three asks of the credit division", "source": SOURCE},
+        "table": {
+            "headers": ["Ask", "Owner"],
+            "rows": [["Pricing", "Credit"], ["Limits", "Risk"], ["Data", "Operations"]],
+            **colours,
+        },
+    }
+
+
+def _cell_fills(root):
+    return [
+        [tc.find("a:tcPr/a:solidFill/a:srgbClr", NS).get("val") for tc in tr.iter(f"{A}tc")]
+        for tr in root.iter(f"{A}tr")
+    ]
+
+
+def test_row_fill_paints_every_body_row_and_drops_the_zebra(build):
+    """Two-party ownership coding (layouts.md): an asks table is filled, never striped.
+    A table always zebra-striped, so an asks table had to be drawn as shapes and lost
+    its source requirement."""
+    table = _asks_table(row_fill="ownership_ask_fill", header_fill="ownership_ask")
+    root = slide_xml(build(deck([table])), 2)
+    fills = _cell_fills(root)
+    assert fills[0] == ["C8323C", "C8323C"]
+    assert all(row == ["FAEBEC", "FAEBEC"] for row in fills[1:]), fills
+    run = next(tc for tc in root.iter(f"{A}tc")).find(".//a:rPr/a:solidFill/a:srgbClr", NS)
+    assert run.get("val") == "FFFFFF", "white clears AA on the red header"
+
+
+def test_a_light_header_fill_takes_dark_header_text(build):
+    root = slide_xml(build(deck([_asks_table(header_fill="ownership_band")])), 2)
+    run = next(tc for tc in root.iter(f"{A}tc")).find(".//a:rPr/a:solidFill/a:srgbClr", NS)
+    assert run.get("val") == "202020"
+    fills = _cell_fills(root)
+    assert fills[1] != fills[2], "no row_fill: the zebra stays"
+
+
 def test_a_stacked_segment_too_thin_for_its_label_drops_the_label(build):
     """E2E-OUTPUT-08: a 1% segment still got a 12pt label, which overprinted the
     labels of the segments either side."""

@@ -633,6 +633,19 @@ def test_unquoted_numbers_as_row_labels_are_a_warning(tmp_path):
     assert report.ok and found and "2023" in found[0].message and '"2023"' in found[0].fix
 
 
+def test_an_unknown_table_fill_colour_is_an_error(tmp_path):
+    slide = {
+        "type": "table",
+        "content": {"title": "Three asks", "source": SOURCE},
+        "table": {"headers": ["Ask"], "rows": [["Pricing"]], "row_fill": "blush_pink"},
+    }
+    report = check(tmp_path, deck([slide]))
+    assert any(
+        i.path == "slides[1].table.row_fill" and "not a colour in tokens.yaml" in i.message
+        for i in report.errors
+    ), [i.format() for i in report.issues]
+
+
 def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     spec = deck(
         [
