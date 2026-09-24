@@ -53,9 +53,8 @@ Standard #22): they are secondary to the direct data labels, never the only way 
 | 3 | **Bar Clustered** | Horizontal comparisons (same color as column, `#00ADBF`) |
 | 4 | **Stacked Column** | Composition over time (3-4 series max) |
 | 5 | **Area-Line** | Trends and time series (the default for any time series) |
-| 6 | **Stacked Area** | Two overlapping trends (semi-transparent fills) |
-| 7 | **Waterfall** | Financial flows, bridges |
-| 8 | **Line with markers** | A trend across categories that are not a time series; still the Standard #5 stroke and markers |
+| 6 | **Waterfall** | Financial flows, bridges |
+| 7 | **Line with markers** | A trend across categories that are not a time series; still the Standard #5 stroke and markers |
 
 In a deck spec these are `chart.type`: `doughnut`, `bar`, `bar_horizontal`, `bar_stacked`,
 `area_line`, `line`, and the `waterfall` slide type.
@@ -148,12 +147,16 @@ series.marker.format.line.color.rgb = series_color                       # colou
 series.marker.format.line.width = Pt(2)                                 # thinner than the line
 ```
 
-## Stacked Area Chart (2+ series, semi-transparent)
+## Stacked Area Chart: existing decks only, not built by the plugin
 
-Use for showing composition trends over time. Both series take semi-transparent fills (40%
-opacity) in the chart sequence (for example `#00ADBF` under `#BEC1BE`) and matching outlines at
-**2.5pt**. The 2.5pt is deliberate: this stroke outlines a filled region rather than carrying a
-value, so the 3.5pt data-line width in Standard #5 does not apply to it.
+The builder has no stacked-area chart: it is not a deck-spec `chart.type`. For a new deck, show
+composition over time with `bar_stacked`, or overlapping trends with a multi-series `area_line`
+or `line`. This spec is for reading or repairing a stacked-area chart in an existing deck.
+
+Both series take semi-transparent fills (40% opacity) in the chart sequence (for example
+`#00ADBF` under `#BEC1BE`) and matching outlines at **2.5pt**. The 2.5pt is deliberate: this
+stroke outlines a filled region rather than carrying a value, so the 3.5pt data-line width in
+Standard #5 does not apply to it.
 
 ## Status Colors for Charts
 
