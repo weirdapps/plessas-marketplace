@@ -47,7 +47,7 @@ slides:
     id: S03
     content:
       title: "Mobile adoption grew fastest among the systemic banks in 2025"
-      description: "Mobile active users, Q4 2025, millions"
+      description: "Mobile active users, Q4 2025"
       source:
         name: "Management information and published peer reports"
         as_of: "31 December 2025"
@@ -60,6 +60,7 @@ slides:
           - name: "Q4 2025"
             values: [2.8, 2.4, 2.2, 1.9]
       number_format: "0.0"
+      unit: "millions"
       highlight_category: "Our bank"
 
   - type: cards
@@ -99,7 +100,7 @@ slides:
         - "Target 3.5M mobile active users by year end"
     right:
       kind: chart
-      heading: "Mobile active users, millions"
+      heading: "Mobile active users"
       chart:
         type: area_line
         data:
@@ -108,5 +109,6 @@ slides:
             - name: "Mobile active users"
               values: [2.05, 2.12, 2.2, 2.28, 2.41, 2.55, 2.68, 2.8]
         number_format: "0.0"
+        unit: "millions"
 
   - type: back_cover

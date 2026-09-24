@@ -74,7 +74,7 @@ slides:
     id: S06
     content:
       title: "Cloud migration takes the largest share of the EUR 120M investment"
-      description: "Investment by area, 2026-2028, EUR millions"
+      description: "Investment by area, 2026-2028"
       source:
         name: "Planning submission"
         as_of: "31 January 2026"
@@ -86,6 +86,8 @@ slides:
         series:
           - name: "Investment"
             values: [42, 30, 30, 18]
+      unit: "EUR millions"
+      highlight_category: "Cloud migration"
 
   - type: table
     id: S07

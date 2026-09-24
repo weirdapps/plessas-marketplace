@@ -25,7 +25,7 @@ slides:
     id: S02
     content:
       title: "Mobile share of transactions ranges from 46% to 58% across the four banks"
-      description: "Share of transactions made in the mobile app, Q4 2025, %"
+      description: "Share of transactions made in the mobile app, Q4 2025"
       source:
         name: "Illustrative figures, not published data"
         as_of: "31 December 2025"
@@ -37,12 +37,13 @@ slides:
           - name: "Mobile share"
             values: [58, 52, 49, 46]
       number_format: "0"
+      unit: "%"
 
   - type: chart
     id: S03
     content:
       title: "Card spending per active card spans EUR 3,500 to EUR 4,200 a year"
-      description: "Card spending per active card, 2025, EUR"
+      description: "Card spending per active card, 2025"
       source:
         name: "Illustrative figures, not published data"
         as_of: "31 December 2025"
@@ -54,12 +55,13 @@ slides:
           - name: "Spending per card"
             values: [4200, 3900, 3700, 3500]
       number_format: "#,##0"
+      unit: "EUR"
 
   - type: chart
     id: S04
     content:
       title: "Digital sales share rose at all four banks between 2022 and 2025"
-      description: "Digital share of retail product sales, %"
+      description: "Digital share of retail product sales"
       source:
         name: "Illustrative figures, not published data"
         as_of: "31 December 2025"
@@ -77,6 +79,7 @@ slides:
           - name: "Alpha Bank"
             values: [17, 21, 24, 27]
       number_format: "0"
+      unit: "%"
 
   - type: chart
     id: S05
@@ -109,7 +112,7 @@ slides:
         - "The gap between the first and fourth bank held at about twelve points"
     right:
       kind: chart
-      heading: "Mobile share of transactions, %"
+      heading: "Mobile share of transactions"
       chart:
         type: bar
         data:
@@ -124,5 +127,6 @@ slides:
             - name: "Alpha Bank"
               values: [42, 46]
         number_format: "0"
+        unit: "%"
 
   - type: back_cover
