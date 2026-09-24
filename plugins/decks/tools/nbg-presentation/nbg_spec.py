@@ -30,7 +30,6 @@ import json
 import math
 import re
 import sys
-import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -51,7 +50,12 @@ import nbg_tokens  # noqa: E402
 # One rule, one place (PROMPTS-CONTRACTS-03): the spec-level rules the validator
 # fails a deck on are its own public functions and pattern, imported, so check can
 # never pass what the build then rejects for something written in the spec.
-from nbg_validate import SOURCE_AS_OF, alt_text_problem, dash_problem  # noqa: E402
+from nbg_validate import (  # noqa: E402
+    SOURCE_AS_OF,
+    alt_text_problem,
+    chart_label_bank,
+    dash_problem,
+)
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".svg"}
 
@@ -1127,43 +1131,12 @@ def _series_issues(series: list[Any], categories: list[Any], path: str, issues: 
 # ---------------------------------------------------------------- peer banks
 
 
-def fold(text: Any) -> str:
-    """Lower case with the accents removed (final sigma folds to sigma): how names match."""
-    decomposed = unicodedata.normalize("NFD", str(text))
-    return "".join(ch for ch in decomposed if not unicodedata.combining(ch)).casefold()
-
-
-# What may follow a short form and still leave it the bank: "Piraeus Group", "Alpha S.A.".
-_ALIAS_TAIL = r"(?:\s+(?:bank|group|s\.?\s?a\.?|α\.?\s?ε\.?))?"
-
-
-@lru_cache(maxsize=1)
-def _bank_patterns() -> dict[str, tuple[re.Pattern[str], re.Pattern[str] | None]]:
-    """Per bank: its full names, which count anywhere in a label ("Eurobank Cyprus"),
-    and its short forms, which name the bank only as the whole label. 'Piraeus' inside
-    'Piraeus Port Authority' gave a port Piraeus Bank's colour and logo (BUILDER-CODE-04)."""
-    patterns = {}
-    for key, bank in nbg_tokens.get("banks").items():
-        names = sorted((fold(a) for a in bank["names"]), key=len, reverse=True)
-        aliases = sorted((fold(a) for a in bank["label_aliases"]), key=len, reverse=True)
-        full = re.compile("|".join(rf"\b{re.escape(n)}\b" for n in names))
-        short = (
-            re.compile(f"(?:{'|'.join(map(re.escape, aliases))}){_ALIAS_TAIL}") if aliases else None
-        )
-        patterns[key] = (full, short)
-    return patterns
-
-
 def bank_of(label: Any) -> str | None:
-    """The tokens.yaml bank a chart label names, or None. A label naming two banks is
-    None too: it is a comparison written in words, not one bank's bar."""
-    folded = " ".join(fold(label).split())
-    hits = [
-        key
-        for key, (full, short) in _bank_patterns().items()
-        if full.search(folded) or (short is not None and short.fullmatch(folded))
-    ]
-    return hits[0] if len(hits) == 1 else None
+    """The tokens.yaml bank a chart label names, or None: the validator's own
+    chart_label_bank, so the builder brands exactly the charts its Bank Branding gate
+    checks. A full name counts anywhere, a short form only as the whole label, and a
+    label naming two banks names none (BUILDER-CODE-04)."""
+    return chart_label_bank(str(label))
 
 
 def bank_plan(chart: Any) -> tuple[str, list[str | None]] | None:

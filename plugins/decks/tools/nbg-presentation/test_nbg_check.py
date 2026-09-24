@@ -738,6 +738,7 @@ def test_check_applies_the_validators_own_spec_rules():
 
     assert nbg_spec.dash_problem is nbg_validate.dash_problem
     assert nbg_spec.alt_text_problem is nbg_validate.alt_text_problem
+    assert nbg_spec.chart_label_bank is nbg_validate.chart_label_bank
     assert nbg_spec.SOURCE_AS_OF is nbg_validate.SOURCE_AS_OF
 
 
