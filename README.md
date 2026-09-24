@@ -13,11 +13,11 @@ Six Claude Code plugins for productivity at a financial-services workplace: pres
 
 A Claude Code plugin marketplace built around the desk work of an executive at National Bank of Greece (NBG): drafting mail, walking into meetings prepared, keeping up with Teams chats, shipping board-ready presentations, and reading spreadsheets and Word documents. Each plugin is self-contained, ships with the commands and agents it needs, and bundles its own MCP server when it needs to reach an external system.
 
-Everything except the `decks` brand assets is domain-neutral. If you work at a different firm, install the plugins you need, point them at your M365 tenant, and (for `decks`) swap the template and colour palette.
+Everything except the `decks` brand assets is domain-neutral. If you work at a different firm, install the plugins you need, point them at your M365 tenant, and (for `decks`) edit its brand tokens and swap the logos.
 
 Owner: [weirdapps](https://weirdapps.github.io/resume/). License: MIT.
 
-> **v2.2.1**. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace), archived 2026-05-30. Migration notes: [`docs/migration-from-communications-marketplace.md`](docs/migration-from-communications-marketplace.md).
+> **v2.3.0**. Replaces [`communications-marketplace`](https://github.com/weirdapps/communications-marketplace), archived 2026-05-30. Migration notes: [`docs/migration-from-communications-marketplace.md`](docs/migration-from-communications-marketplace.md).
 
 ## The six plugins
 
