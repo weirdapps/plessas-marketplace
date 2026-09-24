@@ -31,7 +31,7 @@ PowerPoint afterwards also starts on-brand.
 | Gridlines | None |
 | Data labels | 12pt Bold `#003841`; inside a filled bar, the builder picks black or white by contrast against the fill |
 | Category axis | Labels 12pt `#202020`; axis line 0.5pt `#BEC1BE` |
-| Value axis | Hidden on bar and column charts; on line and area charts visible, labels 11pt `#939793`, no axis line |
+| Value axis | Hidden on bar and column charts, and pinned at zero whenever every bar is zero or more (waterfalls too); on line and area charts visible, labels 11pt `#939793`, no axis line |
 | Legend | Bottom, 12pt `#202020`, and by default only on a bar chart with several series: a doughnut names its slices in the ring and a multi-series line names each line at its last point |
 | Bar and column | Gap width 35%; stacked bars overlap 100%, their value axis runs from zero to the tallest stack, and a segment too thin for its label goes without one (`decks-py check` warns) |
 | Line | 3.5pt, straight segments (no smoothing), hollow circle markers size 6 (white fill, a 2pt ring in the series colour) |
@@ -199,7 +199,8 @@ white borders.
 ## Waterfall: Data Labels
 
 Every waterfall label is the bar's signed contribution, written into the label as text (`+1,624`,
-`-2,439`; a total carries a sign only when it is negative), so it reads the same in every viewer.
+`-2,439`, or `+1.624` in a Greek deck; a total carries a sign only when it is negative), so it
+reads the same in every viewer.
 All labels are 12pt Bold (`type.chart_data_label`). Where a label sits depends on the bar:
 
 | Bar | Label | Colour |
