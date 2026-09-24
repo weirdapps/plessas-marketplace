@@ -1133,23 +1133,36 @@ def fold(text: Any) -> str:
     return "".join(ch for ch in decomposed if not unicodedata.combining(ch)).casefold()
 
 
+# What may follow a short form and still leave it the bank: "Piraeus Group", "Alpha S.A.".
+_ALIAS_TAIL = r"(?:\s+(?:bank|group|s\.?\s?a\.?|α\.?\s?ε\.?))?"
+
+
 @lru_cache(maxsize=1)
-def _bank_patterns() -> dict[str, re.Pattern[str]]:
-    """Per bank, its full names and its label-only short forms: a chart label is a
-    label, so both count here."""
+def _bank_patterns() -> dict[str, tuple[re.Pattern[str], re.Pattern[str] | None]]:
+    """Per bank: its full names, which count anywhere in a label ("Eurobank Cyprus"),
+    and its short forms, which name the bank only as the whole label. 'Piraeus' inside
+    'Piraeus Port Authority' gave a port Piraeus Bank's colour and logo (BUILDER-CODE-04)."""
     patterns = {}
     for key, bank in nbg_tokens.get("banks").items():
-        aliases = list(bank["names"]) + list(bank["label_aliases"])
-        names = sorted((fold(a) for a in aliases), key=len, reverse=True)
-        patterns[key] = re.compile("|".join(rf"\b{re.escape(n)}\b" for n in names))
+        names = sorted((fold(a) for a in bank["names"]), key=len, reverse=True)
+        aliases = sorted((fold(a) for a in bank["label_aliases"]), key=len, reverse=True)
+        full = re.compile("|".join(rf"\b{re.escape(n)}\b" for n in names))
+        short = (
+            re.compile(f"(?:{'|'.join(map(re.escape, aliases))}){_ALIAS_TAIL}") if aliases else None
+        )
+        patterns[key] = (full, short)
     return patterns
 
 
 def bank_of(label: Any) -> str | None:
     """The tokens.yaml bank a chart label names, or None. A label naming two banks is
     None too: it is a comparison written in words, not one bank's bar."""
-    folded = fold(label)
-    hits = [key for key, pattern in _bank_patterns().items() if pattern.search(folded)]
+    folded = " ".join(fold(label).split())
+    hits = [
+        key
+        for key, (full, short) in _bank_patterns().items()
+        if full.search(folded) or (short is not None and short.fullmatch(folded))
+    ]
     return hits[0] if len(hits) == 1 else None
 
 

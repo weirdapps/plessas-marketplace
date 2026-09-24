@@ -83,8 +83,10 @@ extended_palettes:
 # (extended_palettes.peer_banks, the one colour source) with its logo. logo is
 # relative to assets/ and keeps its own aspect (NBG's oval mark is 1.55:1). Names match
 # whole-word, ignoring case and accents: `names` count anywhere, `label_aliases` only
-# in a chart label, where "Alpha" beside "Eurobank" is a bank but "alpha release" in
-# running text is not (VALIDATOR-9). The word "bank" alone names no bank.
+# as a whole chart label (optionally followed by Bank, Group or S.A.), where "Alpha"
+# beside "Eurobank" is a bank but "alpha release" in running text and "Piraeus Port
+# Authority" as a label are not (VALIDATOR-9, BUILDER-CODE-04). The word "bank" alone
+# names no bank.
 banks:
   nbg:
     name: "NBG"

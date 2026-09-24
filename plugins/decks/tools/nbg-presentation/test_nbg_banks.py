@@ -156,6 +156,53 @@ def test_the_word_bank_alone_names_no_bank(label):
     assert nbg_spec.bank_of(label) is None
 
 
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Piraeus Port Authority",
+        "Alpha Trust Andromeda",
+        "National Bank of Egypt",
+        "Εθνική Ασφαλιστική",
+        "Alpha Services and Holdings",
+    ],
+)
+def test_a_short_form_inside_another_companys_name_names_no_bank(label):
+    """BUILDER-CODE-04: 'Piraeus' anywhere in a label made it Piraeus Bank, so an
+    unrelated company got a rival bank's colour and logo."""
+    assert nbg_spec.bank_of(label) is None
+
+
+@pytest.mark.parametrize(
+    ("label", "bank"),
+    [
+        ("Piraeus", "piraeus"),
+        ("Piraeus Group", "piraeus"),
+        ("Alpha S.A.", "alpha"),
+        ("  ΕΤΕ ", "nbg"),
+        ("Eurobank Cyprus", "eurobank"),
+        ("Piraeus Bank Romania", "piraeus"),
+    ],
+)
+def test_a_short_form_is_the_whole_label_and_a_full_name_counts_anywhere(label, bank):
+    assert nbg_spec.bank_of(label) == bank
+
+
+def test_look_alike_companies_stay_muted_and_logo_free(build):
+    series = [{"name": "Market value, EUR m", "values": [12000, 10000, 1200, 6000, 40]}]
+    categories = ["NBG", "Eurobank", "Piraeus Port Authority", "OPAP", "Alpha Trust Andromeda"]
+    slide = {
+        "type": "chart",
+        "content": {"title": "Two banks lead the market value table", "source": SOURCE},
+        "chart": {"type": "bar_horizontal", "data": {"categories": categories, "series": series}},
+    }
+    out = build(deck([slide]))
+    fills = _point_fills(part_xml(out, chart_parts(out)[0]))
+    muted = nbg_tokens.color(nbg_tokens.get("charts.highlight.muted"))
+    assert fills == {0: "007B85", 1: "DC2646", 2: muted, 3: muted, 4: muted}
+    descr = [p.find(".//p:cNvPr", NS).get("descr") for p in _logos(slide_xml(out, 2))]
+    assert sorted(descr) == ["Eurobank logo", "NBG logo"]
+
+
 # ---------------------------------------------------------------- banks as categories
 
 

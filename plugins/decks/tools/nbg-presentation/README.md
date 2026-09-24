@@ -108,7 +108,9 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 
 Peer-bank comparisons brand themselves. Name two or more of the systemic banks
 (`tokens.yaml` `banks`: NBG, Eurobank, Piraeus Bank, Alpha Bank, in English or Greek,
-any case or accents; the word "bank" alone names none) as the categories of a
+any case or accents; the word "bank" alone names none, and a short form such as
+"Alpha" or "Piraeus" counts only as the whole label, so "Piraeus Port Authority" is
+not a bank) as the categories of a
 one-series `bar`, `bar_horizontal` or `doughnut` chart, or as the series of any bar or
 line chart, and each bank takes its brand colour (`extended_palettes.peer_banks`) and
 its logo: under its bar, beside a horizontal bar, or in a legend row of swatch, logo
