@@ -392,6 +392,30 @@ def test_a_stacked_chart_fixes_its_axis_and_plot_so_segment_heights_are_known(bu
     assert root.find(".//c:plotArea/c:layout/c:manualLayout", NS) is not None
 
 
+def test_line_end_names_stay_on_one_line_while_doughnut_labels_may_wrap(build):
+    """strategy-deck S09: 'Cumulative investment' at its line's end rendered as
+    'Cumulative in-' over 'vestment', because the label's bodyPr let it wrap.
+    Doughnut labels wrap between words by design and stay as they are."""
+    series = [
+        {"name": "Cumulative investment", "values": [1, 2, 3]},
+        {"name": "Savings", "values": [2, 3, 5]},
+    ]
+    line = _chart_slide("line", series=series)
+    line["chart"]["data"]["categories"] = ["Q1", "Q2", "Q3"]
+    doughnut = {
+        "type": "chart",
+        "content": {"title": "The mix", "source": SOURCE},
+        "chart": _doughnut(*CHANNELS),
+    }
+    out = build(deck([line, doughnut]))
+    line_labels = list(part_xml(out, chart_parts(out)[0]).iter(f"{C}dLbl"))
+    assert len(line_labels) == 2
+    for dlbl in line_labels:
+        assert dlbl.find("c:txPr/a:bodyPr", NS).get("wrap") == "none"
+    ring = part_xml(out, chart_parts(out)[1])
+    assert not [b for b in ring.iter(f"{A}bodyPr") if b.get("wrap") == "none"]
+
+
 def test_line_series_are_named_at_their_line_ends_not_in_a_legend(build):
     """E2E-OUTPUT-05: lines were told apart only by a colour-keyed legend."""
     series = [{"name": "2024", "values": [1, 2, 3]}, {"name": "2025", "values": [2, 3, 5]}]
