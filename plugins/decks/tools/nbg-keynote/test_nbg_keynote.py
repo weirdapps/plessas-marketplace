@@ -537,10 +537,15 @@ def test_cover_title_over_the_line_budget_is_rejected(tmp_path):
 
 
 def test_two_line_cover_title_wraps_inside_the_gutters(tmp_path):
-    """It used to be drawn as one unwrapped line and cut off at the canvas edge."""
+    """It used to be drawn as one unwrapped line and cut off at the canvas edge.
+
+    The title wraps to two lines in each face the keynote can fall back to: Aptos
+    ExtraBold, Calibri Bold and DejaVu Sans Bold, the only one on the CI runner. A
+    longer title needed three lines in DejaVu and failed only in CI.
+    """
     slide = {
         "type": "cover",
-        "title": "Payments at the speed of trust, and what it takes to get there",
+        "title": "Payments at the speed of trust, and what it takes",
         "subtitle": "The subordinate clause",
         "notes": "n",
     }
