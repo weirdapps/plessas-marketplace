@@ -2301,7 +2301,14 @@ SHARED_LIMITS = (
 
 def test_the_package_limits_are_the_shared_ones_not_a_copy():
     """One copy: the limits live in tools/nbg_package.py, which extract and render use."""
-    assert nv.MAX_XML_PART_BYTES == 16 * 2**20 and nv.MAX_XML_RATIO == 100
+    pinned = {
+        "MAX_MEMBERS": 5000,
+        "MAX_PART_BYTES": 64 * 2**20,
+        "MAX_XML_PART_BYTES": 16 * 2**20,
+        "MAX_XML_TOTAL_BYTES": 128 * 2**20,
+        "MAX_XML_RATIO": 100,
+    }
+    assert {name: getattr(nbg_package, name) for name in SHARED_LIMITS} == pinned
     for name in ("MAX_XML_PART_BYTES", "MAX_XML_TOTAL_BYTES", "MAX_XML_RATIO"):
         assert getattr(nv, name) == getattr(nbg_package, name), name
     source = SCRIPT.read_text(encoding="utf-8")
