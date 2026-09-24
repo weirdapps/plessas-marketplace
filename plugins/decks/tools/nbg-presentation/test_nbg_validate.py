@@ -1125,6 +1125,19 @@ def test_an_off_anchor_title_is_still_examined(tmp_path):
     assert "Slide 3" in details(found["Title Length"])
 
 
+def test_period_topic_labels_match_without_backtracking():
+    """A period plus a topic word ("Q1 2025 results") is a topic label. The year took two
+    \\s* either side of an optional group, which backtracks quadratically on a run of
+    spaces after "q1"; the rewrite matches exactly the same titles."""
+    pattern = nv.TOPIC_LABEL_PATTERN
+    for label in ("q1 2025 results", "fy2025 results", "h1 performance", "q3  2026  review",
+                  "q4results", "fy 2026 highlights"):  # fmt: skip
+        assert pattern.match(label), label
+    for title in ("q1 2025 results beat plan", "q5 results", "results", "q1 1999 results"):
+        assert not pattern.match(title), title
+    assert not pattern.match("q1" + " " * 20000 + "x")
+
+
 def test_banking_vocabulary_is_not_ai_slop(tmp_path):
     """VALIDATOR-9: 'leverage ratio' and 'robust capital base' are Basel language."""
     path = deck(

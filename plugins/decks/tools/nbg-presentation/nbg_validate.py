@@ -1922,7 +1922,7 @@ def _paragraph_lines(para: Para, avail: float, wrap: bool, m: TextMeasurer) -> t
             continue
         line_w, pending, count = 0.0, 0.0, 1
         for w, s in words:
-            if line_w == 0.0:
+            if line_w <= 0.0:  # nothing on this line yet
                 if w > avail:
                     extra = math.ceil(w / avail) - 1
                     count += extra
@@ -3610,8 +3610,10 @@ TOPIC_LABEL_TITLES = frozenset(
         "takeaways", "the ask", "timeline",
     }
 )  # fmt: skip
+# The year carries its own trailing whitespace: two \s* either side of an optional group
+# backtrack quadratically on a long run of spaces after "q1" that then fails to match.
 TOPIC_LABEL_PATTERN = re.compile(
-    r"^(?:q[1-4]|h[12]|fy)\s*(?:20\d{2})?\s*(?:results|performance|review|update|summary|numbers|highlights)$"
+    r"^(?:q[1-4]|h[12]|fy)\s*(?:20\d{2}\s*)?(?:results|performance|review|update|summary|numbers|highlights)$"
 )
 ACTION_TITLE_MAX_WORDS = 15
 

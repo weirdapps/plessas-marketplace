@@ -159,7 +159,7 @@ fi
 # the QA gate, /create-keynote and /create-mockup exited 127 on every install.
 # Every failure here warns and continues: the decks Python tools are optional,
 # the install is not.
-if [ "$PYTHON_OK" -eq 1 ] || command -v uv >/dev/null 2>&1; then
+if [[ "$PYTHON_OK" -eq 1 ]] || command -v uv >/dev/null 2>&1; then
   echo
   echo "Preparing the decks Python environments..."
   if bash "$INSTALL_DIR/plugins/decks/bin/decks-py" setup; then
