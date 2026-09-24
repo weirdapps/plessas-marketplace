@@ -52,6 +52,7 @@ from pptx.util import Emu, Pt  # noqa: E402
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
+import nbg_package  # noqa: E402
 import nbg_tokens  # noqa: E402
 import nbg_validate as nv  # noqa: E402
 
@@ -2289,13 +2290,38 @@ def _xml_comment(n):
     return b"<r><!--" + b"x" * n + b"--></r>"
 
 
-def test_the_xml_limits_are_the_ones_the_builder_shares():
-    """The same numbers as the builder's tools/nbg_package.py pre-flight."""
-    assert nv.MAX_MEMBERS == 5000
-    assert nv.MAX_PART_BYTES == 64 * 2**20
-    assert nv.MAX_XML_PART_BYTES == 16 * 2**20
-    assert nv.MAX_XML_TOTAL_BYTES == 128 * 2**20
-    assert nv.MAX_XML_RATIO == 100
+SHARED_LIMITS = (
+    "MAX_MEMBERS",
+    "MAX_PART_BYTES",
+    "MAX_XML_PART_BYTES",
+    "MAX_XML_TOTAL_BYTES",
+    "MAX_XML_RATIO",
+)
+
+
+def test_the_package_limits_are_the_shared_ones_not_a_copy():
+    """One copy: the limits live in tools/nbg_package.py, which extract and render use."""
+    assert nv.MAX_XML_PART_BYTES == 16 * 2**20 and nv.MAX_XML_RATIO == 100
+    for name in ("MAX_XML_PART_BYTES", "MAX_XML_TOTAL_BYTES", "MAX_XML_RATIO"):
+        assert getattr(nv, name) == getattr(nbg_package, name), name
+    source = SCRIPT.read_text(encoding="utf-8")
+    for name in SHARED_LIMITS:
+        assert not re.search(rf"^{name} = ", source, re.M), f"{name} is defined twice"
+
+
+def test_the_shared_pre_flight_refuses_a_part_no_check_reads(tmp_path, golden, capsys):
+    """An oversized XML part nothing references is never parsed, so only the package
+    pre-flight can refuse it; before it ran, such a deck validated as clean."""
+    path = tmp_path / "hidden.pptx"
+    with zipfile.ZipFile(golden) as zf:
+        blobs = {n: zf.read(n) for n in zf.namelist()}
+    blobs["customXml/item9.xml"] = b"<r><!--" + b"x" * (17 * 2**20) + b"--></r>"
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_STORED) as zf:
+        for n, data in blobs.items():
+            zf.writestr(n, data)
+    assert nv.main([str(path)]) == 2
+    err = capsys.readouterr().err
+    assert "customXml/item9.xml" in err and "16 MiB" in err
 
 
 def test_an_xml_part_over_16_mib_exits_2(tmp_path, golden, capsys):
@@ -2310,7 +2336,8 @@ def test_an_xml_part_over_16_mib_exits_2(tmp_path, golden, capsys):
         for n, data in blobs.items():
             zf.writestr(n, data, compress_type=zipfile.ZIP_STORED if n == part else None)
     assert nv.main([str(path)]) == 2
-    assert "16 MB" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "slide1.xml" in err and "16 MiB" in err
 
 
 def test_every_parsed_part_gets_the_ratio_test_whatever_its_size_or_name(tmp_path):
