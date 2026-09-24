@@ -183,6 +183,30 @@ def test_every_deck_carries_the_nbg_theme(build):
     assert b"4F81BD" not in zipfile.ZipFile(out).read("ppt/theme/theme1.xml")
 
 
+def test_speaker_notes_carry_the_nbg_theme_and_the_deck_language(build):
+    """BUILDER-CODE-12: a deck with speaker notes carried python-pptx's Office 2007
+    theme (Calibri, 4F81BD) in the notes master's theme part, and untagged notes runs."""
+    slide = {**_content("Τρία πράγματα άλλαξαν", ["Ένα"]), "notes": "Πείτε τον αριθμό αργά"}
+    out = build(deck([slide], language="el"))
+    with zipfile.ZipFile(out) as zf:
+        themes = [n for n in zf.namelist() if n.startswith("ppt/theme/") and n.endswith(".xml")]
+        blobs = {n: zf.read(n) for n in themes}
+    assert len(themes) == 2, themes
+    for name, blob in blobs.items():
+        fonts = etree_from(blob).find(".//a:fontScheme", NS)
+        assert fonts.find("a:minorFont/a:latin", NS).get("typeface") == "Aptos", name
+        assert b"4F81BD" not in blob, name
+    notes = part_xml(out, "ppt/notesSlides/notesSlide1.xml")
+    runs = [r for r in notes.iter(f"{A}r") if "".join(t.text or "" for t in r.iter(f"{A}t"))]
+    assert runs and all(r.find("a:rPr", NS).get("lang") == "el-GR" for r in runs)
+
+
+def etree_from(blob):
+    from lxml import etree
+
+    return etree.fromstring(blob)
+
+
 # =============================================================== BUILD-CODE-6
 
 
@@ -839,7 +863,10 @@ def test_a_greek_deck_writes_greek_separators_in_tables_and_waterfall_labels(bui
     table = {
         "type": "table",
         "content": {"title": "Οι όγκοι ανά κανάλι", "source": SOURCE},
-        "table": {"headers": ["Κανάλι", "Όγκος", "Πελάτες"], "rows": [["Κάρτες", 1234.5, 2500000]]},
+        "table": {
+            "headers": ["Κανάλι", "Όγκος", "Πελάτες"],
+            "rows": [["Κάρτες", 12345.5, 2500000]],
+        },
     }
     waterfall = {
         "type": "waterfall",
@@ -860,7 +887,7 @@ def test_a_greek_deck_writes_greek_separators_in_tables_and_waterfall_labels(bui
     cell_text = " ".join(
         "".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in slide_xml(out, 2).iter(f"{A}tc")
     )
-    assert "1.234,5" in cell_text and "2.500.000" in cell_text, (cells, cell_text)
+    assert "12.345,5" in cell_text and "2.500.000" in cell_text, (cells, cell_text)
     labels = [
         "".join(t.text or "" for t in dlbl.iter(f"{A}t"))
         for dlbl in part_xml(out, chart_parts(out)[0]).iter(f"{C}dLbl")
@@ -886,8 +913,44 @@ def test_a_numeric_table_column_takes_one_precision(build):
         for tr in root.iter(f"{A}tr")
     ][1:]
     assert [row[1] for row in cells] == ["1.50", "2.00", "3.25"]
-    assert [row[2] for row in cells] == ["12", "7", "1,500"]
+    assert [row[2] for row in cells] == ["12", "7", "1500"], "grouped only from 10,000"
     assert [row[3] for row in cells] == ["0.12", "0.50", "1.00"], "capped at two decimals"
+
+
+def _table_cells(out):
+    root = slide_xml(out, 2)
+    return [
+        ["".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in tr.iter(f"{A}tc")]
+        for tr in root.iter(f"{A}tr")
+    ][1:]
+
+
+YEAR_ROWS = [[2023, 410.5, 9500], [2024, 455, 12500], [2025, 498.25, 15000]]
+
+
+@pytest.mark.parametrize(
+    ("lang", "revenue", "accounts"),
+    [
+        ("en", ["410.50", "455.00", "498.25"], ["9,500", "12,500", "15,000"]),
+        ("el", ["410,50", "455,00", "498,25"], ["9.500", "12.500", "15.000"]),
+    ],
+)
+def test_table_years_stay_years_and_a_column_groups_from_ten_thousand(
+    build, lang, revenue, accounts
+):
+    """BUILDER-CODE-02: every unquoted number took a thousands separator, so years
+    printed as 2,023. A column is grouped only when its largest value reaches 10,000,
+    so its figures agree, and years and four-digit codes stay as written."""
+    table = {
+        "type": "table",
+        "content": {"title": "Revenue rose every year", "source": SOURCE},
+        "table": {"headers": ["Year", "Revenue", "Accounts"], "rows": YEAR_ROWS},
+    }
+    presentation = {"language": lang} if lang == "el" else {}
+    cells = _table_cells(build(deck([table], **presentation)))
+    assert [row[0] for row in cells] == ["2023", "2024", "2025"]
+    assert [row[1] for row in cells] == revenue
+    assert [row[2] for row in cells] == accounts
 
 
 @pytest.mark.parametrize("chart_type", ["bar", "bar_horizontal", "bar_stacked"])

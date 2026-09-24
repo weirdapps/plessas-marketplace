@@ -131,7 +131,81 @@ def _chart_lines(chart: Any) -> list[str]:
 
 _P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
 _A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+_C = "{http://schemas.openxmlformats.org/drawingml/2006/chart}"
+_R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+_DIAGRAM = "http://schemas.openxmlformats.org/drawingml/2006/diagram"
 _DECORATIVE_EXT = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}"
+# Charts python-pptx cannot read, by their plot element, for the cached-values reader.
+_XML_CHART_NAMES = {
+    "pie3DChart": "3-D pie",
+    "bar3DChart": "3-D bar",
+    "line3DChart": "3-D line",
+    "area3DChart": "3-D area",
+    "surface3DChart": "3-D surface",
+    "surfaceChart": "surface",
+    "stockChart": "stock",
+    "ofPieChart": "pie of pie",
+}
+
+
+def _cached_chart_lines(chart: Any) -> list[str]:
+    """A chart python-pptx cannot read (a 3-D, stock or surface chart), from the values
+    its XML caches: each series' name, the categories and the values. A 3-D pie in a
+    colleague's old deck crashed extract with a traceback (BUILDER-CODE-09)."""
+    plot_area = chart._chartSpace.find(f"{_C}chart/{_C}plotArea")
+    plots = [el for el in plot_area if el.tag.endswith("Chart")] if plot_area is not None else []
+    if not plots:
+        return ["[chart: data not read]"]
+    tag = plots[0].tag.split("}")[1]
+    kind = _XML_CHART_NAMES.get(tag, tag)
+    series = plots[0].findall(f"{_C}ser")
+    if not series:
+        return [f"[chart: {kind}, data not read]"]
+
+    def cached(el: Any) -> dict[int, str]:
+        if el is None:
+            return {}
+        return {int(pt.get("idx", 0)): pt.findtext(f"{_C}v") or "" for pt in el.iter(f"{_C}pt")}
+
+    def figure(text: str) -> str:
+        try:
+            return f"{float(text):g}"
+        except ValueError:
+            return text
+
+    categories = cached(series[0].find(f"{_C}cat"))
+    names, values = [], []
+    for i, ser in enumerate(series):
+        tx = ser.find(f"{_C}tx")
+        names.append("".join(v.text or "" for v in tx.iter(f"{_C}v")) if tx is not None else "")
+        names[-1] = names[-1] or f"Series {i + 1}"
+        val = ser.find(f"{_C}val")
+        values.append(cached(val if val is not None else ser.find(f"{_C}yVal")))
+    count = max([len(categories)] + [max(v, default=-1) + 1 for v in values])
+    rows = [["Category", *names]]
+    rows += [
+        [categories.get(i, str(i + 1)), *[figure(v.get(i, "")) for v in values]]
+        for i in range(count)
+    ]
+    return [f"Chart ({kind}):", "", *_md_table(rows)]
+
+
+def _smartart_text(shape: Any) -> str:
+    """The words of a SmartArt graphic, one entry per node, from its diagram data part."""
+    from lxml import etree
+
+    rel = shape._element.find(f".//{{{_DIAGRAM}}}relIds")
+    rid = rel.get(f"{_R}dm") if rel is not None else None
+    if not rid:
+        return ""
+    parser = etree.XMLParser(resolve_entities=False, no_network=True)
+    root = etree.fromstring(shape.part.related_part(rid).blob, parser)
+    words = []
+    for pt in root.iter(f"{{{_DIAGRAM}}}pt"):
+        text = " ".join("".join(t.text or "" for t in pt.iter(f"{_A}t")).split())
+        if text:
+            words.append(text)
+    return "; ".join(words)
 
 
 def _alt_text(shape: Any) -> str:
@@ -195,6 +269,38 @@ def _slide_title(slide: Any) -> tuple[str, Any]:
     return " ".join(best[1].text_frame.text.split()), best[1]
 
 
+def _shape_lines(shape: Any) -> list[str]:
+    """One shape as markdown lines: text, a table, a chart's data, or a marker for what
+    has no text of its own (a picture, an embedded object, a SmartArt graphic)."""
+    if _is_page_number(shape):
+        return []
+    if getattr(shape, "has_chart", False) and shape.has_chart:
+        try:
+            return _chart_lines(shape.chart) + [""]
+        except Exception:  # noqa: BLE001 - python-pptx reads only some chart types
+            return _cached_chart_lines(shape.chart) + [""]
+    if getattr(shape, "has_table", False) and shape.has_table:
+        rows = [[cell.text for cell in row.cells] for row in shape.table.rows]
+        return _md_table(rows) + [""]
+    if _is_picture(shape):
+        # Every picture gets a marker (the redesign asks for its file by it), unless
+        # its author marked it decorative, as the builder does its logos.
+        if _decorative(shape):
+            return []
+        alt = _alt_text(shape)
+        return [f"[image: {alt}]" if alt else f"[image: no alt text, {shape.name}]", ""]
+    if shape.shape_type in (7, 10):  # MSO_SHAPE_TYPE.EMBEDDED_OLE_OBJECT, LINKED_OLE_OBJECT
+        return [f"[embedded object: {shape.ole_format.prog_id or 'unknown'}]", ""]
+    graphic = shape._element.find(f".//{_A}graphicData")
+    if graphic is not None and graphic.get("uri") == _DIAGRAM:
+        words = _smartart_text(shape)
+        return [f"[SmartArt: {words}]" if words else "[SmartArt]", ""]
+    if shape.has_text_frame:
+        lines = _text_lines(shape)
+        return lines + [""] if lines else []
+    return []
+
+
 def extract_pptx(path: Path) -> str:
     from pptx import Presentation
 
@@ -215,23 +321,10 @@ def extract_pptx(path: Path) -> str:
             # python-pptx hands out a new proxy per access; compare the XML elements.
             if title_shape is not None and shape._element is title_shape._element:
                 continue
-            if _is_page_number(shape):
-                continue
-            if getattr(shape, "has_chart", False) and shape.has_chart:
-                out += _chart_lines(shape.chart) + [""]
-            elif getattr(shape, "has_table", False) and shape.has_table:
-                rows = [[cell.text for cell in row.cells] for row in shape.table.rows]
-                out += _md_table(rows) + [""]
-            elif _is_picture(shape):
-                # Every picture gets a marker (the redesign asks for its file by it),
-                # unless its author marked it decorative, as the builder does its logos.
-                if not _decorative(shape):
-                    alt = _alt_text(shape)
-                    out += [f"[image: {alt}]" if alt else f"[image: no alt text, {shape.name}]", ""]
-            elif shape.has_text_frame:
-                lines = _text_lines(shape)
-                if lines:
-                    out += lines + [""]
+            try:
+                out += _shape_lines(shape)
+            except Exception as e:  # noqa: BLE001 - one odd shape must not lose the deck
+                out += [f"[shape: {shape.name}, not read ({type(e).__name__})]", ""]
         if slide.has_notes_slide:
             notes = slide.notes_slide.notes_text_frame.text.strip()
             if notes:

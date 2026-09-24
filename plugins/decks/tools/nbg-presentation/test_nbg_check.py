@@ -556,6 +556,96 @@ def test_check_json_reports_every_image_slot(tmp_path):
     ]
 
 
+def test_a_folded_yaml_title_is_one_line(tmp_path):
+    """YAML's `title: >` keeps a trailing newline, which the builder read as a second
+    line, so a ten-character cover title was refused as too long."""
+    spec_path = tmp_path / "folded.yaml"
+    spec_path.write_text(
+        "slides:\n"
+        "  - type: cover\n"
+        "    content:\n"
+        "      title: >\n"
+        "        Q3 results\n"
+        "  - type: content\n"
+        "    content:\n"
+        "      title: >\n"
+        "        Revenue grew twelve per cent in the quarter\n"
+        "      points:\n"
+        "        - >\n"
+        "          One point\n"
+        "  - type: back_cover\n",
+        encoding="utf-8",
+    )
+    report = nbg_build.check(spec_path)
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+    assert report.spec is not None
+    assert report.spec["slides"][0]["content"]["title"] == "Q3 results"
+
+
+def test_an_element_with_no_height_is_an_error_not_a_crash(tmp_path):
+    """BUILDER-CODE-07: an image element with h: 0 passed the schema and crashed the
+    builder with ZeroDivisionError (exit 2, 'a builder defect')."""
+    slide = {
+        "type": "custom",
+        "content": {"title": "A picture with no height"},
+        "elements": [
+            {
+                "kind": "image",
+                "path": "illustrations/Growth.png",
+                "alt_text": "Growth over five years",
+                "x": 0.374,
+                "y": 1.5,
+                "w": 4,
+                "h": 0,
+            }
+        ],
+    }
+    report = check(tmp_path, deck([slide]))
+    assert [i.path for i in report.errors] == ["slides[1].elements[0].h"], [
+        i.format() for i in report.issues
+    ]
+
+
+def test_a_table_taller_than_the_body_stops_at_the_row_that_overflows(tmp_path):
+    """add_table measured every row before comparing with the body; the error now says
+    where the table ran out of room."""
+    rows = [["A label " * 60, "1"] for _ in range(14)]
+    slide = {
+        "type": "table",
+        "content": {"title": "Too much table", "source": SOURCE},
+        "table": {"headers": ["Item", "Value"], "rows": rows},
+    }
+    report = check(tmp_path, deck([slide]))
+    found = [i for i in report.errors if i.path == "slides[1].table"]
+    assert found and "of 14 rows" in found[0].message, [i.format() for i in report.issues]
+
+
+def test_unquoted_numbers_as_row_labels_are_a_warning(tmp_path):
+    """BUILDER-CODE-02: YAML hands back 2023 (and 010 as 8) as numbers, which the
+    builder then formats and right-aligns as figures. A row label is text."""
+    slide = {
+        "type": "table",
+        "content": {"title": "Revenue rose every year", "source": SOURCE},
+        "table": {"headers": ["Year", "Revenue"], "rows": [[2023, 410.5], [2024, 455]]},
+    }
+    report = check(tmp_path, deck([slide]))
+    found = [i for i in report.warnings if i.path == "slides[1].table.rows"]
+    assert report.ok and found and "2023" in found[0].message and '"2023"' in found[0].fix
+
+
+def test_an_unknown_table_fill_colour_is_an_error(tmp_path):
+    slide = {
+        "type": "table",
+        "content": {"title": "Three asks", "source": SOURCE},
+        "table": {"headers": ["Ask"], "rows": [["Pricing"]], "row_fill": "blush_pink"},
+    }
+    report = check(tmp_path, deck([slide]))
+    assert any(
+        i.path == "slides[1].table.row_fill" and "not a colour in tokens.yaml" in i.message
+        for i in report.errors
+    ), [i.format() for i in report.issues]
+
+
 def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     spec = deck(
         [
@@ -648,6 +738,7 @@ def test_check_applies_the_validators_own_spec_rules():
 
     assert nbg_spec.dash_problem is nbg_validate.dash_problem
     assert nbg_spec.alt_text_problem is nbg_validate.alt_text_problem
+    assert nbg_spec.chart_label_bank is nbg_validate.chart_label_bank
     assert nbg_spec.SOURCE_AS_OF is nbg_validate.SOURCE_AS_OF
 
 
@@ -818,6 +909,20 @@ def test_check_cli_exit_codes_and_json(tmp_path):
     assert set(body["errors"][0]) == {"slide", "id", "type", "path", "message", "fix"}
     missing = run(str(tmp_path / "missing.yaml"))
     assert missing.returncode == 2
+
+
+def test_check_prints_greek_on_a_windows_code_page(tmp_path):
+    """BUILDER-CODE-03: on a cp1252 console the Greek in an issue line or a path raised
+    UnicodeEncodeError, and a clean spec exited as if it had failed."""
+    import os
+
+    spec = write_spec(tmp_path, deck([_content()]), "παρουσίαση.yaml")
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--check", str(spec)], capture_output=True, env=env
+    )
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
+    assert "παρουσίαση" in proc.stdout.decode("utf-8")
 
 
 def test_every_example_checks_clean():

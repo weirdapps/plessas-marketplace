@@ -30,7 +30,6 @@ import json
 import math
 import re
 import sys
-import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -51,7 +50,12 @@ import nbg_tokens  # noqa: E402
 # One rule, one place (PROMPTS-CONTRACTS-03): the spec-level rules the validator
 # fails a deck on are its own public functions and pattern, imported, so check can
 # never pass what the build then rejects for something written in the spec.
-from nbg_validate import SOURCE_AS_OF, alt_text_problem, dash_problem  # noqa: E402
+from nbg_validate import (  # noqa: E402
+    SOURCE_AS_OF,
+    alt_text_problem,
+    chart_label_bank,
+    dash_problem,
+)
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".svg"}
 
@@ -403,6 +407,10 @@ def _walk_text(node: Any, path: str, issues: Issues, key: str = "") -> Any:
         # "value", which is not in TEXT_KEYS, so each is handled by its own pass.
         node = _coerce_scalar(node, path, issues)
     if isinstance(node, str):
+        if node.endswith("\n"):
+            # A YAML block scalar (title: >) ends in a newline the author never meant,
+            # and the builder read it as a second line (BUILDER-CODE, folded title).
+            node = node.rstrip()
         bad = _CONTROL.search(node)
         if bad:
             issues.error(
@@ -1123,30 +1131,12 @@ def _series_issues(series: list[Any], categories: list[Any], path: str, issues: 
 # ---------------------------------------------------------------- peer banks
 
 
-def fold(text: Any) -> str:
-    """Lower case with the accents removed (final sigma folds to sigma): how names match."""
-    decomposed = unicodedata.normalize("NFD", str(text))
-    return "".join(ch for ch in decomposed if not unicodedata.combining(ch)).casefold()
-
-
-@lru_cache(maxsize=1)
-def _bank_patterns() -> dict[str, re.Pattern[str]]:
-    """Per bank, its full names and its label-only short forms: a chart label is a
-    label, so both count here."""
-    patterns = {}
-    for key, bank in nbg_tokens.get("banks").items():
-        aliases = list(bank["names"]) + list(bank["label_aliases"])
-        names = sorted((fold(a) for a in aliases), key=len, reverse=True)
-        patterns[key] = re.compile("|".join(rf"\b{re.escape(n)}\b" for n in names))
-    return patterns
-
-
 def bank_of(label: Any) -> str | None:
-    """The tokens.yaml bank a chart label names, or None. A label naming two banks is
-    None too: it is a comparison written in words, not one bank's bar."""
-    folded = fold(label)
-    hits = [key for key, pattern in _bank_patterns().items() if pattern.search(folded)]
-    return hits[0] if len(hits) == 1 else None
+    """The tokens.yaml bank a chart label names, or None: the validator's own
+    chart_label_bank, so the builder brands exactly the charts its Bank Branding gate
+    checks. A full name counts anywhere, a short form only as the whole label, and a
+    label naming two banks names none (BUILDER-CODE-04)."""
+    return chart_label_bank(str(label))
 
 
 def bank_plan(chart: Any) -> tuple[str, list[str | None]] | None:
@@ -1275,6 +1265,23 @@ def _table_issues(table: Any, path: str, issues: Issues) -> None:
                     f"YAML read this unquoted cell as {str(cell).lower()}",
                     'quote it, e.g. "Yes"',
                 )
+    for key in ("row_fill", "header_fill"):
+        if key in table:
+            _colour_issue(table[key], f"{path}.{key}", issues)
+    labels = [
+        row[0]
+        for row in (rows if isinstance(rows, list) else [])
+        if isinstance(row, list) and row and _is_number(row[0])
+    ]
+    if labels:
+        # BUILDER-CODE-02: YAML hands back 2023 (and 010 as 8) as a number, which the
+        # builder formats and right-aligns as a figure.
+        issues.warning(
+            f"{path}.rows",
+            f"the first column holds unquoted numbers ({', '.join(map(str, labels[:3]))}), "
+            "which are drawn as figures, but a row label is text",
+            f'quote them, e.g. "{labels[0]}"',
+        )
     highlight = table.get("highlight_column")
     if isinstance(highlight, int) and width and highlight >= width:
         issues.error(
@@ -1319,6 +1326,14 @@ def _element_issues(element: dict[str, Any], path: str, has_source: bool, issues
         x, y, w, h = (float(element[k]) for k in ("x", "y", "w", "h"))
     except (KeyError, TypeError, ValueError):
         return
+    if h <= 0 and element.get("kind") != "line":
+        # The schema lets h be 0 for a rule; any other element crashed the builder
+        # with ZeroDivisionError (BUILDER-CODE-07).
+        issues.error(
+            f"{path}.h",
+            f"a {element.get('kind')} element needs a height above 0",
+            "give it a height; only a line may have h: 0",
+        )
     left, right = float(g["gutter"]), float(g["right_boundary"])
     top, bottom = float(g["body_top"]), body_bottom(has_source)
     area = f"x {left:g} to {right:g}, y {top:g} to {bottom:.2f}"

@@ -3990,6 +3990,11 @@ class _Bank:
     logo: str
     text: re.Pattern[str]
     label: re.Pattern[str]
+    alias: re.Pattern[str] | None  # a short form, matched only as a whole chart label
+
+
+# What may follow a short form and still leave it the bank: "Piraeus Group", "Alpha S.A.".
+_ALIAS_TAIL = r"(?:\s+(?:bank|group|s\.?\s?a\.?|α\.?\s?ε\.?))?"
 
 
 def _names_pattern(names: Iterable[str]) -> re.Pattern[str]:
@@ -4004,13 +4009,33 @@ def _bank_table() -> dict[str, _Bank]:
     for key, bank in nbg_tokens.get("banks").items():
         names = list(bank.get("names") or [bank["name"]])
         aliases = list(bank.get("label_aliases") or [])
+        forms = sorted((fold(str(a)) for a in aliases), key=len, reverse=True)
         table[key] = _Bank(
             str(bank["name"]),
             str(bank["logo"]),
             _names_pattern(names),
             _names_pattern(names + aliases),
+            re.compile(f"(?:{'|'.join(map(re.escape, forms))}){_ALIAS_TAIL}") if forms else None,
         )
     return table
+
+
+def chart_label_bank(label: str) -> str | None:
+    """The bank a chart label (a category or a series name) names, or None.
+
+    Public: nbg_spec's bank_of calls it, so the builder brands exactly the charts this
+    gate checks. A full name (tokens `names`) counts anywhere in the label ("Eurobank
+    Cyprus"); a short form (`label_aliases`: Alpha, Piraeus, ΕΤΕ) only as the whole
+    label, optionally followed by Bank, Group, S.A. or Α.Ε. So "Piraeus Port Authority"
+    names no bank: a short form anywhere gave it Piraeus Bank's colour and logo
+    (BUILDER-CODE-04). A label naming two banks names none."""
+    folded = " ".join(fold(str(label)).split())
+    hits = [
+        key
+        for key, bank in _bank_table().items()
+        if bank.text.search(folded) or (bank.alias is not None and bank.alias.fullmatch(folded))
+    ]
+    return hits[0] if len(hits) == 1 else None
 
 
 def _banks_in(text: str, *, label: bool) -> set[str]:
@@ -4078,8 +4103,9 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                     ser_color = ser_color or (
                         s.ctx.first(line_fill) if line_fill is not None else None
                     )
-                    for bank in _banks_in(_series_name(ser), label=True):
-                        plotted[bank] = ser_color or ""
+                    named = chart_label_bank(_series_name(ser))
+                    if named:
+                        plotted[named] = ser_color or ""
                     points = {}
                     for dpt in ser.findall(f"{C}dPt"):
                         idx = dpt.find(f"{C}idx")
@@ -4087,7 +4113,8 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                         if idx is not None and fill is not None:
                             points[idx.get("val")] = s.ctx.first(fill)
                     for i, label in enumerate(_categories(ser)):
-                        for bank in _banks_in(label, label=True):
+                        bank = chart_label_bank(label)
+                        if bank:
                             color = points.get(str(i)) or ser_color or ""
                             if plotted.get(bank) != b.peer_banks[bank]:
                                 plotted[bank] = color

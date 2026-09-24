@@ -66,6 +66,7 @@ import nbg_chart  # noqa: E402
 import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_chart import LABEL_DARK_HEX, label_text_color, set_alt_text  # noqa: E402,F401
+from nbg_color import contrast_ratio  # noqa: E402
 from nbg_spec import CannotRun, Issue, Report  # noqa: E402
 from nbg_text import ASCENT_EM, caps, format_number, metrics  # noqa: E402
 
@@ -634,7 +635,7 @@ def add_bullets(
     """Bullets with a cyan glyph and a hanging indent, schema order in every a:pPr.
     They shrink toward the body floor to fit; with grow, a sparse block also grows
     toward body.max_size until it fills geometry.fill.min of the frame, never past
-    fill.max (Standard #7: E2E-OUTPUT-11)."""
+    fill.max (Standard #2.7: E2E-OUTPUT-11)."""
     items = _points(points)
     body = nbg_tokens.get("type.body")
     size = float(body["size"])
@@ -1001,14 +1002,16 @@ def _decimals(value: Any) -> int:
     return min(2, len(f"{value:.6f}".rstrip("0").split(".")[1]))
 
 
-def _cell_text(value: Any, lang: str = "en", decimals: int | None = None) -> str:
-    """A cell as text. A number takes its column's precision (E2E-OUTPUT-07) and the
-    deck language's separators (1.234,5 in Greek)."""
+def _cell_text(
+    value: Any, lang: str = "en", decimals: int | None = None, group: bool = True
+) -> str:
+    """A cell as text. A number takes its column's precision (E2E-OUTPUT-07), its
+    column's grouping, and the deck language's separators (1.234,5 in Greek)."""
     if value is None:
         return ""
     if _is_figure(value):
         places = _decimals(value) if decimals is None else decimals
-        return str(format_number(float(value), places, lang))
+        return str(format_number(float(value), places, lang, group=group))
     return str(value)
 
 
@@ -1029,7 +1032,7 @@ def add_table(
 ) -> Any:
     """A native table, columns sized to their text. With grow, a short table's body
     rows grow alike toward geometry.fill.min of the frame, to table.row_h_max at most
-    (Standard #7: E2E-OUTPUT-11)."""
+    (Standard #2.7: E2E-OUTPUT-11)."""
     comp = COMP["table"]
     headers = [str(h) for h in spec.get("headers") or []]
     width = max([len(headers)] + [len(r) for r in spec["rows"]])
@@ -1038,8 +1041,16 @@ def add_table(
         max((_decimals(r[c]) for r in spec["rows"] if c < len(r) and _is_figure(r[c])), default=0)
         for c in range(width)
     ]
+    # Thousands grouping per column, only once its largest figure reaches 10,000: so a
+    # column's figures agree, and years and four-digit codes stay as written
+    # (BUILDER-CODE-02: every number was grouped, and 2023 printed as 2,023).
+    grouped = [
+        any(abs(r[c]) >= 10000 for r in spec["rows"] if c < len(r) and _is_figure(r[c]))
+        for c in range(width)
+    ]
     rows = [
-        [_cell_text(v, deck.lang, places[c]) for c, v in enumerate(r)] + [""] * (width - len(r))
+        [_cell_text(v, deck.lang, places[c], grouped[c]) for c, v in enumerate(r)]
+        + [""] * (width - len(r))
         for r in spec["rows"]
     ]
     headers += [""] * (width - len(headers))
@@ -1083,8 +1094,20 @@ def add_table(
         return max(minimum, text_height(n, head_s if r < 0 else body_s) + 0.1)
 
     header_h = row_height(headers, -1, float(comp["header_h"])) if any(headers) else 0.0
-    body_hs = [row_height(r, i, float(comp["row_h"])) for i, r in enumerate(rows)]
-    total = header_h + sum(body_hs)
+    # Stop at the row that overflows: measuring every wrapped cell of a table already
+    # known not to fit is where a wide table's check spent its minutes.
+    body_hs: list[float] = []
+    total = header_h
+    for i, r in enumerate(rows):
+        body_hs.append(row_height(r, i, float(comp["row_h"])))
+        total += body_hs[-1]
+        if total > frame.h + 1e-6:
+            raise deck.fit(
+                rel,
+                f"the table does not fit the {frame.h:.2f} in the body has: its first "
+                f"{i + 1} of {len(rows)} rows already take {total:.2f} in",
+                "split the table across two slides or cut rows (12pt is the floor for cells)",
+            )
     target = float(GEO["fill"]["min"]) * frame.h
     if grow and rows and total < target:
         room = float(comp["row_h_max"]) - float(comp["row_h"])
@@ -1131,15 +1154,23 @@ def add_table(
         run.text = text
         _style_run(run, s, deck.lang)
 
+    # row_fill paints every body row one colour with no zebra (an asks table in the
+    # two-party ownership coding, layouts.md); header_fill replaces dark teal, and the
+    # header text takes whichever of white and body text reads better on it.
+    header_fill = spec.get("header_fill") or comp["header_fill"]
+    if spec.get("header_fill"):
+        on_white = contrast_ratio(hexc(header_fill), hexc("white"))
+        if on_white < contrast_ratio(hexc(header_fill), hexc("body_text")):
+            head_s = style("table_header", color=hexc("body_text"))
     r0 = 0
     if header_h:
         table.rows[0].height = Inches(header_h)
         for c in range(width):
-            fill_cell(table.cell(0, c), headers[c], head_s, comp["header_fill"], align_of(c))
+            fill_cell(table.cell(0, c), headers[c], head_s, header_fill, align_of(c))
         r0 = 1
     for i, row in enumerate(rows):
         table.rows[r0 + i].height = Inches(body_hs[i])
-        fill = comp["zebra_fill"] if i % 2 else "white"
+        fill = spec.get("row_fill") or (comp["zebra_fill"] if i % 2 else "white")
         for c in range(width):
             fill_cell(table.cell(r0 + i, c), row[c], col_style(i, c), fill, align_of(c))
     set_alt_text(gf, spec.get("alt_text") or _table_alt_text(headers, rows, deck.lang))
@@ -1554,48 +1585,77 @@ def _kpi_tiles(
     comp = COMP["kpi"]
     n = len(kpis)
     gap = GRID_GAP
-    if vertical:
-        tile_w = frame.w
-        tile_h = min(float(comp["h"]), (frame.h - gap * (n - 1)) / n)
-    else:
-        tile_w = (frame.w - gap * (n - 1)) / n
-        tile_h = min(float(comp["h"]), frame.h)
     pad = float(comp["pad"])
-    inner = tile_w - 2 * pad
     value_base = nbg_tokens.get("type.kpi_value")
     ls = style("kpi_label")
-    # Standard #20, parallel comparison: one value size for the row (the largest that
-    # fits every tile) and the values and captions on shared lines.
-    size = float(value_base["size"])
-    floor = float(value_base["min_size"])
+    base, floor = float(value_base["size"]), float(value_base["min_size"])
     values = [str(k["value"]) for k in kpis]
-    while size > floor and any(metrics().width(v, size, True) > inner * FIT for v in values):
-        size -= 1
-    for i, value in enumerate(values):
-        if metrics().width(value, size, True) > inner * FIT:
-            raise deck.fit(
-                f"{rel}[{i}].value",
-                f"'{value}' does not fit its tile even at {size:g}pt",
-                "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
-            )
+    delta_h = text_height(1, style("kpi_delta"))
+
+    def stack_h(size: float, label_lines: int, kpi: dict[str, Any]) -> float:
+        value_h = text_height(1, style("kpi_value", size=size))
+        return (
+            value_h
+            + 0.08
+            + text_height(label_lines, ls)
+            + (0.06 + delta_h if kpi.get("delta") else 0.0)
+        )
+
+    # Standard #20, parallel comparison: one value size for every tile (the largest that
+    # fits them all) and the values and captions on shared lines. A KPI slide lays the
+    # tiles in one row; a two_column column stacks them, then tries two per row: a
+    # column of three or four at the full value size could never fit (BUILDER-CODE-08).
+    grids = (
+        [(1, n), (2, math.ceil(n / 2))]
+        if vertical and n > 2
+        else [(1 if vertical else n, n if vertical else 1)]
+    )
+
+    def fits(size: float, inner: float, room: float, labels: list[list[str]]) -> bool:
+        wide = any(metrics().width(v, size, True) > inner * FIT for v in values)
+        tall = any(stack_h(size, len(lab), k) > room for lab, k in zip(labels, kpis, strict=True))
+        return not (wide or tall)
+
+    for cols, rows in grids:
+        tile_w = (frame.w - gap * (cols - 1)) / cols
+        tile_h = min(float(comp["h"]), (frame.h - gap * (rows - 1)) / rows)
+        inner = tile_w - 2 * pad
+        room = tile_h - 2 * pad + 1e-6
+        labels = [lines_of(str(k["label"]), inner, ls) for k in kpis]
+        size = base
+        while size > floor and not fits(size, inner, room, labels):
+            size -= 1
+        if fits(size, inner, room, labels):
+            break
+    else:
+        for i, value in enumerate(values):
+            if metrics().width(value, floor, True) > inner * FIT:
+                raise deck.fit(
+                    f"{rel}[{i}].value",
+                    f"'{value}' does not fit its tile even at {floor:g}pt",
+                    "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
+                )
+        for i, (lab, k) in enumerate(zip(labels, kpis, strict=True)):
+            if len(lab) > 1 and stack_h(floor, 1, k) <= room:
+                raise deck.fit(
+                    f"{rel}[{i}].label",
+                    f"the label takes {len(lab)} lines, and the tile has room for one",
+                    "shorten the label",
+                )
+        needed = max(stack_h(floor, 1, k) for k in kpis) + 2 * pad
+        raise deck.fit(
+            rel,
+            f"{n} KPI tile(s) get {tile_h:.2f} in each here, and a tile needs {needed:.2f} in "
+            f"even with {floor:g}pt values",
+            "drop the caption, takeaway or column heading, use fewer KPIs, or give them a kpi slide",
+        )
     vs = style("kpi_value", size=size)
     value_h = text_height(1, vs)
-    labels = [lines_of(str(k["label"]), inner, ls) for k in kpis]
-    delta_h = text_height(1, style("kpi_delta"))
-    stacks = [
-        value_h + 0.08 + text_height(len(lines), ls) + (0.06 + delta_h if k.get("delta") else 0.0)
-        for lines, k in zip(labels, kpis, strict=True)
-    ]
-    for i, stack in enumerate(stacks):
-        if stack > tile_h - 2 * pad + 1e-6:
-            raise deck.fit(
-                f"{rel}[{i}].label",
-                "the tile's value, label and delta do not fit",
-                "shorten the label",
-            )
+    stacks = [stack_h(size, len(lab), k) for lab, k in zip(labels, kpis, strict=True)]
     for i, kpi in enumerate(kpis):
-        x = frame.x + (0 if vertical else i * (tile_w + gap))
-        y = frame.y + (i * (tile_h + gap) if vertical else (frame.h - tile_h) / 2)
+        col, row = i % cols, i // cols
+        x = frame.x + col * (tile_w + gap)
+        y = frame.y + (row * (tile_h + gap) if vertical else (frame.h - tile_h) / 2)
         add_shape(
             slide,
             "rounded_rect",
@@ -1609,14 +1669,15 @@ def _kpi_tiles(
         delta = kpi.get("delta")
         sentiment = kpi.get("sentiment", "neutral")
         ds = style("kpi_delta", color=hexc(comp["delta"][sentiment]))
-        # A row shares the tallest tile's lines (value, caption, delta); a stacked column
-        # centres each tile on its own.
-        stack = stacks[i] if vertical else max(stacks)
+        # Tiles in a row share the tallest one's lines (value, caption, delta); a tile
+        # alone in its row centres its own stack.
+        mates = [j for j in range(n) if j // cols == row]
+        stack = max(stacks[j] for j in mates)
         cy = y + (tile_h - stack) / 2
         add_text(slide, (x + pad, cy, inner, value_h), value, vs, deck.lang, align="center")
         cy += value_h + 0.08
         add_text(slide, (x + pad, cy, inner, label_h), label, ls, deck.lang, align="center")
-        tallest = label_h if vertical else max(text_height(len(lines), ls) for lines in labels)
+        tallest = max(text_height(len(labels[j]), ls) for j in mates)
         cy += tallest + 0.06
         if delta:
             add_text(
@@ -2070,11 +2131,17 @@ RENDERERS = {
 
 
 def _theme(prs: Any) -> None:
-    """Rewrite theme1.xml: NBG colours and Aptos, no effect styles.
+    """Rewrite every theme part: NBG colours and Aptos, no effect styles.
 
     Anything that inherits from the theme (a text box or chart a colleague adds in
-    PowerPoint, a chart series with no explicit colour) follows it (BRAND-SSOT-6)."""
-    part = prs.slide_master.part.part_related_by(RT.THEME)
+    PowerPoint, a chart series with no explicit colour) follows it (BRAND-SSOT-6). The
+    notes master is made here, so its theme is rewritten too: created later, with the
+    first speaker notes, it carried the Office 2007 theme and Calibri (BUILDER-CODE-12)."""
+    for master in (prs.slide_master, prs.notes_master):
+        _theme_part(master.part.part_related_by(RT.THEME))
+
+
+def _theme_part(part: Any) -> None:
     root = etree.fromstring(part.blob)
     ns = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
     scheme = root.find(".//a:clrScheme", ns)
@@ -2103,7 +2170,10 @@ def _theme(prs: Any) -> None:
         for child in list(effect):
             effect.remove(child)
         etree.SubElement(effect, qn("a:effectLst"))
-    part._blob = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
+    if hasattr(part, "_element"):  # python-pptx makes the notes theme an XmlPart
+        part._element = root
+    else:
+        part._blob = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
 def _widen_layouts(prs: Any, from_width: int) -> None:
@@ -2227,7 +2297,10 @@ def render(
             ) from e
         notes = slide_spec.get("notes")
         if notes:
-            slide.notes_slide.notes_text_frame.text = str(notes)
+            frame = slide.notes_slide.notes_text_frame
+            frame.text = str(notes)
+            for run in (r for p in frame.paragraphs for r in p.runs):
+                run._r.get_or_add_rPr().set("lang", LANG_TAG[lang])
     _core_properties(prs, spec, lang)
     return prs, sorted(errors + deck.errors, key=lambda i: i.slide or 0), deck.warnings
 
@@ -2407,6 +2480,13 @@ def _print_report(report: Report, fmt: str, stream: Any) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    # BUILDER-CODE-03: a Windows console or pipe defaults to the ANSI code page, where the
+    # Greek and tick marks printed below raised UnicodeEncodeError and a clean deck
+    # exited 1. The launcher sets PYTHONUTF8=1; this covers a direct run.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         prog="nbg_build.py",
         description="Build an NBG deck from a deck spec (deck.schema.json), or check one.",

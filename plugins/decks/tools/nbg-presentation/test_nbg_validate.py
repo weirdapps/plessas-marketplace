@@ -2025,6 +2025,46 @@ def test_bank_branding_reads_chart_categories(tmp_path):
         assert bank in details(result)
 
 
+@pytest.mark.parametrize(
+    ("label", "bank"),
+    [
+        ("Piraeus Port Authority", None),
+        ("Alpha Trust Andromeda", None),
+        ("Εθνική Ασφαλιστική", None),
+        ("National Bank of Egypt", None),
+        ("Piraeus", "piraeus"),
+        ("Alpha S.A.", "alpha"),
+        ("  ΕΤΕ ", "nbg"),
+        ("Eurobank Cyprus", "eurobank"),
+        ("NBG and Eurobank", None),
+    ],
+)
+def test_a_chart_label_names_a_bank_by_a_full_name_or_a_whole_short_form(label, bank):
+    """BUILDER-CODE-04: a short form anywhere in a label made it the bank, so a port
+    authority took Piraeus Bank's colour and logo. One rule for gate and builder."""
+    assert nv.chart_label_bank(label) == bank
+
+
+def _look_alike_case(tmp_path, categories):
+    return deck(
+        tmp_path,
+        lambda prs: _bank_slide(prs, colored=False, logos=False, categories=categories),
+        name="look-alikes.pptx",
+    )
+
+
+def test_look_alike_labels_in_plain_colours_are_not_a_bank_comparison(tmp_path):
+    categories = ("Piraeus Port Authority", "Alpha Trust Andromeda", "Εθνική Ασφαλιστική", "OPAP")
+    result = check(_look_alike_case(tmp_path, categories), "Bank Branding")
+    assert result.status != "fail", details(result)
+
+
+def test_real_bank_labels_in_plain_colours_still_fail(tmp_path):
+    categories = ("NBG", "Eurobank", "Alpha Bank", "Piraeus Bank")
+    result = check(_look_alike_case(tmp_path, categories), "Bank Branding")
+    assert result.status == "fail" and "Piraeus Bank" in details(result)
+
+
 def test_bank_branding_wants_one_logo_per_plotted_bank(tmp_path):
     result = check(_bank_case(tmp_path, logos=False), "Bank Branding")
     assert result.status == "fail" and "logo" in details(result)

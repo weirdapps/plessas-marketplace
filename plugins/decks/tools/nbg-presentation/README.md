@@ -94,21 +94,23 @@ two-column or custom slide that holds one): `{name, as_of, basis?}`. It renders 
 | `cover` | `content.title` | `subtitle`, `location`, `date` | Title on one line at 48pt (down to 44pt), subtitle 24pt below it, large logo |
 | `contents` | `content.sections[]` (`title`) | `content.title`, section `number`, `description` | Standard #18 list; unnumbered page when the deck is under 10 slides |
 | `divider` | `content.number`, `content.title` | | Number and title on one baseline, large logo |
-| `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit; a sparse list grows toward 20pt until it fills 60% of the body (Standard #7) |
+| `content` | `content.title`, `content.points[]` | `bumper`, `description`, `takeaway`, `source`; a point may be `{text, level: 2}` | Bullets at 16pt, down to 14pt to fit; a sparse list grows toward 20pt until it fills 60% of the body (Standard #2.7) |
 | `chart` | `content.title`, `content.source`, `chart.type`, `chart.data` | `number_format`, `unit`, `highlight_category`, `show_legend`, `bank_logos`, `alt_text` | One native chart |
 | `waterfall` | `content.title`, `content.source`, `chart.data.items[]` (`label`, `value`) | item `total`; first and last items are totals | A bridge; step labels above the bars, each written in the chart's `number_format` (percent, quoted units, Greek separators) |
-| `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align` | Header in dark teal, zebra rows, figures right-aligned; a short table's rows grow toward 60% of the body, to 0.55 in at most |
+| `table` | `content.title`, `content.source`, `table.headers`, `table.rows` | `highlight_column`, `column_align`, `row_fill` (every body row in that colour, no zebra), `header_fill` (its text turns dark on a light fill) | Header in dark teal, zebra rows, figures right-aligned; an unquoted number takes its column's precision and is grouped in thousands only when the column reaches 10,000 (years stay 2023); a short table's rows grow toward 60% of the body, to 0.55 in at most |
 | `kpi` | `content.title`, `content.source`, `kpis[]` (`value`, `label`) | `delta`, `sentiment: positive or negative or neutral` | 1 to 4 tiles |
 | `cards` | `content.title`, `cards[]` (`title`) | `layout: row or grid`, card `body`, `icon`, `number`, `highlight`, `recommended` | 2 to 6 cards; the recommended one gets a gold border and tab |
 | `process` | `content.title`, `steps[]` (`title`) | step `body`, `icon` | 2 to 6 teal step tiles joined by grey arrows, the title and body under each tile; an icon is drawn white in its tile |
-| `two_column` | `content.title`, `left`, `right` | `split: 50/50, 40/60 or 60/40`, column `heading` | Each column is `bullets`, `text`, `chart`, `table`, `image` or `kpis` |
+| `two_column` | `content.title`, `left`, `right` | `split: 50/50, 40/60 or 60/40`, column `heading` | Each column is `bullets`, `text`, `chart`, `table`, `image` or `kpis`; a `kpis` column stacks its tiles, shrinking the values toward 32pt, and sets three or four two to a row when a stack cannot fit |
 | `image` | `content.title`, `image.path`, `image.alt_text` | `fit: contain or cover`, `caption` | One picture |
 | `custom` | `content.title`, `elements[]` (`kind`, `x`, `y`, `w`, `h`) | per element: `text`, `points`, `shape`, `fill`, `border`, `text_color`, `role`, `size`, `path`, `chart`, `table` | Positioned elements inside the body area (x 0.374 to 12.959, y 1.3 to 6.5) |
 | `back_cover` | | | The centred oval emblem only |
 
 Peer-bank comparisons brand themselves. Name two or more of the systemic banks
 (`tokens.yaml` `banks`: NBG, Eurobank, Piraeus Bank, Alpha Bank, in English or Greek,
-any case or accents; the word "bank" alone names none) as the categories of a
+any case or accents; the word "bank" alone names none, and a short form such as
+"Alpha" or "Piraeus" counts only as the whole label, so "Piraeus Port Authority" is
+not a bank) as the categories of a
 one-series `bar`, `bar_horizontal` or `doughnut` chart, or as the series of any bar or
 line chart, and each bank takes its brand colour (`extended_palettes.peer_banks`) and
 its logo: under its bar, beside a horizontal bar, or in a legend row of swatch, logo
@@ -207,13 +209,19 @@ Windows or `/usr/lib/libreoffice/program`, or at `DECKS_SOFFICE`. stdout:
 
 ```json
 {"pdf": "/abs/outdir/deck.pdf", "pngs": ["/abs/outdir/slide-01.png"], "slides": 1,
- "deck_slides": 1, "dpi": 110, "fonts": [{"name": "Aptos", "embedded": true}],
- "font_fallback": false, "soffice": "/opt/homebrew/bin/soffice"}
+ "deck_slides": 1, "hidden_slides": [], "dpi": 110,
+ "fonts": [{"name": "Aptos", "embedded": true}], "font_fallback": false,
+ "substituted_fonts": [], "soffice": "/opt/homebrew/bin/soffice", "warnings": []}
 ```
 
-Exit 4 (`font_fallback: true`) means Aptos was not embedded: LibreOffice drew the
-slides in a substitute font, so text widths differ from PowerPoint and fit judgements
-made from the PNGs are unreliable. On 2 and 3, stdout is `{"error", "fix"}`.
+Each PNG is named for the deck slide it shows: LibreOffice exports no page for a hidden
+slide (listed in `hidden_slides`), so with slide 2 hidden the files are `slide-01.png`
+and `slide-03.png`. Exit 4 (`font_fallback: true`) means a typeface the deck asks for
+(the theme's fonts and every font set on a slide or in a chart) is not embedded in the
+PDF: `substituted_fonts` names it, LibreOffice drew it in another face, so text widths
+differ from PowerPoint and fit judgements made from the PNGs are unreliable. Every
+warning is in `warnings`; `warning` joins them for older readers. On 2 and 3, stdout is
+`{"error", "fix"}`.
 
 LibreOffice is not PowerPoint: line-chart markers show as solid dots in these PNGs,
 because LibreOffice's chart engine draws a symbol in one colour with no outline.
@@ -228,10 +236,13 @@ bash plugins/decks/bin/decks-py extract deck.pptx > deck.md
 
 For a `.pptx`: `## Slide N: <title>`, then the text in reading order with bullets as
 `- ` (indented by level), tables as markdown tables, charts as `Chart (<type>):` and a
-categories-by-series table (a waterfall as its steps and signed values), every picture
-as `[image: <alt text>]` (or `[image: no alt text, <shape name>]`, placeholder pictures
-included; only a picture marked decorative, like the builder's logos, is left out), and
-`Notes: ...`. For a `.pdf`: `## Page N` and the page text.
+categories-by-series table (a waterfall as its steps and signed values; a 3-D, stock or
+surface chart from the values its XML caches), every picture as `[image: <alt text>]`
+(or `[image: no alt text, <shape name>]`, placeholder pictures included; only a picture
+marked decorative, like the builder's logos, is left out), an embedded object as
+`[embedded object: <progId>]`, SmartArt as `[SmartArt: <node text; ...>]`, and
+`Notes: ...`. A shape that cannot be read becomes `[shape: <name>, not read (<error>)]`
+rather than stopping the deck. For a `.pdf`: `## Page N` and the page text.
 A `.docx` is refused (python-docx is not a dependency): save it as PDF first.
 
 extract and render open decks from anyone, so a `.pptx` must first pass the package

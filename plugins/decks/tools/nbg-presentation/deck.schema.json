@@ -299,6 +299,8 @@
         },
         "highlight_column": { "type": "integer", "minimum": 0 },
         "column_align": { "type": "array", "items": { "enum": ["left", "right", "center", "auto"] } },
+        "row_fill": { "$ref": "#/$defs/color_token", "description": "Every body row in this colour, and no zebra striping (e.g. ownership_ask_fill for an asks table)." },
+        "header_fill": { "$ref": "#/$defs/color_token", "description": "The header row's colour in place of dark_teal; its text turns dark on a light fill." },
         "alt_text": { "type": "string" }
       },
       "additionalProperties": false

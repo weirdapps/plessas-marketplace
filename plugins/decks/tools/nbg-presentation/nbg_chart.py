@@ -176,7 +176,7 @@ def format_value(value: float, number_format: str | None, lang: str = "en") -> s
     sign = "-" if value < 0 else ""
     magnitude = abs(float(value))
     if section.strip().casefold() in ("general", ""):
-        return sign + localise_number(f"{magnitude:.10g}", lang)
+        return sign + str(localise_number(f"{magnitude:.10g}", lang))
     parts: list[tuple[str, str]] = []
     percent = 0
     i = 0
@@ -683,6 +683,10 @@ def _name_line_ends(chart: Any, spec: dict[str, Any]) -> None:
         _point_label_shows(label, "General", series_name=True)
         _set_font(label.font, "chart_legend")
         label.position = XL_LABEL_POSITION.RIGHT
+        # One line: with the default bodyPr, LibreOffice broke "Cumulative investment"
+        # into "Cumulative in-" and "vestment" (and PowerPoint wraps it too).
+        body = label._get_or_add_dLbl().get_or_add_txPr().find(qn("a:bodyPr"))
+        body.set("wrap", "none")
 
 
 def end_label_layout(spec: dict[str, Any], box: tuple[float, float, float, float]) -> AxisLayout:

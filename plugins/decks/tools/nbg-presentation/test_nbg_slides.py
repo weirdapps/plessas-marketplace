@@ -303,7 +303,7 @@ def _bullet_sizes(out, number=2):
 
 
 def test_a_few_bullets_grow_toward_the_fill_band(build):
-    """E2E-OUTPUT-11: Standard #7 wants 60-85% of the body used and larger type where
+    """E2E-OUTPUT-11: Standard #2.7 wants 60-85% of the body used and larger type where
     there is room; three short bullets sat at 16pt in a fifth of the body."""
     points = ["Cards grew", "Deposits held", "Fees rose"]
     out = build(deck([{"type": "content", "content": {"title": "Three moved", "points": points}}]))
@@ -331,6 +331,46 @@ def test_a_short_table_grows_its_rows_toward_the_fill_band(build):
     assert all(0.35 < h <= 0.55 + 1e-6 for h in heights[1:]), heights
 
 
+def _asks_table(**colours):
+    return {
+        "type": "table",
+        "content": {"title": "Three asks of the credit division", "source": SOURCE},
+        "table": {
+            "headers": ["Ask", "Owner"],
+            "rows": [["Pricing", "Credit"], ["Limits", "Risk"], ["Data", "Operations"]],
+            **colours,
+        },
+    }
+
+
+def _cell_fills(root):
+    return [
+        [tc.find("a:tcPr/a:solidFill/a:srgbClr", NS).get("val") for tc in tr.iter(f"{A}tc")]
+        for tr in root.iter(f"{A}tr")
+    ]
+
+
+def test_row_fill_paints_every_body_row_and_drops_the_zebra(build):
+    """Two-party ownership coding (layouts.md): an asks table is filled, never striped.
+    A table always zebra-striped, so an asks table had to be drawn as shapes and lost
+    its source requirement."""
+    table = _asks_table(row_fill="ownership_ask_fill", header_fill="ownership_ask")
+    root = slide_xml(build(deck([table])), 2)
+    fills = _cell_fills(root)
+    assert fills[0] == ["C8323C", "C8323C"]
+    assert all(row == ["FAEBEC", "FAEBEC"] for row in fills[1:]), fills
+    run = next(tc for tc in root.iter(f"{A}tc")).find(".//a:rPr/a:solidFill/a:srgbClr", NS)
+    assert run.get("val") == "FFFFFF", "white clears AA on the red header"
+
+
+def test_a_light_header_fill_takes_dark_header_text(build):
+    root = slide_xml(build(deck([_asks_table(header_fill="ownership_band")])), 2)
+    run = next(tc for tc in root.iter(f"{A}tc")).find(".//a:rPr/a:solidFill/a:srgbClr", NS)
+    assert run.get("val") == "202020"
+    fills = _cell_fills(root)
+    assert fills[1] != fills[2], "no row_fill: the zebra stays"
+
+
 def test_a_stacked_segment_too_thin_for_its_label_drops_the_label(build):
     """E2E-OUTPUT-08: a 1% segment still got a 12pt label, which overprinted the
     labels of the segments either side."""
@@ -350,6 +390,30 @@ def test_a_stacked_chart_fixes_its_axis_and_plot_so_segment_heights_are_known(bu
     assert float(scaling.find("c:min", NS).get("val")) == 0
     assert float(scaling.find("c:max", NS).get("val")) == 100
     assert root.find(".//c:plotArea/c:layout/c:manualLayout", NS) is not None
+
+
+def test_line_end_names_stay_on_one_line_while_doughnut_labels_may_wrap(build):
+    """strategy-deck S09: 'Cumulative investment' at its line's end rendered as
+    'Cumulative in-' over 'vestment', because the label's bodyPr let it wrap.
+    Doughnut labels wrap between words by design and stay as they are."""
+    series = [
+        {"name": "Cumulative investment", "values": [1, 2, 3]},
+        {"name": "Savings", "values": [2, 3, 5]},
+    ]
+    line = _chart_slide("line", series=series)
+    line["chart"]["data"]["categories"] = ["Q1", "Q2", "Q3"]
+    doughnut = {
+        "type": "chart",
+        "content": {"title": "The mix", "source": SOURCE},
+        "chart": _doughnut(*CHANNELS),
+    }
+    out = build(deck([line, doughnut]))
+    line_labels = list(part_xml(out, chart_parts(out)[0]).iter(f"{C}dLbl"))
+    assert len(line_labels) == 2
+    for dlbl in line_labels:
+        assert dlbl.find("c:txPr/a:bodyPr", NS).get("wrap") == "none"
+    ring = part_xml(out, chart_parts(out)[1])
+    assert not [b for b in ring.iter(f"{A}bodyPr") if b.get("wrap") == "none"]
 
 
 def test_line_series_are_named_at_their_line_ends_not_in_a_legend(build):
@@ -578,6 +642,61 @@ def test_a_row_of_kpi_deltas_shares_one_line_when_captions_wrap_differently(buil
     root = slide_xml(build(deck([slide])), 2)
     deltas = [shape_by_text(root, d) for d in ("+23%", "+6 pts", "flat")]
     assert len({d.find(".//a:xfrm/a:off", NS).get("y") for d in deltas}) == 1
+
+
+def _kpi_column(kpis, **content):
+    return {
+        "type": "two_column",
+        "content": {"title": "Headline numbers beside the story", "source": SOURCE, **content},
+        "left": {"kind": "bullets", "points": ["Digital users grew", "Sales moved online"]},
+        "right": {"kind": "kpis", "kpis": kpis},
+    }
+
+
+THREE = [
+    {"value": "3.3M", "label": "Users"},
+    {"value": "35%", "label": "Sales"},
+    {"value": "25", "label": "Days"},
+]
+
+
+def _tile_positions(root):
+    """(x, y) of each KPI tile, the off-white rounded rectangles."""
+    offsets = [sp.find(".//a:off", NS) for sp in _shapes_with_fill(root, "F5F8F6")]
+    return {(round(inches(o.get("x")), 2), round(inches(o.get("y")), 2)) for o in offsets}
+
+
+def test_three_kpis_stack_in_a_column_with_a_smaller_shared_value(build):
+    """BUILDER-CODE-08: a column of three or four KPIs could never build, because each
+    tile kept the 50pt value, and the error blamed the label."""
+    root = slide_xml(build(deck([_kpi_column(THREE)])), 2)
+    tiles = _tile_positions(root)
+    assert len(tiles) == 3 and len({x for x, _ in tiles}) == 1, tiles
+    sizes = {shape_by_text(root, k["value"]).find(".//a:rPr", NS).get("sz") for k in THREE}
+    assert len(sizes) == 1 and 3200 <= int(sizes.pop()) < 5000
+
+
+def test_four_kpis_in_a_column_form_a_two_by_two_grid(build):
+    four = [*THREE, {"value": "41", "label": "NPS"}]
+    root = slide_xml(build(deck([_kpi_column(four)])), 2)
+    tiles = _tile_positions(root)
+    assert len(tiles) == 4 and len({x for x, _ in tiles}) == 2 and len({y for _, y in tiles}) == 2
+
+
+def test_kpis_with_no_room_in_their_column_name_the_room_not_the_label(tmp_path):
+    kpis = [
+        {"value": "3.3M", "label": "Users", "delta": "+8%"},
+        {"value": "35%", "label": "Sales", "delta": "+2 pts"},
+        {"value": "25", "label": "Days", "delta": "flat"},
+        {"value": "41", "label": "NPS", "delta": "flat"},
+    ]
+    slide = _kpi_column(
+        kpis, bumper="Results", description="What moved in the half", takeaway="Digital leads"
+    )
+    slide["right"]["heading"] = "Key figures"
+    report = nbg_build.check(write_spec(tmp_path, deck([slide]), "kpis.yaml"))
+    found = [i for i in report.errors if i.path == "slides[1].right.kpis"]
+    assert found and "tile" in found[0].message, [i.format() for i in report.issues]
 
 
 def test_cards_mark_the_recommended_option_with_a_gold_tab(build):
