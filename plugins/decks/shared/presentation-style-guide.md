@@ -61,7 +61,7 @@ All line charts in NBG presentations use hollow circle markers: a white centre i
 - For python-pptx, set marker `spPr`: `<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>` for fill, `<a:ln w="25400"><a:solidFill><a:srgbClr val="{LINE_COLOR}"/></a:solidFill></a:ln>` for outline
 - Apply to ALL line chart series, including area-line charts (NPE convergence style)
 - 3.5pt is the width for every **data line**, which is any stroke a reader traces to read a value
-- It does **not** cover an area **fill boundary**. On a stacked-area chart the stroke outlines a region rather than carrying the data, and `brand-system/charts.md` sets it at 2.5pt. That is correct and deliberate, not drift. A single-series area-line chart is still a data line: 3.5pt.
+- It does **not** cover an area **fill boundary**. On a stacked-area chart (found in existing decks; the plugin does not build one) the stroke outlines a region rather than carrying the data, and `brand-system/charts.md` sets it at 2.5pt. That is correct and deliberate, not drift. A single-series area-line chart is still a data line: 3.5pt.
 
 Hollow markers maintain distinction where lines converge or cross. Solid-fill markers merge visually at close proximity.
 
