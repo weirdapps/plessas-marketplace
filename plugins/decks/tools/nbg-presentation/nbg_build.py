@@ -1564,48 +1564,77 @@ def _kpi_tiles(
     comp = COMP["kpi"]
     n = len(kpis)
     gap = GRID_GAP
-    if vertical:
-        tile_w = frame.w
-        tile_h = min(float(comp["h"]), (frame.h - gap * (n - 1)) / n)
-    else:
-        tile_w = (frame.w - gap * (n - 1)) / n
-        tile_h = min(float(comp["h"]), frame.h)
     pad = float(comp["pad"])
-    inner = tile_w - 2 * pad
     value_base = nbg_tokens.get("type.kpi_value")
     ls = style("kpi_label")
-    # Standard #20, parallel comparison: one value size for the row (the largest that
-    # fits every tile) and the values and captions on shared lines.
-    size = float(value_base["size"])
-    floor = float(value_base["min_size"])
+    base, floor = float(value_base["size"]), float(value_base["min_size"])
     values = [str(k["value"]) for k in kpis]
-    while size > floor and any(metrics().width(v, size, True) > inner * FIT for v in values):
-        size -= 1
-    for i, value in enumerate(values):
-        if metrics().width(value, size, True) > inner * FIT:
-            raise deck.fit(
-                f"{rel}[{i}].value",
-                f"'{value}' does not fit its tile even at {size:g}pt",
-                "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
-            )
+    delta_h = text_height(1, style("kpi_delta"))
+
+    def stack_h(size: float, label_lines: int, kpi: dict[str, Any]) -> float:
+        value_h = text_height(1, style("kpi_value", size=size))
+        return (
+            value_h
+            + 0.08
+            + text_height(label_lines, ls)
+            + (0.06 + delta_h if kpi.get("delta") else 0.0)
+        )
+
+    # Standard #20, parallel comparison: one value size for every tile (the largest that
+    # fits them all) and the values and captions on shared lines. A KPI slide lays the
+    # tiles in one row; a two_column column stacks them, then tries two per row: a
+    # column of three or four at the full value size could never fit (BUILDER-CODE-08).
+    grids = (
+        [(1, n), (2, math.ceil(n / 2))]
+        if vertical and n > 2
+        else [(1 if vertical else n, n if vertical else 1)]
+    )
+
+    def fits(size: float, inner: float, room: float, labels: list[list[str]]) -> bool:
+        wide = any(metrics().width(v, size, True) > inner * FIT for v in values)
+        tall = any(stack_h(size, len(lab), k) > room for lab, k in zip(labels, kpis, strict=True))
+        return not (wide or tall)
+
+    for cols, rows in grids:
+        tile_w = (frame.w - gap * (cols - 1)) / cols
+        tile_h = min(float(comp["h"]), (frame.h - gap * (rows - 1)) / rows)
+        inner = tile_w - 2 * pad
+        room = tile_h - 2 * pad + 1e-6
+        labels = [lines_of(str(k["label"]), inner, ls) for k in kpis]
+        size = base
+        while size > floor and not fits(size, inner, room, labels):
+            size -= 1
+        if fits(size, inner, room, labels):
+            break
+    else:
+        for i, value in enumerate(values):
+            if metrics().width(value, floor, True) > inner * FIT:
+                raise deck.fit(
+                    f"{rel}[{i}].value",
+                    f"'{value}' does not fit its tile even at {floor:g}pt",
+                    "shorten the value (3.3M, not 3,300,000), or use fewer tiles",
+                )
+        for i, (lab, k) in enumerate(zip(labels, kpis, strict=True)):
+            if len(lab) > 1 and stack_h(floor, 1, k) <= room:
+                raise deck.fit(
+                    f"{rel}[{i}].label",
+                    f"the label takes {len(lab)} lines, and the tile has room for one",
+                    "shorten the label",
+                )
+        needed = max(stack_h(floor, 1, k) for k in kpis) + 2 * pad
+        raise deck.fit(
+            rel,
+            f"{n} KPI tile(s) get {tile_h:.2f} in each here, and a tile needs {needed:.2f} in "
+            f"even with {floor:g}pt values",
+            "drop the caption, takeaway or column heading, use fewer KPIs, or give them a kpi slide",
+        )
     vs = style("kpi_value", size=size)
     value_h = text_height(1, vs)
-    labels = [lines_of(str(k["label"]), inner, ls) for k in kpis]
-    delta_h = text_height(1, style("kpi_delta"))
-    stacks = [
-        value_h + 0.08 + text_height(len(lines), ls) + (0.06 + delta_h if k.get("delta") else 0.0)
-        for lines, k in zip(labels, kpis, strict=True)
-    ]
-    for i, stack in enumerate(stacks):
-        if stack > tile_h - 2 * pad + 1e-6:
-            raise deck.fit(
-                f"{rel}[{i}].label",
-                "the tile's value, label and delta do not fit",
-                "shorten the label",
-            )
+    stacks = [stack_h(size, len(lab), k) for lab, k in zip(labels, kpis, strict=True)]
     for i, kpi in enumerate(kpis):
-        x = frame.x + (0 if vertical else i * (tile_w + gap))
-        y = frame.y + (i * (tile_h + gap) if vertical else (frame.h - tile_h) / 2)
+        col, row = i % cols, i // cols
+        x = frame.x + col * (tile_w + gap)
+        y = frame.y + (row * (tile_h + gap) if vertical else (frame.h - tile_h) / 2)
         add_shape(
             slide,
             "rounded_rect",
@@ -1619,14 +1648,15 @@ def _kpi_tiles(
         delta = kpi.get("delta")
         sentiment = kpi.get("sentiment", "neutral")
         ds = style("kpi_delta", color=hexc(comp["delta"][sentiment]))
-        # A row shares the tallest tile's lines (value, caption, delta); a stacked column
-        # centres each tile on its own.
-        stack = stacks[i] if vertical else max(stacks)
+        # Tiles in a row share the tallest one's lines (value, caption, delta); a tile
+        # alone in its row centres its own stack.
+        mates = [j for j in range(n) if j // cols == row]
+        stack = max(stacks[j] for j in mates)
         cy = y + (tile_h - stack) / 2
         add_text(slide, (x + pad, cy, inner, value_h), value, vs, deck.lang, align="center")
         cy += value_h + 0.08
         add_text(slide, (x + pad, cy, inner, label_h), label, ls, deck.lang, align="center")
-        tallest = label_h if vertical else max(text_height(len(lines), ls) for lines in labels)
+        tallest = max(text_height(len(labels[j]), ls) for j in mates)
         cy += tallest + 0.06
         if delta:
             add_text(

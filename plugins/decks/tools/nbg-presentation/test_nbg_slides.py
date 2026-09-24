@@ -580,6 +580,61 @@ def test_a_row_of_kpi_deltas_shares_one_line_when_captions_wrap_differently(buil
     assert len({d.find(".//a:xfrm/a:off", NS).get("y") for d in deltas}) == 1
 
 
+def _kpi_column(kpis, **content):
+    return {
+        "type": "two_column",
+        "content": {"title": "Headline numbers beside the story", "source": SOURCE, **content},
+        "left": {"kind": "bullets", "points": ["Digital users grew", "Sales moved online"]},
+        "right": {"kind": "kpis", "kpis": kpis},
+    }
+
+
+THREE = [
+    {"value": "3.3M", "label": "Users"},
+    {"value": "35%", "label": "Sales"},
+    {"value": "25", "label": "Days"},
+]
+
+
+def _tile_positions(root):
+    """(x, y) of each KPI tile, the off-white rounded rectangles."""
+    offsets = [sp.find(".//a:off", NS) for sp in _shapes_with_fill(root, "F5F8F6")]
+    return {(round(inches(o.get("x")), 2), round(inches(o.get("y")), 2)) for o in offsets}
+
+
+def test_three_kpis_stack_in_a_column_with_a_smaller_shared_value(build):
+    """BUILDER-CODE-08: a column of three or four KPIs could never build, because each
+    tile kept the 50pt value, and the error blamed the label."""
+    root = slide_xml(build(deck([_kpi_column(THREE)])), 2)
+    tiles = _tile_positions(root)
+    assert len(tiles) == 3 and len({x for x, _ in tiles}) == 1, tiles
+    sizes = {shape_by_text(root, k["value"]).find(".//a:rPr", NS).get("sz") for k in THREE}
+    assert len(sizes) == 1 and 3200 <= int(sizes.pop()) < 5000
+
+
+def test_four_kpis_in_a_column_form_a_two_by_two_grid(build):
+    four = [*THREE, {"value": "41", "label": "NPS"}]
+    root = slide_xml(build(deck([_kpi_column(four)])), 2)
+    tiles = _tile_positions(root)
+    assert len(tiles) == 4 and len({x for x, _ in tiles}) == 2 and len({y for _, y in tiles}) == 2
+
+
+def test_kpis_with_no_room_in_their_column_name_the_room_not_the_label(tmp_path):
+    kpis = [
+        {"value": "3.3M", "label": "Users", "delta": "+8%"},
+        {"value": "35%", "label": "Sales", "delta": "+2 pts"},
+        {"value": "25", "label": "Days", "delta": "flat"},
+        {"value": "41", "label": "NPS", "delta": "flat"},
+    ]
+    slide = _kpi_column(
+        kpis, bumper="Results", description="What moved in the half", takeaway="Digital leads"
+    )
+    slide["right"]["heading"] = "Key figures"
+    report = nbg_build.check(write_spec(tmp_path, deck([slide]), "kpis.yaml"))
+    found = [i for i in report.errors if i.path == "slides[1].right.kpis"]
+    assert found and "tile" in found[0].message, [i.format() for i in report.issues]
+
+
 def test_cards_mark_the_recommended_option_with_a_gold_tab(build):
     slide = {
         "type": "cards",
