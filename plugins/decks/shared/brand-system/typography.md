@@ -127,7 +127,7 @@ Used on Progress & Priorities slides.
 
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
-| Chart Title | Aptos | **12pt** | #202020 | Bold |
+| Chart Title (existing decks only) | Aptos | **12pt** | #202020 | Bold |
 | Category Axis Labels | Aptos | 12pt | #202020 | Regular |
 | Value Axis Labels (line and area-line charts) | Aptos | 11pt | #939793 | Regular |
 | Chart Legend | Aptos | 12pt | #202020 | Regular |
@@ -139,6 +139,9 @@ Used on Progress & Priorities slides.
 | Table Notes (footnote) | Aptos | **11pt** | `#5A5F5A` | Regular |
 | In-cell positive emphasis ("+1") | Aptos | 12pt | `#007B85` | Bold |
 | In-cell priority flag ("H2") | Aptos | 12pt | `#202020` in a `#CC9900` badge | Bold |
+
+The builder draws no chart title and the deck spec has no field for one: the slide's action title
+and caption name the chart. The Chart Title row is for repairing a hand-built deck.
 
 Data labels inside a filled bar take the contrast-picked colour instead (charts.md). Amber text on
 white is 2.58:1, so a priority flag is dark text on an amber badge, never amber text.

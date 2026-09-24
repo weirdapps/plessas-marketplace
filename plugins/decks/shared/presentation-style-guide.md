@@ -184,7 +184,7 @@ Bold is reserved for elements that need to pop **within** the body, not for titl
 - KPI big numbers (50pt Bold #007B85, the canonical NBG executive pattern)
 - Table headers (12pt Bold)
 - Chart data labels above bars (12pt Bold #003841)
-- Chart titles (12pt Bold #202020)
+- Chart titles (12pt Bold #202020), existing decks only: the builder draws none, because the slide's action title and caption name the chart
 - Status pills text (white Bold on filled background)
 - Inline emphasis within paragraph text where genuinely needed
 
