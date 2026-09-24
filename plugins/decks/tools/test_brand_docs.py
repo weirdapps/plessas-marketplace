@@ -16,6 +16,7 @@ because a check that finds nothing to compare has not checked anything.
 from __future__ import annotations
 
 import importlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -245,6 +246,22 @@ def test_value_axis_rows_quote_the_chart_tokens(doc, heading, label):
     assert nums(r["Size"]) == [axis["size"]], f"{doc} › {label}: size {r['Size']!r}"
     assert hexes(r["Color"]) == [hex_of(axis["muted_color"])], f"{doc} › {label}: {r['Color']!r}"
     assert "bold" not in clean(r["Weight"]).lower(), f"{doc} › {label}: {r['Weight']!r}"
+
+
+def test_chart_title_row_is_labelled_existing_decks_only():
+    """The builder draws no chart title and the deck spec has no field for one (the
+    slide's action title and caption name the chart), so the typography row serves
+    hand-built decks only and has to say so."""
+    schema_path = DOCS.parent.parent / "tools" / "nbg-presentation" / "deck.schema.json"
+    defs = json.loads(schema_path.read_text(encoding="utf-8"))["$defs"]
+    for name in ("chart", "waterfall_chart"):
+        assert "title" not in defs[name]["properties"], f"deck.schema.json {name} has a title"
+    labels = [clean(next(iter(r.values()))) for r in table_rows("typography.md", "Charts & Tables")]
+    title = next((label for label in labels if label.startswith("Chart Title")), None)
+    assert title, "typography.md › Charts & Tables has no Chart Title row"
+    assert "existing decks only" in title, title
+    item = next(ln for ln in standard(16).splitlines() if ln.startswith("- Chart titles"))
+    assert "existing decks only" in item, f"Standard #16: {item}"
 
 
 def test_line_spacing_quotes_the_tokens():
