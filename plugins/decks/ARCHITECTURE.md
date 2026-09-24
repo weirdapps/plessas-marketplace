@@ -8,17 +8,26 @@ the others honouring these contracts.
 
 ```text
 brief
-  -> storyline-architect   writes deck.yaml (the deck spec, deck.schema.json)
-  -> decks-py check        schema + semantic check of the spec, no build
+  -> storyline-architect   writes deck.yaml (the deck spec, deck.schema.json) and runs
+                           decks-py check: schema + semantic check, no build
+  -> outline checkpoint    the main loop shows the read-through and the open questions
+                           and waits for the user (Standard #14); answers go into
+                           deck.yaml, then decks-py check again
   -> storyboard-designer   refines deck.yaml: slide types, layouts, visuals
   -> [icon-designer, infographic-specialist, device-mockup]   produce image assets
                            referenced from deck.yaml (optional, in parallel)
-  -> decks-py build        nbg_build.py renders deck.yaml to .pptx and runs the
-                           validator; exit 1 = brand violations
-  -> decks-py render       LibreOffice -> PDF -> one PNG per slide, font check
-  -> presentation-qa       reads the validator JSON AND every slide PNG; returns a
-                           verdict plus a fix list addressed to deck.yaml slide ids
-  -> the main loop edits deck.yaml and rebuilds (at most 2 fix cycles)
+  -> graphics-renderer     confirms every planned file exists, runs decks-py build
+                           (nbg_build.py renders deck.yaml and runs the validator;
+                           exit 1 = spec or brand violations), fixes the spec and
+                           rebuilds, at most 3 builds; returns the block below
+  -> presentation-qa       runs decks-py validate and decks-py render (LibreOffice ->
+                           PDF -> one PNG per slide, font check), reads the validator
+                           JSON AND every slide PNG; returns PASS, UNVERIFIED, or FAIL
+                           with a fix list addressed to deck.yaml slide ids
+  -> the main loop edits deck.yaml, then graphics-renderer and presentation-qa run
+     again (at most 2 fix cycles)
+  -> deliver               PASS or UNVERIFIED: copied to the user's folder, reported in
+                           one line; FAIL: not copied unless the user asks
   -> decks-py record       writes the draft record /presentation-review learns from
 ```
 
@@ -33,6 +42,32 @@ renders with `nbg_keynote.py`, a Pillow compositor, through `decks-py keynote`.
 The main conversation orchestrates. Commands dispatch the specialist agents one level
 deep; no agent dispatches another agent (subagents cannot spawn subagents when
 `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1`, and nesting is never required).
+
+## The build stage: graphics-renderer
+
+No command runs `decks-py build` itself: `decks:graphics-renderer` owns the build.
+
+- **Inputs**: `deck` (the `deck.yaml` in the work folder), `out` (the `.pptx` to write,
+  normally `<work>/deck.pptx`), and the asset stage's results, each file made with its
+  alt text.
+- **Steps**: every planned file (`x-assets`, relative `images/...` paths) exists, or it
+  stops and lists the missing ones; build; on exit 1, fix `deck.yaml` and build again,
+  **at most 3 builds** in total; exit 2 goes back verbatim.
+- **Fix rules**: fit and structure only (tighten wording, move detail to `notes`, split a
+  slide, change a slide type). Never a figure, a source or an `as_of`, and never delete an
+  exhibit: those go back to the command as open issues.
+
+It returns this block, which the command reads before the QA gate:
+
+```text
+pptx: <out>
+build: exit <n> after <k> build(s)
+fixed: <one line per spec change, by slide id>
+left: <violations still failing, verbatim, or "none">
+```
+
+The command sends a missing asset back to its asset agent and a missing source or figure
+to the user, then dispatches the build again.
 
 ## The launcher: `bin/decks-py`
 
@@ -95,9 +130,14 @@ brand file. The plugin is public and serves every colleague.
 ## Paths inside prompts
 
 Plugin files are referenced as `${CLAUDE_PLUGIN_ROOT}/...` (Claude Code substitutes it
-in agent, command and skill bodies). Bare `shared/...`, `assets/...` or `tools/...`
-paths resolve against whatever directory the session happens to be in, so they are
-forbidden; `scripts/validate_consistency.py` rejects them.
+in agent, command and skill bodies). A bare `shared/...`, `assets/...` or `tools/...`
+path resolves against whatever directory the session happens to be in, so prompt files
+must not use one. `scripts/validate_consistency.py` enforces this in agent, command and
+skill files only (`agents/*.md` and `commands/*.md` at any depth, the bundled commands
+included, and every `.md` under `skills/`): it rejects a path that starts with any of the
+plugin's own top-level directories, or with `plugins/<name>/`. Reference docs, such as
+the brand system and the asset INDEX files, are not scanned; they state their base path
+once (for example `${CLAUDE_PLUGIN_ROOT}/assets/`) and write paths relative to it.
 
 ## Quality gates
 

@@ -31,6 +31,7 @@ import math
 import re
 import sys
 import unicodedata
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -47,8 +48,20 @@ CATALOG_PATH = ASSETS_DIR / "slide-catalog.yaml"
 sys.path.insert(0, str(HERE.parent))
 import nbg_tokens  # noqa: E402
 
+# One rule, one place (PROMPTS-CONTRACTS-03): the spec-level rules the validator
+# fails a deck on are its own patterns, imported, so check can never pass what the
+# build then rejects for something written in the spec.
+from nbg_validate import (  # noqa: E402
+    ALT_TEXT_LEAD_IN,
+    ALT_TEXT_PLACEHOLDER,
+    EM_DASH,
+    EN_DASH,
+    SOURCE_AS_OF,
+)
+from nbg_validate import fold as caption_fold  # noqa: E402
+
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".svg"}
-EM_DASH = chr(0x2014)  # the dash Standard #7 bans from slide text
+DOUBLE_HYPHEN = " -- "  # a typed em dash, which the validator's Em Dashes check fails too
 
 
 class CannotRun(Exception):
@@ -99,6 +112,9 @@ class Report:
     spec_path: Path
     spec: dict[str, Any] | None = None
     issues: list[Issue] = field(default_factory=list)
+    # Each image's slot from the dry run (slide, id, path, w, h in inches), so the
+    # pipeline can draw an infographic at the size it will be placed (size_in).
+    slots: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def errors(self) -> list[Issue]:
@@ -121,6 +137,7 @@ class Report:
             "ok": self.ok,
             "errors": [i.as_dict() for i in self.errors],
             "warnings": [i.as_dict() for i in self.warnings],
+            "image_slots": self.slots,
         }
 
     def format_text(self) -> str:
@@ -329,6 +346,18 @@ TEXT_KEYS = {
     "id",
 }
 _NO_DASH_CHECK = {"path", "icon", "id", "number_format"}
+# Text nothing draws on a slide (speaker notes, alt text, storyline fields): the
+# validator never reads it, so a dash there is pointed out, not failed.
+_UNDRAWN = {
+    "notes",
+    "alt_text",
+    "audience",
+    "purpose",
+    "main_recommendation",
+    "author",
+    "key_message",
+    "so_what",
+}
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _NUMERIC_TEXT = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$")
 
@@ -368,6 +397,8 @@ def _walk_text(node: Any, path: str, issues: Issues, key: str = "") -> Any:
     """Coerce text scalars and flag control characters and em dashes, recursively."""
     if isinstance(node, dict):
         for k in list(node):
+            if str(k).startswith("x-"):
+                continue  # the pipeline's own notes: never checked, never drawn
             child = f"{path}.{k}" if path else str(k)
             node[k] = _walk_text(node[k], child, issues, str(k))
         return node
@@ -388,13 +419,23 @@ def _walk_text(node: Any, path: str, issues: Issues, key: str = "") -> Any:
                 "cannot store",
                 "delete it; it usually arrives with text pasted from a PDF",
             )
-        if EM_DASH in node and key not in _NO_DASH_CHECK:
-            issues.warning(
-                path,
-                "contains an em dash",
-                "Standard #7: use a comma, a colon, a semicolon or a full stop",
-            )
+        if key not in _NO_DASH_CHECK:
+            _dash_issues(node, path, key, issues)
     return node
+
+
+def _dash_issues(text: str, path: str, key: str, issues: Issues) -> None:
+    """Standard #7 as the validator's Em Dashes check reads it: an em dash or a typed
+    ' -- ' fails the deck, and a spaced en dash standing in for one is a warning."""
+    flat = " ".join(text.split())
+    fix = "Standard #7: use a comma, a colon, a semicolon or a full stop"
+    if EM_DASH in flat or DOUBLE_HYPHEN in flat:
+        if key in _UNDRAWN:
+            issues.warning(path, "contains an em dash", fix)
+        else:
+            issues.error(path, "contains an em dash (or ' -- '), which fails the validator", fix)
+    elif f" {EN_DASH} " in flat and key not in _UNDRAWN:
+        issues.warning(path, "a spaced en dash stands in for a dash", fix)
 
 
 def _as_points(items: list[Any]) -> list[Any]:
@@ -768,8 +809,8 @@ def _validator() -> Any:
 
 
 REQUIRED_FIX = {
-    "source": "add source: {name: <where the figures come from>, as_of: <date or period>}",
-    "as_of": "add as_of: the date or period the figures refer to",
+    "source": "add source: {name: <where the figures come from>, as_of: <date or period, with its year>}",
+    "as_of": "add as_of: the date or period the figures refer to, with its year",
     "name": "name it",
     "title": "add a title",
     "points": "add points: a list of bullets",
@@ -957,14 +998,23 @@ def schema_issues(spec: Any) -> list[Issue]:
         if path == "slides" and isinstance(error.instance, dict):
             message = "slides must be a list"
             fix = "write each slide as a list item starting with '- type:'"
-        described.append((error.validator, path, message, fix))
+        keys: list[str] = []
+        if error.validator == "unevaluatedProperties":
+            parent = format_path(error.absolute_path)
+            names = re.findall(r"'([^']+)'", error.message.split("(")[-1])
+            keys = [f"{parent}.{n}" if parent else n for n in names]
+        described.append((error.validator, path, message, fix, keys))
     seen: set[tuple[str, str]] = set()
-    for validator, path, message, fix in described:
-        # A key whose own subschema failed counts as unevaluated too, so the same
-        # mistake also surfaces as "unknown key 'content'". Report the real one.
+    for index, (validator, path, message, fix, keys) in enumerate(described):
+        # A key whose subschema failed counts as unevaluated too, so a bad KPI label
+        # also surfaced as "unknown key 'content' ... remove it" (E2E-OUTPUT-09).
+        # When any other error sits at or under one of the unexpected keys, that
+        # error is the real one: report it alone.
+        others = [d[1] for i, d in enumerate(described) if i != index]
         if validator == "unevaluatedProperties" and any(
-            other.startswith(path + ".") or other.startswith(path + "[")
-            for _, other, _, _ in described
+            other == key or other.startswith(key + ".") or other.startswith(key + "[")
+            for key in keys
+            for other in others
         ):
             continue
         if (path, message) in seen:
@@ -997,6 +1047,24 @@ def svg_supported() -> bool:
     return True
 
 
+def undecodable(file: Path) -> str | None:
+    """Why an existing image file cannot be drawn, or None when it decodes: a renamed
+    HEIC or a malformed SVG exists, has the right suffix, and still cannot be placed."""
+    try:
+        if file.suffix.lower() == ".svg":
+            import resvg_py
+
+            resvg_py.svg_to_bytes(svg_path=str(file), width=16)
+        else:
+            from PIL import Image
+
+            with Image.open(file) as img:
+                img.verify()
+    except Exception as e:  # noqa: BLE001 - whatever the decoder raises, the file is unusable
+        return f"{type(e).__name__}: {e}"
+    return None
+
+
 def _check_image(raw: Any, path: str, spec_dir: Path, issues: Issues) -> None:
     if not isinstance(raw, str) or not raw.strip():
         return
@@ -1004,7 +1072,8 @@ def _check_image(raw: Any, path: str, spec_dir: Path, issues: Issues) -> None:
     if suffix not in IMAGE_SUFFIXES:
         issues.error(path, f"'{Path(raw).name}' is not a PNG, JPEG or SVG", "convert it to PNG")
         return
-    if resolve_asset(raw, spec_dir) is None:
+    found = resolve_asset(raw, spec_dir)
+    if found is None:
         issues.error(
             path,
             f"image not found: {raw}",
@@ -1016,6 +1085,12 @@ def _check_image(raw: Any, path: str, spec_dir: Path, issues: Issues) -> None:
             path,
             "SVG needs resvg-py, which is not installed",
             "run through bin/decks-py (it installs requirements.txt), or convert the SVG to PNG",
+        )
+    elif (why := undecodable(found)) is not None:
+        issues.error(
+            path,
+            f"'{found.name}' exists but cannot be read as {suffix.lstrip('.').upper()} ({why})",
+            "re-export it as a PNG, JPEG or valid SVG; a photo saved as HEIC needs converting",
         )
 
 
@@ -1305,6 +1380,79 @@ def _custom_issues(
     return exhibit
 
 
+def _holds_exhibit(node: Any) -> bool:
+    """Whether a chart or a table sits anywhere in a slide: what the validator calls
+    an exhibit, and holds to a dated source line."""
+    if isinstance(node, dict):
+        return any(
+            (k in ("chart", "table") and isinstance(v, dict)) or _holds_exhibit(v)
+            for k, v in node.items()
+            if not str(k).startswith("x-")
+        )
+    if isinstance(node, list):
+        return any(_holds_exhibit(v) for v in node)
+    return False
+
+
+def _source_date_issues(
+    slide: dict[str, Any], content: dict[str, Any], p: str, issues: Issues
+) -> None:
+    """The validator's Exhibit Sources check fails a chart or table slide whose source
+    line carries no year or date (its SOURCE_AS_OF). It reads the whole line, so a
+    year in the name, the as_of or the basis dates it."""
+    source = content.get("source")
+    if not source:
+        return
+    if isinstance(source, dict):
+        text = " ".join(str(source.get(k) or "") for k in ("name", "as_of", "basis"))
+        path = f"{p}.content.source.as_of"
+    else:
+        text, path = str(source), f"{p}.content.source"
+    if SOURCE_AS_OF.search(text):
+        return
+    message = "the source line carries no year or date"
+    fix = "write as_of with its year, e.g. '30 June 2026' or 'Q2 2026'"
+    if _holds_exhibit(slide):
+        issues.error(path, f"{message}, and the validator fails a chart or table without one", fix)
+    else:
+        issues.warning(path, message, fix)
+
+
+def _walk_strings(node: Any, path: str, key: str = "") -> Iterator[tuple[str, str, str]]:
+    """(path, key, text) for every string in a slide, the pipeline's x- notes aside."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if not str(k).startswith("x-"):
+                yield from _walk_strings(v, f"{path}.{k}", str(k))
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _walk_strings(v, f"{path}[{i}]", key)
+    elif isinstance(node, str):
+        yield path, key, node
+
+
+def _alt_text_issues(slide: dict[str, Any], p: str, issues: Issues) -> None:
+    """The validator's Alt Text check, on the spec: alt text that is a filename or an
+    autoname, opens with 'image of', or repeats text already on the slide fails."""
+    strings = list(_walk_strings(slide, p))
+    drawn = {
+        caption_fold(" ".join(text.split()))
+        for _, key, text in strings
+        if key not in _UNDRAWN and key not in _NO_DASH_CHECK
+    }
+    fix = "say what the picture or chart shows and why it is on the slide"
+    for path, key, text in strings:
+        alt = " ".join(text.split())
+        if key != "alt_text" or not alt:
+            continue
+        if ALT_TEXT_PLACEHOLDER.match(alt):
+            issues.error(path, f"'{alt}' is a filename or an autoname, not a description", fix)
+        elif ALT_TEXT_LEAD_IN.match(alt):
+            issues.error(path, f"'{alt}' opens with 'image of'", fix)
+        elif caption_fold(alt) in drawn:
+            issues.error(path, f"'{alt}' repeats text already on the slide", fix)
+
+
 def _waterfall_issues(slide: dict[str, Any], p: str, issues: Issues) -> None:
     chart = slide.get("chart")
     data = chart.get("data") if isinstance(chart, dict) else None
@@ -1395,6 +1543,8 @@ def semantic_issues(spec: Any, spec_dir: Path) -> list[Issue]:
                 "the slide holds a chart, table or KPIs and has no source",
                 REQUIRED_FIX["source"],
             )
+        _source_date_issues(slide, content, p, issues)
+        _alt_text_issues(slide, p, issues)
         if stype == "waterfall":
             _waterfall_issues(slide, p, issues)
         if stype == "back_cover" and i != len(slides) - 1:

@@ -259,6 +259,7 @@ What changes between decks is which **elements** you place on that chassis, chos
 | this is the pick | recommended-option highlight |
 | these are the risks | warning flags (orange square + ALL-CAPS label) |
 | the bottom line | takeaway strip |
+| what we ask of another division, and what we lead ourselves | two-party ownership coding (an asks page and an our-work page, never mixed) |
 
 Each element's spec (geometry, colours, type) is in `brand-system/layouts.md` → "Element Specs".
 
@@ -297,7 +298,7 @@ NBG decks are projected, printed, and read by colleagues with colour-vision defi
 | White on NBG Teal `#007B85` | 5.03:1 | safe |
 | White on `#008000` (OK pill) | 5.14:1 | safe |
 | White on `#CC0000` (Warn pill) | 5.89:1 | safe |
-| `#202020` on Cyan `#00ADBF` | 6.00:1 | the data-label colour for cyan bars |
+| `#202020` on Cyan `#00ADBF` | 6.00:1 | hand-set dark text on cyan; the builder's label picker takes pure black (below) |
 | `#202020` on Bright Cyan `#00DFF8` | 10.02:1 | safe |
 | White on Cyan `#00ADBF` | 2.72:1 | FAILS, use `#202020` (6.00:1) |
 | White on Bright Cyan `#00DFF8` | 1.63:1 | FAILS, use `#202020` (10.02:1) |
@@ -308,7 +309,7 @@ NBG decks are projected, printed, and read by colleagues with colour-vision defi
 
 **When a light fill needs dark text, the answer is `#202020`, the body-text colour.** It beats `#003841` on every fill above; `#003841` also clears, at 4.71:1 to 5.86:1, but with far less headroom. Do not introduce a third dark.
 
-Three brand-system specs used to put white on a light fill and have been corrected to `#202020`: the amber TBD pill and the gold RECOMMENDED tab in `colors.md`, and the waterfall data label in `charts.md`, which keeps `FFFFFF` on `#003841` and `#007B85` bars but never on `#00ADBF`. In each case the fix was the text colour, not a new fill. Keep it that way: inventing a fill to solve a contrast problem pushes the palette toward the ceiling below.
+Three brand-system specs used to put white on a light fill and have been corrected: the amber TBD pill and the gold RECOMMENDED tab in `colors.md` to `#202020`, and the waterfall data label in `charts.md`, which keeps `FFFFFF` on `#003841` and `#AA0028` bars but never on `#00ADBF`, where the builder's label picker takes pure black. In each case the fix was the text colour, not a new fill. Keep it that way: inventing a fill to solve a contrast problem pushes the palette toward the ceiling below.
 
 **Picking a label colour automatically.** The black-or-white decision threshold is relative luminance **0.179**, exactly `sqrt(0.0525) - 0.05`. That is where white-on-fill and black-on-fill contrast are equal at `sqrt(21)` = 4.58:1, so always taking the better of **pure** black and **pure** white clears AA on any fill. The guarantee is fragile in two specific ways, both of which this repo has hit:
 

@@ -84,7 +84,7 @@
       "required": ["name", "as_of"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "as_of": { "type": "string", "minLength": 1, "description": "Date or period the data refers to, e.g. '30 June 2026' or 'H1 2026'." },
+        "as_of": { "type": "string", "minLength": 1, "description": "Date or period the data refers to, with its year, e.g. '30 June 2026' or 'H1 2026'. An exhibit whose source line carries no year or date fails the validator." },
         "basis": { "type": "string", "description": "Optional caveat, e.g. 'constant currency'." }
       },
       "additionalProperties": false

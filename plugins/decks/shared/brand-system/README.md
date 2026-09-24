@@ -188,7 +188,7 @@ follow it. `tokens.yaml` encodes their outcome.
 
 | Category | Count | Path |
 |----------|-------|------|
-| Icons (legacy mono PNG) | 338 | `assets/icons/` (20 categories) |
+| Icons (duotone PNG) | 338 | `assets/icons/` (20 categories) |
 | Duotone icons (SVG) | 19 files | `assets/icons-duotone/` |
 | Illustrations | 21 PNG, 1 PDF, 9 SVG splash | `assets/illustrations/` |
 | Logos | 10 PNG, 3 SVG | `assets/logos/` |
@@ -205,7 +205,7 @@ Paths are relative to the plugin root (`${CLAUDE_PLUGIN_ROOT}`). See
 |-------|------|-------|
 | **Greek Logo (DEFAULT)** | `assets/nbg-logo-gr.png` | **ALL presentations** - this is the standard logo |
 | English Logo | `assets/nbg-logo.svg` | DO NOT USE - kept for legacy only |
-| PNG Fallback | `assets/nbg-logo-fallback.png` | Secondary variant if the primary PNG is unavailable |
+| English wordmark (PNG) | `assets/nbg-logo-fallback.png` | Never on slides (Standard #10); the validator fails it. Not a fallback for the Greek logo |
 | Back Cover Logo | `assets/nbg-back-cover-logo.png` | Centered on back cover |
 
 The Greek wordmark PNG is 1200 x 348 (aspect 3.448): set its width and derive the height

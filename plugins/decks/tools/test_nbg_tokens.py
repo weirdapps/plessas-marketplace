@@ -97,6 +97,16 @@ def test_content_width_is_derived_from_slide_and_gutter():
     assert g["slide"]["w_emu"] == 12192000 and g["slide"]["h_emu"] == 6858000
 
 
+def test_the_doughnut_slice_order_never_puts_teal_beside_grey():
+    """Standard #22: #007B85 and #939793 are 1.70:1 and cannot tell two slices apart."""
+    slices = nbg_tokens.get("charts.doughnut.slice_palette")
+    assert sorted(slices) == sorted(nbg_tokens.chart_palette())
+    for n in range(2, len(slices) + 1):
+        ring = slices[:n]
+        pairs = set(zip(ring, ring[1:] + ring[:1], strict=True))
+        assert ("007B85", "939793") not in pairs and ("939793", "007B85") not in pairs, n
+
+
 def test_the_keynote_gutter_is_0_807_inches_on_the_canvas_the_compositor_renders():
     """nbg_keynote.py renders at 2560x1440 (192 px per inch); the tokens said 1920x1080,
     at which 155 px is 1.076", not the 0.807" gutter keynote.md specifies."""

@@ -833,6 +833,124 @@ def test_every_label_position_is_one_powerpoint_supports(tmp_path, monkeypatch):
     assert checked, "no label positions examined"
 
 
+def test_a_greek_deck_writes_greek_separators_in_tables_and_waterfall_labels(build):
+    """E2E-OUTPUT-02 / DOCS-ACCURACY-1: presentation.language el is documented to drive
+    number formats, yet table cells read 1,234.5 and waterfall steps +1,000.25."""
+    table = {
+        "type": "table",
+        "content": {"title": "Οι όγκοι ανά κανάλι", "source": SOURCE},
+        "table": {"headers": ["Κανάλι", "Όγκος", "Πελάτες"], "rows": [["Κάρτες", 1234.5, 2500000]]},
+    }
+    waterfall = {
+        "type": "waterfall",
+        "content": {"title": "Η γέφυρα των εσόδων", "source": SOURCE},
+        "chart": {
+            "type": "waterfall",
+            "data": {
+                "items": [
+                    {"label": "Αρχή", "value": 1250.5},
+                    {"label": "Άνοδος", "value": 1000.25},
+                    {"label": "Τέλος", "value": 2250.75},
+                ]
+            },
+        },
+    }
+    out = build(deck([table, waterfall], language="el"))
+    cells = [b[0] for b in shape_boxes(slide_xml(out, 2))]
+    cell_text = " ".join(
+        "".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in slide_xml(out, 2).iter(f"{A}tc")
+    )
+    assert "1.234,5" in cell_text and "2.500.000" in cell_text, (cells, cell_text)
+    labels = [
+        "".join(t.text or "" for t in dlbl.iter(f"{A}t"))
+        for dlbl in part_xml(out, chart_parts(out)[0]).iter(f"{C}dLbl")
+    ]
+    labels = [label for label in labels if label]
+    assert sorted(labels) == sorted(["1.250,50", "+1.000,25", "2.250,75"]), labels
+
+
+def test_a_numeric_table_column_takes_one_precision(build):
+    """E2E-OUTPUT-07: numbers printed at their own precision, so one column mixed 2,
+    1.5 and 3.25. A column now takes its most decimals, capped at two."""
+    table = {
+        "type": "table",
+        "content": {"title": "Rates by product", "source": SOURCE},
+        "table": {
+            "headers": ["Product", "Rate", "Count", "Share"],
+            "rows": [["A", 1.5, 12, 0.123456], ["B", 2, 7, 0.5], ["C", 3.25, 1500, 1]],
+        },
+    }
+    root = slide_xml(build(deck([table])), 2)
+    cells = [
+        ["".join(t.text or "" for t in tc.iter(f"{A}t")) for tc in tr.iter(f"{A}tc")]
+        for tr in root.iter(f"{A}tr")
+    ][1:]
+    assert [row[1] for row in cells] == ["1.50", "2.00", "3.25"]
+    assert [row[2] for row in cells] == ["12", "7", "1,500"]
+    assert [row[3] for row in cells] == ["0.12", "0.50", "1.00"], "capped at two decimals"
+
+
+@pytest.mark.parametrize("chart_type", ["bar", "bar_horizontal", "bar_stacked"])
+def test_bars_with_close_values_start_their_axis_at_zero(build, chart_type):
+    """E2E-OUTPUT-01: 93, 91, 90 and 88 drew on an axis PowerPoint started near 86, so a
+    2-point gap looked like a doubling, and the Zero Baseline check passed it."""
+    out = build(
+        deck(
+            [
+                _chart(
+                    "Contactless share is above 88% in every segment",
+                    chart_type,
+                    ["Retail", "Affluent", "Premium", "Business"],
+                    [{"name": "Share", "values": [93, 91, 90, 88]}],
+                )
+            ]
+        )
+    )
+    root = part_xml(out, chart_parts(out)[0])
+    minimum = root.find(".//c:valAx/c:scaling/c:min", NS)
+    assert minimum is not None and float(minimum.get("val")) == 0.0
+
+
+def test_a_waterfall_of_positive_totals_starts_its_axis_at_zero(build):
+    spec = deck(
+        [
+            {
+                "type": "waterfall",
+                "content": {"title": "Fees rose from 68 to 80", "source": SOURCE},
+                "chart": {
+                    "type": "waterfall",
+                    "data": {
+                        "items": [
+                            {"label": "Q4 2024", "value": 68},
+                            {"label": "Interchange", "value": 6},
+                            {"label": "Annual fees", "value": 3},
+                            {"label": "FX", "value": 3},
+                            {"label": "Q4 2025", "value": 80},
+                        ]
+                    },
+                },
+            }
+        ]
+    )
+    out = build(spec)
+    root = part_xml(out, chart_parts(out)[0])
+    assert float(root.find(".//c:valAx/c:scaling/c:min", NS).get("val")) == 0.0
+
+
+def test_bars_with_a_negative_value_keep_the_automatic_axis(build):
+    out = build(
+        deck(
+            [
+                _chart(
+                    "Margins moved both ways", "bar", ["A", "B"], [{"name": "M", "values": [3, -2]}]
+                )
+            ]
+        )
+    )
+    root = part_xml(out, chart_parts(out)[0])
+    assert root.find(".//c:valAx/c:scaling/c:min", NS) is None
+
+
 def test_a_chart_with_no_series_is_an_error_not_a_blank_plot(build):
     """ARCHITECTURE-5: a chart slide with no data built green with an empty plot."""
     spec = deck([_chart("Volumes rose", "bar", ["Q1"], [])])
@@ -851,12 +969,15 @@ def test_contents_that_cannot_fit_is_refused(build):
 # =============================================================== examples
 
 
-def test_no_example_cover_carries_a_divisions_unit_list():
+def test_no_example_cover_lists_an_organisation_in_its_subtitle():
     """E2E-SMOKE also-noticed / BRAND-SSOT-4: the quarterly-report cover listed one
-    division's internal units in a public repo."""
+    division's internal units in a public repo. The guard names nothing it guards
+    (SECURITY-PUBLIC-1): a unit list is a long pipe-separated subtitle, so no example
+    subtitle may have more than two parts (a unit and a period, say)."""
     for spec in EXAMPLES_DIR.glob("*.yaml"):
-        text = spec.read_text(encoding="utf-8")
-        assert "GoForMore" not in text and "SSB" not in text, spec.name
+        for slide in yaml.safe_load(spec.read_text(encoding="utf-8"))["slides"]:
+            subtitle = (slide.get("content") or {}).get("subtitle", "")
+            assert len(subtitle.split("|")) <= 2, f"{spec.name}: {subtitle}"
 
 
 def test_label_dark_candidate_is_pure_black():

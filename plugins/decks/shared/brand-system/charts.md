@@ -185,10 +185,18 @@ white borders.
 
 ## Waterfall: Data Labels
 
-Waterfall bars carry their labels inside, centred in each bar, 12pt Bold. The colour comes from
-the contrast picker: white on `#003841` totals and `#AA0028` decreases, dark on `#00ADBF`
-increases (white on cyan is 2.72:1 and fails Standard #22). A total's label may sit above its bar
-in `#202020` when the bar is too short to hold it.
+Every waterfall label is the bar's signed contribution, written into the label as text (`+1,624`,
+`-2,439`; a total carries a sign only when it is negative), so it reads the same in every viewer.
+All labels are 12pt Bold (`type.chart_data_label`). Where a label sits depends on the bar:
+
+| Bar | Label | Colour |
+|-----|-------|--------|
+| A step, increase or decrease, entirely above zero | Just above the bar | `#003841` |
+| A total, or a step reaching below zero | Centred in the bar | The contrast picker: white on `#003841` totals and `#AA0028` decreases, black on `#00ADBF` increases |
+
+A centred label inside a thin step would run over both edges of the bar, which is why the steps
+above zero carry theirs on top. The value axis is hidden and there is no legend: the labels and
+the category axis carry the chart.
 
 In a deck spec a waterfall is the `waterfall` slide type with `chart.data.items` (label, value,
 and `total: true` for the bars drawn from zero; the first and last items are totals by default).

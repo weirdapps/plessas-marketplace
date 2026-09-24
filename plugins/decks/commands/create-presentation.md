@@ -62,9 +62,14 @@ material: <brief text, or a path>
   is that file. Pictures in a deck show there as `[image: ...]`; they are not carried over, so ask
   for the image files of any the new deck must keep. A `.docx` cannot be extracted: ask the user to
   save it as PDF, or to paste the text.
-- A `.yaml` deck spec (from `/excel:excel-to-deck` or the user): copy it to `<WORK>/deck.yaml` and
-  run `check` on it. Skip step 3 unless check fails on anything other than missing sources; then
-  dispatch the storyline architect with `mode: preserve` and the spec as the material.
+- A `.yaml` deck spec (from `/excel:excel-to-deck` or the user): copy it to `<WORK>/deck.yaml`, and
+  bring its files with it. A relative image path (`image.path`, card and step `icon`, image columns,
+  custom image elements) resolves against the spec's own folder first, so for each one that exists
+  next to the original spec, copy that file into WORK at the same relative path
+  (`mkdir -p` its folder first). A relative path that does not exist there is a plugin library
+  path, which the builder finds by itself. Then run `check` on it. Skip step 3 unless check fails
+  on anything other than missing sources; then dispatch the storyline architect with
+  `mode: preserve` and the spec as the material.
 - `--from-email <subject>`: `mcp__plugin_mail_outlook-bridge__outlook_list_mail` on the Inbox with
   `top: 50` and `since` 30 days back, match the subject, then
   `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on the match; save the thread text to
@@ -86,8 +91,9 @@ returns the read-through, open questions and the check result.
 Show the user the read-through (id, type, action title per slide) and every open question in one
 message, and wait for agreement. Skip the wait only if the user already said the outline is agreed
 or asked you not to stop; open questions are asked either way, because the builder refuses an
-exhibit without a source. Apply the answers to `deck.yaml` (fill `content.source`, remove the
-answered `x-open-questions`), then:
+exhibit without a source. Apply the answers to `deck.yaml` (fill `content.source`, with `as_of`
+as a full date or a separate four-digit year such as `Q2 2026` or `FY 2025`; remove the answered
+`x-open-questions`), then:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check "<WORK>/deck.yaml"
@@ -112,7 +118,8 @@ skill is available, and never for anything that carries numbers.
 
 Dispatch `decks:graphics-renderer` with the deck, `out: <WORK>/deck.pptx` and the asset results. It
 returns the build exit and any violations left. For a missing asset file, dispatch its asset agent
-again; for a missing source or figure, ask the user; then build again.
+again; for a diagram check says must be redrawn, dispatch `decks:infographic-specialist` again
+with the `size_in` the issue names; for a missing source or figure, ask the user; then build again.
 
 ### 8. QA gate
 

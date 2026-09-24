@@ -292,8 +292,9 @@ a measured Standard #22 pair.
 | Legend | A chip top-right naming each owner beside its stripe colour, 11pt `#202020` |
 
 The owner is also named in the step label: colour is never the only signal (Standard #22). Never
-code ownership with `#007B85` against `#939793`, which are 1.70:1 apart. The stripe is the one
-sanctioned edge stripe, because it carries meaning tied to the legend.
+code ownership with `#007B85` against `#939793`, which are 1.70:1 apart. The stripe is a
+sanctioned edge stripe because it carries meaning tied to the legend; the two-party ownership
+coding below has the only other one.
 
 ### Parallel comparison: here are the alternatives
 
@@ -331,6 +332,69 @@ travel together, because to a colour-blind reader the square alone says nothing 
 | Text | One line, 14pt Bold `#003841` (`components.takeaway_strip`, 11.42:1 on the tint) |
 
 In a deck spec the strip is `content.takeaway` on any content slide type; the builder draws it.
+
+### Two-party ownership coding: what we ask of the other division, what we lead
+
+For a deck that separates what another division is asked to decide from what our division leads
+itself. Each party has one theme, applied the same way on every page, so a reader tells in two
+seconds whether an item is an ask or a commitment.
+
+| Part | Asks (the other division) | Our division |
+|---|---|---|
+| Card and row fill | `ownership_ask_fill` (`#FAEBEC`) | `off_white` (`#F5F8F6`) |
+| Left accent bar, 0.08" wide, the card's or row's full height | `ownership_ask` (`#C8323C`) | `bright_cyan` (`#00DFF8`) |
+| Section header bar, full content width, 0.35" tall | `ownership_ask`, white 12pt Bold text (5.28:1) | `teal` (`#007B85`), white 12pt Bold text (5.03:1) |
+| Badge naming the division | An `ownership_ask` box, 0.3" tall, the division's name in white 11pt Bold | A `teal` box, the same |
+| Table rows | All `ownership_ask_fill`, never zebra-striped: every row is an ask | Alternating `off_white` and `white` |
+| Card text | Title 16pt Bold `dark_teal` (11.06:1), body 14pt `body_text` (14.09:1) | Title 16pt Bold `dark_teal` (11.96:1), body 14pt `body_text` (15.24:1) |
+
+**Footer band.** `ownership_band` (`#E6F4F5`) at full content width (x 0.374", w 12.585"), 0.45"
+tall for one line, ending at 6.5" (at 6.15" when the slide carries a source line). It holds one
+sentence in 14pt `dark_teal` (11.34:1) saying what our division leads in parallel. It closes an
+asks page, and the detail stays on our division's own page. It takes the takeaway strip's place
+on that page, never sits beside one: the two tints are 1.01:1 apart and would read as one bar.
+
+- **One party per page.** An asks page and an our-work page, never mixed; the footer band is the
+  only mention of our work on an asks page. A topic with both gets two pages, so the asks page
+  can be shown on its own in a meeting with the other division.
+- **Group the asks by product, not by decision type.** Every asks section header stays
+  `ownership_ask`, whatever kind of decision it holds (policy, scoring, capital): they are all
+  asks, and grouping by product maps each one to its owner on the other side.
+- **The badge names the division**, never a generic "ASK". Its text is never under 10pt (the
+  validator's floor) and is set at 11pt, Standard #11's badge-label minimum; size the box for it
+  (0.3" tall, the text's width plus 0.2").
+- **Colour is never the only signal** (Standard #22): the badge and the section header name the
+  party. The bright-cyan bar is 1.52:1 against its off-white card, under the 3:1 a meaningful
+  graphic needs, so it only decorates; the asks bar clears 4.57:1 against its fill.
+- The accent bar is the second sanctioned edge stripe, after the process-flow ownership stripe:
+  both carry a meaning that a label also states.
+
+Built with the `custom` slide type: `shape` and `text` elements take these colour token names in
+`fill` and `text_color`. A `table` element always stripes its rows (`white` and `zebra_tint`,
+which is the `off_white` value), which is right for our division's tables. Draw an asks table as
+rows instead: per row a `rect` in `ownership_ask_fill`, 0.36" tall with a 0.04" gap, its accent
+bar, and its cells as 12pt `text` elements with `anchor: middle` (first column Bold), all under a
+column-header row in `dark_teal` with white 12pt Bold text. Those rows are shapes, so the builder
+does not ask for a source: give the slide `content.source` whenever they carry figures. An asks
+page with one card, repeated per ask:
+
+```yaml
+- type: custom
+  id: S12
+  content:
+    title: "Product A needs two decisions from the other division"
+  elements:
+    # section header bar
+    - {kind: shape, shape: rect, x: 0.374, y: 1.3, w: 12.585, h: 0.35, fill: ownership_ask, text: "PRODUCT A: 2 ASKS", text_color: white, size: 12, bold: true, align: left}
+    # one asks card: fill, accent bar, badge (the other division's name), title, body
+    - {kind: shape, shape: rounded_rect, x: 0.374, y: 1.85, w: 6.142, h: 1.3, fill: ownership_ask_fill}
+    - {kind: shape, shape: rect, x: 0.374, y: 1.85, w: 0.08, h: 1.3, fill: ownership_ask}
+    - {kind: shape, shape: rounded_rect, x: 5.166, y: 1.97, w: 1.2, h: 0.3, fill: ownership_ask, text: "DIVISION", text_color: white, size: 11, bold: true}
+    - {kind: text, role: card_title, x: 0.624, y: 1.97, w: 4.35, h: 0.32, text: "The first decision we ask for"}
+    - {kind: text, role: card_body, x: 0.624, y: 2.37, w: 5.74, h: 0.66, text: "Why it matters, in two lines at most"}
+    # footer band: what our division leads in parallel
+    - {kind: shape, shape: rect, x: 0.374, y: 6.05, w: 12.585, h: 0.45, fill: ownership_band, text: "In parallel, our division leads the rest of the product plan.", text_color: dark_teal, size: 14, align: left}
+```
 
 ## Clean Executive Cover: signature
 

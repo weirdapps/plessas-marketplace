@@ -131,6 +131,20 @@ jobs:
             echo "::notice::$name: $slides slides built, validated and rendered (render exit $rc)"
           done
 
+      # The other two tool environments, built and run through the same launcher, so
+      # a dependency dropped from their requirements.txt fails here and not on a
+      # colleague's first /create-keynote or /create-mockup.
+      - name: Keynote and mockup through the launcher
+        env:
+          PIP_ONLY_BINARY: ':all:'
+        run: |
+          set -euo pipefail
+          bash plugins/decks/bin/decks-py setup
+          bash plugins/decks/bin/decks-py keynote plugins/decks/tools/nbg-keynote/example.yaml \
+            --validate --placeholder-images
+          bash plugins/decks/bin/decks-py mockup --list-frames
+          bash plugins/decks/bin/decks-py doctor
+
   node:
     name: vitest (${{ matrix.server }})
     runs-on: ubuntu-latest

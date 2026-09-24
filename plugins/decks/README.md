@@ -61,14 +61,16 @@ words ("I need something for the board on Thursday", «θέλω κάτι για 
 
 ```text
 brief
-  -> storyline-architect   writes deck.yaml (the deck spec)
-  -> decks-py check        schema and semantic check, before anything renders
+  -> storyline-architect   writes deck.yaml (the deck spec) and checks it before anything renders
+  -> outline checkpoint    you see every slide's action title and the open questions, and agree
   -> storyboard-designer   picks slide types, layouts and visuals
   -> icon-designer, infographic-specialist, device-mockup   make any images (optional)
-  -> decks-py build        nbg_build.py renders the .pptx and runs the brand validator
-  -> decks-py render       LibreOffice renders every slide to an image, with a font check
-  -> presentation-qa       reads the validator report and every slide image; PASS or a fix list
-  -> fixes to deck.yaml and a rebuild (at most two cycles)
+  -> graphics-renderer     runs decks-py build (nbg_build.py renders the .pptx and runs the
+                           brand validator) and fixes the spec until it builds clean, at most
+                           three builds
+  -> presentation-qa       runs the validator, renders every slide to an image with a font
+                           check, and looks at each one; PASS or a fix list
+  -> fixes to deck.yaml, a rebuild and another look (at most two cycles)
   -> decks-py record       keeps the draft /presentation-review later learns from
 ```
 
@@ -91,7 +93,7 @@ Every Python tool runs through `bin/decks-py`, which keeps one environment per t
 | `decks-py check <deck.yaml>` | Validate a deck spec, build nothing |
 | `decks-py validate <deck.pptx>` | Brand check of any .pptx |
 | `decks-py render <deck.pptx> <outdir>` | Render to PDF and one PNG per slide |
-| `decks-py extract <file>` | Text, notes, tables and chart data of a .pptx, .docx or .pdf, as markdown |
+| `decks-py extract <file>` | Text, notes, tables and chart data of a .pptx or .pdf, as markdown. A Word document goes in saved as PDF, or as pasted text |
 | `decks-py keynote <talk.yaml>` | Build a keynote |
 | `decks-py mockup <screenshot>` | Build an iPhone mockup |
 | `decks-py setup` / `decks-py doctor` | Build every environment now / report what the machine has |
