@@ -168,7 +168,7 @@ boxes. This catalog describes when to reach for each one; the coordinates have o
 | Element | Font | Size | Spacing |
 |---------|------|------|---------|
 | Title | Aptos | 24pt | Line: 0.9 |
-| Body text | Aptos | 16pt (14pt dense) | Before: 9pt, line 1.1 |
+| Body text | Aptos | 16pt (14pt dense, up to 20pt sparse) | Before: 9pt, line 1.1 |
 | Bullet L1 | Aptos | 16pt | Before: 14pt (none on the first), hanging indent 0.25" |
 | Bullet L2 | Aptos | 16pt | Before: 5pt |
 | Footnotes | Aptos | 11pt | - |
@@ -456,7 +456,8 @@ A table starts at the gutter (x 0.374") and may span the content width (12.585")
 **This is the single table spec.** `typography.md` and `charts.md` point here.
 
 - **Header row**: fill `#003841`, **12pt Aptos Bold WHITE**, height 0.4"
-- **Body rows alternate (zebra)**: `#FFFFFF` and `#F5F8F6`, height 0.35"
+- **Body rows alternate (zebra)**: `#FFFFFF` and `#F5F8F6`, height 0.35"; a short table's rows
+  grow toward the fill band (Standard #2, item 7), to 0.55" at most
 - **Cell inset**: 0.08"
 - **First column** (label): 12pt Aptos **Bold** `#202020`
 - **Other body cells**: 12pt Aptos Regular `#202020`

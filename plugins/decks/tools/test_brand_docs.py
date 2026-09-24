@@ -16,6 +16,7 @@ because a check that finds nothing to compare has not checked anything.
 from __future__ import annotations
 
 import importlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -40,6 +41,14 @@ NUM = re.compile(r"\d+(?:\.\d+)?")
 
 def read(doc: str) -> str:
     return (DOCS / doc).read_text(encoding="utf-8")
+
+
+def standard(number: int) -> str:
+    """The text of numbered Standard `number` in presentation-style-guide.md."""
+    guide = (DOCS.parent / "presentation-style-guide.md").read_text(encoding="utf-8")
+    found = re.search(rf"^## {number}\. .*?(?=^## \d+\. |\Z)", guide, re.S | re.M)
+    assert found, f"presentation-style-guide.md has no Standard #{number}"
+    return found.group(0)
 
 
 def _headings(lines: list[str]) -> list[tuple[int, int, str]]:
@@ -158,12 +167,13 @@ TYPE_ROWS = [
     ("README.md", "Typography Hierarchy", "Card body", "card_body"),
     ("README.md", "Typography Hierarchy", "KPI big number", "kpi_value"),
     ("README.md", "Typography Hierarchy", "KPI caption", "kpi_label"),
+    ("README.md", "Typography Hierarchy", "Owner subtitle", "subtitle"),
     ("README.md", "Typography Hierarchy", "Caption", "caption"),
     ("README.md", "Typography Hierarchy", "Source / footnote", "source"),
     ("README.md", "Typography Hierarchy", "Table header", "table_header"),
     ("README.md", "Typography Hierarchy", "Table body", "table_body"),
     ("README.md", "Typography Hierarchy", "Chart data label", "chart_data_label"),
-    ("README.md", "Typography Hierarchy", "Chart axis / legend", "chart_axis"),
+    ("README.md", "Typography Hierarchy", "Category axis / legend", "chart_axis"),
     ("README.md", "Typography Hierarchy", "Page number", "page_number"),
     ("typography.md", "Cover Slide", "Title", "cover_title"),
     ("typography.md", "Cover Slide", "Subtitle", "cover_subtitle"),
@@ -182,7 +192,8 @@ TYPE_ROWS = [
     ("typography.md", "Content Slide", "Footnotes and sources", "footnote"),
     ("typography.md", "Metric Cards", "KPI big number", "kpi_value"),
     ("typography.md", "Metric Cards", "KPI caption", "kpi_label"),
-    ("typography.md", "Charts & Tables", "Chart Axis Labels", "chart_axis"),
+    ("typography.md", "Page Header Components", 'Owner subtitle ("Head: A. Smith")', "subtitle"),
+    ("typography.md", "Charts & Tables", "Category Axis Labels", "chart_axis"),
     ("typography.md", "Charts & Tables", "Chart Legend", "chart_legend"),
     ("typography.md", "Charts & Tables", "Chart Data Labels", "chart_data_label"),
     ("typography.md", "Charts & Tables", "Table Header (NBG executive pattern)", "table_header"),
@@ -205,6 +216,11 @@ def test_type_rows_quote_the_type_scale(doc, heading, label, role):
         assert len(sizes) > 1 and sizes[1] == want.get("min_size"), (
             f"{where}: minimum in {size_cell!r}, tokens type.{role}.min_size = {want.get('min_size')}"
         )
+    if "sparse" in size_cell:
+        assert len(sizes) > 1 and sizes[-1] == want.get("max_size"), (
+            f"{where}: sparse-slide size in {size_cell!r}, tokens type.{role}.max_size = "
+            f"{want.get('max_size')}"
+        )
     colour = hexes(r["Color"])
     assert colour and colour[0] == want["color"], (
         f"{where}: colour {r['Color']!r}, tokens type.{role}.color = {want['color']}"
@@ -213,6 +229,39 @@ def test_type_rows_quote_the_type_scale(doc, heading, label, role):
     assert bold == want["bold"], (
         f"{where}: weight {r['Weight']!r}, tokens type.{role}.bold = {want['bold']}"
     )
+
+
+@pytest.mark.parametrize(
+    ("doc", "heading", "label"),
+    [
+        ("typography.md", "Charts & Tables", "Value Axis Labels (line and area-line charts)"),
+        ("README.md", "Typography Hierarchy", "Value axis (line and area-line charts)"),
+    ],
+)
+def test_value_axis_rows_quote_the_chart_tokens(doc, heading, label):
+    """One 12pt #202020 row stood for every axis label, while the builder draws the
+    line and area-line value axis at charts.value_axis: 11pt in the muted grey."""
+    axis = tok("charts.value_axis")
+    r = row(doc, heading, label)
+    assert nums(r["Size"]) == [axis["size"]], f"{doc} › {label}: size {r['Size']!r}"
+    assert hexes(r["Color"]) == [hex_of(axis["muted_color"])], f"{doc} › {label}: {r['Color']!r}"
+    assert "bold" not in clean(r["Weight"]).lower(), f"{doc} › {label}: {r['Weight']!r}"
+
+
+def test_chart_title_row_is_labelled_existing_decks_only():
+    """The builder draws no chart title and the deck spec has no field for one (the
+    slide's action title and caption name the chart), so the typography row serves
+    hand-built decks only and has to say so."""
+    schema_path = DOCS.parent.parent / "tools" / "nbg-presentation" / "deck.schema.json"
+    defs = json.loads(schema_path.read_text(encoding="utf-8"))["$defs"]
+    for name in ("chart", "waterfall_chart"):
+        assert "title" not in defs[name]["properties"], f"deck.schema.json {name} has a title"
+    labels = [clean(next(iter(r.values()))) for r in table_rows("typography.md", "Charts & Tables")]
+    title = next((label for label in labels if label.startswith("Chart Title")), None)
+    assert title, "typography.md › Charts & Tables has no Chart Title row"
+    assert "existing decks only" in title, title
+    item = next(ln for ln in standard(16).splitlines() if ln.startswith("- Chart titles"))
+    assert "existing decks only" in item, f"Standard #16: {item}"
 
 
 def test_line_spacing_quotes_the_tokens():
@@ -736,7 +785,8 @@ def test_chart_style_table_quotes_the_chart_tokens():
     c = tok("charts")
     heading = "Chart Style"
     line = row("charts.md", heading, "Line")["Spec"]
-    assert nums(line)[:2] == [c["line"]["width_pt"], c["line"]["marker_size"]], line
+    want = [c["line"][k] for k in ("width_pt", "marker_size", "marker_line_pt")]
+    assert nums(line)[:3] == want, line
     assert "no smoothing" in line and not c["line"]["smooth"]
     area = row("charts.md", heading, "Area-line")["Spec"]
     assert num(area) == pytest.approx(c["area_line"]["fill_alpha"] * 100)
@@ -763,3 +813,51 @@ def test_chart_style_table_quotes_the_chart_tokens():
     ]
     gridlines = row("charts.md", heading, "Gridlines")["Spec"]
     assert gridlines == "None" and not c["gridlines"]
+
+
+def test_marker_ring_quotes_the_token_everywhere():
+    """c21af1e thinned the marker ring to 2pt so a 6pt marker keeps its white centre;
+    Standard #5, charts.md and the README kept saying it matched the 3.5pt line."""
+    ring = tok("charts.line.marker_line_pt")
+    spec = section("charts.md", "Hollow")
+    outline = next(ln for ln in spec.splitlines() if ln.startswith("- Marker outline"))
+    assert nums(outline)[0] == ring, outline
+    assert f"line.width = Pt({ring:g})" in spec
+    assert f"{ring:g}pt ring" in row("README.md", "Critical Rules", "Line charts")["Enforcement"]
+    assert f'<a:ln w="{round(ring * 12700)}">' in standard(5)
+    assert f"{ring:g}pt" in standard(5)
+
+
+def test_doughnut_slice_order_quotes_the_tokens():
+    order = [str(h).upper() for h in tok("charts.doughnut.slice_palette")]
+    quoted = hexes(row("charts.md", "Chart Style", "Doughnut")["Spec"])
+    assert quoted == order, f"Chart Style › Doughnut quotes {quoted}; tokens say {order}"
+    quoted = hexes(section("charts.md", "Doughnut Charts"))[: len(order)]
+    assert quoted == order, f"Doughnut Charts quotes {quoted}; tokens say {order}"
+    # What the docs claim for the order: teal never beside grey, around the whole ring.
+    teal, grey = hex_of("teal"), hex_of("muted_grey")
+    ring = order + order[:1]
+    touching = [(a, b) for a, b in zip(ring, ring[1:], strict=False) if {a, b} == {teal, grey}]
+    assert not touching, f"slice_palette puts teal beside grey: {touching}"
+
+
+def test_fill_band_and_sparse_growth_quote_the_tokens():
+    """Standard #2 item 7 names the band the builder grows a sparse slide into."""
+    item = next(ln for ln in standard(2).splitlines() if ln.startswith("7. "))
+    band = tok("geometry.fill")
+    assert f"{band['min'] * 100:g}-{band['max'] * 100:g}%" in item, item
+    assert f"toward {tok('type.body.max_size'):g}pt" in item, item
+    assert f'toward {tok("components.table.row_h_max"):g}"' in item, item
+    tables = section("layouts.md", "Table Styling")
+    bullet = tables[tables.index("**Body rows") :].split("\n- ")[0]
+    heights = nums(bullet)
+    assert heights[0] == tok("components.table.row_h"), bullet
+    assert heights[-1] == tok("components.table.row_h_max"), bullet
+
+
+def test_svg_text_floor_quotes_the_tokens():
+    text = " ".join(standard(11).split())
+    svg = tok("components.image.svg_label_min_pt")
+    floor = tok("accessibility.min_font_pt")
+    want = f"under {svg:g}pt it warns, under the {floor:g}pt floor it errors"
+    assert want in text, f"Standard #11 does not say {want!r}"

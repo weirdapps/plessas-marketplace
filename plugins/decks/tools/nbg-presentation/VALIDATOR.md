@@ -182,11 +182,15 @@ drawing's shapes as if they sat on the slide at the diagram's position; findings
 part. A diagram with no drawing part (some producers write only the data model) cannot be
 read by any check: it is reported under "not examined", and `--strict` fails the deck.
 
-**Package safety**: parts are read from the zip one at a time, never extracted, with limits
-on member count (5,000), part size (64 MB) and total size (1 GB). Every part parsed as XML,
-whatever its name or size, has tighter caps, because a parsed tree costs many times its
-text: 16 MB per part, 128 MB across the package, and a compression ratio of at most 100:1 (the highest real part seen is 42:1).
-XML is parsed with defusedxml. A deck over a limit exits 2.
+**Package safety**: before anything is inflated, the deck passes the shared pre-flight in
+`tools/nbg_package.py`, the same check extract and render run, which reads only the zip's
+directory. It caps member count (5,000), any member (64 MiB) and, for every member not named
+as media, one XML part (16 MiB), all XML together (128 MiB) and the compression ratio of a
+part over 1 MiB (100:1; the highest real part seen is 42:1). The validator then reads parts
+one at a time, never extracting, caps the whole package at 1 GiB, and checks every part it
+parses as XML against the same XML caps and ratio whatever its name or size, since a part
+named as media skips the pre-flight's XML rules. XML is parsed with defusedxml. A deck over
+a limit exits 2, with a message naming the part and the limit.
 
 ## Adding a check
 

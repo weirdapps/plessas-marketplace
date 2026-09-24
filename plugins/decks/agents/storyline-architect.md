@@ -53,9 +53,9 @@ storyboard designer does) and you never render anything.
 
 - Every `chart`, `waterfall`, `table` and `kpi` slide, and any column holding one, needs
   `content.source: {name, as_of, basis?}`: where the numbers come from and the date or period they
-  describe. `decks-py check` fails without it, and the builder refuses to render it. `as_of` needs
-  a full date or a separate four-digit year (`30 June 2026`, `Q2 2026`, `YTD August 2026`);
-  `FY2025` or `H1'26` fails check, so write `FY 2025` or `H1 2026`.
+  describe. `decks-py check` fails without it, and the builder refuses to render it. `as_of` must
+  carry its year; prefer the full form (`30 June 2026`, `Q2 2026`, `FY 2025`, `YTD August 2026`).
+  A period without a year (`H1`, `latest`) fails check.
 - Take sources, numbers, dates and names only from the material. Never estimate, extrapolate, pad
   a series or invent a source to make a slide look complete.
 - When the material lacks something a slide needs (a source, an as-of date, a missing figure),
