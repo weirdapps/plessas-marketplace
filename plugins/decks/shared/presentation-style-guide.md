@@ -27,8 +27,8 @@ After generating any NBG-branded artifact, scan output for `006141` or `0, 97, 6
 4. **Org charts show the level the decision needs**: the full hierarchy down to the units the audience acts on, not just the top boxes.
 5. **Staffing tables show both directions**: departures AND hiring needs, at the level where the decision is taken.
 6. **Project tables need structure**. Columns: `#`, Name, Description, Status, Deadline. Not just name + status dot.
-7. **Fill the slide**: content should use 60-85% of safe area. Half-empty slides waste attention. If there's space, increase font size.
-8. **Area-line charts for time-series**: never plain line charts. Use area chart with subtle fill (15% opacity), hollow circle markers (Standard #5), no grid/axis lines, muted gray value-axis labels. Pair with KPI callout (large metric value + change delta) beside the chart.
+7. **Fill the slide**: content should use 60-85% of safe area (`tokens.yaml` `geometry.fill`). Half-empty slides waste attention. If there's space, increase font size: the builder grows a sparse slide's bullets toward 20pt and a short table's rows toward 0.55", never past the band.
+8. **Area-line charts for time-series**: never plain line charts. Use area chart with subtle fill (15% opacity) under the first series, hollow circle markers (Standard #5), no grid/axis lines, muted gray value-axis labels. Pair with KPI callout (large metric value + change delta) beside the chart.
 
 ## 3. Section dividers: minimal, no decorations
 
@@ -55,10 +55,10 @@ When inserting any logo (NBG, peer banks, partners) into a deck, ALWAYS preserve
 
 ## 5. Line charts: hollow circle markers
 
-All line charts in NBG presentations use hollow circle markers: white fill center with a colored outline ring whose stroke width matches the line itself (typically 3.5pt / 44450 EMU).
+All line charts in NBG presentations use hollow circle markers: a white centre inside a ring in the line's colour. The ring is 2pt (25400 EMU, `tokens.yaml` `charts.line.marker_line_pt`), thinner than the 3.5pt line on purpose: at the line's own width the ring fills a 6pt marker, and every marker reads as a solid dot.
 
 - `marker.symbol = circle`, `marker.size = 6`
-- For python-pptx, set marker `spPr`: `<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>` for fill, `<a:ln w="44450"><a:solidFill><a:srgbClr val="{LINE_COLOR}"/></a:solidFill></a:ln>` for outline
+- For python-pptx, set marker `spPr`: `<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>` for fill, `<a:ln w="25400"><a:solidFill><a:srgbClr val="{LINE_COLOR}"/></a:solidFill></a:ln>` for outline
 - Apply to ALL line chart series, including area-line charts (NPE convergence style)
 - 3.5pt is the width for every **data line**, which is any stroke a reader traces to read a value
 - It does **not** cover an area **fill boundary**. On a stacked-area chart the stroke outlines a region rather than carrying the data, and `brand-system/charts.md` sets it at 2.5pt. That is correct and deliberate, not drift. A single-series area-line chart is still a data line: 3.5pt.
@@ -121,7 +121,7 @@ Use `nbg-logo-gr.png` (Greek `ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ`), never the English f
 - **Breathing room below titles**: first body element at y≥1.3" (the title box ends at 0.9", or 1.15" under a section pill).
 - **Fill the slide**: use 60–85% of safe area.
 
-`nbg_validate.py` enforces the floor exactly: 10pt for every run on slides, charts and tables, 11pt for sources and footnotes, and only the section pill at 9pt. The per-element minimums above the floor (14, 16, 12pt) are a QA judgement, not a validator check. Its checks are listed in `tools/nbg-presentation/VALIDATOR.md` and by `decks-py validate --list-checks`. The builder gets sizes right on the first pass rather than leaning on the check.
+`nbg_validate.py` enforces the floor exactly: 10pt for every run on slides, charts and tables, 11pt for sources and footnotes, and only the section pill at 9pt. The per-element minimums above the floor (14, 16, 12pt) are a QA judgement, not a validator check. The validator cannot read text inside a picture, so the builder measures a placed SVG's smallest text (an infographic or diagram) at its placed size, in `decks-py check` and `build` alike: under 12pt it warns, under the 10pt floor it errors (`components.image.svg_label_min_pt`). Its checks are listed in `tools/nbg-presentation/VALIDATOR.md` and by `decks-py validate --list-checks`. The builder gets sizes right on the first pass rather than leaning on the check.
 
 ## 12. Tight rounded-rect corners
 

@@ -68,7 +68,7 @@ Contents rows are Regular throughout (Standard #18); the number carries the emph
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | **Action Title** | Aptos | **24pt** | #003841 | Regular |
-| Body Text | Aptos | **16pt** | #202020 | Regular |
+| Body Text | Aptos | **16pt**, growing toward 20pt on a sparse slide | #202020 | Regular |
 | Body Text (dense slides) | Aptos | 14pt | #202020 | Regular |
 | Bullet L1 | Aptos | 16pt | #202020 | Regular |
 | Bullet L2 | Aptos | 16pt | #202020 | Regular |
@@ -76,8 +76,10 @@ Contents rows are Regular throughout (Standard #18); the number carries the emph
 | Caption (under a title) | Aptos | 12pt | #5A5F5A | Regular |
 | Footnotes and sources | Aptos | 11pt | #5A5F5A | Regular |
 
-Body text is 16pt, 14pt at the least (dense slides). Every bullet level uses the body size:
-separate the levels by indent and bullet character, not by shrinking the type. Footnotes and
+Body text is 16pt, 14pt at the least (dense slides). On a sparse content slide the builder grows
+the bullets toward 20pt (`type.body.max_size`) so the content fills the slide (Standard #2, item
+7). Every bullet level uses the body size: separate the levels by indent and bullet character,
+not by shrinking the type. Footnotes and
 sources are caption grey, never `#939793` (2.96:1 on white, Standard #22). Sizes in this file are
 the specified values; the per-element floors they must clear live in
 `presentation-style-guide.md` Standard #11.

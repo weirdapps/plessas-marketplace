@@ -58,7 +58,7 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 | Contents title | 16pt | 003841 | Regular |
 | Contents description | 12pt | 5A5F5A | Regular |
 | Content title | **24pt** | 003841 | Regular |
-| Body text | **16pt** (14pt minimum) | 202020 | Regular |
+| Body text | **16pt** (14pt minimum, up to 20pt on a sparse slide) | 202020 | Regular |
 | Section pill | 9pt ALL CAPS | FFFFFF on 007B85 | Bold |
 | Card title | 16pt | 003841 | Bold |
 | Card body | 14pt | 202020 | Regular |
@@ -127,10 +127,10 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 | **Title weight** | Aptos Regular (NOT SemiBold, NOT Bold) |
 | **Text boxes** | `margin: 0`, `valign: 'top'` ALWAYS |
 | **Content title size** | 24pt (NOT 44pt or larger) |
-| **Body text size** | 14pt minimum, 16pt preferred. The full per-element floor table is `presentation-style-guide.md` Standard #11. |
+| **Body text size** | 14pt minimum, 16pt preferred; the builder grows a sparse slide's bullets toward 20pt. The full per-element floor table is `presentation-style-guide.md` Standard #11. |
 | **Cover subtitle** | 24pt: the presenting unit(s), pipe-separated, no trailing period (for example `Unit A \| Unit B`). A user's own unit list belongs in their style preferences, not here. |
 | **Dividers** | Title only, no subtitle/description. White background. Large logo (same as cover). |
-| **Line charts** | 3.5pt lines, straight segments, hollow circle markers size 6 (white fill, ring in the series colour at the line width). A time series is an area-line, never a bare line (Standards #2.8, #5) |
+| **Line charts** | 3.5pt lines, straight segments, hollow circle markers size 6 (white fill, a 2pt ring in the series colour). A time series is an area-line, never a bare line (Standards #2.8, #5) |
 | **Chart colors** | ALWAYS specify explicit NBG colors. Same `#00ADBF` for both column AND bar charts. |
 | **Table numbers** | Right-aligned. Text columns left-aligned. Zebra rows: alternate #FFFFFF / #F5F8F6. |
 | **NO shadows** | All shapes, pills, boxes must have no shadow |

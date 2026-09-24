@@ -736,7 +736,8 @@ def test_chart_style_table_quotes_the_chart_tokens():
     c = tok("charts")
     heading = "Chart Style"
     line = row("charts.md", heading, "Line")["Spec"]
-    assert nums(line)[:2] == [c["line"]["width_pt"], c["line"]["marker_size"]], line
+    want = [c["line"][k] for k in ("width_pt", "marker_size", "marker_line_pt")]
+    assert nums(line)[:3] == want, line
     assert "no smoothing" in line and not c["line"]["smooth"]
     area = row("charts.md", heading, "Area-line")["Spec"]
     assert num(area) == pytest.approx(c["area_line"]["fill_alpha"] * 100)
@@ -763,3 +764,19 @@ def test_chart_style_table_quotes_the_chart_tokens():
     ]
     gridlines = row("charts.md", heading, "Gridlines")["Spec"]
     assert gridlines == "None" and not c["gridlines"]
+
+
+def test_marker_ring_quotes_the_token_everywhere():
+    """c21af1e thinned the marker ring to 2pt so a 6pt marker keeps its white centre;
+    Standard #5, charts.md and the README kept saying it matched the 3.5pt line."""
+    ring = tok("charts.line.marker_line_pt")
+    spec = section("charts.md", "Hollow")
+    outline = next(ln for ln in spec.splitlines() if ln.startswith("- Marker outline"))
+    assert nums(outline)[0] == ring, outline
+    assert f"line.width = Pt({ring:g})" in spec
+    assert f"{ring:g}pt ring" in row("README.md", "Critical Rules", "Line charts")["Enforcement"]
+    guide = (DOCS.parent / "presentation-style-guide.md").read_text(encoding="utf-8")
+    standard = re.search(r"^## 5\. .*?(?=^## 6\. )", guide, re.S | re.M)
+    assert standard, "presentation-style-guide.md has no Standard #5"
+    assert f'<a:ln w="{round(ring * 12700)}">' in standard.group(0)
+    assert f"{ring:g}pt" in standard.group(0)
