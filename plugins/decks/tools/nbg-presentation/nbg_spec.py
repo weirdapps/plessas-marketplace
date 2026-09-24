@@ -49,19 +49,11 @@ sys.path.insert(0, str(HERE.parent))
 import nbg_tokens  # noqa: E402
 
 # One rule, one place (PROMPTS-CONTRACTS-03): the spec-level rules the validator
-# fails a deck on are its own patterns, imported, so check can never pass what the
-# build then rejects for something written in the spec.
-from nbg_validate import (  # noqa: E402
-    ALT_TEXT_LEAD_IN,
-    ALT_TEXT_PLACEHOLDER,
-    EM_DASH,
-    EN_DASH,
-    SOURCE_AS_OF,
-)
-from nbg_validate import fold as caption_fold  # noqa: E402
+# fails a deck on are its own public functions and pattern, imported, so check can
+# never pass what the build then rejects for something written in the spec.
+from nbg_validate import SOURCE_AS_OF, alt_text_problem, dash_problem  # noqa: E402
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".svg"}
-DOUBLE_HYPHEN = " -- "  # a typed em dash, which the validator's Em Dashes check fails too
 
 
 class CannotRun(Exception):
@@ -425,17 +417,21 @@ def _walk_text(node: Any, path: str, issues: Issues, key: str = "") -> Any:
 
 
 def _dash_issues(text: str, path: str, key: str, issues: Issues) -> None:
-    """Standard #7 as the validator's Em Dashes check reads it: an em dash or a typed
-    ' -- ' fails the deck, and a spaced en dash standing in for one is a warning."""
-    flat = " ".join(text.split())
+    """Standard #7 by the validator's own dash_problem: an em dash or a typed ' -- '
+    fails the deck, and a spaced en dash standing in for one is a warning. Text that
+    nothing draws never reaches the validator, so there check only points it out."""
+    problem = dash_problem(" ".join(text.split()))
+    if problem is None:
+        return
+    severity, reason = problem
     fix = "Standard #7: use a comma, a colon, a semicolon or a full stop"
-    if EM_DASH in flat or DOUBLE_HYPHEN in flat:
-        if key in _UNDRAWN:
-            issues.warning(path, "contains an em dash", fix)
-        else:
-            issues.error(path, "contains an em dash (or ' -- '), which fails the validator", fix)
-    elif f" {EN_DASH} " in flat and key not in _UNDRAWN:
-        issues.warning(path, "a spaced en dash stands in for a dash", fix)
+    if key in _UNDRAWN:
+        if severity == "error":
+            issues.warning(path, f"contains an {reason}", fix)
+    elif severity == "error":
+        issues.error(path, f"contains an {reason} (or ' -- '), which fails the validator", fix)
+    else:
+        issues.warning(path, f"a {reason}", fix)
 
 
 def _as_points(items: list[Any]) -> list[Any]:
@@ -1432,25 +1428,16 @@ def _walk_strings(node: Any, path: str, key: str = "") -> Iterator[tuple[str, st
 
 
 def _alt_text_issues(slide: dict[str, Any], p: str, issues: Issues) -> None:
-    """The validator's Alt Text check, on the spec: alt text that is a filename or an
-    autoname, opens with 'image of', or repeats text already on the slide fails."""
+    """The validator's Alt Text check by its own alt_text_problem, on the spec: alt
+    text that is blank, a filename or an autoname, opens with 'image of', or repeats
+    text already on the slide fails."""
     strings = list(_walk_strings(slide, p))
-    drawn = {
-        caption_fold(" ".join(text.split()))
-        for _, key, text in strings
-        if key not in _UNDRAWN and key not in _NO_DASH_CHECK
-    }
+    captions = [t for _, key, t in strings if key not in _UNDRAWN and key not in _NO_DASH_CHECK]
     fix = "say what the picture or chart shows and why it is on the slide"
     for path, key, text in strings:
-        alt = " ".join(text.split())
-        if key != "alt_text" or not alt:
-            continue
-        if ALT_TEXT_PLACEHOLDER.match(alt):
-            issues.error(path, f"'{alt}' is a filename or an autoname, not a description", fix)
-        elif ALT_TEXT_LEAD_IN.match(alt):
-            issues.error(path, f"'{alt}' opens with 'image of'", fix)
-        elif caption_fold(alt) in drawn:
-            issues.error(path, f"'{alt}' repeats text already on the slide", fix)
+        problem = alt_text_problem(text, captions) if key == "alt_text" else None
+        if problem is not None:
+            issues.error(path, problem, fix)
 
 
 def _waterfall_issues(slide: dict[str, Any], p: str, issues: Issues) -> None:
