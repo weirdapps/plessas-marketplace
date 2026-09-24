@@ -128,7 +128,8 @@ Used on Progress & Priorities slides.
 | Element | Font | Size | Color | Weight |
 |---------|------|------|-------|--------|
 | Chart Title | Aptos | **12pt** | #202020 | Bold |
-| Chart Axis Labels | Aptos | 12pt | #202020 | Regular |
+| Category Axis Labels | Aptos | 12pt | #202020 | Regular |
+| Value Axis Labels (line and area-line charts) | Aptos | 11pt | #939793 | Regular |
 | Chart Legend | Aptos | 12pt | #202020 | Regular |
 | Chart Data Labels | Aptos | 12pt | #003841 | Bold |
 | Table Header (NBG executive pattern) | Aptos | **12pt** | `#FFFFFF` on `#003841` fill | **Bold** |
@@ -141,6 +142,11 @@ Used on Progress & Priorities slides.
 
 Data labels inside a filled bar take the contrast-picked colour instead (charts.md). Amber text on
 white is 2.58:1, so a priority flag is dark text on an amber badge, never amber text.
+
+The value-axis row is the one sanctioned sub-AA text in a chart: `#939793` is 2.96:1 on white,
+allowed because those labels are secondary to the direct data labels and never the only way to
+read a value ([charts.md → Chart Style](charts.md#chart-style-tokensyaml-charts)). Bar and column
+charts hide their value axis.
 
 **Executive table styling rules**: fills, borders and in-cell emphasis are specified once in
 [layouts.md](layouts.md#table-styling-nbg-executive-signature). This file carries only the type sizes.

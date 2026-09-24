@@ -172,7 +172,7 @@ TYPE_ROWS = [
     ("README.md", "Typography Hierarchy", "Table header", "table_header"),
     ("README.md", "Typography Hierarchy", "Table body", "table_body"),
     ("README.md", "Typography Hierarchy", "Chart data label", "chart_data_label"),
-    ("README.md", "Typography Hierarchy", "Chart axis / legend", "chart_axis"),
+    ("README.md", "Typography Hierarchy", "Category axis / legend", "chart_axis"),
     ("README.md", "Typography Hierarchy", "Page number", "page_number"),
     ("typography.md", "Cover Slide", "Title", "cover_title"),
     ("typography.md", "Cover Slide", "Subtitle", "cover_subtitle"),
@@ -192,7 +192,7 @@ TYPE_ROWS = [
     ("typography.md", "Metric Cards", "KPI big number", "kpi_value"),
     ("typography.md", "Metric Cards", "KPI caption", "kpi_label"),
     ("typography.md", "Page Header Components", 'Owner subtitle ("Head: A. Smith")', "subtitle"),
-    ("typography.md", "Charts & Tables", "Chart Axis Labels", "chart_axis"),
+    ("typography.md", "Charts & Tables", "Category Axis Labels", "chart_axis"),
     ("typography.md", "Charts & Tables", "Chart Legend", "chart_legend"),
     ("typography.md", "Charts & Tables", "Chart Data Labels", "chart_data_label"),
     ("typography.md", "Charts & Tables", "Table Header (NBG executive pattern)", "table_header"),
@@ -228,6 +228,23 @@ def test_type_rows_quote_the_type_scale(doc, heading, label, role):
     assert bold == want["bold"], (
         f"{where}: weight {r['Weight']!r}, tokens type.{role}.bold = {want['bold']}"
     )
+
+
+@pytest.mark.parametrize(
+    ("doc", "heading", "label"),
+    [
+        ("typography.md", "Charts & Tables", "Value Axis Labels (line and area-line charts)"),
+        ("README.md", "Typography Hierarchy", "Value axis (line and area-line charts)"),
+    ],
+)
+def test_value_axis_rows_quote_the_chart_tokens(doc, heading, label):
+    """One 12pt #202020 row stood for every axis label, while the builder draws the
+    line and area-line value axis at charts.value_axis: 11pt in the muted grey."""
+    axis = tok("charts.value_axis")
+    r = row(doc, heading, label)
+    assert nums(r["Size"]) == [axis["size"]], f"{doc} › {label}: size {r['Size']!r}"
+    assert hexes(r["Color"]) == [hex_of(axis["muted_color"])], f"{doc} › {label}: {r['Color']!r}"
+    assert "bold" not in clean(r["Weight"]).lower(), f"{doc} › {label}: {r['Weight']!r}"
 
 
 def test_line_spacing_quotes_the_tokens():

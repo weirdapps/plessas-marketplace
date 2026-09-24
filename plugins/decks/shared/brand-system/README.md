@@ -70,7 +70,8 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 | Table header | 12pt | FFFFFF on 003841 | Bold |
 | Table body | 12pt | 202020 | Regular |
 | Chart data label | 12pt | 003841 | Bold |
-| Chart axis / legend | 12pt | 202020 | Regular |
+| Category axis / legend | 12pt | 202020 | Regular |
+| Value axis (line and area-line charts) | 11pt | 939793 | Regular |
 | Page number | 10pt | 939793 | Regular |
 
 ### Geometry
