@@ -209,13 +209,19 @@ Windows or `/usr/lib/libreoffice/program`, or at `DECKS_SOFFICE`. stdout:
 
 ```json
 {"pdf": "/abs/outdir/deck.pdf", "pngs": ["/abs/outdir/slide-01.png"], "slides": 1,
- "deck_slides": 1, "dpi": 110, "fonts": [{"name": "Aptos", "embedded": true}],
- "font_fallback": false, "soffice": "/opt/homebrew/bin/soffice"}
+ "deck_slides": 1, "hidden_slides": [], "dpi": 110,
+ "fonts": [{"name": "Aptos", "embedded": true}], "font_fallback": false,
+ "substituted_fonts": [], "soffice": "/opt/homebrew/bin/soffice", "warnings": []}
 ```
 
-Exit 4 (`font_fallback: true`) means Aptos was not embedded: LibreOffice drew the
-slides in a substitute font, so text widths differ from PowerPoint and fit judgements
-made from the PNGs are unreliable. On 2 and 3, stdout is `{"error", "fix"}`.
+Each PNG is named for the deck slide it shows: LibreOffice exports no page for a hidden
+slide (listed in `hidden_slides`), so with slide 2 hidden the files are `slide-01.png`
+and `slide-03.png`. Exit 4 (`font_fallback: true`) means a typeface the deck asks for
+(the theme's fonts and every font set on a slide or in a chart) is not embedded in the
+PDF: `substituted_fonts` names it, LibreOffice drew it in another face, so text widths
+differ from PowerPoint and fit judgements made from the PNGs are unreliable. Every
+warning is in `warnings`; `warning` joins them for older readers. On 2 and 3, stdout is
+`{"error", "fix"}`.
 
 LibreOffice is not PowerPoint: line-chart markers show as solid dots in these PNGs,
 because LibreOffice's chart engine draws a symbol in one colour with no outline.

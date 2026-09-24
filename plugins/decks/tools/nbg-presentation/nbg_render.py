@@ -159,14 +159,18 @@ def record_outdir(outdir: Path, files: list[Path]) -> None:
     (outdir / MANIFEST).write_text(json.dumps({"files": [p.name for p in files]}), encoding="utf-8")
 
 
-def pdf_to_pngs(pdf: Path, outdir: Path, dpi: int) -> list[Path]:
+def pdf_to_pngs(pdf: Path, outdir: Path, dpi: int, numbers: list[int] | None = None) -> list[Path]:
+    """One PNG per page, named for the deck slide it shows (numbers, one per page) or,
+    without that map, for the page."""
     import pypdfium2 as pdfium
 
     doc = pdfium.PdfDocument(str(pdf))
     try:
         paths = []
+        if numbers is None or len(numbers) != len(doc):
+            numbers = list(range(1, len(doc) + 1))
         for i in range(len(doc)):
-            path = outdir / f"slide-{i + 1:02d}.png"
+            path = outdir / f"slide-{numbers[i]:02d}.png"
             if path.exists():  # claim_outdir removed render's own; this one is not
                 raise RenderError(
                     f"{path} already exists and render did not write it",
@@ -217,6 +221,67 @@ def aptos_embedded(fonts: list[dict[str, Any]]) -> bool:
     return any("aptos" in f["name"].lower() and f["embedded"] for f in fonts)
 
 
+_A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+_P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+_R_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+
+
+def _xml(zf: zipfile.ZipFile, name: str) -> Any:
+    from lxml import etree
+
+    parser = etree.XMLParser(resolve_entities=False, no_network=True)
+    return etree.fromstring(zf.read(name), parser)
+
+
+def requested_fonts(deck: Path) -> list[str]:
+    """The typefaces the deck's text asks for: the theme's heading and body fonts,
+    which every run without its own inherits, and each a:latin typeface on a slide or
+    in a chart."""
+    names: set[str] = set()
+    with zipfile.ZipFile(deck) as zf:
+        for part in zf.namelist():
+            if part.startswith("ppt/theme/") and part.endswith(".xml"):
+                for which in ("majorFont", "minorFont"):
+                    latin = _xml(zf, part).find(f".//{_A}{which}/{_A}latin")
+                    if latin is not None:
+                        names.add(latin.get("typeface", ""))
+            elif part.startswith(("ppt/slides/slide", "ppt/charts/chart")) and part.endswith(
+                ".xml"
+            ):
+                names |= {el.get("typeface", "") for el in _xml(zf, part).iter(f"{_A}latin")}
+    return sorted(n for n in names if n and not n.startswith("+"))
+
+
+def _fold_font(name: str) -> str:
+    return "".join(ch for ch in name.lower() if ch.isalnum())
+
+
+def substituted(requested: list[str], fonts: list[dict[str, Any]]) -> list[str]:
+    """The requested typefaces the PDF does not embed under their own name (a subset or
+    a style of it, "Aptos-Bold" or "ArialMT", counts): LibreOffice drew those in
+    another face, so text widths differ from PowerPoint."""
+    embedded = [_fold_font(f["name"]) for f in fonts if f["embedded"]]
+    return [r for r in requested if not any(e.startswith(_fold_font(r)) for e in embedded)]
+
+
+def slide_order(deck: Path) -> list[tuple[int, bool]]:
+    """(deck slide number, hidden) in presentation order. LibreOffice exports no page
+    for a hidden slide (p:sld show="0")."""
+    with zipfile.ZipFile(deck) as zf:
+        rels = {
+            rel.get("Id"): rel.get("Target", "")
+            for rel in _xml(zf, "ppt/_rels/presentation.xml.rels").iter(f"{_REL}Relationship")
+        }
+        order = []
+        for number, sld_id in enumerate(_xml(zf, "ppt/presentation.xml").iter(f"{_P}sldId"), 1):
+            target = rels.get(sld_id.get(_R_ID), "")
+            name = "ppt/" + target.lstrip("/").removeprefix("ppt/")
+            hidden = name in zf.namelist() and _xml(zf, name).get("show") in ("0", "false")
+            order.append((number, hidden))
+    return order
+
+
 def deck_slide_count(deck: Path) -> int:
     with zipfile.ZipFile(deck) as zf:
         return sum(
@@ -245,32 +310,47 @@ def render(deck: Path, outdir: Path, dpi: int = DEFAULT_DPI) -> tuple[dict[str, 
     outdir.mkdir(parents=True, exist_ok=True)
     claim_outdir(outdir, deck)
     pdf = convert_to_pdf(soffice, deck, outdir)
-    pngs = pdf_to_pngs(pdf, outdir, dpi)
+    order = slide_order(deck)
+    hidden = [n for n, is_hidden in order if is_hidden]
+    pngs = pdf_to_pngs(pdf, outdir, dpi, [n for n, is_hidden in order if not is_hidden])
     record_outdir(outdir, [pdf, *pngs])
     fonts = embedded_fonts(pdf)
-    fallback = not aptos_embedded(fonts)
+    # BUILDER-CODE-10: the guard asked only whether some Aptos was embedded; it now
+    # compares every typeface the deck asks for with what the PDF embeds.
+    swapped = substituted(requested_fonts(deck), fonts)
     summary: dict[str, Any] = {
         "pdf": str(pdf),
         "pngs": [str(p) for p in pngs],
         "slides": len(pngs),
         "deck_slides": deck_slide_count(deck),
+        "hidden_slides": hidden,
         "dpi": dpi,
         "fonts": fonts,
-        "font_fallback": fallback,
+        "font_fallback": bool(swapped),
+        "substituted_fonts": swapped,
         "soffice": soffice,
     }
-    if summary["slides"] != summary["deck_slides"]:
-        summary["warning"] = (
-            f"{summary['deck_slides']} slides in the deck but {summary['slides']} pages rendered "
-            "(hidden slides are not exported)"
+    warnings = []
+    if hidden:
+        warnings.append(
+            f"slide(s) {', '.join(map(str, hidden))} hidden: LibreOffice exports no page for a "
+            "hidden slide, so each PNG is named for the deck slide it shows."
         )
-    if fallback:
-        summary["warning"] = (
-            "Aptos is not embedded in the PDF: LibreOffice substituted another font, so text "
-            "widths in these images differ from PowerPoint. Install Aptos where LibreOffice "
-            "can find it before judging text fit."
+    if summary["slides"] != summary["deck_slides"] - len(hidden):
+        warnings.append(
+            f"{summary['deck_slides']} slides in the deck ({len(hidden)} hidden) but "
+            f"{summary['slides']} pages rendered."
         )
-    return summary, (EXIT_FONT_FALLBACK if fallback else EXIT_OK)
+    if swapped:
+        warnings.append(
+            f"{', '.join(swapped)} not embedded in the PDF: LibreOffice substituted another "
+            "font, so text widths in these images differ from PowerPoint. Install the font "
+            "where LibreOffice can find it before judging text fit."
+        )
+    summary["warnings"] = warnings
+    if warnings:
+        summary["warning"] = " ".join(warnings)  # the one-field form older readers take
+    return summary, (EXIT_FONT_FALLBACK if swapped else EXIT_OK)
 
 
 def main(argv: list[str] | None = None) -> int:

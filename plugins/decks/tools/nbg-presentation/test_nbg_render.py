@@ -187,6 +187,44 @@ def test_a_referenced_but_unembedded_aptos_is_a_fallback(tmp_path):
     assert not nbg_render.aptos_embedded(fonts)
 
 
+def test_the_font_check_compares_the_decks_fonts_with_the_pdfs(two_slide_deck):
+    """BUILDER-CODE-10: the guard asked only whether any Aptos was embedded, so a deck
+    whose Arial was swapped for Liberation Sans passed, and a Calibri deck drawn in
+    Carlito was reported as 'Aptos is not embedded'. It now names what was swapped."""
+    assert "Aptos" in nbg_render.requested_fonts(two_slide_deck)
+    pdf = [{"name": "Aptos-Bold", "embedded": True}, {"name": "LiberationSans", "embedded": True}]
+    assert nbg_render.substituted(["Aptos", "Arial"], pdf) == ["Arial"]
+    assert nbg_render.substituted(["Calibri"], [{"name": "Carlito", "embedded": True}]) == [
+        "Calibri"
+    ]
+    assert nbg_render.substituted(["Aptos"], [{"name": "Aptos", "embedded": False}]) == ["Aptos"]
+    assert (
+        nbg_render.substituted(["Aptos Display"], [{"name": "AptosDisplay", "embedded": True}])
+        == []
+    )
+
+
+def test_hidden_slides_keep_their_numbers_and_every_warning_is_kept(
+    tmp_path, fake_soffice, monkeypatch, capsys
+):
+    """BUILDER-CODE-10: LibreOffice skips a hidden slide, so slide-02.png showed deck
+    slide 3, and the font warning overwrote the hidden-slide warning."""
+    prs = nbg_build.new_presentation()
+    nbg_build.create_cover_slide(prs, {"title": "Deck"})
+    nbg_build.create_cover_slide(prs, {"title": "Hidden"})
+    nbg_build.create_back_cover_slide(prs)
+    prs.slides[1]._element.set("show", "0")
+    deck = tmp_path / "hidden.pptx"
+    prs.save(str(deck))
+    code = nbg_render.main([str(deck), str(tmp_path / "out"), "--dpi", "20"])
+    summary = json.loads(capsys.readouterr().out)
+    assert code == 4
+    assert summary["hidden_slides"] == [2]
+    assert [Path(p).name for p in summary["pngs"]] == ["slide-01.png", "slide-03.png"]
+    assert len(summary["warnings"]) == 2, summary["warnings"]
+    assert "hidden" in summary["warning"] and "Aptos" in summary["warning"]
+
+
 def test_a_substitute_font_is_a_fallback(tmp_path):
     fonts = nbg_render.embedded_fonts(_pdf_with_font(tmp_path / "c.pdf", "/QWERTY+Carlito", True))
     assert not nbg_render.aptos_embedded(fonts)
