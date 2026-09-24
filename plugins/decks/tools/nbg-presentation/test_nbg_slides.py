@@ -303,7 +303,7 @@ def _bullet_sizes(out, number=2):
 
 
 def test_a_few_bullets_grow_toward_the_fill_band(build):
-    """E2E-OUTPUT-11: Standard #7 wants 60-85% of the body used and larger type where
+    """E2E-OUTPUT-11: Standard #2.7 wants 60-85% of the body used and larger type where
     there is room; three short bullets sat at 16pt in a fifth of the body."""
     points = ["Cards grew", "Deposits held", "Fees rose"]
     out = build(deck([{"type": "content", "content": {"title": "Three moved", "points": points}}]))

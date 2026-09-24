@@ -635,7 +635,7 @@ def add_bullets(
     """Bullets with a cyan glyph and a hanging indent, schema order in every a:pPr.
     They shrink toward the body floor to fit; with grow, a sparse block also grows
     toward body.max_size until it fills geometry.fill.min of the frame, never past
-    fill.max (Standard #7: E2E-OUTPUT-11)."""
+    fill.max (Standard #2.7: E2E-OUTPUT-11)."""
     items = _points(points)
     body = nbg_tokens.get("type.body")
     size = float(body["size"])
@@ -1032,7 +1032,7 @@ def add_table(
 ) -> Any:
     """A native table, columns sized to their text. With grow, a short table's body
     rows grow alike toward geometry.fill.min of the frame, to table.row_h_max at most
-    (Standard #7: E2E-OUTPUT-11)."""
+    (Standard #2.7: E2E-OUTPUT-11)."""
     comp = COMP["table"]
     headers = [str(h) for h in spec.get("headers") or []]
     width = max([len(headers)] + [len(r) for r in spec["rows"]])
