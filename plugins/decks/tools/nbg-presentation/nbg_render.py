@@ -5,17 +5,18 @@
 
 LibreOffice converts the deck to PDF in a throwaway profile (so a user's own
 LibreOffice settings and a stale lock never interfere), pypdfium2 draws each page
-to outdir/slide-NN.png, and pypdf reads which fonts the PDF embeds. When Aptos is
-not among them LibreOffice substituted another face, text runs to different
-widths, and any judgement about fit made from these images is unreliable: that is
-exit 4, not 0, so presentation-qa can say so instead of passing a slide it cannot
-see properly.
+to outdir/slide-NN.png (NN the deck slide it shows: a hidden slide has no page), and
+pypdf reads which fonts the PDF embeds. When a typeface the deck asks for is not
+among them LibreOffice substituted another face, text runs to different widths, and
+any judgement about fit made from these images is unreliable: that is exit 4, not 0,
+so presentation-qa can say so instead of passing a slide it cannot see properly.
 
 stdout is one JSON object:
-    {"pdf", "pngs", "slides", "deck_slides", "dpi", "fonts", "font_fallback", "soffice"}
+    {"pdf", "pngs", "slides", "deck_slides", "hidden_slides", "dpi", "fonts",
+     "font_fallback", "substituted_fonts", "soffice", "warnings"[, "warning"]}
 or, when nothing was rendered, {"error", "fix"}.
 
-Exit codes: 0 rendered with Aptos embedded; 4 rendered with substituted fonts;
+Exit codes: 0 rendered with every requested font embedded; 4 rendered with substituted fonts;
 3 LibreOffice is not installed; 2 any other error, including a deck past
 nbg_package's limits, which LibreOffice never sees.
 """
