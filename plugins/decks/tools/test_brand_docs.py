@@ -472,27 +472,52 @@ def test_ownership_coding_text_clears_wcag_aa(text, fill, quoted):
     )
 
 
-def test_ownership_coding_example_passes_the_spec_check():
-    """The spec's YAML recipe goes through the same schema and semantic check as a real
-    deck (body area, colour names), so a recipe that drifts from the schema fails here
-    rather than in a colleague's build."""
+def _ownership_recipes() -> list[dict[str, Any]]:
+    """Every slide in the ownership spec's YAML recipes: the card page and the asks table."""
+    slides = [slide for block in yaml_blocks("layouts.md", OWNERSHIP) for slide in block]
+    assert len(slides) >= 2, "the ownership spec lost a recipe"
+    return slides
+
+
+def test_ownership_coding_recipes_pass_the_full_check(tmp_path):
+    """The spec's YAML recipes go through `decks-py check` as a colleague's deck would:
+    schema, body area, colour names and the builder's dry-run layout, so a recipe that
+    drifts from the schema or stops fitting fails here rather than in their build."""
+    pytest.importorskip("pptx")
     pytest.importorskip("jsonschema")
-    nbg_spec = _presentation_module("nbg_spec")
-    (slide,) = yaml_blocks("layouts.md", OWNERSHIP)[0]
+    nbg_build = _presentation_module("nbg_build")
+    slides = _ownership_recipes()
     deck = {
         "presentation": {"title": "Ownership coding", "language": "en"},
         "slides": [
             {"type": "cover", "id": "S01", "content": {"title": "Ownership coding"}},
-            slide,
+            *slides,
             {"type": "back_cover", "id": "S99"},
         ],
     }
-    spec, issues = nbg_spec.normalise(deck)
-    issues += nbg_spec.schema_issues(spec) + nbg_spec.semantic_issues(spec, DOCS)
-    errors = [i.format() for i in issues if i.level == "error"]
+    path = tmp_path / "deck.yaml"
+    path.write_text(yaml.safe_dump(deck, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    report = nbg_build.check(path)
+    errors = [i.format() for i in report.issues if i.level == "error"]
     assert not errors, errors
-    used = {el.get(key) for el in slide["elements"] for key in ("fill", "text_color")}
+    elements = [el for slide in slides for el in slide["elements"]]
+    used = {el.get(key) for el in elements for key in ("fill", "text_color")}
+    used |= {el["table"].get("row_fill") for el in elements if el["kind"] == "table"}
     assert used >= OWNERSHIP_TOKENS
+
+
+def test_ownership_asks_table_is_one_table_element():
+    """f4d3815 gave the table element row_fill and header_fill, so an asks table is one
+    element with every body row in ownership_ask_fill, not rows drawn as shapes."""
+    schema_path = DOCS.parent.parent / "tools" / "nbg-presentation" / "deck.schema.json"
+    table = json.loads(schema_path.read_text(encoding="utf-8"))["$defs"]["table"]["properties"]
+    assert {"row_fill", "header_fill"} <= set(table), sorted(table)
+    elements = [el for slide in _ownership_recipes() for el in slide["elements"]]
+    tables = [el["table"] for el in elements if el["kind"] == "table"]
+    assert tables, "the ownership spec has no asks-table recipe"
+    assert all(t.get("row_fill") == "ownership_ask_fill" for t in tables), tables
+    rows = row("layouts.md", OWNERSHIP, "Table rows")["Asks (the other division)"]
+    assert "row_fill: ownership_ask_fill" in rows, rows
 
 
 def test_retired_colour_table_matches_the_tokens_both_ways():
