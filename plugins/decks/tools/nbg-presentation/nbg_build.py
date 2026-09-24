@@ -67,7 +67,7 @@ import nbg_spec  # noqa: E402
 import nbg_tokens  # noqa: E402
 from nbg_chart import LABEL_DARK_HEX, label_text_color, set_alt_text  # noqa: E402,F401
 from nbg_spec import CannotRun, Issue, Report  # noqa: E402
-from nbg_text import ASCENT_EM, caps, metrics  # noqa: E402
+from nbg_text import ASCENT_EM, caps, format_number, metrics  # noqa: E402
 
 # ---------------------------------------------------------------- brand tokens
 
@@ -165,6 +165,11 @@ class FitError(ValueError):
         self.fix = fix
 
 
+class SlideCrash(RuntimeError):
+    """A slide raised something the builder did not expect: a builder defect, so the
+    CLI exits 2 (could not run), naming the slide, rather than blaming the spec."""
+
+
 class SpecInvalid(ValueError):
     """The spec failed its check; nothing was written."""
 
@@ -203,6 +208,7 @@ class Deck:
     warnings: list[Issue] = field(default_factory=list)
     errors: list[Issue] = field(default_factory=list)
     require_title: bool = True
+    slots: list[dict[str, Any]] | None = None  # each image's slot, when check asks
 
     def path(self, rel: str = "") -> str:
         head = f"{self.base}[{self.index}]"
@@ -622,14 +628,28 @@ def _bullet_height(items: list[tuple[str, int]], width: float, size: float) -> f
     return total
 
 
-def add_bullets(deck: Deck, slide: Any, points: list[Any], frame: Frame, rel: str) -> Any:
-    """Bullets with a cyan glyph and a hanging indent, schema order in every a:pPr."""
+def add_bullets(
+    deck: Deck, slide: Any, points: list[Any], frame: Frame, rel: str, *, grow: bool = False
+) -> Any:
+    """Bullets with a cyan glyph and a hanging indent, schema order in every a:pPr.
+    They shrink toward the body floor to fit; with grow, a sparse block also grows
+    toward body.max_size until it fills geometry.fill.min of the frame, never past
+    fill.max (Standard #7: E2E-OUTPUT-11)."""
     items = _points(points)
     body = nbg_tokens.get("type.body")
     size = float(body["size"])
     floor = float(body.get("min_size", size))
     while _bullet_height(items, frame.w, size) > frame.h and size > floor:
         size -= 1
+    if grow:
+        ceiling = float(body.get("max_size", size))
+        band = GEO["fill"]
+        while (
+            size < ceiling
+            and _bullet_height(items, frame.w, size) < float(band["min"]) * frame.h
+            and _bullet_height(items, frame.w, size + 1) <= float(band["max"]) * frame.h
+        ):
+            size += 1
     needed = _bullet_height(items, frame.w, size)
     if needed > frame.h:
         raise deck.fit(
@@ -733,14 +753,110 @@ def _image_stream(
             raise deck.fit(
                 rel, "SVG needs resvg-py", "run through bin/decks-py, or use a PNG"
             ) from e
-        px = int(min(4000, max(600, width_in * 300)))
-        stream: Any = io.BytesIO(bytes(resvg_py.svg_to_bytes(svg_path=str(path), width=px)))
-    else:
-        stream = io.BytesIO(path.read_bytes())
-    with Image.open(stream) as img:
-        size = img.size
+    try:
+        if vector:
+            px = int(min(4000, max(600, width_in * 300)))
+            stream: Any = io.BytesIO(bytes(resvg_py.svg_to_bytes(svg_path=str(path), width=px)))
+        else:
+            stream = io.BytesIO(path.read_bytes())
+        with Image.open(stream) as img:
+            size = img.size
+    except Exception as e:  # noqa: BLE001 - a bad file is the spec's problem, not the environment's
+        raise deck.fit(
+            rel,
+            f"'{path.name}' exists but cannot be read ({type(e).__name__}: {e})",
+            "re-export it as a PNG, JPEG or valid SVG",
+        ) from e
     stream.seek(0)
     return stream, size, vector
+
+
+_CSS_UNIT = r"(px|pt|pc|in|cm|mm|em|rem|%)?"
+_CSS_FONT_SIZE = re.compile(rf"font-size\s*:\s*([0-9.]+)\s*{_CSS_UNIT}", re.IGNORECASE)
+_SVG_LENGTH = re.compile(rf"^\s*([0-9.]+)\s*{_CSS_UNIT}\s*$", re.IGNORECASE)
+# CSS px per unit; em and % read against the 16px default.
+_PX_PER = {
+    "": 1.0,
+    "px": 1.0,
+    "pt": 4 / 3,
+    "pc": 16.0,
+    "in": 96.0,
+    "cm": 96 / 2.54,
+    "mm": 96 / 25.4,
+    "em": 16.0,
+    "rem": 16.0,
+    "%": 0.16,
+}
+
+
+def _css_px(number: str, unit: str | None) -> float:
+    try:
+        return float(number) * _PX_PER[(unit or "").lower()]
+    except ValueError:
+        return 0.0
+
+
+def svg_text_size(path: Path) -> tuple[float, float] | None:
+    """(the smallest font size an SVG sets, the SVG's width), both in its own user
+    units, or None when it draws no text or its width cannot be read. The size may
+    sit in a font-size attribute, a style attribute or a <style> sheet; text with
+    none takes the 16px default."""
+    import defusedxml.ElementTree as ET
+
+    try:
+        root = ET.parse(str(path)).getroot()
+    except Exception:  # noqa: BLE001 - an unreadable SVG is reported where it is decoded
+        return None
+    sizes: list[float] = []
+    has_text = False
+    for el in root.iter():
+        tag = str(el.tag).rsplit("}", 1)[-1]
+        has_text = has_text or tag in ("text", "tspan", "textPath")
+        found = _SVG_LENGTH.match(el.get("font-size") or "")
+        if found:
+            sizes.append(_css_px(*found.groups()))
+        for css in (el.get("style") or "", (el.text or "") if tag == "style" else ""):
+            sizes += [_css_px(*m.groups()) for m in _CSS_FONT_SIZE.finditer(css)]
+    view_box = (root.get("viewBox") or "").replace(",", " ").split()
+    if len(view_box) == 4:
+        width = float(view_box[2])
+    else:
+        found = _SVG_LENGTH.match(root.get("width") or "")
+        width = _css_px(*found.groups()) if found else 0.0
+    if not has_text or width <= 0:
+        return None
+    return min((s for s in sizes if s > 0), default=16.0), width
+
+
+def _check_svg_text(deck: Deck, raw: str, drawn_w: float, slot: Frame, rel: str) -> None:
+    """The size an SVG's smallest text prints at, drawn drawn_w inches wide. The
+    validator cannot read text inside a picture, so this is the only gate on it
+    (PROMPTS-CONTRACTS-04: an infographic shrunk into a smaller slot took its 12pt
+    labels under the 10pt floor unseen)."""
+    path = nbg_spec.resolve_asset(raw, deck.spec_dir)
+    measured = svg_text_size(path) if path is not None else None
+    if measured is None:
+        return
+    units, width = measured
+    printed = units * drawn_w * 72 / width
+    floor = float(nbg_tokens.get("accessibility.min_font_pt"))
+    label = float(COMP["image"]["svg_label_min_pt"])
+    where = f"in its {slot.w:.2f} x {slot.h:.2f} in slot"
+    size_in = f"size_in [{slot.w:.2f}, {slot.h:.2f}]"
+    if printed < floor - 0.05:
+        raise deck.fit(
+            rel,
+            f"the SVG's smallest text would print at {printed:.1f}pt {where}, under the "
+            f"{floor:g}pt floor, and the validator cannot read text inside a picture",
+            f"redraw it at {size_in} with text of {label:g}pt or more, or give it more room",
+        )
+    if printed < label - 0.05:
+        deck.warn(
+            rel,
+            f"the SVG's smallest text prints at {printed:.1f}pt {where}, under the "
+            f"{label:g}pt its labels need",
+            f"redraw it at {size_in}",
+        )
 
 
 def _tinted(deck: Deck, stream: Any, colour: str, rel: str) -> Any:
@@ -786,6 +902,22 @@ def add_image(
     if tint:
         stream = _tinted(deck, stream, tint, rel)
     aspect = px_w / px_h if px_h else 1.0
+    if deck.slots is not None and rel.endswith(".path"):
+        sid = deck.slide_spec.get("id")
+        deck.slots.append(
+            {
+                "slide": deck.index + 1,
+                "id": sid if isinstance(sid, str) else None,
+                "path": deck.path(rel[: -len(".path")]),
+                "w": round(frame.w, 2),
+                "h": round(frame.h, 2),
+            }
+        )
+    if vector:
+        drawn_w = (
+            max(frame.w, frame.h * aspect) if fit == "cover" else min(frame.w, frame.h * aspect)
+        )
+        _check_svg_text(deck, raw, drawn_w, frame, rel)
     dpi = float(COMP["image"]["min_dpi"])
     if not vector:
         needed = (
@@ -858,13 +990,25 @@ def numeric_columns(rows: list[list[str]], width: int) -> set[int]:
     return out
 
 
-def _cell_text(value: Any) -> str:
+def _is_figure(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
+def _decimals(value: Any) -> int:
+    """How many decimals a number carries as written, at most two."""
+    if not isinstance(value, float) or value.is_integer():
+        return 0
+    return min(2, len(f"{value:.6f}".rstrip("0").split(".")[1]))
+
+
+def _cell_text(value: Any, lang: str = "en", decimals: int | None = None) -> str:
+    """A cell as text. A number takes its column's precision (E2E-OUTPUT-07) and the
+    deck language's separators (1.234,5 in Greek)."""
     if value is None:
         return ""
-    if isinstance(value, float) and value.is_integer():
-        return f"{int(value):,}"
-    if isinstance(value, int | float):
-        return f"{value:,}"
+    if _is_figure(value):
+        places = _decimals(value) if decimals is None else decimals
+        return str(format_number(float(value), places, lang))
     return str(value)
 
 
@@ -880,11 +1024,24 @@ def _cell_border(tcpr: Any) -> None:
         tcpr.insert(i, ln)
 
 
-def add_table(deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: str) -> Any:
+def add_table(
+    deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: str, *, grow: bool = False
+) -> Any:
+    """A native table, columns sized to their text. With grow, a short table's body
+    rows grow alike toward geometry.fill.min of the frame, to table.row_h_max at most
+    (Standard #7: E2E-OUTPUT-11)."""
     comp = COMP["table"]
     headers = [str(h) for h in spec.get("headers") or []]
     width = max([len(headers)] + [len(r) for r in spec["rows"]])
-    rows = [[_cell_text(c) for c in r] + [""] * (width - len(r)) for r in spec["rows"]]
+    # One precision per column: the most decimals any figure in it carries, capped at two.
+    places = [
+        max((_decimals(r[c]) for r in spec["rows"] if c < len(r) and _is_figure(r[c])), default=0)
+        for c in range(width)
+    ]
+    rows = [
+        [_cell_text(v, deck.lang, places[c]) for c, v in enumerate(r)] + [""] * (width - len(r))
+        for r in spec["rows"]
+    ]
     headers += [""] * (width - len(headers))
     numeric = numeric_columns(rows, width)
     aligns = list(spec.get("column_align") or [])
@@ -928,6 +1085,12 @@ def add_table(deck: Deck, slide: Any, spec: dict[str, Any], frame: Frame, rel: s
     header_h = row_height(headers, -1, float(comp["header_h"])) if any(headers) else 0.0
     body_hs = [row_height(r, i, float(comp["row_h"])) for i, r in enumerate(rows)]
     total = header_h + sum(body_hs)
+    target = float(GEO["fill"]["min"]) * frame.h
+    if grow and rows and total < target:
+        room = float(comp["row_h_max"]) - float(comp["row_h"])
+        extra = min(room, (target - total) / len(rows))
+        body_hs = [h + extra for h in body_hs]
+        total = header_h + sum(body_hs)
     if total > frame.h + 1e-6:
         raise deck.fit(
             rel,
@@ -1161,7 +1324,7 @@ def render_content(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
     frame = titled_frame(deck, slide, content)
-    add_bullets(deck, slide, content.get("points") or [], frame, "content.points")
+    add_bullets(deck, slide, content.get("points") or [], frame, "content.points", grow=True)
     draw_footer(deck, slide, content)
     return slide
 
@@ -1262,22 +1425,54 @@ def _draw_bank_legend(deck: Deck, slide: Any, rows: list[list[_LegendEntry]], fr
         y += row_h + gap
 
 
-def draw_chart(deck: Deck, slide: Any, chart: dict[str, Any], frame: Frame, rel: str) -> Any:
+def _with_unit(text: str | None, unit: str | None) -> str | None:
+    """text followed by the chart's unit, unless it names the unit already."""
+    if not unit:
+        return text
+    if not text:
+        return str(unit)
+    return text if str(unit).casefold() in text.casefold() else f"{text}, {unit}"
+
+
+def draw_chart(
+    deck: Deck,
+    slide: Any,
+    chart: dict[str, Any],
+    frame: Frame,
+    rel: str,
+    *,
+    unit_shown: bool = False,
+) -> Any:
     """One native chart in frame. A peer-bank comparison (tokens.yaml banks) also gets
     its logos: under or beside the bars when the banks are a bar chart's categories,
-    otherwise in a legend row of swatch, logo and name that replaces the chart's own."""
+    otherwise in a legend row of swatch, logo and name that replaces the chart's own.
+    chart.unit, unless a caption or heading already carries it, is a caption line above
+    the chart (DOCS-ACCURACY-3: the unit used to vanish)."""
     _require_series(deck, chart, rel)
+    unit = chart.get("unit")
+    if unit and not unit_shown:
+        cs = style("caption")
+        line = text_height(1, cs) + 0.02
+        add_text(slide, (frame.x, frame.y, frame.w, line), str(unit), cs, deck.lang)
+        gap = float(GEO["caption"]["gap_below"])
+        frame = Frame(frame.x, frame.y + line + gap, frame.w, frame.h - line - gap)
     alt = chart.get("alt_text")
+
+    def warn(path: str, message: str, fix: str) -> None:
+        deck.warn(f"{rel}.{path}", message, fix)
+
     plan = nbg_spec.bank_plan(chart)
     if plan is None or chart.get("bank_logos") is False:
-        return nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt)
+        return nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt, warn=warn)
     mode, banks = plan
     if mode == "categories" and chart["type"] in ("bar", "bar_horizontal"):
         try:
             layout = nbg_chart.axis_layout(chart, frame.box())
         except ValueError as e:
             raise deck.fit(rel, str(e), "give the chart more room, or compare fewer banks") from e
-        shape = nbg_chart.add_chart(slide, chart, frame.box(), deck.lang, alt, layout=layout)
+        shape = nbg_chart.add_chart(
+            slide, chart, frame.box(), deck.lang, alt, layout=layout, warn=warn
+        )
         for bank, centre in zip(banks, layout.anchors, strict=True):
             if bank:
                 _bank_logo(deck, slide, bank, centre, layout.logo_h)
@@ -1294,16 +1489,26 @@ def draw_chart(deck: Deck, slide: Any, chart: dict[str, Any], frame: Frame, rel:
         raise deck.fit(
             rel, "no room for the chart above its logo legend", "give the chart more room"
         )
-    shape = nbg_chart.add_chart(slide, chart, chart_frame.box(), deck.lang, alt, legend=False)
+    shape = nbg_chart.add_chart(
+        slide, chart, chart_frame.box(), deck.lang, alt, legend=False, warn=warn
+    )
     _draw_bank_legend(deck, slide, rows, Frame(frame.x, chart_frame.bottom, frame.w, band))
     return shape
+
+
+def _content_with_unit(content: dict[str, Any], chart: dict[str, Any]) -> dict[str, Any]:
+    """The slide's caption carries the chart's unit ("Fee income by quarter, EUR m")."""
+    if not chart.get("unit"):
+        return content
+    return {**content, "description": _with_unit(content.get("description"), chart["unit"])}
 
 
 def render_chart(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
-    frame = titled_frame(deck, slide, content)
-    draw_chart(deck, slide, spec.get("chart") or {}, frame, "chart")
+    chart = spec.get("chart") or {}
+    frame = titled_frame(deck, slide, _content_with_unit(content, chart))
+    draw_chart(deck, slide, chart, frame, "chart", unit_shown=True)
     draw_footer(deck, slide, content)
     return slide
 
@@ -1311,8 +1516,8 @@ def render_chart(deck: Deck, spec: dict[str, Any]) -> Any:
 def render_waterfall(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
-    frame = titled_frame(deck, slide, content)
     chart = spec.get("chart") or {}
+    frame = titled_frame(deck, slide, _content_with_unit(content, chart))
     items = (chart.get("data") or {}).get("items") or []
     if len(items) < 2:
         raise deck.fit(
@@ -1332,7 +1537,7 @@ def render_table(deck: Deck, spec: dict[str, Any]) -> Any:
     table = spec.get("table") or {}
     if not table.get("rows"):
         raise deck.fit("table.rows", "the table has no rows", "add rows")
-    add_table(deck, slide, table, frame, "table")
+    add_table(deck, slide, table, frame, "table", grow=True)
     draw_footer(deck, slide, content)
     return slide
 
@@ -1404,13 +1609,15 @@ def _kpi_tiles(
         delta = kpi.get("delta")
         sentiment = kpi.get("sentiment", "neutral")
         ds = style("kpi_delta", color=hexc(comp["delta"][sentiment]))
-        # A row shares the tallest tile's top line; a stacked column centres each tile.
+        # A row shares the tallest tile's lines (value, caption, delta); a stacked column
+        # centres each tile on its own.
         stack = stacks[i] if vertical else max(stacks)
         cy = y + (tile_h - stack) / 2
         add_text(slide, (x + pad, cy, inner, value_h), value, vs, deck.lang, align="center")
         cy += value_h + 0.08
         add_text(slide, (x + pad, cy, inner, label_h), label, ls, deck.lang, align="center")
-        cy += label_h + 0.06
+        tallest = label_h if vertical else max(text_height(len(lines), ls) for lines in labels)
+        cy += tallest + 0.06
         if delta:
             add_text(
                 slide, (x + pad, cy, inner, delta_h), str(delta), ds, deck.lang, align="center"
@@ -1682,6 +1889,9 @@ def _image_block(deck: Deck, slide: Any, image: dict[str, Any], frame: Frame, re
 
 def _column(deck: Deck, slide: Any, column: dict[str, Any], frame: Frame, rel: str) -> None:
     heading = column.get("heading")
+    unit = (column.get("chart") or {}).get("unit") if column["kind"] == "chart" else None
+    if heading and unit:
+        heading = _with_unit(str(heading), unit)  # the heading carries the chart's unit
     if heading:
         hs = style("card_title")
         hh = text_height(len(lines_of(str(heading), frame.w, hs)), hs)
@@ -1694,7 +1904,7 @@ def _column(deck: Deck, slide: Any, column: dict[str, Any], frame: Frame, rel: s
     elif kind == "text":
         add_paragraph_block(deck, slide, str(column["text"]), frame, f"{rel}.text")
     elif kind == "chart":
-        draw_chart(deck, slide, column["chart"], frame, f"{rel}.chart")
+        draw_chart(deck, slide, column["chart"], frame, f"{rel}.chart", unit_shown=bool(heading))
     elif kind == "table":
         add_table(deck, slide, column["table"], frame, f"{rel}.table")
     elif kind == "image":
@@ -1806,8 +2016,26 @@ def _element(deck: Deck, slide: Any, el: dict[str, Any], rel: str) -> None:
 def render_custom(deck: Deck, spec: dict[str, Any]) -> Any:
     slide = new_slide(deck)
     content = spec.get("content") or {}
-    draw_header(deck, slide, content)
+    top = draw_header(deck, slide, content)
+    bottom = body_bottom(content)
+    above = "the title and its caption" if content.get("description") else "the title"
+    below = "the takeaway strip" if content.get("takeaway") else "the source line"
+    slack = 0.02  # rounding in the header geometry; an overprint is tenths of an inch
     for e, el in enumerate(spec["elements"]):
+        # E2E-OUTPUT-04: the body a custom slide really has, not the fixed 1.3-6.5 in.
+        y, h = float(el["y"]), float(el["h"])
+        if y < top - slack:
+            deck.error(
+                f"elements[{e}]",
+                f"the element starts at y {y:.2f} in, under {above}, which end at {top:.2f} in",
+                f"move it to y {top:.2f} or lower",
+            )
+        if y + h > bottom + slack:
+            deck.error(
+                f"elements[{e}]",
+                f"the element ends at {y + h:.2f} in, over {below}, which starts at {bottom:.2f} in",
+                f"end it by {bottom:.2f} in",
+            )
         _element(deck, slide, el, f"elements[{e}]")
     draw_footer(deck, slide, content)
     return slide
@@ -1935,15 +2163,25 @@ def _core_properties(prs: Any, spec: dict[str, Any], lang: str) -> None:
 
 
 def render(
-    spec: dict[str, Any], spec_dir: Path, *, skip: set[int] | None = None
+    spec: dict[str, Any],
+    spec_dir: Path,
+    *,
+    skip: set[int] | None = None,
+    slots: list[dict[str, Any]] | None = None,
 ) -> tuple[Any, list[Issue], list[Issue]]:
     """Lay out every slide. Returns (presentation, errors, warnings); a slide whose
-    content cannot fit becomes an error naming it, and the other slides still render."""
+    content cannot fit becomes an error naming it, and the other slides still render.
+    slots, when given, receives each image's slot (slide, path, w, h in inches)."""
     lang = nbg_spec.language(spec)
     prs = new_presentation()
     slides = nbg_spec.slide_list(spec)
     deck = Deck(
-        prs=prs, lang=lang, spec_dir=spec_dir, total=len(slides), base=nbg_spec.slides_path(spec)
+        prs=prs,
+        lang=lang,
+        spec_dir=spec_dir,
+        total=len(slides),
+        base=nbg_spec.slides_path(spec),
+        slots=slots,
     )
     errors: list[Issue] = []
     for index, slide_spec in enumerate(slides):
@@ -1962,10 +2200,10 @@ def render(
                 )
             )
             continue
+        sid = slide_spec.get("id")
         try:
             slide = renderer(deck, slide_spec)
         except FitError as e:
-            sid = slide_spec.get("id")
             errors.append(
                 Issue(
                     "error",
@@ -1978,6 +2216,15 @@ def render(
                 )
             )
             continue
+        except (CannotRun, SlideCrash):
+            raise
+        except Exception as e:  # noqa: BLE001 - anything else is a builder defect on this slide
+            label = ", ".join(str(p) for p in (sid, slide_spec.get("type")) if p)
+            raise SlideCrash(
+                f"slide {index + 1} ({label}): the builder failed on this slide with "
+                f"{type(e).__name__}: {e}. The spec passed its schema, so this is a builder "
+                "defect: report it with the spec"
+            ) from e
         notes = slide_spec.get("notes")
         if notes:
             slide.notes_slide.notes_text_frame.text = str(notes)
@@ -1990,7 +2237,9 @@ def check(spec_path: Path | str) -> Report:
     report = nbg_spec.check_file(spec_path)
     if report.spec is None or any(i.slide is None for i in report.errors):
         return report
-    _, errors, warnings = render(report.spec, report.spec_path.parent, skip=report.error_slides())
+    _, errors, warnings = render(
+        report.spec, report.spec_path.parent, skip=report.error_slides(), slots=report.slots
+    )
     report.issues += errors + warnings
     return report
 
@@ -2174,8 +2423,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.check:
         try:
             report = check(args.spec)
-        except CannotRun as e:
-            print(f"nbg_build.py: {e}", file=sys.stderr)
+        except (CannotRun, RuntimeError) as e:
+            print(f"nbg_build.py could not run: {e}", file=sys.stderr)
+            sys.exit(2)
+        except Exception as e:  # noqa: BLE001 - a crash is "could not run", never "spec wrong"
+            print(f"nbg_build.py could not run: {type(e).__name__}: {e}", file=sys.stderr)
             sys.exit(2)
         _print_report(report, args.format, sys.stdout)
         sys.exit(0 if report.ok else 1)
@@ -2196,6 +2448,9 @@ def main(argv: list[str] | None = None) -> None:
     except ValueError as e:
         print(f"\nError: {e}", file=sys.stderr)
         sys.exit(1)
+    except Exception as e:  # noqa: BLE001 - a crash is "could not run", never "spec wrong"
+        print(f"\nnbg_build.py could not run: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(2)
     sys.exit(0)
 
 

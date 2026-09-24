@@ -44,6 +44,61 @@ def test_the_catalog_and_the_schema_name_the_same_types():
     assert set(nbg_build.RENDERERS) == set(slide_enum)
 
 
+def test_every_role_the_schema_allows_resolves_in_the_tokens():
+    """PROMPTS-CONTRACTS-01 / DOCS-ACCURACY-2: role 'subtitle' was schema-valid with no
+    type.subtitle token, so check and build crashed on it with a traceback."""
+    import nbg_tokens
+
+    schema = json.loads((HERE / "deck.schema.json").read_text(encoding="utf-8"))
+    for role in schema["$defs"]["element"]["properties"]["role"]["enum"]:
+        style = nbg_tokens.type_style(role)
+        assert style["size"] >= 10, role
+
+
+def test_a_custom_subtitle_element_checks_and_builds(tmp_path, monkeypatch):
+    from testkit import passing_validator
+
+    spec = deck(
+        [
+            {
+                "type": "custom",
+                "content": {"title": "Key figures for the unit"},
+                "elements": [
+                    {
+                        "kind": "text",
+                        "role": "subtitle",
+                        "text": "Head of unit",
+                        "x": 0.374,
+                        "y": 1.4,
+                        "w": 4.0,
+                        "h": 0.4,
+                    }
+                ],
+            }
+        ]
+    )
+    assert check(tmp_path, spec).ok
+    passing_validator(monkeypatch, nbg_build)
+    nbg_build.build_presentation(write_spec(tmp_path, spec, "sub.yaml"), tmp_path / "sub.pptx")
+
+
+def test_a_crash_on_one_slide_exits_2_naming_that_slide(tmp_path, monkeypatch, capsys):
+    """Any exception a slide raises is a builder defect: exit 2 ("could not run") with
+    the slide named, never a bare traceback that exits 1 as if the spec were wrong."""
+    path = write_spec(tmp_path, deck([_content()]), "crash.yaml")
+
+    def boom(_deck, _spec):
+        raise KeyError("no such token")
+
+    monkeypatch.setitem(nbg_build.RENDERERS, "content", boom)
+    for argv in ([str(path), "--check"], [str(path), str(tmp_path / "crash.pptx")]):
+        with pytest.raises(SystemExit) as exc:
+            nbg_build.main(argv)
+        assert exc.value.code == 2, argv
+        err = capsys.readouterr().err
+        assert "slide 2" in err and "KeyError" in err, err
+
+
 # ---------------------------------------------------------------- aliases
 
 
@@ -180,6 +235,26 @@ def test_an_unknown_key_is_named_with_a_suggestion(tmp_path):
     assert "did you mean 'title'" in error.fix
 
 
+def test_a_nested_error_does_not_also_report_its_slide_keys_as_unknown(tmp_path):
+    """E2E-OUTPUT-09: an over-long KPI label failed the kpi slide's schema branch, so
+    content and kpis also came back as "unknown key 'content' ... did you mean
+    'content'? remove it", sending the fix loop to delete the slide's content."""
+    slide = {
+        "type": "kpi",
+        "content": {"title": "Numbers", "source": SOURCE},
+        "kpis": [
+            {
+                "value": "1",
+                "label": "A label far longer than the sixty characters the schema allows it",
+            }
+        ],
+    }
+    report = check(tmp_path, deck([slide]))
+    assert [i.path for i in report.errors] == ["slides[1].kpis[0].label"], [
+        i.format() for i in report.errors
+    ]
+
+
 def test_unquoted_numbers_and_dates_are_coerced_with_a_warning(tmp_path):
     path = tmp_path / "s.yaml"
     path.write_text(
@@ -275,6 +350,49 @@ def test_custom_elements_must_stay_inside_the_body_area(tmp_path):
     assert paths == ["slides[1].elements[1]", "slides[1].elements[2]"]
 
 
+def test_custom_elements_must_clear_the_real_caption_and_takeaway_strip(tmp_path):
+    """E2E-OUTPUT-04: check measured elements against the fixed 1.3 and 6.5 in lines,
+    so the caption under the title and the takeaway strip overprinted elements it had
+    accepted. The body a custom slide really has starts under its caption and ends
+    above its takeaway strip and source line."""
+    spec = deck(
+        [
+            {
+                "type": "custom",
+                "content": {
+                    "title": "Positioned under a caption",
+                    "description": "A caption under the title takes the top of the body",
+                    "takeaway": "And a takeaway strip takes the bottom",
+                },
+                "elements": [
+                    {
+                        "kind": "text",
+                        "text": "under the caption",
+                        "x": 0.374,
+                        "y": 1.3,
+                        "w": 4,
+                        "h": 0.5,
+                    },
+                    {"kind": "text", "text": "fine", "x": 0.374, "y": 2.5, "w": 4, "h": 0.5},
+                    {
+                        "kind": "text",
+                        "text": "under the strip",
+                        "x": 0.374,
+                        "y": 5.9,
+                        "w": 4,
+                        "h": 0.5,
+                    },
+                ],
+            }
+        ]
+    )
+    errors = check(tmp_path, spec).errors
+    assert [i.path for i in errors] == ["slides[1].elements[0]", "slides[1].elements[2]"], [
+        i.format() for i in errors
+    ]
+    assert "caption" in errors[0].message and "takeaway" in errors[1].message
+
+
 def test_a_colour_must_be_a_token_name(tmp_path):
     spec = deck(
         [
@@ -323,6 +441,121 @@ def test_more_than_six_series_is_a_warning_and_nine_is_an_error(tmp_path):
     assert any(i.path == "slides[2].chart.data.series" for i in report.errors)
 
 
+def test_a_doughnut_slice_too_small_for_its_name_is_a_warning_naming_the_slice(tmp_path):
+    """The doughnut then names its slices in a legend: legal (charts.md) but not the
+    direct labels Standard #22 prefers, so the author hears which slice forced it."""
+    slide = {
+        "type": "chart",
+        "content": {"title": "Product mix", "source": SOURCE},
+        "chart": {
+            "type": "doughnut",
+            "data": {
+                "categories": ["Cards", "Deposits", "Loans", "Other products"],
+                "series": [{"name": "Share", "values": [0.5, 0.3, 0.18, 0.02]}],
+            },
+        },
+    }
+    report = check(tmp_path, deck([slide]))
+    assert report.ok, [i.format() for i in report.errors]
+    found = [i for i in report.warnings if i.path == "slides[1].chart.data.categories"]
+    assert found and "'Other products'" in found[0].message and "legend" in found[0].message
+
+
+def test_stacked_labels_left_off_thin_segments_are_a_warning_naming_them(tmp_path):
+    """E2E-OUTPUT-08: the value stays in the chart data; the author hears which
+    labels were dropped and how to bring them back."""
+    series = [
+        {"name": "Cards", "values": [50, 60]},
+        {"name": "Loans", "values": [45, 38]},
+        {"name": "Other", "values": [1, 2]},
+    ]
+    slide = {
+        "type": "chart",
+        "content": {"title": "Cards lead the mix", "source": SOURCE},
+        "chart": {"type": "bar_stacked", "data": {"categories": ["Q1", "Q2"], "series": series}},
+    }
+    report = check(tmp_path, deck([slide]))
+    assert report.ok, [i.format() for i in report.errors]
+    found = [i for i in report.warnings if i.path == "slides[1].chart.data.series"]
+    assert found and "'Other' in Q1" in found[0].message and "'Other' in Q2" in found[0].message
+
+
+def _svg(tmp_path, name, text='<text x="20" y="40" font-size="12">Stage one</text>'):
+    """An infographic drawn the infographic-specialist way: 12 x 4.8 in, in points."""
+    (tmp_path / name).write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 864 345.6">'
+        f'<rect width="864" height="345.6" fill="#FFFFFF"/>{text}</svg>',
+        encoding="utf-8",
+    )
+    return name
+
+
+def _svg_slide(name, w):
+    element = {
+        "kind": "image",
+        "path": name,
+        "alt_text": "A four-stage funnel from application to approval",
+        "x": 0.374,
+        "y": 1.4,
+        "w": w,
+        "h": round(w / 2.5, 4),
+    }
+    return {
+        "type": "custom",
+        "content": {"title": "The funnel narrows at approval"},
+        "elements": [element],
+    }
+
+
+@pytest.mark.parametrize(
+    ("w", "level", "printed"), [(6.0, "error", "6.0pt"), (10.8, "warning", "10.8pt")]
+)
+def test_svg_text_that_prints_small_in_its_slot_is_flagged(tmp_path, w, level, printed):
+    """PROMPTS-CONTRACTS-04: an infographic drawn for 12 x 4.8 in with 12pt labels was
+    shrunk into whatever frame the slide left, taking its labels under the 10pt floor
+    where the validator, which cannot read text inside a picture, never saw them."""
+    report = check(tmp_path, deck([_svg_slide(_svg(tmp_path, "funnel.svg"), w)]))
+    items = report.errors if level == "error" else report.warnings
+    found = [i for i in items if i.path == "slides[1].elements[0].path"]
+    assert found, [i.format() for i in report.issues]
+    assert printed in found[0].message
+    assert f"size_in [{w:.2f}, {w / 2.5:.2f}]" in found[0].fix
+
+
+def test_svg_text_at_the_size_it_was_drawn_for_passes(tmp_path):
+    report = check(tmp_path, deck([_svg_slide(_svg(tmp_path, "funnel.svg"), 12.0)]))
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        '<text font-size="9px">a</text>',
+        '<text style="fill:#202020;font-size: 9px">a</text>',
+        '<style>.label { font-size: 9px }</style><text class="label">a</text>',
+        '<g font-size="6.75pt"><text>a</text></g>',
+    ],
+)
+def test_every_way_an_svg_sets_its_text_size_is_read(tmp_path, text):
+    import nbg_build as build
+
+    assert build.svg_text_size(tmp_path / _svg(tmp_path, "t.svg", text)) == (9.0, 864.0)
+
+
+def test_an_svg_without_text_has_no_text_size(tmp_path):
+    import nbg_build as build
+
+    assert build.svg_text_size(tmp_path / _svg(tmp_path, "t.svg", "")) is None
+
+
+def test_check_json_reports_every_image_slot(tmp_path):
+    """So the pipeline can draw an infographic at its real slot (size_in) first time."""
+    report = check(tmp_path, deck([_svg_slide(_svg(tmp_path, "funnel.svg"), 12.0)]))
+    assert report.as_dict()["image_slots"] == [
+        {"slide": 2, "id": None, "path": "slides[1].elements[0]", "w": 12.0, "h": 4.8}
+    ]
+
+
 def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     spec = deck(
         [
@@ -345,6 +578,43 @@ def test_a_waterfall_total_that_does_not_add_up_is_a_warning(tmp_path):
     assert any(
         i.path == "slides[1].chart.data.items[2].value" for i in check(tmp_path, spec).warnings
     )
+
+
+@pytest.mark.parametrize(
+    ("name", "content"),
+    [
+        ("photo.png", b"not a png at all"),
+        ("renamed.jpg", b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic"),
+        (
+            "broken.svg",
+            b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="44">\n</svg>',
+        ),
+    ],
+)
+def test_an_image_that_cannot_be_decoded_is_an_error_naming_slide_path_and_file(
+    tmp_path, name, content
+):
+    """PROMPTS-CONTRACTS-02: an image that exists but will not decode (a renamed HEIC,
+    a malformed agent-written SVG) crashed check with a traceback, and build exited 2
+    blaming the environment."""
+    (tmp_path / name).write_bytes(content)
+    spec = deck(
+        [
+            {
+                "type": "image",
+                "content": {"title": "A picture that will not open"},
+                "image": {"path": name, "alt_text": "Growth over five years"},
+            }
+        ]
+    )
+    report = check(tmp_path, spec)
+    error = next(i for i in report.errors if i.path == "slides[1].image.path")
+    assert name in error.message and error.slide == 2, error.format()
+    with pytest.raises(nbg_build.SpecInvalid):
+        nbg_build.build_presentation(write_spec(tmp_path, spec, "bad.yaml"), tmp_path / "bad.pptx")
+    # The renderer itself turns the decode failure into an issue, not a traceback.
+    _, errors, _ = nbg_build.render(spec, tmp_path)
+    assert any(i.path == "slides[1].image.path" and name in i.message for i in errors)
 
 
 def test_x_keys_carry_pipeline_notes_through_check_and_build_untouched(tmp_path, monkeypatch):
@@ -370,9 +640,99 @@ def test_x_keys_carry_pipeline_notes_through_check_and_build_untouched(tmp_path,
     assert b"Coins" not in xml and b"Q2 figure" not in xml and b"internal" not in xml
 
 
-def test_an_em_dash_in_slide_text_is_a_warning(tmp_path):
-    report = check(tmp_path, deck([_content("Growth " + chr(0x2014) + " all of it")]))
-    assert any("em dash" in i.message for i in report.warnings)
+def test_check_applies_the_validators_own_spec_rules():
+    """PROMPTS-CONTRACTS-03: check passed specs the build then failed on rules it could
+    read in the spec. It now uses the validator's own patterns, so a change to either
+    (VALIDATOR-CODE-5 widening the as-of test, say) reaches both."""
+    import nbg_validate
+
+    assert nbg_spec.EM_DASH == nbg_validate.EM_DASH
+    assert nbg_spec.SOURCE_AS_OF is nbg_validate.SOURCE_AS_OF
+    assert nbg_spec.ALT_TEXT_PLACEHOLDER is nbg_validate.ALT_TEXT_PLACEHOLDER
+    assert nbg_spec.ALT_TEXT_LEAD_IN is nbg_validate.ALT_TEXT_LEAD_IN
+
+
+@pytest.mark.parametrize(
+    "title", ["Growth " + chr(0x2014) + " all of it", "Growth -- all of it", "Growth --\nall of it"]
+)
+def test_an_em_dash_or_a_double_hyphen_in_slide_text_is_an_error(tmp_path, title):
+    """The validator's Em Dashes check fails the deck on either (Standard #7)."""
+    report = check(tmp_path, deck([_content(title)]))
+    assert any(
+        i.path == "slides[1].content.title" and "em dash" in i.message for i in report.errors
+    ), [i.format() for i in report.issues]
+
+
+def test_an_em_dash_nothing_draws_is_only_a_warning(tmp_path):
+    """Speaker notes and alt text never reach slide text, so the validator never
+    reads them; check still points the dash out."""
+    slide = {**_content(), "notes": "Pause here " + chr(0x2014) + " then go on"}
+    report = check(tmp_path, deck([slide]))
+    assert report.ok and any(i.path == "slides[1].notes" for i in report.warnings)
+
+
+def test_a_spaced_en_dash_in_slide_text_is_a_warning(tmp_path):
+    report = check(tmp_path, deck([_content("Growth " + chr(0x2013) + " all of it")]))
+    assert report.ok and any("en dash" in i.message for i in report.warnings)
+
+
+def test_an_em_dash_in_an_x_key_is_nothing(tmp_path):
+    slide = {**_content(), "x-assets": {"why": "Chosen " + chr(0x2014) + " for now"}}
+    report = check(tmp_path, deck([slide]))
+    assert report.ok and not report.warnings, [i.format() for i in report.issues]
+
+
+def _bar_slide(source):
+    return {
+        "type": "chart",
+        "content": {"title": "Fees rose in the second quarter", "source": source},
+        "chart": {
+            "type": "bar",
+            "data": {"categories": ["Q1", "Q2"], "series": [{"name": "Fees", "values": [1, 2]}]},
+        },
+    }
+
+
+def test_an_undated_source_on_an_exhibit_is_an_error(tmp_path):
+    """The validator's Exhibit Sources check fails a chart or table slide whose source
+    line has no year or date; check accepted as_of: latest."""
+    report = check(tmp_path, deck([_bar_slide({"name": "Management accounts", "as_of": "latest"})]))
+    found = [i for i in report.errors if i.path == "slides[1].content.source.as_of"]
+    assert found and "date" in found[0].message, [i.format() for i in report.issues]
+
+
+def test_a_year_anywhere_in_the_source_line_dates_it(tmp_path):
+    """The validator reads the whole line: 'Annual report 2025, as of Q4' is dated."""
+    report = check(tmp_path, deck([_bar_slide({"name": "Annual report 2025", "as_of": "Q4"})]))
+    assert report.ok, [i.format() for i in report.errors]
+
+
+def test_an_undated_source_on_a_text_slide_is_a_warning(tmp_path):
+    slide = _content(source={"name": "Internal analysis", "as_of": "latest"})
+    report = check(tmp_path, deck([slide]))
+    assert report.ok and any(i.path == "slides[1].content.source.as_of" for i in report.warnings)
+
+
+@pytest.mark.parametrize(
+    ("alt", "words"),
+    [
+        ("growth.png", "filename"),
+        ("Picture 3", "autoname"),
+        ("Image of a rising arrow", "image of"),
+        ("Growth came from cards", "repeats"),
+    ],
+)
+def test_alt_text_the_validator_rejects_is_an_error(tmp_path, alt, words):
+    """Alt Text fails a filename, an autoname, an 'image of' opening, and a caption
+    repeated from the slide; check let all four through."""
+    slide = {
+        "type": "image",
+        "content": {"title": "Growth came from cards"},
+        "image": {"path": "illustrations/Growth.png", "alt_text": alt},
+    }
+    report = check(tmp_path, deck([slide]))
+    found = [i for i in report.errors if i.path == "slides[1].image.alt_text"]
+    assert found and words in found[0].message, [i.format() for i in report.issues]
 
 
 # ---------------------------------------------------------------- dry-run layout
@@ -383,8 +743,8 @@ def test_a_cover_title_or_subtitle_that_wraps_is_an_error(tmp_path):
     wrapped one: a warning here let check pass a deck the build then rejected."""
     long_title = "An extremely long cover title that no presenter should ever need"
     long_subtitle = (
-        "Retail Banking | Digital Channels | Cards | Payments | Direct Banking | Fraud Prevention"
-        " | Controls"
+        "First placeholder segment | Second placeholder segment | Third placeholder segment"
+        " | Fourth"
     )
     report = check(
         tmp_path,

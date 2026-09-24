@@ -10,7 +10,8 @@ Normally run through the launcher, which owns the Python environment:
 
 Exit codes (a contract with nbg_build.py and presentation-qa):
     0  no check failed; warnings and skipped checks may be present
-    1  at least one check failed (with --strict, also a skipped universal check)
+    1  at least one check failed (with --strict, also a skipped universal check or a
+       SmartArt diagram with no drawing part to read)
     2  the validator could not run: missing file, not a pptx, missing dependency
 
 Every brand value comes from shared/brand-system/tokens.yaml through nbg_tokens.py;
@@ -32,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import colorsys
+import copy
 import hashlib
 import io
 import json
@@ -78,6 +80,8 @@ NS = {
     "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
     "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
     "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
+    "dgm": "http://schemas.openxmlformats.org/drawingml/2006/diagram",
+    "dsp": "http://schemas.microsoft.com/office/drawing/2008/diagram",
 }
 A = "{" + NS["a"] + "}"
 P = "{" + NS["p"] + "}"
@@ -85,6 +89,8 @@ R = "{" + NS["r"] + "}"
 C = "{" + NS["c"] + "}"
 MC = "{" + NS["mc"] + "}"
 REL = "{" + NS["rel"] + "}"
+DGM = "{" + NS["dgm"] + "}"
+DSP = "{" + NS["dsp"] + "}"
 
 EMU = 914400
 POS_TOL = 0.05  # inches: placement tolerance for geometry matches
@@ -101,6 +107,7 @@ CLOSING_MAX_WORDS = 12
 # Written as code points: a repository hook refuses literal em dashes in any file.
 EM_DASH = chr(0x2014)
 EN_DASH = chr(0x2013)
+DOUBLE_HYPHEN = " -- "  # typed for an em dash, so held to the same rule
 _APOSTROPHES = str.maketrans({chr(0x2019): "'", chr(0x02BC): "'", chr(0x00B4): "'"})
 
 
@@ -339,10 +346,16 @@ class Collector:
 
 # ------------------------------------------------------------------ package
 
+# Content the validator cannot see at all; --strict fails a deck that has any.
+SMARTART_UNREAD = "SmartArt diagram with no drawing part"
+
 MAX_MEMBERS = 5000
 MAX_PART_BYTES = 64 * 1024 * 1024
 MAX_TOTAL_BYTES = 1024 * 1024 * 1024
-MAX_XML_RATIO = 500  # a zip bomb inflates an XML part thousands of times
+# A parsed tree costs many times its text, so XML has its own, lower caps.
+MAX_XML_PART_BYTES = 16 * 1024 * 1024
+MAX_XML_TOTAL_BYTES = 128 * 1024 * 1024
+MAX_XML_RATIO = 100  # a zip bomb inflates XML thousands of times; real parts stay under 50
 
 
 class DeckError(Exception):
@@ -369,6 +382,7 @@ class Package:
             raise DeckError(f"{path}: over {MAX_TOTAL_BYTES // 2**20} MB uncompressed")
         self._info = {i.filename: i for i in infos}
         self._xml: dict[str, Any] = {}
+        self._xml_bytes = 0
         self._rels: dict[str, dict[str, tuple[str, str | None]]] = {}
 
     def close(self) -> None:
@@ -381,16 +395,26 @@ class Package:
         info = self._info[name]
         if info.file_size > MAX_PART_BYTES:
             raise DeckError(f"{name}: {info.file_size} bytes uncompressed, over the limit")
-        xmlish = name.endswith((".xml", ".rels"))
-        if xmlish and info.compress_size and info.file_size > 2**20:
-            if info.file_size / info.compress_size > MAX_XML_RATIO:
-                raise DeckError(f"{name}: compression ratio suggests a zip bomb")
         return self._zip.read(name)
 
     def xml(self, name: str | None) -> Any:
+        """The parsed part. Every part parsed as XML, whatever its name or size, is held
+        to the XML caps and the compression-ratio test before it is inflated."""
         if not name or not self.has(name):
             return None
         if name not in self._xml:
+            info = self._info[name]
+            if info.file_size > MAX_XML_PART_BYTES:
+                raise DeckError(
+                    f"{name}: {info.file_size} bytes of XML, over the {MAX_XML_PART_BYTES // 2**20} MB part limit"
+                )
+            if info.compress_size and info.file_size / info.compress_size > MAX_XML_RATIO:
+                raise DeckError(f"{name}: compression ratio suggests a zip bomb")
+            self._xml_bytes += info.file_size
+            if self._xml_bytes > MAX_XML_TOTAL_BYTES:
+                raise DeckError(
+                    f"{name}: over {MAX_XML_TOTAL_BYTES // 2**20} MB of XML in the package"
+                )
             try:
                 self._xml[name] = ET.fromstring(self.read(name))
             except ET.ParseError as e:
@@ -447,6 +471,28 @@ _PRESET_COLORS = {
     "cyan": "00FFFF",
     "magenta": "FF00FF",
 }
+_PRESET_SHORT = (("dk", "dark"), ("lt", "light"), ("med", "medium"))
+
+
+@lru_cache(maxsize=256)
+def _preset_color(name: str) -> str | None:
+    """An a:prstClr name: the CSS colour names, with the dk, lt and med short forms
+    DrawingML adds ("dkGreen" is CSS darkgreen)."""
+    if name in _PRESET_COLORS:
+        return _PRESET_COLORS[name]
+    try:
+        from PIL import ImageColor
+    except ImportError:
+        return None
+    key = name.lower()
+    for short, full in _PRESET_SHORT:
+        if key not in ImageColor.colormap and key.startswith(short):
+            key = full + key[len(short) :]
+    if key not in ImageColor.colormap:
+        return None
+    return "".join(f"{v:02X}" for v in ImageColor.getrgb(key)[:3])
+
+
 _DEFAULT_CLR_MAP = {
     "bg1": "lt1",
     "tx1": "dk1",
@@ -467,8 +513,18 @@ _THEME_SLOTS = (
 )
 
 
+def _linear(c: float) -> float:
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _gamma(c: float) -> float:
+    return c * 12.92 if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
 def _apply_modifiers(hex_: str, el: Any) -> str:
-    """Apply lumMod/lumOff/tint/shade in document order. Alpha changes no hex."""
+    """Apply lumMod/lumOff/tint/shade in document order. Alpha changes no hex. PowerPoint
+    mixes tint and shade in linear light, so a 40% tint of 4F81BD is D0D8E8, not the
+    B9CDE5 an sRGB mix gives."""
     r, g, b = (int(hex_[i : i + 2], 16) / 255 for i in (0, 2, 4))
     for mod in el:
         tag = _local(mod.tag)
@@ -481,9 +537,9 @@ def _apply_modifiers(hex_: str, el: Any) -> str:
             lum = lum * val if tag == "lumMod" else lum + val
             r, g, b = colorsys.hls_to_rgb(h, min(1.0, max(0.0, lum)), s)
         elif tag == "tint":
-            r, g, b = (c + (1 - c) * (1 - val) for c in (r, g, b))
+            r, g, b = (_gamma(_linear(c) * val + 1 - val) for c in (r, g, b))
         elif tag == "shade":
-            r, g, b = (c * val for c in (r, g, b))
+            r, g, b = (_gamma(_linear(c) * val) for c in (r, g, b))
     return "".join(f"{round(min(1.0, max(0.0, c)) * 255):02X}" for c in (r, g, b))
 
 
@@ -547,7 +603,18 @@ class ColorContext:
             else:
                 base = self.theme.colors.get(self.clr_map.get(val, val))
         elif tag == "prstClr":
-            base = _PRESET_COLORS.get(el.get("val", ""))
+            base = _preset_color(el.get("val", ""))
+        elif tag == "hslClr":
+            try:  # hue in 60000ths of a degree; saturation and luminance in 1000ths of a percent
+                hls = (
+                    int(el.get("hue", "0")) / 21600000 % 1.0,
+                    min(1.0, max(0.0, int(el.get("lum", "0")) / 100000)),
+                    min(1.0, max(0.0, int(el.get("sat", "0")) / 100000)),
+                )
+            except ValueError:
+                base = None
+            else:
+                base = "".join(f"{round(c * 255):02X}" for c in colorsys.hls_to_rgb(*hls))
         elif tag == "scrgbClr":
             try:
                 base = "".join(
@@ -636,6 +703,8 @@ class Shape:
     depth: int
     layout_ph: Any = None
     master_ph: Any = None
+    part: str | None = None  # the layout or master that owns an inherited shape
+    parent: Shape | None = None  # the group a shape sits in
 
     @property
     def has_box(self) -> bool:
@@ -708,7 +777,9 @@ def _nv_parts(el: Any) -> tuple[str, str | None, str | None]:
     return name, ph_type, ph_idx
 
 
-def _flatten(tree: Any, xf: _Xform, depth: int, out: list[Shape]) -> list[Shape]:
+def _flatten(
+    tree: Any, xf: _Xform, depth: int, out: list[Shape], parent: Shape | None = None
+) -> list[Shape]:
     for child in tree:
         tag = _local(child.tag)
         if tag == "AlternateContent":
@@ -716,7 +787,7 @@ def _flatten(tree: Any, xf: _Xform, depth: int, out: list[Shape]) -> list[Shape]
             if branch is None:
                 branch = child.find(f"{MC}Choice")
             if branch is not None:
-                _flatten(branch, xf, depth, out)
+                _flatten(branch, xf, depth, out, parent)
             continue
         if tag not in _SHAPE_TAGS:
             continue
@@ -735,10 +806,24 @@ def _flatten(tree: Any, xf: _Xform, depth: int, out: list[Shape]) -> list[Shape]
                 x, y, w, h = ex / EMU, ey / EMU, ew / EMU, eh / EMU
             rot = int(xfrm.get("rot", "0") or 0) / 60000
         name, ph_type, ph_idx = _nv_parts(child)
-        out.append(Shape(tag, child, len(out), x, y, w, h, rot, name, ph_type, ph_idx, depth))
+        shape = Shape(tag, child, len(out), x, y, w, h, rot, name, ph_type, ph_idx, depth)
+        shape.parent = parent
+        out.append(shape)
         if tag == "grpSp":
-            _flatten(child, xf.child(xfrm) if xfrm is not None else xf, depth + 1, out)
+            _flatten(child, xf.child(xfrm) if xfrm is not None else xf, depth + 1, out, shape)
     return out
+
+
+def _group_fill(shape: Shape) -> Any:
+    """The fill an a:grpFill stands for: the nearest enclosing group's own fill (a group
+    whose fill is itself grpFill defers to its parent). None when no group sets one."""
+    group = shape.parent
+    while group is not None:
+        fill = _fill_child(group.el.find(f"{P}grpSpPr"))
+        if fill is not None and _local(fill.tag) != "grpFill":
+            return fill
+        group = group.parent
+    return None
 
 
 _TITLE_TYPES = ("title", "ctrTitle")
@@ -772,6 +857,20 @@ def _find_ph(root: Any, ph_type: str | None, ph_idx: str | None, *, by_idx: bool
         if _ph_family(t) == family:
             return sp
     return None
+
+
+def _as_presentationml(tree: Any) -> Any:
+    """A copy of a SmartArt drawing's shape tree with dsp: renamed to p:. dsp:sp, dsp:spPr,
+    dsp:style and dsp:txBody mirror their p: counterparts, so the slide code reads them."""
+    tree = copy.deepcopy(tree)
+    for el in tree.iter():
+        if isinstance(el.tag, str) and el.tag.startswith(DSP):
+            el.tag = P + el.tag[len(DSP) :]
+    return tree
+
+
+def _shows_master_shapes(root: Any) -> bool:
+    return root is not None and root.get("showMasterSp", "1") not in ("0", "false")
 
 
 @dataclass
@@ -814,7 +913,57 @@ class Slide:
         for shape in self.shapes:
             if shape.is_placeholder:
                 self._inherit_placeholder(shape)
+        self.inherited = self._background_graphics()
+        self.diagram_shapes, self.unread_diagrams = self._diagrams()
         self._frames: dict[int, Frame | None] = {}
+
+    def _diagrams(self) -> tuple[list[Shape], int]:
+        """The shapes of each SmartArt diagram's drawing part (what PowerPoint shows),
+        placed at the diagram's frame, and how many diagrams have no drawing part. The
+        drawing is found through the data part's dsp:dataModelExt, whose relId is a
+        relationship of the slide."""
+        pkg = self.deck.pkg
+        rels = pkg.rels(self.part)
+        shapes: list[Shape] = []
+        unread = 0
+        for frame in self.shapes:
+            ids = frame.el.find(f".//{DGM}relIds") if frame.kind == "graphicFrame" else None
+            if ids is None:
+                continue
+            data = pkg.xml(rels.get(ids.get(f"{R}dm", ""), ("", None))[1])
+            ext = data.find(f".//{DSP}dataModelExt") if data is not None else None
+            part = rels.get(ext.get("relId", ""), ("", None))[1] if ext is not None else None
+            drawing = pkg.xml(part)
+            tree = drawing.find(f"{DSP}spTree") if drawing is not None else None
+            if tree is None:
+                unread += 1
+                continue
+            origin = _Xform(ox=(frame.x or 0.0) * EMU, oy=(frame.y or 0.0) * EMU)
+            for shape in _flatten(_as_presentationml(tree), origin, 0, []):
+                shape.part = part
+                shape.name = shape.name or f"{frame.name} (SmartArt)"
+                shapes.append(shape)
+        return shapes, unread
+
+    def _background_graphics(self) -> list[Shape]:
+        """The layout's and master's non-placeholder shapes this slide renders, master
+        first. showMasterSp="0" on the slide (Hide Background Graphics) hides both; on
+        the layout it hides the master's."""
+        if not _shows_master_shapes(self.root):
+            return []
+        owners = [(self.layout, self.layout_part)]
+        if _shows_master_shapes(self.layout):
+            owners.insert(0, (self.master, self.master_part))
+        out: list[Shape] = []
+        for root, part in owners:
+            tree = root.find(f"{P}cSld/{P}spTree") if root is not None else None
+            if tree is None:
+                continue
+            for shape in _flatten(tree, _Xform(), 0, []):
+                if not shape.is_placeholder:
+                    shape.part = part
+                    out.append(shape)
+        return out
 
     def _inherit_placeholder(self, shape: Shape) -> None:
         shape.layout_ph = _find_ph(self.layout, shape.ph_type, shape.ph_idx, by_idx=True)
@@ -856,11 +1005,12 @@ class Slide:
         rid = blip.get(f"{R}embed") if blip is not None else None
         if not rid:
             return None
-        return self.deck.pkg.rels(self.part).get(rid, ("", None))[1]
+        return self.deck.pkg.rels(shape.part or self.part).get(rid, ("", None))[1]
 
     def chart_part(self, shape: Shape) -> str | None:
         rid = shape.chart_rid
-        return self.deck.pkg.rels(self.part).get(rid, ("", None))[1] if rid else None
+        owner = shape.part or self.part
+        return self.deck.pkg.rels(owner).get(rid, ("", None))[1] if rid else None
 
 
 class Deck:
@@ -878,6 +1028,7 @@ class Deck:
         self._themes: dict[str | None, Theme] = {}
         self._charts: list[Chart] | None = None
         self._media: dict[str, tuple[str, tuple[int, int] | None]] = {}
+        self._table_styles: dict[str, Any] = {}
         self.missing_slides: list[str] = []
         self.measurer = TextMeasurer()
         self.slides = self._load_slides()
@@ -897,6 +1048,28 @@ class Deck:
                 continue
             slides.append(Slide(self, len(slides) + 1, part))
         return slides
+
+    def table_style(self, style_id: str | None) -> Any:
+        """The a:tblStyle a table names: the deck's own definition in ppt/tableStyles.xml,
+        else a built-in style known by its GUID. No id means the list's default style
+        (tblStyleLst/@def). None when the style cannot be found."""
+        styles = self.pkg.xml(self.pkg.related("ppt/presentation.xml", "tableStyles"))
+        key = (style_id or (styles.get("def", "") if styles is not None else "")).strip().upper()
+        if key not in self._table_styles:
+            found = next(
+                (
+                    style
+                    for style in (styles.findall(f"{A}tblStyle") if styles is not None else [])
+                    if (style.get("styleId") or "").strip().upper() == key
+                ),
+                None,
+            )
+            if found is None and key in _BUILTIN_TABLE_STYLES:
+                found = ET.fromstring(
+                    f'<a:tblStyle xmlns:a="{NS["a"]}">{_BUILTIN_TABLE_STYLES[key]}</a:tblStyle>'
+                )
+            self._table_styles[key] = found
+        return self._table_styles[key]
 
     def theme(self, part: str | None) -> Theme:
         if part not in self._themes:
@@ -1158,8 +1331,15 @@ def _build_frame(
             if node.find(f"{A}defRPr") is not None
         ]
         if font_ref is not None:
-            # A shape's p:style fontRef sits between its own lstStyle and the deck default.
-            run_defaults.insert(min(2, len(run_defaults)), _Props(font_ref, font_ref=True))
+            # A shape's p:style fontRef outranks everything the shape inherits and yields
+            # only to its own paragraph and list-style defaults, however many of those
+            # exist (none, typically, for text typed into a PowerPoint shape).
+            own = sum(
+                1
+                for node in (p_pr, _lvl(lst_style, level))
+                if node is not None and node.find(f"{A}defRPr") is not None
+            )
+            run_defaults.insert(own, _Props(font_ref, font_ref=True))
         para = Para(runs=[], level=level)
         try:
             para.mar_l = int(ppr_attr("marL") or 0) / EMU
@@ -1256,14 +1436,19 @@ def _shape_frame(slide: Slide, shape: Shape) -> Frame | None:
     return _build_frame(tx, slide.ctx, sources, body_chain, font_ref)
 
 
-def _cell_frame(slide: Slide, tc: Any) -> Frame | None:
+def _cell_frame(slide: Slide, tc: Any, look: _CellLook | None = None) -> Frame | None:
     tx = tc.find(f"{A}txBody")
     if tx is None:
         return None
     default = slide.deck.default_text_style
+    styled = _style_run_defaults(look)
 
     def sources(level: int) -> list[Any]:
-        found = [_lvl(default, level), default.find(f"{A}defPPr") if default is not None else None]
+        found = [
+            styled,
+            _lvl(default, level),
+            default.find(f"{A}defPPr") if default is not None else None,
+        ]
         return [x for x in found if x is not None]
 
     tc_pr = tc.find(f"{A}tcPr")
@@ -1313,6 +1498,169 @@ def _slide_paragraphs(slide: Slide) -> Iterator[str]:
 
 def _cells(shape: Shape) -> Iterator[Any]:
     yield from shape.el.iter(f"{A}tc")
+
+
+# A cell takes its fill and text colour from the table's style unless it sets its own.
+# PowerPoint writes each style a deck uses into ppt/tableStyles.xml; python-pptx names a
+# built-in style by GUID alone, so those styles are spelled out here, copied from
+# PowerPoint's own definitions (borders left out: no check reads them).
+TABLE_STYLE_UNREAD = "table cell coloured by a table style the validator does not know"
+_TABLE_FLAGS = ("firstRow", "lastRow", "firstCol", "lastCol", "bandRow", "bandCol")
+_PLAIN_TABLE = (
+    '<a:wholeTbl><a:tcTxStyle><a:schemeClr val="tx1"/></a:tcTxStyle>'
+    "<a:tcStyle><a:fill><a:noFill/></a:fill></a:tcStyle></a:wholeTbl>"
+)
+_ACCENT_1 = '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill>'
+_MEDIUM_2_ACCENT_1 = (
+    '<a:wholeTbl><a:tcTxStyle><a:schemeClr val="dk1"/></a:tcTxStyle><a:tcStyle><a:fill>'
+    '<a:solidFill><a:schemeClr val="accent1"><a:tint val="20000"/></a:schemeClr></a:solidFill>'
+    "</a:fill></a:tcStyle></a:wholeTbl>"
+    + "".join(
+        f"<a:{band}><a:tcStyle><a:fill><a:solidFill>"
+        '<a:schemeClr val="accent1"><a:tint val="40000"/></a:schemeClr>'
+        f"</a:solidFill></a:fill></a:tcStyle></a:{band}>"
+        for band in ("band1H", "band1V")
+    )
+    + "".join(
+        f'<a:{part}><a:tcTxStyle b="on"><a:schemeClr val="lt1"/></a:tcTxStyle>'
+        f"<a:tcStyle><a:fill>{_ACCENT_1}</a:fill></a:tcStyle></a:{part}>"
+        for part in ("lastCol", "firstCol", "lastRow", "firstRow")
+    )
+)
+_BUILTIN_TABLE_STYLES = {
+    "{2D5ABB26-0587-4C30-8999-92F81FD0307C}": _PLAIN_TABLE,  # No Style, No Grid
+    "{5940675A-B579-460E-94D1-54222C63F5DA}": _PLAIN_TABLE,  # No Style, Table Grid
+    "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}": _MEDIUM_2_ACCENT_1,  # the default table
+}
+
+
+def _style_parts(flags: set[str], r: int, c: int, *, rows: int, cols: int) -> list[str]:
+    """The table-style parts that reach cell (r, c), in the order PowerPoint layers them:
+    whole table, banded rows, banded columns, first and last column, first and last row,
+    corner cells. Banding skips a header or total row and restarts after the header."""
+    first_row = "firstRow" in flags and r == 0
+    last_row = "lastRow" in flags and r == rows - 1
+    first_col = "firstCol" in flags and c == 0
+    last_col = "lastCol" in flags and c == cols - 1
+    parts = ["wholeTbl"]
+    if "bandRow" in flags and not (first_row or last_row):
+        row = r - (1 if "firstRow" in flags else 0)
+        parts.append("band1H" if row % 2 == 0 else "band2H")
+    if "bandCol" in flags and not (first_col or last_col):
+        col = c - (1 if "firstCol" in flags else 0)
+        parts.append("band1V" if col % 2 == 0 else "band2V")
+    edges = (
+        ("firstCol", first_col),
+        ("lastCol", last_col),
+        ("firstRow", first_row),
+        ("lastRow", last_row),
+        ("seCell", last_row and last_col),
+        ("swCell", last_row and first_col),
+        ("neCell", first_row and last_col),
+        ("nwCell", first_row and first_col),
+    )
+    return parts + [name for name, applies in edges if applies]
+
+
+@dataclass(frozen=True)
+class _CellLook:
+    """What a table style gives one cell. fill: ("solid", hex), ("none", None) or
+    ("other", None), or None when no part sets one; text colour and weight likewise."""
+
+    fill: tuple[str, str | None] | None = None
+    text: str | None = None
+    bold: bool | None = None
+
+
+def _cell_look(ctx: ColorContext, style: Any, parts: list[str]) -> _CellLook:
+    fill: tuple[str, str | None] | None = None
+    text: str | None = None
+    bold: bool | None = None
+    for name in parts:
+        part = style.find(f"{A}{name}")
+        if part is None:
+            continue
+        tc_style = part.find(f"{A}tcStyle")
+        node = _fill_child(tc_style.find(f"{A}fill")) if tc_style is not None else None
+        ref = tc_style.find(f"{A}fillRef") if tc_style is not None else None
+        if node is not None:
+            kind = _local(node.tag)
+            fill = (
+                ("solid", ctx.first(node))
+                if kind == "solidFill"
+                else ("none", None)
+                if kind == "noFill"
+                else ("other", None)
+            )
+        elif ref is not None:
+            fill = ("solid", ctx.first(ref))
+        tx = part.find(f"{A}tcTxStyle")
+        if tx is not None:
+            font_ref = tx.find(f"{A}fontRef")
+            text = ctx.first(tx) or (ctx.first(font_ref) if font_ref is not None else None) or text
+            if tx.get("b") in ("on", "off"):
+                bold = tx.get("b") == "on"
+    return _CellLook(fill, text, bold)
+
+
+def _cell_looks(s: Slide, shape: Shape) -> Iterator[tuple[Any, _CellLook | None]]:
+    """Each a:tc a table draws (merged-away cells skipped), with what the table's style
+    gives it: None when the table names a style the validator does not know."""
+    tbl = shape.el.find(f".//{A}tbl")
+    if tbl is None:
+        return
+    tbl_pr = tbl.find(f"{A}tblPr")
+    inline = tbl_pr.find(f"{A}tableStyle") if tbl_pr is not None else None
+    id_el = tbl_pr.find(f"{A}tableStyleId") if tbl_pr is not None else None
+    style = (
+        inline
+        if inline is not None
+        else s.deck.table_style(id_el.text if id_el is not None else None)
+    )
+    flags = {f for f in _TABLE_FLAGS if tbl_pr is not None and tbl_pr.get(f) in ("1", "true")}
+    rows = tbl.findall(f"{A}tr")
+    cols = len(tbl.findall(f"{A}tblGrid/{A}gridCol"))
+    for r, tr in enumerate(rows):
+        for c, tc in enumerate(tr.findall(f"{A}tc")):
+            if tc.get("hMerge") in ("1", "true") or tc.get("vMerge") in ("1", "true"):
+                continue
+            if style is None:
+                yield tc, None
+                continue
+            parts = _style_parts(flags, r, c, rows=len(rows), cols=cols or len(tr))
+            yield tc, _cell_look(s.ctx, style, parts)
+
+
+def _style_run_defaults(look: _CellLook | None) -> Any:
+    """A table style's text colour and weight as a list-style level, so they slot into
+    the text chain between the cell's own text and the deck default."""
+    if look is None or (look.text is None and look.bold is None):
+        return None
+    bold = "" if look.bold is None else f' b="{int(look.bold)}"'
+    fill = f'<a:solidFill><a:srgbClr val="{look.text}"/></a:solidFill>' if look.text else ""
+    return ET.fromstring(
+        f'<a:lvl1pPr xmlns:a="{NS["a"]}"><a:defRPr{bold}>{fill}</a:defRPr></a:lvl1pPr>'
+    )
+
+
+def _table_style_colors(s: Slide, shape: Shape) -> Iterator[tuple[str, str | None] | None]:
+    """(role, hex) for each colour a table's style actually paints: a fill where the cell
+    sets none, a text colour where a run sets none. None for a cell whose colours would
+    come from a style the validator does not know."""
+    for tc, look in _cell_looks(s, shape):
+        own_fill = _fill_child(tc.find(f"{A}tcPr")) is not None
+        cell = _cell_frame(s, tc, look)
+        plain = [
+            r for r in (cell.runs() if cell else []) if r.text.strip() and not r.color_explicit
+        ]
+        if look is None:
+            if not own_fill or plain:
+                yield None
+            continue
+        if not own_fill and look.fill is not None and look.fill[0] == "solid":
+            yield "fill from its table style", look.fill[1]
+        if look.text and any(r.color == look.text for r in plain):
+            yield "text colour from its table style", look.text
 
 
 # ------------------------------------------------------------ measuring text
@@ -1764,6 +2112,10 @@ def _fill(slide: Slide, shape: Shape) -> tuple[str, str | None]:
         fill = _fill_child(holder)
         if fill is None:
             continue
+        if _local(fill.tag) == "grpFill":
+            fill = _group_fill(shape)
+            if fill is None:
+                return "none", None
         tag = _local(fill.tag)
         if tag == "solidFill":
             return "solid", slide.ctx.first(fill)
@@ -1778,7 +2130,20 @@ def _fill(slide: Slide, shape: Shape) -> tuple[str, str | None]:
 
 SOURCE_PREFIX = re.compile(r"^\s*(?:sources?|πηγ(?:η|εσ))\s*[:\-" + EN_DASH + "]")
 NOTE_PREFIX = re.compile(r"^\s*(?:notes?|σημειωσ(?:η|εισ)|σημ\.|\*|[¹²³])")
-SOURCE_AS_OF = re.compile(r"\b(?:19|20)\d{2}\b|\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b")
+# What dates a source: a four-digit year, a slashed or dotted date, or a reporting
+# period with a two- or four-digit year, as board packs write them (FY25, FY2025, 1Q26,
+# Q2'26, 9M25, 1H2025, H1 '26). A period without a year ("H1", "latest") dates nothing.
+# Public: nbg_spec's `check` applies it to source.as_of, so check and this gate agree.
+_PERIOD_YEAR = r"\s?['" + chr(0x2019) + r"]?(?:(?:19|20)\d{2}|\d{2})\b"
+SOURCE_AS_OF = re.compile(
+    r"\b(?:19|20)\d{2}\b"
+    r"|\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b"
+    rf"|\b(?:FY|CY){_PERIOD_YEAR}"
+    rf"|\b[1-4]Q{_PERIOD_YEAR}|\bQ[1-4]{_PERIOD_YEAR}"
+    rf"|\b(?:[1-9]|1[0-2])M{_PERIOD_YEAR}"
+    rf"|\b[12]H{_PERIOD_YEAR}|\bH[12]{_PERIOD_YEAR}",
+    re.IGNORECASE,
+)
 
 
 def _is_source(text: str) -> bool:
@@ -2018,39 +2383,78 @@ def _color_elements(root: Any) -> Iterator[Any]:
             stack.append(child)
 
 
-def check_colors(deck: Deck, out: Collector) -> str:
+def _judged_shapes(deck: Deck, out: Collector) -> Iterator[tuple[Slide, Shape]]:
+    """Each slide's shapes, the shapes of its SmartArt drawings, then the layout and
+    master shapes it renders. An inherited shape comes once, with the first slide that
+    shows it: a band on the master is one finding, not one per slide. A diagram with no
+    drawing part to read is recorded as not examined."""
+    seen: set[int] = set()
     for s in deck.slides:
-        for shape in s.shapes:
-            if shape.kind == "grpSp":
-                continue
-            where = f'"{shape.name}"' if shape.name else shape.kind
-            for el in _color_elements(shape.el):
-                out.count()
+        if s.unread_diagrams:
+            out.skip(SMARTART_UNREAD, s.unread_diagrams)
+        yield from ((s, shape) for shape in s.shapes)
+        yield from ((s, shape) for shape in s.diagram_shapes)
+        for shape in s.inherited:
+            if id(shape.el) not in seen:
+                seen.add(id(shape.el))
+                yield s, shape
+
+
+def _where(shape: Shape) -> str:
+    name = f'"{shape.name}"' if shape.name else shape.kind
+    return f"{name} on {posixpath.basename(shape.part)}" if shape.part else name
+
+
+def check_colors(deck: Deck, out: Collector) -> str:
+    for s, shape in _judged_shapes(deck, out):
+        if shape.kind == "grpSp":
+            continue
+        where = _where(shape)
+        own_fill = _fill_child(shape.sp_pr)
+        group_fill = (
+            _group_fill(shape)
+            if own_fill is not None and _local(own_fill.tag) == "grpFill"
+            else None
+        )
+        for source, role in ((shape.el, ""), (group_fill, "group fill, ")):
+            for el in _color_elements(source) if source is not None else ():
                 hex_ = s.ctx.resolve(el)
                 if hex_ is None:
                     out.skip("unresolvable colour reference")
                     continue
+                out.count()
                 verdict = _color_verdict(hex_)
                 if verdict:
                     via = f" ({s.ctx.describe(el)})" if s.ctx.describe(el) else ""
-                    out.add(s.position, f"#{hex_}{via} {verdict} (in {where})")
-            for role, hex_ in _style_ref_colors(s, shape):
-                out.count()
-                if hex_ is None:
-                    out.skip("unresolvable style colour")
+                    out.add(s.position, f"#{hex_}{via} {verdict} ({role}in {where})")
+        for role, hex_ in _style_ref_colors(s, shape):
+            if hex_ is None:
+                out.skip("unresolvable style colour")
+                continue
+            out.count()
+            verdict = _color_verdict(hex_)
+            if verdict:
+                out.add(s.position, f"#{hex_} {verdict} ({role}, in {where}); set it explicitly")
+        if shape.is_table:
+            for painted in _table_style_colors(s, shape):
+                if painted is None:
+                    out.skip(TABLE_STYLE_UNREAD)
                     continue
+                role, hex_ = painted
+                if hex_ is None:
+                    out.skip("unresolvable table style colour")
+                    continue
+                out.count()
                 verdict = _color_verdict(hex_)
                 if verdict:
-                    out.add(
-                        s.position, f"#{hex_} {verdict} ({role}, in {where}); set it explicitly"
-                    )
+                    out.add(s.position, f"#{hex_} {verdict} ({role}, in {where})")
     for chart in deck.charts():
         for el in _color_elements(chart.root):
-            out.count()
             hex_ = chart.slide.ctx.resolve(el)
             if hex_ is None:
                 out.skip("unresolvable chart colour")
                 continue
+            out.count()
             verdict = _color_verdict(hex_)
             if verdict:
                 out.add(chart.slide.position, f"#{hex_} {verdict} (in chart {chart.stem})")
@@ -2059,12 +2463,29 @@ def check_colors(deck: Deck, out: Collector) -> str:
     return f"{out.examined} colour reference(s) in slides and charts, all NBG colours"
 
 
-def _typefaces(root: Any) -> Iterator[tuple[str, str]]:
-    for tag, role in (("latin", "text"), ("sym", "symbol"), ("buFont", "bullet")):
+_FACE_ROLES = {"latin": "text", "sym": "symbol", "buFont": "bullet"}
+
+
+def _typefaces(root: Any, tags: Iterable[str] = tuple(_FACE_ROLES)) -> Iterator[tuple[str, str]]:
+    for tag in tags:
         for el in root.iter(f"{A}{tag}"):
             face = el.get("typeface")
             if face:
-                yield face, role
+                yield face, _FACE_ROLES[tag]
+
+
+def _shape_runs(s: Slide, shape: Shape) -> Iterator[Run]:
+    """The text runs a shape draws: its own text, or each table cell's."""
+    if shape.kind == "sp":
+        frames = [s.frame(shape)]
+    elif shape.is_table:
+        frames = [_cell_frame(s, tc, look) for tc, look in _cell_looks(s, shape)]
+    else:
+        frames = []
+    for frame in frames:
+        for run in frame.runs() if frame is not None else []:
+            if run.text.strip():
+                yield run
 
 
 def check_fonts(deck: Deck, out: Collector) -> str:
@@ -2089,22 +2510,27 @@ def check_fonts(deck: Deck, out: Collector) -> str:
                 f'"{resolved}" is not an NBG font; use {", ".join(b.fonts_allowed)} ({role} in {where})',
             )
 
-    for s in deck.slides:
-        for shape in s.shapes:
-            if shape.kind == "grpSp":
-                continue
-            for face, role in _typefaces(shape.el):
-                judge(
-                    s.position, face, role, s.theme, f'"{shape.name}"' if shape.name else shape.kind
-                )
+    # A run's typeface is its own, else what it inherits (list styles, placeholders, the
+    # deck default), else the theme's minor font: the font it is drawn in. Symbol and
+    # bullet fonts are read where they are written.
+    for s, shape in _judged_shapes(deck, out):
+        if shape.kind == "grpSp":
+            continue
+        where = _where(shape)
+        for face, role in _typefaces(shape.el, ("sym", "buFont")):
+            judge(s.position, face, role, s.theme, where)
+        for run in _shape_runs(s, shape):
+            judge(s.position, run.typeface or "+mn-lt", "text", s.theme, where)
     for chart in deck.charts():
+        where = f"chart {chart.stem}"
         for face, role in _typefaces(chart.root):
-            judge(chart.slide.position, face, role, chart.slide.theme, f"chart {chart.stem}")
+            judge(chart.slide.position, face, role, chart.slide.theme, where)
+        top = chart.root.find(f"{C}txPr")
+        if top is None or top.find(f".//{A}latin") is None:  # chart text in the theme font
+            judge(chart.slide.position, "+mn-lt", "text", chart.slide.theme, f"{where}, theme font")
     if out.findings:
         return f"{len(out.findings)} non-NBG font use(s) among {out.examined} typeface reference(s)"
-    return (
-        f"{out.examined} typeface reference(s): {', '.join(sorted(used)) or 'none set explicitly'}"
-    )
+    return f"{out.examined} typeface reference(s): {', '.join(sorted(used)) or 'no text'}"
 
 
 def _size_floor(slide: Slide, shape: Shape, frame: Frame, title: Title | None) -> tuple[float, str]:
@@ -2123,32 +2549,9 @@ def _size_floor(slide: Slide, shape: Shape, frame: Frame, title: Title | None) -
 def check_font_sizes(deck: Deck, out: Collector) -> str:
     b = brand()
     sizes: set[float] = set()
-    for s in deck.slides:
-        title = find_title(s)
-        for shape, frame in s.text_shapes():
-            floor, role = _size_floor(s, shape, frame, title)
-            for run in frame.runs():
-                if not run.text.strip():
-                    continue
-                if run.size is None:
-                    out.skip("size inherited from a default the validator cannot read")
-                    continue
-                out.count()
-                sizes.add(run.size)
-                if run.size + 1e-6 < floor:
-                    if role == "source or footnote":
-                        out.add(
-                            s.position,
-                            f'{run.size:g}pt source or footnote "{_snippet(run.text)}"; sources and footnotes are at least {floor:g}pt (Standard #11)',
-                        )
-                    else:
-                        out.add(
-                            s.position,
-                            f'{run.size:g}pt {role} "{_snippet(run.text)}" is below the {floor:g}pt floor (Standard #11)',
-                        )
-        for shape in s.shapes:
-            if not shape.is_table:
-                continue
+    titles: dict[int, Title | None] = {}
+    for s, shape in _judged_shapes(deck, out):
+        if shape.is_table:
             for tc in _cells(shape):
                 cell = _cell_frame(s, tc)
                 if cell is None:
@@ -2166,6 +2569,32 @@ def check_font_sizes(deck: Deck, out: Collector) -> str:
                             s.position,
                             f'{run.size:g}pt table text "{_snippet(run.text)}" is below the {b.min_font:g}pt floor (Standard #11)',
                         )
+            continue
+        frame = s.frame(shape) if shape.kind == "sp" else None
+        if frame is None or not frame.text.strip():
+            continue
+        if s.position not in titles:
+            titles[s.position] = find_title(s)
+        floor, role = _size_floor(s, shape, frame, titles[s.position])
+        for run in frame.runs():
+            if not run.text.strip():
+                continue
+            if run.size is None:
+                out.skip("size inherited from a default the validator cannot read")
+                continue
+            out.count()
+            sizes.add(run.size)
+            if run.size + 1e-6 < floor:
+                if role == "source or footnote":
+                    out.add(
+                        s.position,
+                        f'{run.size:g}pt source or footnote "{_snippet(run.text)}"; sources and footnotes are at least {floor:g}pt (Standard #11)',
+                    )
+                else:
+                    out.add(
+                        s.position,
+                        f'{run.size:g}pt {role} "{_snippet(run.text)}" is below the {floor:g}pt floor (Standard #11)',
+                    )
     for chart in deck.charts():
         for el in list(chart.root.iter(f"{A}defRPr")) + list(chart.root.iter(f"{A}rPr")):
             sz = el.get("sz")
@@ -2273,29 +2702,34 @@ def check_contrast(deck: Deck, out: Collector) -> str:
         for shape in s.shapes:
             if not shape.is_table:
                 continue
-            for tc in _cells(shape):
-                cell = _cell_frame(s, tc)
+            for tc, look in _cell_looks(s, shape):
+                cell = _cell_frame(s, tc, look)
                 if cell is None:
                     continue
-                tc_pr = tc.find(f"{A}tcPr")
-                fill = _fill_child(tc_pr)
-                if fill is not None and _local(fill.tag) == "solidFill":
-                    cell_bg = s.ctx.first(fill)
-                elif fill is not None and _local(fill.tag) != "noFill":
-                    cell_bg = None
+                own = _fill_child(tc.find(f"{A}tcPr"))
+                if own is not None:  # the cell's own fill outranks its table style
+                    kind, hex_ = _local(own.tag), s.ctx.first(own)
+                elif look is not None and look.fill is not None:
+                    kind = {"solid": "solidFill", "none": "noFill"}.get(look.fill[0], "other")
+                    hex_ = look.fill[1]
                 else:
-                    cell_bg = slide_bg
+                    kind, hex_ = "noFill", None
+                cell_bg = hex_ if kind == "solidFill" else slide_bg if kind == "noFill" else None
                 for run in cell.runs():
-                    if run.text.strip():
-                        measure(
-                            s.position,
-                            run.color,
-                            cell_bg,
-                            run.size,
-                            run.bold,
-                            f'table cell "{_snippet(run.text, 40)}"',
-                            None,
-                        )
+                    if not run.text.strip():
+                        continue
+                    if look is None and (own is None or not run.color_explicit):
+                        out.skip(TABLE_STYLE_UNREAD)
+                        continue
+                    measure(
+                        s.position,
+                        run.color,
+                        cell_bg,
+                        run.size,
+                        run.bold,
+                        f'table cell "{_snippet(run.text, 40)}"',
+                        None,
+                    )
     for chart in deck.charts():
         kind, slide_bg, _ = _slide_background(chart.slide)
         outside = slide_bg if kind == "solid" else None
@@ -2604,6 +3038,21 @@ def _extent(shape: Shape, frame: Frame, lay: TextLayout) -> tuple[float, float, 
     return x0, y0, x0 + width, y0 + text_h
 
 
+def _opaque(slide: Slide, shape: Shape) -> bool:
+    """A shape whose solid fill hides what lies under it: no alpha below 100%."""
+    if _fill(slide, shape)[0] != "solid":
+        return False
+    fill = _fill_child(shape.sp_pr)
+    if fill is None or _local(fill.tag) != "solidFill":
+        return True  # a fill from the shape's style or its placeholder
+    color = next((c for c in fill if _local(c.tag) in _CLR_TAGS), None)
+    alpha = color.find(f"{A}alpha") if color is not None else None
+    try:
+        return alpha is None or int(alpha.get("val", "100000")) >= 100000
+    except ValueError:
+        return True
+
+
 def check_text_fit(deck: Deck, out: Collector) -> str:
     b = brand()
     m = deck.measurer
@@ -2668,6 +3117,18 @@ def check_text_fit(deck: Deck, out: Collector) -> str:
                         s.position,
                         f'text of "{first.name}" and "{second.name}" overlap by {dy:.2f}" vertically',
                     )
+        for shape, (x0, y0, x1, y1) in extents:
+            for other in s.shapes[shape.z + 1 :]:  # drawn later, so on top
+                if other.kind != "sp" or not other.has_box or not _opaque(s, other):
+                    continue
+                dx = min(x1, other.right) - max(x0, other.x or 0.0)
+                dy = min(y1, other.bottom) - max(y0, other.y or 0.0)
+                if dx > 0.04 and dy > 0.04:
+                    out.add(
+                        s.position,
+                        f'text of "{shape.name}" is hidden under "{other.name}", an opaque shape drawn on top of it',
+                    )
+                    break
         for shape in s.shapes:
             if not shape.is_table or not shape.has_box:
                 continue
@@ -2762,7 +3223,7 @@ def check_logo(deck: Deck, out: Collector) -> str:
         out.count()
         spots = [
             (shape, spot_name)
-            for shape in s.shapes
+            for shape in s.shapes + s.inherited
             if shape.kind == "pic"
             for spot_name, spot in (("small", b.logo_small), ("large", b.logo_large))
             if _spot_match(shape, spot, size=False)
@@ -2815,9 +3276,10 @@ def check_back_cover(deck: Deck, out: Collector) -> str:
         return "a one-slide deck has no back cover to check"
     s = deck.slides[-1]
     out.count()
-    pictures = [sh for sh in s.shapes if sh.kind == "pic"]
-    others = [sh for sh in s.shapes if sh.kind in ("graphicFrame", "cxnSp")]
-    texts = [sh for sh in s.shapes if sh.kind == "sp"]
+    shown = s.shapes + s.inherited
+    pictures = [sh for sh in shown if sh.kind == "pic"]
+    others = [sh for sh in shown if sh.kind in ("graphicFrame", "cxnSp")]
+    texts = [sh for sh in shown if sh.kind == "sp"]
     for shape in texts:
         frame = s.frame(shape)
         body = frame.text.strip() if frame is not None else ""
@@ -2860,9 +3322,11 @@ def check_back_cover(deck: Deck, out: Collector) -> str:
     return f"slide {s.position} is the plain back cover: the emblem alone"
 
 
+# Greek thanks are the verb forms only (ευχαριστώ, ευχαριστούμε, folded): the same stem
+# gives ευχάριστη (pleasant), ευχαριστημένοι (satisfied) and ευχαρίστηση (satisfaction).
 _STRONG_CLOSING = re.compile(
     r"\bthank\s*-?\s*you\b|\bthanks\b(?!\s+to\b)|\bany\s+questions\b|\bmerci\b|\bgrazie\b"
-    r"|\bdanke\b|\bευχαριστ\w*"
+    r"|\bdanke\b|\bευχαριστ(?:ω|ουμε)\b"
 )
 _WEAK_CLOSING = re.compile(r"^(?:q\s*&\s*a|questions|ερωτησεισ|ερωτησεισ\s*&\s*απαντησεισ)$")
 
@@ -2985,22 +3449,33 @@ def check_shadows(deck: Deck, out: Collector) -> str:
     return f"{out.examined} shape(s) and chart(s), no shadows"
 
 
-def check_em_dashes(deck: Deck, out: Collector) -> str:
-    spaced_en = f" {EN_DASH} "
+def dash_problem(text: str) -> tuple[str, str] | None:
+    """(severity, reason) when `text` breaks Standard #7, else None.
 
+    Public: nbg_spec's `check` applies the same rule to a deck spec, so a spec that
+    passes check is not failed by this gate for a dash. An em dash or " -- " is an
+    error; a spaced en dash used as a dash is a warning; "2024-2025" with an en dash
+    is a range and fine.
+    """
+    if EM_DASH in text or DOUBLE_HYPHEN in text:
+        return "error", "em dash"
+    if f" {EN_DASH} " in text:
+        return "warning", "spaced en dash used as a dash"
+    return None
+
+
+def check_em_dashes(deck: Deck, out: Collector) -> str:
     def judge(position: int, text: str, where: str) -> None:
         out.count()
-        if EM_DASH in text or " -- " in text:
-            out.add(
-                position,
-                f'em dash in {where}: "{_snippet(text)}"; use a comma, colon or full stop (Standard #7)',
-            )
-        elif spaced_en in text:
-            out.add(
-                position,
-                f'spaced en dash used as a dash in {where}: "{_snippet(text)}" (Standard #7)',
-                "warning",
-            )
+        problem = dash_problem(text)
+        if problem is None:
+            return
+        severity, reason = problem
+        out.add(
+            position,
+            f'{reason} in {where}: "{_snippet(text)}"; use a comma, colon or full stop (Standard #7)',
+            severity,
+        )
 
     for s in deck.slides:
         for text in _slide_texts(s):
@@ -3011,6 +3486,34 @@ def check_em_dashes(deck: Deck, out: Collector) -> str:
     if out.findings:
         return f"{len(out.findings)} dash problem(s) among {out.examined} text item(s)"
     return f"{out.examined} text item(s) in slides and charts, no em dashes"
+
+
+# Words that end in a period without ending a sentence: Greek number and list
+# abbreviations, and company suffixes. Folded, so "δισ." matches "ΔΙΣ.".
+_ABBREVIATIONS = frozenset(
+    fold(a)
+    for a in (
+        "χιλ.",
+        "εκ.",
+        "εκατ.",
+        "δισ.",
+        "τρισ.",
+        "κ.λπ.",
+        "π.χ.",
+        "Α.Ε.",
+        "etc.",
+        "Inc.",
+        "Ltd.",
+        "S.A.",
+    )
+)
+
+
+def _closing_period(title: str) -> bool:
+    text = title.rstrip()
+    if not text.endswith(".") or text.endswith("..."):
+        return False
+    return fold(text.rsplit(None, 1)[-1]) not in _ABBREVIATIONS
 
 
 def check_title_style(deck: Deck, out: Collector) -> str:
@@ -3042,7 +3545,7 @@ def check_title_style(deck: Deck, out: Collector) -> str:
                     s.position,
                     f'title starts at {left:.3f}", not the {b.gutter}" gutter (Standard #15)',
                 )
-        if title.text.rstrip().endswith(".") and not title.text.rstrip().endswith("..."):
+        if _closing_period(title.text):
             out.add(
                 s.position,
                 f'title "{_snippet(title.text)}" ends with a period (brand-system README)',
@@ -3114,8 +3617,8 @@ ACTION_TITLE_MAX_WORDS = 15
 
 
 def check_action_titles(deck: Deck, out: Collector) -> str:
-    """Warning by design: the owner once preferred a noun-phrase title in writing
-    (presentation-style-guide.md Part 2), so this reports and never blocks."""
+    """Warning by design: a noun-phrase title is sometimes a deliberate choice (a
+    product name, a programme name), so this reports and never blocks."""
     for s in deck.slides:
         title = find_title(s)
         if title is None or not title.is_content:
@@ -3282,10 +3785,56 @@ def check_chart_styling(deck: Deck, out: Collector) -> str:
     return f"{out.examined} series with explicit brand colours and hollow circle markers"
 
 
+def _bar_values(chart: Chart) -> list[float]:
+    """What a bar chart's value axis must span: each bar, or each stack's positive and
+    negative totals. Empty for percent-stacked bars, whose axis is fixed at 0-100%."""
+    values: list[float] = []
+    for plot in _plots(chart):
+        if _local(plot.tag) not in BAR_CHART_TAGS:
+            continue
+        grouping = plot.find(f"{C}grouping")
+        kind = grouping.get("val", "clustered") if grouping is not None else "clustered"
+        if kind == "percentStacked":
+            continue
+        stacks: dict[str, list[float]] = {}
+        for ser in plot.findall(f"{C}ser"):
+            for pt in ser.findall(f"{C}val//{C}pt"):
+                try:
+                    v = float(pt.findtext(f"{C}v") or "")
+                except ValueError:
+                    continue
+                if kind == "stacked":
+                    stacks.setdefault(pt.get("idx", "0"), []).append(v)
+                else:
+                    values.append(v)
+        for stack in stacks.values():
+            values += [sum(v for v in stack if v > 0), sum(v for v in stack if v < 0)]
+    return values
+
+
+def _axis_bound(scaling: Any, name: str) -> tuple[float | None, str | None]:
+    """(value, raw text) of an explicit c:min or c:max; (None, raw) when unparseable."""
+    node = scaling.find(f"{C}{name}") if scaling is not None else None
+    if node is None:
+        return None, None
+    raw = node.get("val", "0")
+    try:
+        return float(raw), raw
+    except ValueError:
+        return None, raw
+
+
 def check_zero_baseline(deck: Deck, out: Collector) -> str:
-    """Bar and column value axes start at zero. Read by parsing: 'c:min' also occurs
+    """Bar and column value axes include zero. Read by parsing: 'c:min' also occurs
     inside c:minorTickMark on every chart, so a text search finds minimums that are
-    not there."""
+    not there.
+
+    An explicit minimum above zero (or maximum below it) truncates the bars. So does an
+    automatic axis on close values: PowerPoint, like Excel, leaves zero off an automatic
+    axis when the lowest bar is over five sixths of the highest, so 2.9 to 3.3 draws from
+    about 2.7 and a 14% rise looks like a tripling (E2E-OUTPUT-01). A hidden axis hides
+    the truncation, it does not remove it.
+    """
     non_bar = 0
     for chart in deck.charts():
         tags = {_local(p.tag) for p in _plots(chart)}
@@ -3293,24 +3842,39 @@ def check_zero_baseline(deck: Deck, out: Collector) -> str:
         if not bars:
             non_bar += 1
             continue
+        kinds = "/".join(sorted(bars))
+        values = _bar_values(chart)
+        lo, hi = (min(values), max(values)) if values else (0.0, 0.0)
         for val_ax in chart.root.iter(f"{C}valAx"):
             out.count()
-            minimum = val_ax.find(f"{C}scaling/{C}min")
-            if minimum is None:
-                continue
-            raw = minimum.get("val", "0")
-            try:
-                value = float(raw)
-            except ValueError:
+            scaling = val_ax.find(f"{C}scaling")
+            minimum, raw_min = _axis_bound(scaling, "min")
+            maximum, raw_max = _axis_bound(scaling, "max")
+            for raw, value in ((raw_min, minimum), (raw_max, maximum)):
+                if raw is not None and value is None:
+                    out.add(
+                        chart.slide.position,
+                        f"chart {chart.stem} value axis bound is not a number ({raw!r})",
+                    )
+            if minimum is not None and minimum > 0:
                 out.add(
                     chart.slide.position,
-                    f"chart {chart.stem} value axis minimum is not a number ({raw!r})",
+                    f"chart {chart.stem} {kinds} value axis starts at {minimum:g}, not zero; a truncated bar misstates every ratio",
                 )
-                continue
-            if value != 0:
+            elif maximum is not None and maximum < 0:
                 out.add(
                     chart.slide.position,
-                    f"chart {chart.stem} {'/'.join(sorted(bars))} value axis starts at {value:g}, not zero; a truncated bar misstates every ratio",
+                    f"chart {chart.stem} {kinds} value axis ends at {maximum:g}, below zero; the negative bars are truncated",
+                )
+            elif raw_min is None and lo >= 0 and hi > 0 and lo > hi * 5 / 6:
+                out.add(
+                    chart.slide.position,
+                    f"chart {chart.stem} {kinds} value axis is automatic and the bars run {lo:g} to {hi:g}: PowerPoint starts that axis above zero and truncates every bar; set its minimum to 0",
+                )
+            elif raw_max is None and hi <= 0 and lo < 0 and hi < lo * 5 / 6:
+                out.add(
+                    chart.slide.position,
+                    f"chart {chart.stem} {kinds} value axis is automatic and the bars run {lo:g} to {hi:g}: PowerPoint ends that axis below zero and truncates every bar; set its maximum to 0",
                 )
     note = f", {non_bar} non-bar chart(s) not subject to the rule" if non_bar else ""
     if out.findings:
@@ -3351,6 +3915,25 @@ ALT_TEXT_PLACEHOLDER = re.compile(
 )
 
 
+def alt_text_problem(alt: str, captions: Iterable[str] = ()) -> str | None:
+    """Why `alt` describes nothing, or None when it is usable alt text.
+
+    Public: nbg_spec's `check` runs it on a spec's alt_text so check and this gate
+    agree. `captions` is the slide's other text; alt text identical to one of them is
+    read out twice by a screen reader.
+    """
+    text = " ".join(alt.split())
+    if not text:
+        return "no alt text"
+    if ALT_TEXT_PLACEHOLDER.match(text):
+        return f'alt text "{text}" is a filename or an autoname, not a description'
+    if ALT_TEXT_LEAD_IN.match(text):
+        return f'alt text "{_snippet(text)}" opens with "image of"; describe the content'
+    if fold(text) in {fold(c) for c in captions}:
+        return f'alt text "{_snippet(text)}" repeats a caption already on the slide'
+    return None
+
+
 _DECORATIVE_EXT = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}"
 
 
@@ -3370,7 +3953,7 @@ def _marked_decorative(shape: Shape) -> bool:
 def check_alt_text(deck: Deck, out: Collector) -> str:
     decorative = marked = 0
     for s in deck.slides:
-        captions = {fold(t) for t in _slide_texts(s)}
+        captions = list(_slide_texts(s))
         for shape in s.shapes:
             if shape.kind not in ("pic", "graphicFrame", "grpSp") or shape.depth > 0:
                 continue
@@ -3382,24 +3965,12 @@ def check_alt_text(deck: Deck, out: Collector) -> str:
                 continue
             out.count()
             nv = shape.c_nv_pr
-            alt = " ".join((nv.get("descr", "") if nv is not None else "").split())
-            name = shape.name or shape.kind
-            if not alt:
-                out.add(s.position, f"{name} has no alt text")
-            elif ALT_TEXT_PLACEHOLDER.match(alt):
+            problem = alt_text_problem(nv.get("descr", "") if nv is not None else "", captions)
+            if problem is not None:
+                name = shape.name or shape.kind
                 out.add(
                     s.position,
-                    f'{name} alt text "{alt}" is a filename or an autoname, not a description',
-                )
-            elif ALT_TEXT_LEAD_IN.match(alt):
-                out.add(
-                    s.position,
-                    f'{name} alt text "{_snippet(alt)}" opens with "image of"; describe the content',
-                )
-            elif fold(alt) in captions:
-                out.add(
-                    s.position,
-                    f'{name} alt text "{_snippet(alt)}" repeats a caption already on the slide',
+                    f"{name} has no alt text" if problem == "no alt text" else f"{name} {problem}",
                 )
     chrome = f", {decorative} brand logo(s) exempt as decorative" if decorative else ""
     if marked:
@@ -3409,46 +3980,88 @@ def check_alt_text(deck: Deck, out: Collector) -> str:
     return f"{out.examined} object(s) carry descriptive alt text{chrome}"
 
 
-# Bank names. In chart labels a short name is unambiguous ("Alpha" beside "Eurobank");
-# in running text only full names count, so "alpha release" and "Piraeus port" do not.
-_BANK_LABEL = {
-    "nbg": r"\bnbg\b|\bnational bank\b|\bετε\b|\bεθνικη\b",
-    "eurobank": r"\beurobank\b",
-    "alpha": r"\balpha\b|\bαλφα\b",
-    "piraeus": r"\bpiraeus\b|\bπειραιωσ\b",
-}
-_BANK_TEXT = {
-    "nbg": r"\bnbg\b|\bnational bank of greece\b|\bεθνικη τραπεζα\b",
-    "eurobank": r"\beurobank\b",
-    "alpha": r"\balpha bank\b",
-    "piraeus": r"\bpiraeus bank\b|\bτραπεζα πειραιωσ\b",
-}
-_BANK_NAMES = {
-    "nbg": "NBG",
-    "eurobank": "Eurobank",
-    "alpha": "Alpha Bank",
-    "piraeus": "Piraeus Bank",
-}
-_BANK_LOGO_FILES = {
-    "nbg": "nbg.png",
-    "eurobank": "eurobank.png",
-    "alpha": "alpha-bank.png",
-    "piraeus": "piraeus-bank.png",
-}
+# Bank names and logos come from tokens.yaml `banks`, colours from
+# extended_palettes.peer_banks. `names` count anywhere; `label_aliases` only in a chart
+# label, where a short name is unambiguous ("Alpha" beside "Eurobank"), so "alpha
+# release" and "Piraeus port" in running text name no bank (VALIDATOR-9).
+@dataclass(frozen=True)
+class _Bank:
+    name: str
+    logo: str
+    text: re.Pattern[str]
+    label: re.Pattern[str]
 
 
-def _banks_in(text: str, patterns: dict[str, str]) -> set[str]:
+def _names_pattern(names: Iterable[str]) -> re.Pattern[str]:
+    words = [fold(str(n)).split() for n in names]
+    alternatives = [r"(?<!\w)" + r"\s+".join(map(re.escape, w)) + r"(?!\w)" for w in words if w]
+    return re.compile("|".join(alternatives) or r"(?!)")
+
+
+@lru_cache(maxsize=1)
+def _bank_table() -> dict[str, _Bank]:
+    table = {}
+    for key, bank in nbg_tokens.get("banks").items():
+        names = list(bank.get("names") or [bank["name"]])
+        aliases = list(bank.get("label_aliases") or [])
+        table[key] = _Bank(
+            str(bank["name"]),
+            str(bank["logo"]),
+            _names_pattern(names),
+            _names_pattern(names + aliases),
+        )
+    return table
+
+
+def _banks_in(text: str, *, label: bool) -> set[str]:
     folded = fold(text)
-    return {key for key, pattern in patterns.items() if re.search(pattern, folded)}
+    return {
+        key
+        for key, bank in _bank_table().items()
+        if (bank.label if label else bank.text).search(folded)
+    }
+
+
+@lru_cache(maxsize=8)
+def _asset_size(name: str) -> tuple[int, int] | None:
+    try:
+        return _image_size((ASSETS_DIR / name).read_bytes())
+    except OSError:
+        return None
+
+
+def _bank_logo(deck: Deck, s: Slide, pic: Shape) -> tuple[str | None, tuple[int, int] | None]:
+    """The bank whose logo `pic` shows, and the image's pixel size. A picture is a
+    bank's logo when it is that bank's shipped asset, or when it names the bank in its
+    alt text or name and keeps the asset's aspect ratio (a redrawn copy)."""
+    part = s.image_part(pic)
+    if not part:
+        return None, None
+    digest, size = deck.media(part)
+    table = _bank_table()
+    for key, bank in table.items():
+        if digest == _asset_hash(bank.logo):
+            return key, size
+    nv = pic.c_nv_pr
+    named = _banks_in(f"{pic.name} {nv.get('descr', '') if nv is not None else ''}", label=True)
+    if len(named) == 1 and size and size[1]:
+        key = named.pop()
+        asset = _asset_size(table[key].logo)
+        if asset and asset[1]:
+            aspect = asset[0] / asset[1]
+            if abs(size[0] / size[1] - aspect) / aspect <= 0.05:
+                return key, size
+    return None, size
 
 
 def check_bank_branding(deck: Deck, out: Collector) -> str:
     b = brand()
+    table = _bank_table()
     mentioned: set[str] = set()
     for s in deck.slides:
         for text in _slide_texts(s):
             if not _is_source(text):
-                mentioned |= _banks_in(text, _BANK_TEXT)
+                mentioned |= _banks_in(text, label=False)
         comparisons: list[tuple[Chart, set[str]]] = []
         for chart in (c for c in deck.charts() if c.slide is s):
             plotted: dict[str, str] = {}
@@ -3465,7 +4078,7 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                     ser_color = ser_color or (
                         s.ctx.first(line_fill) if line_fill is not None else None
                     )
-                    for bank in _banks_in(_series_name(ser), _BANK_LABEL):
+                    for bank in _banks_in(_series_name(ser), label=True):
                         plotted[bank] = ser_color or ""
                     points = {}
                     for dpt in ser.findall(f"{C}dPt"):
@@ -3474,7 +4087,7 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                         if idx is not None and fill is not None:
                             points[idx.get("val")] = s.ctx.first(fill)
                     for i, label in enumerate(_categories(ser)):
-                        for bank in _banks_in(label, _BANK_LABEL):
+                        for bank in _banks_in(label, label=True):
                             color = points.get(str(i)) or ser_color or ""
                             if plotted.get(bank) != b.peer_banks[bank]:
                                 plotted[bank] = color
@@ -3487,31 +4100,27 @@ def check_bank_branding(deck: Deck, out: Collector) -> str:
                         shown = f"#{color}" if color else "an automatic colour"
                         out.add(
                             s.position,
-                            f"chart {chart.stem} plots {_BANK_NAMES[bank]} in {shown}, not its brand colour #{b.peer_banks[bank]} (presentation-qa 2H)",
+                            f"chart {chart.stem} plots {table[bank].name} in {shown}, not its brand colour #{b.peer_banks[bank]} (presentation-qa 2H)",
                         )
         if comparisons:
             banks = set().union(*(c[1] for c in comparisons))
-            pictures = [sh for sh in s.shapes if sh.kind == "pic" and not _is_logo_footprint(sh)]
-            logos = 0
-            for pic in pictures:
-                part = s.image_part(pic)
-                digest, size = deck.media(part) if part else ("", None)
-                matched = [
-                    k
-                    for k, f in _BANK_LOGO_FILES.items()
-                    if digest and digest == _asset_hash(f"bank-logos/{f}")
-                ]
-                logos += 1
+            shown_logos: set[str] = set()
+            for pic in (sh for sh in s.shapes if sh.kind == "pic" and not _is_logo_footprint(sh)):
+                key, size = _bank_logo(deck, s, pic)
+                if key is None:
+                    continue
+                shown_logos.add(key)
                 stretch = _stretch(pic, size)
-                if matched and stretch is not None and stretch > 0.03:
+                if stretch is not None and stretch > 0.03:
                     out.add(
                         s.position,
-                        f"the {_BANK_NAMES[matched[0]]} logo is stretched; keep its native aspect ratio (Standard #4)",
+                        f"the {table[key].name} logo is stretched; keep its native aspect ratio (Standard #4)",
                     )
-            if logos < len(banks):
+            missing = [table[key].name for key in table if key in banks - shown_logos]
+            if missing:
                 out.add(
                     s.position,
-                    f"the slide plots {len(banks)} banks but carries {logos} bank logo picture(s); each plotted bank needs its logo (presentation-qa 2H)",
+                    f"the slide plots {len(banks)} banks but carries no logo for {', '.join(missing)}; each plotted bank needs its own logo from assets/bank-logos (presentation-qa 2H)",
                 )
     if not out.examined:
         return f"no chart compares two or more banks ({len(mentioned)} bank name(s) found)"
@@ -3759,17 +4368,17 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Dimensions", check_dimensions, "error", "Slide size is exactly 12192000 x 6858000 EMU (13.333 x 7.5 in, PowerPoint Widescreen).", "dimensions.md; tokens geometry.slide", "the p:sldSz element", True),
     CheckSpec("Theme", check_theme, "warning", "Theme colour slots are NBG colours and the major/minor fonts are Aptos.", "colors.md; tokens colors, fonts", "theme colour slots and font slots"),
     CheckSpec("Background", check_background, "error", "Every slide's effective background (slide, layout, master) is white.", "Standard #2", "slides", True),
-    CheckSpec("Colors", check_colors, "error", "Every colour in slides and charts, including theme references and shape-style colours, is in tokens.yaml; retired colours fail with their reason.", "colors.md; tokens colors, retired_colors", "colour references in slide shapes and chart parts", True),
-    CheckSpec("Fonts", check_fonts, "error", "Every typeface (text, symbol, bullet) in slides and charts is an allowed font; Aptos SemiBold is forbidden.", "typography.md; tokens fonts", "typeface references in slide shapes and chart parts", True),
-    CheckSpec("Font Sizes", check_font_sizes, "error", "Text is 10pt or more; sources and footnotes 11pt or more; only the header pill may be 9pt.", "Standard #11; tokens accessibility, type.source", "sized text runs in shapes, table cells and chart parts", True),
+    CheckSpec("Colors", check_colors, "error", "Every colour in slides (with the layout and master shapes they show) and charts, including theme references and shape-style colours, is in tokens.yaml; retired colours fail with their reason.", "colors.md; tokens colors, retired_colors", "colour references in slide, layout and master shapes and chart parts", True),
+    CheckSpec("Fonts", check_fonts, "error", "Every font text is drawn in is allowed: each run's resolved typeface (theme font included), symbol and bullet fonts, chart fonts; Aptos SemiBold is forbidden.", "typography.md; tokens fonts", "text runs, symbol and bullet fonts, chart fonts", True),
+    CheckSpec("Font Sizes", check_font_sizes, "error", "Text is 10pt or more; sources and footnotes 11pt or more; only the header pill may be 9pt.", "Standard #11; tokens accessibility, type.source", "sized text runs in slide, layout and master shapes, table cells and chart parts", True),
     CheckSpec("Contrast", check_contrast, "error", "Text meets WCAG AA against what is behind it; muted grey is waived only for page numbers and axis labels on white.", "Standard #22", "text runs with a resolvable colour and background", True),
     CheckSpec("Boundaries", check_boundaries, "error", "No element extends past a slide edge.", "dimensions.md", "positioned shapes, pictures, charts, tables and connectors", True),
     CheckSpec("Safe Zones", check_safe_zones, "error", "Content stays between the 0.374in gutter and the right boundary, above the 6.85in footer line; sources end by 6.5in.", "dimensions.md; tokens geometry", "content elements (logo footprints and the page number excluded)", True),
     CheckSpec("Content Spacing", check_content_spacing, "error", "The first body element starts at 1.3in or lower and 0.15in or more below the title.", "Standard #11; tokens geometry.body_top", "slides with a content title and body content"),
-    CheckSpec("Text Fit", check_text_fit, "error", "Measured text fits its box, a pill is as wide as its text, cover titles stay on one line, text boxes do not overlap, tables do not grow into the footer.", "Standards #11, #13; dimensions.md", "text frames and tables", True),
+    CheckSpec("Text Fit", check_text_fit, "error", "Measured text fits its box, a pill is as wide as its text, cover titles stay on one line, text boxes do not overlap, no opaque shape on top hides text, tables do not grow into the footer.", "Standards #11, #13; dimensions.md", "text frames and tables", True),
     CheckSpec("Text Margins", check_text_margins, "error", "Unfilled text boxes have zero margins on all four sides.", "dimensions.md (Text Box Rules)", "unfilled text boxes carrying text"),
-    CheckSpec("Logo", check_logo, "error", "Every slide but the back cover carries the Greek wordmark at the small or large position, unstretched; the cover uses the large logo.", "Standards #4, #10, #17", "slides other than the last", True),
-    CheckSpec("Back Cover", check_back_cover, "error", "The last slide holds only the centred oval emblem: no text, no page number, no corner logo.", "Standard #19", "the last slide in presentation order", True),
+    CheckSpec("Logo", check_logo, "error", "Every slide but the back cover carries the Greek wordmark at the small or large position (on the slide, or its layout or master), unstretched; the cover uses the large logo.", "Standards #4, #10, #17", "slides other than the last", True),
+    CheckSpec("Back Cover", check_back_cover, "error", "The last slide holds only the centred oval emblem: no text, no page number, no corner logo, counting the layout and master shapes it shows.", "Standard #19", "the last slide in presentation order", True),
     CheckSpec("Thank You Check", check_thank_you, "error", "No thank-you, closing or Q&A slide.", "Standard #19; layouts.md", "the last two slides and slides of 12 words or fewer"),
     CheckSpec("Decorative", check_decorative, "error", "No decorative presets (stars, hearts, clouds...); an ellipse is decorative only if textless, over 0.5in and carrying no icon.", "Standards #3, #19", "preset-geometry shapes"),
     CheckSpec("Shadows", check_shadows, "error", "No shape or chart draws a shadow, including one inherited from the theme's effect styles.", "brand-system README; tokens components.card.shadow", "shapes and charts", True),
@@ -3781,10 +4390,10 @@ CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec("Chart Types", check_chart_types, "error", "No pie charts of any kind; part-to-whole is a doughnut.", "charts.md", "chart parts"),
     CheckSpec("Chart Data", check_chart_data, "error", "Every chart has series and categories; over 6 series warns, over 8 fails.", "Standard #22; tokens charts.max_series", "chart parts"),
     CheckSpec("Chart Styling", check_chart_styling, "error", "Line and area series carry an explicit line colour; automatic colours must resolve to NBG accents; line markers are hollow circles (warning).", "Standard #5; charts.md; tokens charts.line", "chart series"),
-    CheckSpec("Zero Baseline", check_zero_baseline, "error", "Bar and column value axes start at zero.", "keynote.md; charts.md", "value axes of bar and column charts"),
+    CheckSpec("Zero Baseline", check_zero_baseline, "error", "Bar and column value axes include zero, including an automatic axis on close values, which PowerPoint draws without it.", "keynote.md; charts.md", "value axes of bar and column charts"),
     CheckSpec("Exhibit Sources", check_exhibit_sources, "error", "Every slide with a chart or table carries a dated source line.", "deck.schema.json content.source; presentation-qa", "slides carrying a chart or table"),
     CheckSpec("Alt Text", check_alt_text, "error", "Pictures, charts, tables and groups carry descriptive alt text; brand logos are decorative.", "Standard #22 (EN 301 549)", "top-level pictures, graphic frames and groups"),
-    CheckSpec("Bank Branding", check_bank_branding, "error", "A chart plotting two or more of the four systemic banks colours each in its brand colour and the slide carries a logo per bank.", "presentation-qa 2H; tokens extended_palettes.peer_banks", "charts plotting two or more banks"),
+    CheckSpec("Bank Branding", check_bank_branding, "error", "A chart plotting two or more banks colours each in its brand colour and the slide carries each plotted bank's own logo.", "presentation-qa 2H; tokens banks, extended_palettes.peer_banks", "charts plotting two or more banks"),
     CheckSpec("Number Formats", check_number_formats, "warning", "One currency notation per deck and one decimal precision per unit; Greek separators understood.", "typography.md", "currency amounts in slide text"),
     CheckSpec("AI Slop", check_ai_slop, "warning", "No slide clusters two or more AI-register phrases.", "presentation-qa (tone)", "slides carrying text"),
     CheckSpec("Official Name", check_official_name, "warning", "The bank is «Εθνική Τράπεζα», never «Εθνική Τράπεζα της Ελλάδος».", "writing style", "slides carrying text"),
@@ -3826,6 +4435,8 @@ def exit_code(results: list[ValidationResult], strict: bool = False) -> int:
     if strict and any(
         r.status == "skipped" and CHECKS_BY_NAME.get(r.name, CHECKS[0]).universal for r in results
     ):
+        return 1
+    if strict and any(SMARTART_UNREAD in r.not_examined for r in results):
         return 1
     return 0
 
@@ -3906,7 +4517,8 @@ def print_results(
     counts = summary(results)
     print(
         f"\nSummary: {counts['passed']} passed, {counts['failed']} failed, "
-        f"{counts['warnings']} warning(s), {counts['skipped']} skipped (examined nothing)"
+        f"{counts['warnings']} warning(s), {counts['skipped']} skipped"
+        + (" (examined nothing)" if counts["skipped"] else "")
     )
     fixes = sorted(
         ((f, r.name) for r in results for f in r.findings),
@@ -3965,12 +4577,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("deck", nargs="?", help="the .pptx to validate")
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument(
-        "--strict", action="store_true", help="a skipped check that applies to every deck fails"
+        "--strict",
+        action="store_true",
+        help="a skipped check that applies to every deck, or a SmartArt diagram with no drawing part, fails",
     )
     parser.add_argument(
         "--list-checks", action="store_true", help="print every check with its rule and source"
     )
     args = parser.parse_args(argv)
+    _utf8_streams()
     if args.list_checks:
         list_checks(args.format)
         return 0
@@ -3979,6 +4594,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         results = validate_presentation(args.deck)
+        # Writing the report is part of running: a failure here leaves the deck
+        # unvalidated, which is exit 2, never the "a check failed" exit 1.
+        if args.format == "json":
+            report = report_json(args.deck, results, args.strict)
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+        else:
+            print_results(results, args.deck, strict=args.strict)
     except DeckError as e:
         print(f"nbg_validate: cannot validate: {e}", file=sys.stderr)
         return 2
@@ -3988,13 +4610,19 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    if args.format == "json":
-        print(
-            json.dumps(report_json(args.deck, results, args.strict), ensure_ascii=False, indent=2)
-        )
-    else:
-        print_results(results, args.deck, strict=args.strict)
     return exit_code(results, args.strict)
+
+
+def _utf8_streams() -> None:
+    """UTF-8 on stdout and stderr whatever the console's code page: a Windows cp1252 or
+    cp1253 console cannot encode the status marks or Greek slide text."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (OSError, ValueError):
+                pass
 
 
 if __name__ == "__main__":

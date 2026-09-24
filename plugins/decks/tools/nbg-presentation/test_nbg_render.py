@@ -94,13 +94,38 @@ def test_a_render_writes_one_png_per_page_from_an_isolated_profile(
 
 
 def test_stale_pngs_from_an_earlier_render_are_removed(
-    two_slide_deck, tmp_path, fake_soffice, capsys
+    two_slide_deck, tmp_path, fake_soffice, monkeypatch, capsys
 ):
     out = tmp_path / "out"
-    out.mkdir()
-    (out / "slide-09.png").write_bytes(b"stale")
     nbg_render.main([str(two_slide_deck), str(out)])
-    assert not (out / "slide-09.png").exists()
+    assert (out / "slide-02.png").exists()
+    monkeypatch.setenv("FAKE_PAGES", "1")
+    nbg_render.main([str(two_slide_deck), str(out)])
+    assert not (out / "slide-02.png").exists(), "the earlier render's page 2 is stale"
+
+
+def test_render_never_deletes_or_overwrites_files_it_did_not_write(
+    two_slide_deck, tmp_path, fake_soffice, capsys
+):
+    """SECURITY-PUBLIC-5: render deleted every slide-*.png in the folder and overwrote a
+    <deck>.pdf it had not written. It now deletes only what its manifest says it
+    wrote, and refuses to write over anything else."""
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "slide-09.png").write_bytes(b"someone else's")
+    (out / "deck.pdf").write_bytes(b"an unrelated pdf")
+    assert nbg_render.main([str(two_slide_deck), str(out)]) == 2
+    body = json.loads(capsys.readouterr().out)
+    assert "deck.pdf" in body["error"] and "empty folder" in body["fix"]
+    assert (out / "deck.pdf").read_bytes() == b"an unrelated pdf"
+    assert not fake_soffice.exists(), "nothing ran"
+    (out / "deck.pdf").unlink()
+    (out / "slide-01.png").write_bytes(b"a page someone kept")
+    assert nbg_render.main([str(two_slide_deck), str(out)]) == 2
+    assert (out / "slide-01.png").read_bytes() == b"a page someone kept"
+    (out / "slide-01.png").unlink()
+    nbg_render.main([str(two_slide_deck), str(out)])
+    assert (out / "slide-09.png").read_bytes() == b"someone else's", "not render's to delete"
 
 
 def test_a_failed_conversion_exits_2(two_slide_deck, tmp_path, fake_soffice, monkeypatch, capsys):
@@ -112,6 +137,18 @@ def test_a_failed_conversion_exits_2(two_slide_deck, tmp_path, fake_soffice, mon
 
 def test_a_missing_deck_exits_2(tmp_path, capsys):
     assert nbg_render.main([str(tmp_path / "nope.pptx"), str(tmp_path / "out")]) == 2
+
+
+def test_a_zip_bomb_is_refused_before_libreoffice_sees_it(tmp_path, fake_soffice, capsys):
+    """SECURITY-PUBLIC-2: render opened third-party decks with no package limits."""
+    import zipfile
+
+    bomb = tmp_path / "bomb.pptx"
+    with zipfile.ZipFile(bomb, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("ppt/slides/slide1.xml", " " * (3 * 2**20))
+    assert nbg_render.main([str(bomb), str(tmp_path / "out")]) == 2
+    assert "zip bomb" in json.loads(capsys.readouterr().out)["error"]
+    assert not fake_soffice.exists(), "LibreOffice must never open the file"
 
 
 def _pdf_with_font(path: Path, base_font: str, embedded: bool) -> Path:

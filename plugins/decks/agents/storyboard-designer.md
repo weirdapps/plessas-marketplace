@@ -15,8 +15,9 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 ## Inputs
 
 - `deck`: path to `deck.yaml` in the work folder.
-- `preferences`: path to the user's `style-preferences.md`, or `none`. Its layout and chart
-  preferences apply unless a numbered Standard disagrees.
+- `preferences`: path to the user's `style-preferences.md`, or `none`. Its layout and chart rows
+  apply (`medium` and `high` as rules, `hint` as a lean where the choice is open) unless a numbered
+  Standard disagrees.
 
 ## Read first
 
@@ -33,7 +34,7 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 | a trend over time | `chart`, `area_line` (Standard #2 item 8) |
 | a comparison across categories | `chart`, `bar`; `bar_horizontal` for long labels or rankings |
 | a composition across categories | `chart`, `bar_stacked` |
-| part of a whole, 5 segments or fewer | `chart`, `doughnut` (pie does not exist) |
+| part of a whole, 6 slices at most (merge anything under about 5 per cent into Other) | `chart`, `doughnut` (pie does not exist) |
 | how we got from A to B | `waterfall` |
 | detail the reader will look up | `table`, 14 rows at most |
 | parallel options, pillars or initiatives (2 to 6) | `cards`; mark the recommended option `recommended: true` |
@@ -41,15 +42,18 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 | two things side by side, or text arguing over an exhibit | `two_column`; `split: 40/60` when text argues over an exhibit |
 | a screenshot, mockup, photo or diagram carries it | `image` |
 | an argument in a few points | `content` |
+| what we ask of another division, as against the work we lead | the two-party ownership coding element, built as `custom` slides exactly as "Two-party ownership coding" in `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/layouts.md` specifies (its asks-table recipe included): asks and our work on separate pages, asks grouped by product, a badge naming the division |
 | a layout none of the above can express | `custom`: positioned elements, last resort |
 
 Decision rules:
 
 - **Charts**: set `highlight_category` to the category the title is about (never on a peer-bank
-  comparison; see Peer banks). Six series at most
-  (Standard #22); past that, split into small multiples or group the tail into "Other". Plain
-  `line` only when several series overlap and a fill would mislead. Set `unit` and, when the data
-  needs it, `number_format`.
+  comparison; see Peer banks). Six series at most (Standard #22); past that, split into small
+  multiples or group the tail into "Other". `area_line` shades only its first series, so list the
+  series to emphasise first. A multi-series line names each line at its end instead of a legend,
+  so keep series names short. Put the unit in `chart.unit` (`EUR m`, `millions`) and keep it out of
+  `content.description`: the builder adds it to the caption, or as a caption line above the chart.
+  Set `number_format` when the data needs it.
 - **Colour is never the only signal** (Standard #22): series need names, statuses need words.
 - **Density**: a content slide fills 60 to 85 per cent of the safe area (Standard #2 item 7). Two
   short bullets floating at the top are too sparse: use a stronger type (`kpi`, `cards`) or merge
@@ -110,11 +114,23 @@ Prefer what the plugin ships, then plan what must be made.
     - kind: infographic
       output: images/S07_funnel.svg
       brief: "four-stage funnel: 120k visits, 40k starts, 18k completed, 11k funded"
-      size_in: [12.0, 4.8]
+      size_in: [12.59, 4.87]          # the frame check reports in image_slots, see below
   ```
 
   An infographic brief carries its numbers from the slide, never new ones. Every `image` gets
-  `alt_text` that says what the reader should see.
+  `alt_text` that says what the reader should see: never a file name, an autoname such as
+  "Picture 3", an opening "Image of", or the slide's own title repeated (check rejects each).
+- **Size every diagram to its slot.** The builder fits an SVG into whatever frame the slide leaves,
+  so a diagram drawn for a bigger frame prints its labels smaller. To learn the frame, write a
+  placeholder at the planned path first (Write
+  `<svg xmlns="http://www.w3.org/2000/svg" id="decks-placeholder" viewBox="0 0 864 346"/>`), then
+  run `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" check <deck> --format json` and read the
+  `image_slots` entry for that slide (`w` and `h` in inches). It appears only once that slide lays
+  out cleanly, so fix the slide's own errors first. Put `[w, h]`, rounded down to 2 decimals, in
+  the request's `size_in`; the infographic agent overwrites the placeholder with a drawing made for
+  exactly that frame. A frame under about 3.5 in tall means the slide carries too much around the
+  diagram: move its description into the title or `notes`, drop its takeaway, and read the slot
+  again.
 
 ## Check before you return
 
@@ -138,5 +154,6 @@ slides:
   S05 content -> chart area_line (quarterly trend)
 assets to make:
   S04 icon images/S04_contactless.svg "a card with a contactless wave"
+  S07 infographic images/S07_funnel.svg size_in [12.59, 4.87] "four-stage funnel: ..."
 notes: <anything the command must decide, e.g. keynote criteria met, a message that needs rewording>
 ```

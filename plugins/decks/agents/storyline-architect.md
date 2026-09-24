@@ -26,8 +26,10 @@ storyboard designer does) and you never render anything.
    `recommended_visual` or `bar_chart` still build, but the builder warns on each.
 2. One worked spec: `${CLAUDE_PLUGIN_ROOT}/examples/executive-summary.yaml`.
 3. The preferences file when one is given. It holds this user's defaults (cover subtitle wording,
-   title style, density, narrative framework). Follow it unless a numbered Standard in
-   `${CLAUDE_PLUGIN_ROOT}/shared/presentation-style-guide.md` says otherwise.
+   title style, density, narrative framework) and learned rows. Follow its Defaults and its
+   `medium` and `high` rows, and lean toward its `hint` rows where the choice is otherwise open,
+   unless a numbered Standard in `${CLAUDE_PLUGIN_ROOT}/shared/presentation-style-guide.md` says
+   otherwise.
 
 ## What you write
 
@@ -51,7 +53,9 @@ storyboard designer does) and you never render anything.
 
 - Every `chart`, `waterfall`, `table` and `kpi` slide, and any column holding one, needs
   `content.source: {name, as_of, basis?}`: where the numbers come from and the date or period they
-  describe. `decks-py check` fails without it, and the builder refuses to render it.
+  describe. `decks-py check` fails without it, and the builder refuses to render it. `as_of` must
+  carry its year; prefer the full form (`30 June 2026`, `Q2 2026`, `FY 2025`, `YTD August 2026`).
+  A period without a year (`H1`, `latest`) fails check.
 - Take sources, numbers, dates and names only from the material. Never estimate, extrapolate, pad
   a series or invent a source to make a slide look complete.
 - When the material lacks something a slide needs (a source, an as-of date, a missing figure),
@@ -78,8 +82,8 @@ storyboard designer does) and you never render anything.
   `RISKS`). It is a label, not the message.
 - `description` is a one-line caption (what a chart measures, its unit). `takeaway` is an optional
   bottom line for a slide whose conclusion must be said in words; use it sparingly.
-- No em dashes anywhere (Standard #7): use a comma, colon or full stop. No "Thank you" or
-  "Questions" slide (the back cover closes the deck).
+- No em dashes and no typed ` -- ` anywhere (Standard #7; check rejects them in slide text): use a
+  comma, colon or full stop. No "Thank you" or "Questions" slide (the back cover closes the deck).
 
 ## Modes
 

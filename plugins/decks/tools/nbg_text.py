@@ -26,6 +26,20 @@ from typing import Any
 # ---------------------------------------------------------------- Greek capitals
 
 TONOS = "\u0301"  # combining acute, which is what NFD turns the Greek tonos into
+DIALYTIKA = "\u0308"  # combining diaeresis: the Greek dialytika
+# The vowel pairs Greek reads as one sound. A tonos on the first letter is what says
+# they are two (the alpha and iota of the month May); once capitals drop it, the
+# second letter takes a dialytika instead.
+_DIGRAPHS = {
+    ("\u0391", "\u0399"),  # alpha iota
+    ("\u0395", "\u0399"),  # epsilon iota
+    ("\u039f", "\u0399"),  # omicron iota
+    ("\u03a5", "\u0399"),  # upsilon iota
+    ("\u0391", "\u03a5"),  # alpha upsilon
+    ("\u0395", "\u03a5"),  # epsilon upsilon
+    ("\u039f", "\u03a5"),  # omicron upsilon
+    ("\u0397", "\u03a5"),  # eta upsilon
+}
 
 
 def _is_greek(ch: str) -> bool:
@@ -33,27 +47,49 @@ def _is_greek(ch: str) -> bool:
 
 
 def greek_upper(text: str) -> str:
-    """ALL CAPS the way Greek writes them: the tonos goes, the dialytika stays.
+    """ALL CAPS the way Greek writes them: the tonos goes, the dialytika stays, and a
+    dialytika appears where dropping a tonos would join two vowels into one sound.
 
     Python's str.upper() keeps both, so upper-casing "η συναίνεση" leaves the accent
     on the capital iota, a visible spelling error in every Greek pill or kicker. Only
     a tonos that sits on a Greek letter is dropped, so a Latin "é" in a Greek deck
-    keeps its accent.
+    keeps its accent. The month May, with its tonos on the alpha, would read as the
+    diphthong alpha-iota without it, so its capitals put a dialytika on the iota.
     """
-    out: list[str] = []
-    base = ""
+    clusters: list[list[str]] = []  # a base letter and the marks that follow it
     for ch in unicodedata.normalize("NFD", text.upper()):
-        if ch == TONOS and _is_greek(base):
+        if unicodedata.combining(ch) and clusters:
+            clusters[-1].append(ch)
+        else:
+            clusters.append([ch])
+    for i, cluster in enumerate(clusters):
+        base = cluster[0]
+        if not _is_greek(base) or TONOS not in cluster[1:]:
             continue
-        if not unicodedata.combining(ch):
-            base = ch
-        out.append(ch)
-    return unicodedata.normalize("NFC", "".join(out))
+        cluster[1:] = [mark for mark in cluster[1:] if mark != TONOS]
+        following = clusters[i + 1] if i + 1 < len(clusters) else None
+        if following and (base, following[0]) in _DIGRAPHS and DIALYTIKA not in following[1:]:
+            following.append(DIALYTIKA)
+    return unicodedata.normalize("NFC", "".join("".join(c) for c in clusters))
 
 
 def caps(text: str, language: str = "en") -> str:
     """Upper-case for display in the deck's language (Greek drops the tonos)."""
     return greek_upper(text) if language == "el" else text.upper()
+
+
+_GREEK_SEPARATORS = str.maketrans(",.", ".,")
+
+
+def localise_number(text: str, language: str = "en") -> str:
+    """A number written the English way (1,234.5) in the deck's language: Greek puts a
+    point between thousands and a comma before decimals (1.234,5)."""
+    return text.translate(_GREEK_SEPARATORS) if language == "el" else text
+
+
+def format_number(value: float, decimals: int, language: str = "en") -> str:
+    """value with a thousands separator and `decimals` places, in the deck's language."""
+    return localise_number(f"{value:,.{decimals}f}", language)
 
 
 # ---------------------------------------------------------------- font discovery

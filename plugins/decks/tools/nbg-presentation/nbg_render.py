@@ -16,7 +16,8 @@ stdout is one JSON object:
 or, when nothing was rendered, {"error", "fix"}.
 
 Exit codes: 0 rendered with Aptos embedded; 4 rendered with substituted fonts;
-3 LibreOffice is not installed; 2 any other error.
+3 LibreOffice is not installed; 2 any other error, including a deck past
+nbg_package's limits, which LibreOffice never sees.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -32,6 +34,9 @@ import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import nbg_package  # noqa: E402
 
 EXIT_OK = 0
 EXIT_ERROR = 2
@@ -116,18 +121,59 @@ def convert_to_pdf(soffice: str, deck: Path, outdir: Path, timeout: int = 300) -
         shutil.rmtree(profile, ignore_errors=True)
 
 
+MANIFEST = ".nbg-render.json"  # the files the last render wrote into its folder
+_OWN_NAME = re.compile(r"slide-\d{2,}\.png|[^/\\]+\.pdf")
+
+
+def _owned(outdir: Path) -> set[str]:
+    """What an earlier render wrote here, by its manifest: only plain file names in
+    render's own naming, so a crafted manifest cannot point it at anything else."""
+    try:
+        listed = json.loads((outdir / MANIFEST).read_text(encoding="utf-8")).get("files", [])
+    except (OSError, ValueError, AttributeError):
+        return set()
+    return {n for n in listed if isinstance(n, str) and _OWN_NAME.fullmatch(n)}
+
+
+def claim_outdir(outdir: Path, deck: Path) -> None:
+    """Make room for this render: delete what the last render wrote, and refuse (before
+    anything runs) when a file this render would write is there and render did not
+    write it. SECURITY-PUBLIC-5: a render used to delete every slide-*.png in the
+    folder and overwrite any <deck>.pdf already there."""
+    owned = _owned(outdir)
+    planned = {f"{deck.stem}.pdf"} | {
+        f"slide-{i:02d}.png" for i in range(1, deck_slide_count(deck) + 1)
+    }
+    foreign = sorted(n for n in planned if (outdir / n).exists() and n not in owned)
+    if foreign:
+        raise RenderError(
+            f"{outdir} already holds {', '.join(foreign)}, which render did not write",
+            "render into an empty folder, or move those files: render deletes and "
+            "overwrites only what it wrote itself",
+        )
+    for name in owned:
+        (outdir / name).unlink(missing_ok=True)
+
+
+def record_outdir(outdir: Path, files: list[Path]) -> None:
+    (outdir / MANIFEST).write_text(json.dumps({"files": [p.name for p in files]}), encoding="utf-8")
+
+
 def pdf_to_pngs(pdf: Path, outdir: Path, dpi: int) -> list[Path]:
     import pypdfium2 as pdfium
 
-    for stale in outdir.glob("slide-*.png"):
-        stale.unlink()
     doc = pdfium.PdfDocument(str(pdf))
     try:
         paths = []
         for i in range(len(doc)):
+            path = outdir / f"slide-{i + 1:02d}.png"
+            if path.exists():  # claim_outdir removed render's own; this one is not
+                raise RenderError(
+                    f"{path} already exists and render did not write it",
+                    "render into an empty folder",
+                )
             page = doc[i]
             image = page.render(scale=dpi / 72).to_pil()
-            path = outdir / f"slide-{i + 1:02d}.png"
             image.save(path)
             paths.append(path)
         return paths
@@ -182,6 +228,13 @@ def render(deck: Path, outdir: Path, dpi: int = DEFAULT_DPI) -> tuple[dict[str, 
     """(summary, exit code). Raises RenderError when nothing could be rendered."""
     if not deck.is_file():
         raise RenderError(f"deck not found: {deck}", "check the path")
+    try:
+        nbg_package.check_package(deck)
+    except nbg_package.PackageError as e:
+        raise RenderError(
+            f"{deck.name} was not opened: {e}",
+            "render only decks you trust; rebuild this one with decks-py build",
+        ) from e
     soffice = find_soffice()
     if soffice is None:
         raise RenderError(
@@ -190,8 +243,10 @@ def render(deck: Path, outdir: Path, dpi: int = DEFAULT_DPI) -> tuple[dict[str, 
             "to its soffice binary; the render-and-look QA step needs it",
         )
     outdir.mkdir(parents=True, exist_ok=True)
+    claim_outdir(outdir, deck)
     pdf = convert_to_pdf(soffice, deck, outdir)
     pngs = pdf_to_pngs(pdf, outdir, dpi)
+    record_outdir(outdir, [pdf, *pngs])
     fonts = embedded_fonts(pdf)
     fallback = not aptos_embedded(fonts)
     summary: dict[str, Any] = {
