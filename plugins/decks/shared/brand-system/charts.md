@@ -201,9 +201,10 @@ white borders.
 
 ## Waterfall: Data Labels
 
-Every waterfall label is the bar's signed contribution, written into the label as text (`+1,624`,
-`-2,439`, or `+1.624` in a Greek deck; a total carries a sign only when it is negative), so it
-reads the same in every viewer.
+Every waterfall label is the bar's signed contribution, written into the label as text in the
+chart's `number_format` (`+1,624`, `-2,439`, `+2.5%` for `0.0%`, `+12 m` for `#,##0" m"`, and
+Greek separators in a Greek deck, `+1.624`; a total carries a sign only when it is negative), so
+it reads the same in every viewer.
 All labels are 12pt Bold (`type.chart_data_label`). Where a label sits depends on the bar:
 
 | Bar | Label | Colour |
