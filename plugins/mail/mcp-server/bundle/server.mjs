@@ -16457,7 +16457,7 @@ var package_default = {
     "test:watch": "vitest"
   },
   dependencies: {
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.30.1",
     "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#395296ce4efd4c8d07473758cef8b6f45cc2fba9"
   },
   devDependencies: {
