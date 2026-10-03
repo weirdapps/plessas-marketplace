@@ -1,7 +1,7 @@
 {
   "name": "decks",
   "description": "Branded presentation system: agents write and refine a deck spec, one tested builder renders it, and QA checks the validator report and every rendered slide before a board-ready, NBG-branded PPTX ships. Bundles icon, infographic and device-mockup creative agents.",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "weirdapps"
   },
