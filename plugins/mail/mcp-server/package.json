@@ -16,13 +16,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.1",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#395296ce4efd4c8d07473758cef8b6f45cc2fba9"
   },
   "devDependencies": {
-    "@types/node": "~26.6.2",
+    "@types/node": "~26.6.3",
     "esbuild": "0.28.2",
     "typescript": "~7.0.2",
-    "vitest": "~5.0.1"
+    "vitest": "~5.0.3"
   }
 }
