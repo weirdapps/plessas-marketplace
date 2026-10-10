@@ -2,7 +2,7 @@
 description: "Read inbox and present a briefing with summaries, action recommendations, and insights, with no drafting or replying"
 argument-hint: "[inbox|archive|both] [--count N] [--unread]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outlook-bridge__outlook_auth_check, mcp__plugin_mail_outlook-bridge__outlook_download_attachments, mcp__plugin_mail_outlook-bridge__outlook_get_mail, mcp__plugin_mail_outlook-bridge__outlook_list_mail
-disallowed-tools: mcp__plugin_mail_outlook-bridge__outlook_create_folder, mcp__plugin_mail_outlook-bridge__outlook_forward, mcp__plugin_mail_outlook-bridge__outlook_move_mail, mcp__plugin_mail_outlook-bridge__outlook_reply, mcp__plugin_mail_outlook-bridge__outlook_reply_all, mcp__plugin_mail_outlook-bridge__outlook_send_mail
+disallowed-tools: mcp__plugin_mail_outlook-bridge__outlook_create_folder, mcp__plugin_mail_outlook-bridge__outlook_delete_draft, mcp__plugin_mail_outlook-bridge__outlook_forward, mcp__plugin_mail_outlook-bridge__outlook_move_mail, mcp__plugin_mail_outlook-bridge__outlook_reply, mcp__plugin_mail_outlook-bridge__outlook_reply_all, mcp__plugin_mail_outlook-bridge__outlook_send_mail
 ---
 
 > Path conventions: `<TEMP_DIR>` resolves to the OS temp directory (`$TMPDIR` or `/tmp` on macOS/Linux, `$env:TEMP` on Windows). Resolve before passing to tools.
