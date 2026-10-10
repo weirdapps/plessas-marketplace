@@ -10,10 +10,10 @@ import {
 } from '../src/tools/index.js';
 
 describe('tool registry', () => {
-  it('has 16 unique tool names (10 read + 5 write + 1 diagnostic)', () => {
+  it('has 17 unique tool names (10 read + 6 write + 1 diagnostic)', () => {
     const names = ALL_TOOLS.map(t => t.name);
-    expect(names).toHaveLength(16);
-    expect(new Set(names).size).toBe(16);
+    expect(names).toHaveLength(17);
+    expect(new Set(names).size).toBe(17);
   });
   it('registers the diagnostics tool', () => {
     expect(ALL_TOOLS.map(t => t.name)).toContain('outlook_doctor');

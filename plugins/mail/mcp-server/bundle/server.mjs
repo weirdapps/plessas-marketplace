@@ -16442,7 +16442,7 @@ import { homedir } from "node:os";
 // package.json
 var package_default = {
   name: "outlook-bridge-mcp",
-  version: "0.4.1",
+  version: "0.5.0",
   license: "MIT",
   private: true,
   type: "module",
@@ -16459,7 +16459,7 @@ var package_default = {
   },
   dependencies: {
     "@modelcontextprotocol/sdk": "^1.30.1",
-    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#395296ce4efd4c8d07473758cef8b6f45cc2fba9"
+    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#3bc256730d140e1a54c3db40bda56c78175b0be0"
   },
   devDependencies: {
     "@types/node": "~26.6.2",
@@ -16556,6 +16556,27 @@ var doctorTool = {
   }
 };
 
+// src/tools/delete-draft.ts
+var deleteDraftTool = {
+  name: "outlook_delete_draft",
+  description: 'Delete unsent drafts by id (from outlook_list_mail folder:"Drafts"). Refuses any message that is not a draft. Deleted drafts go to Deleted Items. ids[] up to 20 per call.',
+  inputSchema: {
+    type: "object",
+    properties: {
+      ids: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 20 },
+      continueOnError: { type: "boolean", default: true }
+    },
+    required: ["ids"],
+    additionalProperties: false
+  },
+  handler: async (args) => {
+    const cliArgs = ["delete-draft", ...args.ids];
+    const continueOnError = args.continueOnError !== false;
+    if (continueOnError) cliArgs.push("--continue-on-error");
+    return runOutlookCli(cliArgs, { idempotent: false, payloadExitCodes: continueOnError ? [5] : [] });
+  }
+};
+
 // src/tools/index.ts
 var ALL_TOOLS = [
   // Read-side (v0.1.0)
@@ -16576,7 +16597,9 @@ var ALL_TOOLS = [
   forwardTool,
   captureSignatureTool,
   // Diagnostics (v0.4.0)
-  doctorTool
+  doctorTool,
+  // Drafts (v0.5.0)
+  deleteDraftTool
 ];
 
 // src/validate-args.ts

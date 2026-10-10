@@ -1,5 +1,6 @@
-// src/tools/index.ts — barrel re-export for the 16 outlook-bridge tools
-// (10 read-side from v0.1.0 + 5 write-side from v0.2.0 + 1 diagnostic from v0.4.0)
+// src/tools/index.ts — barrel re-export for the 17 outlook-bridge tools
+// (10 read-side from v0.1.0 + 5 write-side from v0.2.0 + 1 diagnostic from v0.4.0
+// + delete_draft from v0.5.0)
 // and ALL_TOOLS, the one registry both server.ts and the tests read.
 import { authCheckTool } from './auth-check.js';
 import { listMailTool } from './list-mail.js';
@@ -18,13 +19,15 @@ import { forwardTool } from './forward.js';
 import { captureSignatureTool } from './capture-signature.js';
 // v0.4.0: diagnostics.
 import { doctorTool } from './doctor.js';
+// v0.5.0: drafts only, the CLI checks IsDraft before deleting.
+import { deleteDraftTool } from './delete-draft.js';
 
 export {
   authCheckTool, listMailTool, getMailTool, downloadAttachmentsTool,
   listCalendarTool, getEventTool, listFoldersTool, findFolderTool,
   createFolderTool, moveMailTool,
   sendMailTool, replyTool, replyAllTool, forwardTool, captureSignatureTool,
-  doctorTool,
+  doctorTool, deleteDraftTool,
 };
 
 /** The registry the MCP server serves. Single source of truth for the tool list. */
@@ -37,4 +40,6 @@ export const ALL_TOOLS = [
   sendMailTool, replyTool, replyAllTool, forwardTool, captureSignatureTool,
   // Diagnostics (v0.4.0)
   doctorTool,
+  // Drafts (v0.5.0)
+  deleteDraftTool,
 ];

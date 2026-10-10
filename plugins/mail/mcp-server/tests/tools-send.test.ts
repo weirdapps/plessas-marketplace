@@ -16,6 +16,7 @@ import {
   forwardTool,
   captureSignatureTool,
   moveMailTool,
+  deleteDraftTool,
 } from '../src/tools/index.js';
 
 let capturedArgs: string[] = [];
@@ -318,5 +319,28 @@ describe('outlook_capture_signature', () => {
     expect(capturedArgs).toContain('AAMk-99');
     expect(capturedArgs).toContain('--out');
     expect(capturedArgs).toContain(`${tmpDir}/custom-sig.html`);
+  });
+});
+
+describe('outlook_delete_draft', () => {
+  it('passes the ids to delete-draft with --continue-on-error', async () => {
+    await deleteDraftTool.handler({ ids: ['d1', 'd2'] });
+    expect(capturedArgs.slice(0, 4)).toEqual(['delete-draft', 'd1', 'd2', '--continue-on-error']);
+  });
+
+  it('surfaces the payload when some ids are refused as non-drafts', async () => {
+    const payload = {
+      deleted: [{ id: 'd1', subject: 's' }],
+      failed: [{ id: 'm1', error: { code: 'NOT_A_DRAFT' } }],
+      summary: { requested: 2, deleted: 1, failed: 1 },
+    };
+    const { spawn } = failingSpawn({ stdout: JSON.stringify(payload), exitCode: 5 });
+    __setSpawnForTests(spawn);
+    expect(await deleteDraftTool.handler({ ids: ['d1', 'm1'] })).toEqual(payload);
+  });
+
+  it('has no folder or destination argument, so it can only delete drafts', () => {
+    const props = (deleteDraftTool.inputSchema as { properties: Record<string, unknown> }).properties;
+    expect(Object.keys(props).sort()).toEqual(['continueOnError', 'ids']);
   });
 });

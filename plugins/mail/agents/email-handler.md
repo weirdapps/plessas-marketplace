@@ -409,7 +409,7 @@ This plugin uses a **hybrid approach** for best results:
 ```
 mcp__plugin_mail_outlook-bridge__outlook_list_mail   # list with select/since/all/max
 mcp__plugin_mail_outlook-bridge__outlook_get_mail    # full body + attachments metadata
-mcp__plugin_mail_outlook-bridge__outlook_list_folders, outlook_find_folder, outlook_create_folder, outlook_move_mail
+mcp__plugin_mail_outlook-bridge__outlook_list_folders, outlook_find_folder, outlook_create_folder, outlook_move_mail, outlook_delete_draft
 ```
 
 - Structured JSON via the Microsoft Graph-backed `outlook-cli`; no Exchange/AppleScript fragility
