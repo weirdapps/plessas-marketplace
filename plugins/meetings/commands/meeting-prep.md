@@ -64,8 +64,10 @@ See `shared/calendar-access.md` for the full access-pattern matrix.
 For each unique attendee, query the knowledge store via MCP:
 
 ```
-Use `mcp__second-brain__person_context` with `name_or_email="<attendee_name>"`
+Use `mcp__second-brain__person_context` with `name_or_email="<attendee_email>"`
 ```
+
+Pass the attendee's address; use the name only when the invite holds no address, and read `resolved_by` and `match_count` in the result before trusting a name match (a name that fits several people returns the busiest one plus `other_candidates`).
 
 ### 4. Cross-Reference Inbox and Archive
 
