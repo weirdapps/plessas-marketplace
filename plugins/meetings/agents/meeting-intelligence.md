@@ -79,7 +79,9 @@ For each unique attendee across all meetings, gather context using the best avai
 
 **Primary (single call per attendee):**
 
-Use `mcp__second-brain__person_context` with `name_or_email="<attendee_name>"`. It returns everything needed for a dossier in one call:
+Use `mcp__second-brain__person_context` with `name_or_email="<attendee_email>"`. It returns everything needed for a dossier in one call:
+
+Pass the attendee's address; use the name only when the invite holds no address, and read `resolved_by` and `match_count` in the result before trusting a name match (a name that fits several people returns the busiest one plus `other_candidates`).
 
 - Recent emails with summaries
 - Topics they're involved in
@@ -90,8 +92,8 @@ Use `mcp__second-brain__person_context` with `name_or_email="<attendee_name>"`. 
 
 **Supplementary (if deeper context needed):**
 
-- `mcp__second-brain__query_actions` with `owner="<attendee_name>"`, `status="open"`: focused action item lookup
-- `mcp__second-brain__query_decisions` with `person="<attendee_name>"`, `days=90`: focused decision lookup
+- `mcp__second-brain__query_actions` with `owner="<attendee_email>"`, `status="open"`: focused action item lookup
+- `mcp__second-brain__query_decisions` with `person="<attendee_email>"`, `days=90`: focused decision lookup
 - `mcp__second-brain__topic_context` with `topic="<meeting_topic>"`: topic-specific context
 
 #### Option B: Outlook email search (fallback if no knowledge store)

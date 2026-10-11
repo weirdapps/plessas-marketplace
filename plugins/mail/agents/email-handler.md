@@ -187,11 +187,13 @@ Load `~/.claude/drafts/inbox-state.json` and compare:
 
 For each email, query the knowledge store (via MCP) for historical context on the sender and topic:
 
-Use `mcp__second-brain__person_context` with `name_or_email="<sender_name>"`. It returns email history, topics, sentiment, decisions, open actions, and communication pattern in a single call.
+Use `mcp__second-brain__person_context` with `name_or_email="<sender_email>"`. It returns email history, topics, sentiment, decisions, open actions, and communication pattern in a single call.
+
+Pass the sender's address; use the name only when the message holds no address, and read `resolved_by` and `match_count` in the result before trusting a name match.
 
 For additional context:
 
-- `mcp__second-brain__query_actions` with `owner="<sender_name>"`, `status="open"`: open action items
+- `mcp__second-brain__query_actions` with `owner="<sender_email>"`, `status="open"`: open action items
 - `mcp__second-brain__query_decisions` with `topic="<email_topic>"`: recent decisions on the topic
 
 Use the results to:
