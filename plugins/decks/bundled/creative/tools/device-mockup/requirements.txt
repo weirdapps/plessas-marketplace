@@ -5,4 +5,4 @@
 Pillow>=12.3.0
 
 # Screen-mask computation and fitting
-numpy>=2.5.3
+numpy>=2.5.4
