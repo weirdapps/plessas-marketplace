@@ -14,8 +14,11 @@ brief
                            and waits for the user (Standard #14); answers go into
                            deck.yaml, then decks-py check again
   -> storyboard-designer   refines deck.yaml: slide types, layouts, visuals
-  -> [icon-designer, infographic-specialist, device-mockup]   produce image assets
-                           referenced from deck.yaml (optional, in parallel)
+  -> illustrator (anchor)   when deck.yaml plans illustrations: draws the deck's style
+                           anchor first (decks-py illustrate, Gemini), alone
+  -> [illustrator, icon-designer, infographic-specialist, device-mockup]   produce the other
+                           image assets referenced from deck.yaml (optional, in parallel;
+                           each illustration drawn with the anchor as its style reference)
   -> graphics-renderer     confirms every planned file exists, runs decks-py build
                            (nbg_build.py renders deck.yaml and runs the validator;
                            exit 1 = spec or brand violations), fixes the spec and
@@ -83,9 +86,16 @@ whether or not the install kept the executable bit).
 | `render <deck.pptx> <outdir>` | nbg_render.py | 0 rendered with Aptos; 4 rendered but fonts substituted (fit judgements unreliable); 3 LibreOffice missing; 2 error |
 | `extract <file>` | nbg_extract.py | 0 markdown on stdout; 2 error |
 | `record <deck.pptx> <spec.yaml> --data <dir>` | nbg_record.py | 0 record written; 2 error |
+| `measure text\|image\|batch ...` | nbg_measure.py | 0 measured; 2 bad input |
+| `illustrate --brief <scene> --out <png> [--ref <png>]` | nbg_illustrate.py | 0 written; 1 no image returned; 2 brief refused or API error; 3 no `GEMINI_API_KEY` in the environment or the macOS Keychain (use the library) |
 | `keynote ...` | nbg-keynote/nbg_keynote.py | its own |
 | `mockup ...` | device-mockup/iphone_mockup.py | its own |
 | `setup` / `doctor` | the launcher | 0 ok; 2 environment problem |
+
+`illustrate` is the one tool that sends anything off the machine: the brief (a scene in words)
+and the deck's anchor picture go to Google's Gemini API under the user's own key. It refuses a
+brief holding a digit, a currency or percent sign, or the bank's name, so no figure or name
+leaves; without a key it exits 3 and the storyboard's library `fallback` takes the slot.
 
 Environments are caches, kept outside the plugin in
 `${DECKS_VENV_HOME:-~/.cache/nbg-decks}/<tool>-<requirements hash>`, built on first use

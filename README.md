@@ -23,7 +23,7 @@ Owner: [weirdapps](https://weirdapps.github.io/resume/). License: MIT.
 
 | Plugin | What it does | Key commands |
 |--------|--------------|--------------|
-| [`decks`](plugins/decks/) | Presentation pipeline that ships board-ready PPTX: agents write and refine a deck spec, one tested builder renders it, and QA checks the validator report and every rendered slide before it ships. Bundles a creative toolkit for icons, infographics, and device mockups. NBG-branded by default; the brand is one machine-readable tokens file plus its docs. | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/review-deck`, `/presentation-review`, `/create-keynote`, plus `/create-icon`, `/create-infographic`, `/create-mockup` from the bundled creative toolkit |
+| [`decks`](plugins/decks/) | Presentation pipeline that ships board-ready PPTX: agents write and refine a deck spec, one tested builder renders it, and QA checks the validator report and every rendered slide before it ships. Slides that carry an idea get house-style isometric illustrations drawn by Gemini when you set your own `GEMINI_API_KEY`, and library pictures when you do not. Bundles a creative toolkit for icons, infographics, and device mockups. NBG-branded by default; the brand is one machine-readable tokens file plus its docs. | `/create-presentation`, `/redesign-deck`, `/polish-slides`, `/review-deck`, `/presentation-review`, `/create-keynote`, plus `/create-icon`, `/create-infographic`, `/create-mockup` from the bundled creative toolkit |
 | [`mail`](plugins/mail/) | Outlook command centre. Bundles the `outlook-bridge` MCP server, which shells out to the [`outlook-tool`](https://github.com/weirdapps/outlook-access) CLI (pinned via `git+https`) for M365 read and send. | `/inbox-briefing`, `/mail-review`, `/triage-inbox`, `/reply`, `/forward`, `/send-mail`, `/archive-thread`, `/decisions`, `/draft-review`, `/folder-tree`, `/mail-doctor`, `/style-sync`, `/style-stats`, `/style-rollback`, `/auth-setup` |
 | [`meetings`](plugins/meetings/) | Pre-meeting briefings with attendee dossiers built from email history; post-meeting decision and action-item capture. Reads the calendar through `mail`'s bundled MCP, so `mail` must be installed first. | `/meeting-prep`, `/meeting-debrief` |
 | [`chat`](plugins/chat/) | Microsoft Teams reader and reply. Bundles the `teams-bridge` MCP server, which shells out to the [`teams-cli`](https://github.com/weirdapps/teams-access) CLI (pinned via `git+https`). | `/chat-inbox`, `/chat-reply`, `/chat-summarize`, `/chat-channel-digest`, `/chat-doctor`, `/auth-setup` |
@@ -40,6 +40,7 @@ Manifest of record: [`.claude-plugin/marketplace.json`](.claude-plugin/marketpla
 - **Node.js 20+** ([nodejs.org](https://nodejs.org/))
 - **Python 3.12+** ([python.org](https://www.python.org/downloads/)). Required by `decks`: its `numpy >= 2.5.2` floor is itself `requires-python >=3.12`, so `pip install -r` cannot resolve on 3.11.
 - **Git 2.30+**
+- **A Google Gemini API key** (optional, `decks` only): set `GEMINI_API_KEY`, or on a Mac store it in the Keychain under that name, and decks get generated illustrations. Only a short scene description is sent; without a key the plugin uses its own illustration library.
 - **Chrome or Edge** for first-time browser session capture used by `outlook-tool` and `teams-cli`
 
 ### macOS / Linux
@@ -119,15 +120,15 @@ plugins/
   decks/
     commands/                        # 6 deck commands + 3 creative commands (both paths are
                                      # declared in plugin.json, because `commands` REPLACES the default scan)
-    agents/                          # 7 agents. `agents/` is the ONLY directory Claude Code
+    agents/                          # 8 agents. `agents/` is the ONLY directory Claude Code
                                      # auto-discovers, so every agent lives here: storyline-architect,
                                      # storyboard-designer, graphics-renderer, presentation-qa,
-                                     # icon-designer, infographic-specialist, device-mockup
+                                     # illustrator, icon-designer, infographic-specialist, device-mockup
     skills/presentations/            # natural-language router
     bin/decks-py                     # launcher: every Python tool runs in a cached per-tool environment
     bundled/creative/                # commands, tools and assets for the creative toolkit
     tools/nbg-presentation/          # nbg_build.py (the one renderer), nbg_validate.py, render,
-                                     # extract and record tools, deck.schema.json
+                                     # extract, record, measure and illustrate tools, deck.schema.json
     tools/nbg-keynote/               # dark full-bleed keynote compositor (Standard #21)
     shared/brand-system/             # tokens.yaml (the machine-readable brand) + brand docs
     ARCHITECTURE.md                  # pipeline, contracts, where state lives

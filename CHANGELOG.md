@@ -2,6 +2,55 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-10-22
+
+`decks` draws house-style illustrations. The Analytics, MIS & CRM vision deck (October 2026)
+showed what the pipeline could not do: its v2, built by the agents, had diagrams the owner called
+amateur; its v3, which the owner liked, was built by hand outside the agents, with Gemini
+illustrations drawn in one style, every word kept as slide text, and text boxes sized with the
+builder's own measurements. Those steps are now part of the plugin.
+
+Versions: `decks` 2.0.2 to **2.1.0**, marketplace 2.3.3 to 2.4.0.
+
+### Added: `decks`
+
+- **`decks-py illustrate`** (`nbg_illustrate.py`): one illustration from a scene brief through
+  Gemini's image model (`gemini-3-pro-image-preview`, `DECKS_IMAGE_MODEL` overrides), with the
+  house style prompt and the palette from `tokens.yaml` (`illustration.palette`), an optional style
+  reference, and 1 to 4 candidates. Each picture is trimmed, sized to at most 1600 px and saved as
+  RGBA with its outer white transparent; whites inside the subject stay. Python standard library
+  only: no new dependency. Needs the user's `GEMINI_API_KEY`, from the environment or, on a Mac,
+  the Keychain item of that name (sent as a header, never in the URL); without one it exits 3 and
+  the deck uses the library. A brief holding a digit, a currency or
+  percent sign, or the bank's name is refused before anything is sent.
+- **`decks:illustrator`** agent: writes the brief, runs the tool, looks at every candidate (no
+  text or glyphs, the palette, the subject whole, the same hand as the anchor) and keeps one.
+- **`decks-py measure`** (`nbg_measure.py`): the line count and box height the builder accepts
+  for a `custom` text element, and the geometry that fits an image in a box, as single calls or a
+  batch.
+
+### Changed: `decks`
+
+- storyboard-designer chooses visuals by what they carry: numbers in charts, labelled structure in
+  native types, ideas with no numbers in a generated illustration (the default for such slides
+  when a key is set), list items in library icons. It plans `kind: illustration` requests with one
+  `anchor` and a library `fallback` each, and sizes custom text with `measure`.
+- `/create-presentation` draws the anchor first and the other illustrations in its style, swaps
+  in the fallback when generation is unavailable or fails, and no longer uses the
+  `manage-nano-banana` skill.
+- presentation-qa fails a picture with any glyph in it, a set that does not read as one hand, or
+  a white box behind a picture on a tinted card.
+- The "one illustration per slide" rule allows one generated set per slide, one per card or
+  column (`asset-library.md`, `illustrations/INDEX.md`).
+- Docs: the root README, `CLAUDE.md`, the decks README, QUICKSTART, ARCHITECTURE, the tools
+  README and the brand-system README describe the illustrator, the two new tools and the optional
+  key, with what it sends to Google.
+
+### Fixed: `decks`
+
+- A palette PNG with a transparent index (binary alpha) is embedded as RGBA. LibreOffice drew its
+  transparent pixels white, so a picture on a tinted card showed a white box.
+
 ## [2.3.0] - 2026-09-24
 
 The `decks` plugin, rebuilt around one tested renderer. A verified review (128 findings) showed

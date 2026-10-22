@@ -50,7 +50,10 @@ All illustrations share the same visual language:
 1. **Never crop illustrations**: always show the full image, preserving aspect ratio
 2. **Always preserve aspect ratio**: fix one dimension, calculate the other from actual PNG dimensions
 3. **Light backgrounds only**: these illustrations are designed for white or very light backgrounds (`#FFFFFF`, `#F5F8F6`). They will not read well on dark navy or teal backgrounds
-4. **One illustration per slide**: never combine multiple illustrations on the same slide
+4. **One illustration per slide**: never combine multiple illustrations on the same slide. The one
+   exception is a set drawn by `decks-py illustrate` for one deck, one per card or column (see
+   "Generated illustrations" in `shared/brand-system/asset-library.md`); never mix those with
+   the files listed here
 5. **Use beside explanatory text**: an `image` slide, or a `two_column` slide with an image column, where the illustration is the visual anchor
 6. **Do not use illustrations on the same slide as screenshots**: they serve different purposes and clash visually
 7. **Status variants are a pair**: `Application_Approved.png` and `Application_rejected.png` are designed to be used in before/after or comparison contexts; `Loan_application.png` is the neutral "pending" state of the same scene

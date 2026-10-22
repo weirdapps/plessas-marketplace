@@ -3,7 +3,9 @@
 `nbg_build.py` turns a deck spec (YAML) into an NBG-branded `.pptx` and checks it;
 `nbg_validate.py` checks any `.pptx` against the brand; `nbg_render.py` draws the
 slides as PNGs; `nbg_extract.py` reads a deck back as markdown; `nbg_record.py`
-writes the draft record `/presentation-review` learns from. Every brand value comes
+writes the draft record `/presentation-review` learns from; `nbg_measure.py` sizes
+custom-slide text and images as the builder measures them; `nbg_illustrate.py` draws
+house-style illustrations with Gemini. Every brand value comes
 from `shared/brand-system/tokens.yaml`; the spec contract is
 [`deck.schema.json`](deck.schema.json) (JSON Schema 2020-12).
 
@@ -33,6 +35,8 @@ bash plugins/decks/bin/decks-py doctor
 | `render <deck.pptx> <outdir> [--dpi N]` | LibreOffice to PDF, one PNG per slide, and a font check. | 0 rendered with Aptos; 4 fonts substituted; 3 LibreOffice missing; 2 error |
 | `extract <file.pptx or .pdf>` | Titles, text, bullets, tables, chart data, alt text and notes as markdown on stdout. | 0; 2 error |
 | `record <deck.pptx> <spec.yaml> --data <dir> [--topic T]` | Writes the draft record for `/presentation-review`. | 0; 2 error |
+| `measure text "<text>" --w W [--size S] [--bold] [--role R]` | The lines the text wraps to and the `h` a custom text element needs, with the margin the validator's Text Fit wants. `measure image <path> --box X Y W H` fits a picture in a box; `measure batch <file.json>` answers a list. | 0; 2 bad input |
+| `illustrate --brief "<scene>" --out <file.png> [--ref <png>] [--size-in W H] [--candidates N]` | One illustration in the house style (see illustrate below). `--probe` only checks for a key. | 0 written; 1 no image returned; 2 brief refused or API error; 3 no key |
 
 ### check output
 
@@ -149,6 +153,28 @@ slot; the library's 800 px illustrations reach 5.3 in at most, while
 `illustrations/splash/*.svg` scale to any size. An SVG with text is measured as placed,
 because the validator cannot read text inside a picture: its smallest text under 10pt
 is a check error, under 12pt a warning, and both name the `size_in` to redraw it at.
+
+A PNG with one transparent palette index (binary alpha) is embedded as RGBA: LibreOffice
+draws such a transparent index as white, which shows as a white box on a tinted card.
+
+## illustrate
+
+Generated illustrations for slides that carry an idea. The prompt is a fixed house style
+(premium isometric vector, flat two-tone shading, simple faceless people, AI agents as
+small cyan hexagon orbs, no text, numbers or logos) with the palette from
+`tokens.yaml` (`illustration.palette`). The first illustration of a deck is its style
+anchor; pass it as `--ref` to every other one and the set reads as one hand.
+
+- **Key**: `GEMINI_API_KEY` from the environment, else, on a Mac, the login Keychain
+  item of that name. It goes in a request header, never the URL. Without one the tool
+  exits 3 and the storyboard's library `fallback` takes the slot.
+- **What leaves the machine**: the brief and any `--ref` picture, to Google's Gemini API
+  (`gemini-3-pro-image-preview`; `DECKS_IMAGE_MODEL` overrides). A brief holding a digit,
+  a currency or percent sign, or the bank's name is refused before anything is sent.
+- **Output**: trimmed to the subject, at most `illustration.max_px` (1600) on the long
+  side, RGBA with the white joined to the border transparent; whites inside the subject
+  stay. With `--candidates N` above 1 the files are `<stem>-c1.png` ... beside `--out`,
+  for the caller to choose from.
 
 Legacy names (`thankyou`, `toc`, `bar_chart`, `pie_chart`, `charts/pie_single`,
 `covers/*`, `infographic`, `hyper_title`, `paragraphs`, `items`, `waterfall_items`,

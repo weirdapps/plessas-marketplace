@@ -886,3 +886,11 @@ def test_svg_text_floor_quotes_the_tokens():
     floor = tok("accessibility.min_font_pt")
     want = f"under {svg:g}pt it warns, under the {floor:g}pt floor it errors"
     assert want in text, f"Standard #11 does not say {want!r}"
+
+
+def test_generated_illustration_palette_quotes_the_tokens():
+    text = section("asset-library.md", "Generated illustrations")
+    quoted = [h.upper() for h in hexes(text)]
+    want = [str(v).upper() for v in tok("illustration.palette").values()]
+    assert quoted == want
+    assert f"{tok('illustration.max_px')} px" in text

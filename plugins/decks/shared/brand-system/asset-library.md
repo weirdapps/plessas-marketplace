@@ -170,13 +170,41 @@ icon to a single tint.
 1. **Never crop**: always show full illustration
 2. **Preserve aspect ratio**: never stretch
 3. **Light backgrounds only**: won't work on dark slides
-4. **One per slide**: never combine multiple illustrations
+4. **One per slide, except one generated set**: never combine library illustrations; several
+   generated illustrations may share a slide when they come from the same deck set, one per card
+   or column at the same size (see Generated illustrations)
 5. **Use with image-left/right layouts**: as visual anchor with text
 6. **Don't mix with screenshots**: different visual purposes
 
 A 9-piece SVG **splash** set (investments, insurance, loan, p2p, moneybox, cyber protection, remote service, maintenance) lives in `assets/illustrations/splash/` for Internet Banking promo styling.
 
 See `assets/illustrations/INDEX.md` for complete reference.
+
+### Generated illustrations
+
+When the user has a `GEMINI_API_KEY`, `decks-py illustrate` draws illustrations in one house style
+for the ideas a library picture cannot show (a vision, an operating model, people and AI agents
+at work, today against tomorrow); without a key the library above is used. The style: premium
+isometric vector, flat colour with two-tone shading, simple faceless people, AI agents as small
+cyan rounded-hexagon orbs with a white sparkle, generous white space. A picture carries no text,
+letters, numbers or logos: every word and figure is slide text beside it. The first illustration
+of a deck is its style anchor; every other one is drawn with the anchor as a reference.
+
+The image model may use only these colours (`illustration.palette` in `tokens.yaml`). They live
+inside pictures and never become a slide fill or text colour.
+
+| Colour | Hex |
+|---|---|
+| Deep teal | `#003841` |
+| Teal | `#007B85` |
+| Cyan | `#00ADBF` |
+| Soft teal | `#13A4AD` |
+| Pale teal | `#CDEBEE` |
+| Light grey | `#EEF1F0` |
+| White | `#FFFFFF` |
+
+Each file is trimmed to its subject, at most 1600 px on the long side, saved as an RGBA PNG with
+its outer white made transparent, so it sits clean on white and on tinted cards.
 
 ---
 

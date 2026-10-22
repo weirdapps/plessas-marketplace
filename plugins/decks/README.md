@@ -3,8 +3,10 @@
 NBG-branded presentations from Claude Code. A brief, a document or a few rough bullets become a
 board-ready PowerPoint: a storyline agent writes a deck spec, one tested renderer builds it, a
 brand validator checks it, and a QA agent looks at every rendered slide before the deck ships.
-It also builds dark full-bleed keynotes for stage talks, and icons, infographics and iPhone
-mockups for slides.
+Slides that carry an idea, such as a vision, a way of working or today against tomorrow, get
+house-style isometric illustrations drawn in one style for the whole deck. Every word and number
+stays slide text beside them. It also builds dark full-bleed keynotes for stage talks, and icons,
+infographics and iPhone mockups for slides.
 
 New here? [QUICKSTART.md](QUICKSTART.md) gets you to a first deck in five minutes.
 
@@ -16,6 +18,7 @@ New here? [QUICKSTART.md](QUICKSTART.md) gets you to a first deck in five minute
 | Python 3.12 or newer, **or** [uv](https://docs.astral.sh/uv/) | The build, validate, render, keynote and mockup tools. The launcher builds their environments itself on first use | `decks-py doctor` |
 | Aptos (Light, Regular, SemiBold, Bold, ExtraBold) | The brand font. Office for Mac and Windows already ship it; renders and keynotes fall back to Calibri or DejaVu without it | `decks-py doctor` |
 | LibreOffice (optional) | Render-and-look QA: every slide rendered to an image before QA judges it. Without it QA works from the validator report and says so | `decks-py doctor` |
+| A Google Gemini API key (optional) | Generated illustrations. Set `GEMINI_API_KEY` in your shell profile, or on a Mac store it in the Keychain under that name. Google bills it per picture. Without a key the plugin uses its illustration and icon library | `decks-py illustrate --probe` |
 
 If you use LibreOffice, it must see Aptos too. `decks-py render` reports when it substituted a
 font (exit 4); install Aptos where LibreOffice looks and render again.
@@ -64,7 +67,9 @@ brief
   -> storyline-architect   writes deck.yaml (the deck spec) and checks it before anything renders
   -> outline checkpoint    you see every slide's action title and the open questions, and agree
   -> storyboard-designer   picks slide types, layouts and visuals
-  -> icon-designer, infographic-specialist, device-mockup   make any images (optional)
+  -> illustrator           draws the deck's house-style illustrations, the anchor first, then
+                           the rest in its style (needs GEMINI_API_KEY; else the library)
+  -> icon-designer, infographic-specialist, device-mockup   make any other images (optional)
   -> graphics-renderer     runs decks-py build (nbg_build.py renders the .pptx and runs the
                            brand validator) and fixes the spec until it builds clean, at most
                            three builds
@@ -96,6 +101,8 @@ Every Python tool runs through `bin/decks-py`, which keeps one environment per t
 | `decks-py extract <file>` | Text, notes, tables and chart data of a .pptx or .pdf, as markdown. A Word document goes in saved as PDF, or as pasted text |
 | `decks-py keynote <talk.yaml>` | Build a keynote |
 | `decks-py mockup <screenshot>` | Build an iPhone mockup |
+| `decks-py illustrate --brief "<scene>" --out <file.png>` | Draw one house-style illustration with Gemini (`--ref` for the deck's style anchor, `--probe` to check for a key). The brief is sent to Google, so one holding a digit, money or the bank's name is refused |
+| `decks-py measure text\|image\|batch` | Size a custom slide's text boxes and fit its images the way the builder measures them |
 | `decks-py setup` / `decks-py doctor` | Build every environment now / report what the machine has |
 
 `decks-py --help` lists the arguments; ARCHITECTURE.md lists the exit codes.
@@ -105,7 +112,7 @@ Every Python tool runs through `bin/decks-py`, which keeps one environment per t
 | What | Where |
 |---|---|
 | The finished deck | The folder you name; by default `~/Downloads/YYYYMMDDHHMM_<slug>.pptx` |
-| Working files of a build (deck.yaml, renders, QA output) | `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` |
+| Working files of a build (deck.yaml, generated images, renders, QA output) | `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` |
 | Your learned style preferences | `${CLAUDE_PLUGIN_DATA}/style-preferences.md`, an overlay on the shipped Standards |
 | Drafts waiting for your edits, and reviewed ones | `${CLAUDE_PLUGIN_DATA}/presentations/pending/` and `reviewed/` |
 | Tool environments | `~/.cache/nbg-decks/` |

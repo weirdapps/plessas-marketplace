@@ -52,6 +52,10 @@ Deck building (tools/nbg-presentation):
   extract <file.pptx|.pdf>         text, notes, tables and chart data as markdown (for redesign)
   record <deck.pptx> <spec.yaml> --data <dir>
                                    write the draft record /presentation-review learns from
+  measure <text|image|batch> ...   size custom-slide text boxes and fit images, as the builder measures
+  illustrate --brief <scene> --out <file.png> [--ref <anchor.png>] [--size-in W H]
+                                   a house-style illustration with Gemini (needs GEMINI_API_KEY;
+                                   exit 3 without one: use the illustration library)
 
 Keynote and creative tools:
   keynote <args...>                tools/nbg-keynote/nbg_keynote.py (dark stage keynotes)
@@ -73,6 +77,8 @@ tool_for() {
     render) echo "tools/nbg-presentation|nbg_render.py|" ;;
     extract) echo "tools/nbg-presentation|nbg_extract.py|" ;;
     record) echo "tools/nbg-presentation|nbg_record.py|" ;;
+    measure) echo "tools/nbg-presentation|nbg_measure.py|" ;;
+    illustrate) echo "tools/nbg-presentation|nbg_illustrate.py|" ;;
     keynote) echo "tools/nbg-keynote|nbg_keynote.py|" ;;
     mockup) echo "bundled/creative/tools/device-mockup|iphone_mockup.py|" ;;
     *) return 1 ;;

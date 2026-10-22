@@ -36,9 +36,17 @@ bash ~/.claude/plugins/marketplaces/plessas-marketplace/plugins/decks/bin/decks-
 
 ## Authenticate
 
-`decks` needs no authentication; it works fully offline.
+`decks` needs no authentication, and without the optional key below it works fully offline.
 
-The `manage-nano-banana` image generator is **optional**. It is only present if you have also installed the `plessas-lab` marketplace. Without it, infographics are drawn as brand-compliant charts and diagrams; either way, you get a finished deck.
+Generated illustrations are **optional** and use your own Google Gemini API key. Put
+`export GEMINI_API_KEY=<your key>` in your shell profile, or on a Mac store it once in the
+Keychain (`security add-generic-password -a "$USER" -s GEMINI_API_KEY -w`, which asks for the key
+without echoing it), and start a new session: the slides that
+carry an idea (a vision, a way of working, today against tomorrow) then get house-style isometric
+illustrations drawn by Gemini's image model, billed by Google per picture. Only a short scene
+description is sent, never a figure, an amount or a name: the tool refuses a description that
+holds one. Without a key the plugin uses its own illustration and icon library; either way, you
+get a finished deck.
 
 ## Your first command
 
@@ -125,7 +133,7 @@ The rest (`/presentation-review`, `/create-keynote`, `/create-icon`, `/create-in
 | `decks-py: could not install ...` | The first run downloads the tools' packages; check network access or the proxy, then retry |
 | QA says it could not render the slides | LibreOffice is not installed. Install it, or accept a QA based on the validator report alone (it says so) |
 | "fonts substituted" from a render (exit 4) | LibreOffice cannot see Aptos, so text-fit judgements are off. Install Aptos where LibreOffice looks and render again |
-| Infographics look like plain charts, not illustrations | `manage-nano-banana` not installed. Install the `plessas-lab` marketplace, or keep the charts; both are brand-compliant |
+| Idea slides use library pictures, not generated illustrations | No key was found: `GEMINI_API_KEY` is not in the environment Claude Code started with, nor (on a Mac) in the Keychain under that name. Add it to either and start a new session; `decks-py illustrate --probe` says `ready` when it is seen. Library pictures are brand-compliant too |
 | No deck appeared in `~/Downloads` | It failed QA after two fix cycles, so it was not copied; the reply says what is wrong. Fix the brief, or ask to ship it anyway |
 | Output landed in an unexpected folder | The finished deck goes to the folder you named, else `~/Downloads/`; working files stay under `~/.claude/plugins/data/decks-plessas-marketplace/work/`. Name the folder in your request |
 | Charts came out as pie charts | Re-run: pie charts are blocked by the builder and at QA. If one slipped through, file an issue |

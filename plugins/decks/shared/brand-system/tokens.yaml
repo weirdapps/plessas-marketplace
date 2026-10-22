@@ -109,6 +109,21 @@ banks:
     names: ["Piraeus Bank", "Τράπεζα Πειραιώς"]
     label_aliases: ["Piraeus", "Πειραιώς"]
 
+# Generated illustrations (decks-py illustrate): the only colours the image model may
+# use. Picture-only: these never become a slide fill or a text colour, so the
+# validator's palette does not include them. The first three are the brand teals;
+# soft_teal is the icon accent (Pillar Teal 03).
+illustration:
+  palette:
+    deep_teal: "003841"
+    teal: "007B85"
+    cyan: "00ADBF"
+    soft_teal: "13A4AD"
+    pale_teal: "CDEBEE"
+    light_grey: "EEF1F0"
+    white: "FFFFFF"
+  max_px: 1600             # long side after trimming; 1600 px is 200 DPI across 8 in
+
 # Colours that must not appear: retired greys, one-off tints, the python-pptx /
 # Office 2007 theme a deck inherits when nothing overrides it, and dark grounds.
 retired_colors:
