@@ -17,7 +17,8 @@ brief and the judgement.
 - `output`: the absolute `.png` path to write.
 - `size_in`: `[w, h]` of the slot in inches, when the request has it.
 - `ref`: the absolute path of the deck's style anchor, the first illustration made for this deck;
-  absent when this request is the anchor itself.
+  absent when this request is the anchor itself. It sits in the same `images/` folder as
+  `output`: the tool uploads a reference to Google, so it refuses one from any other folder.
 - `candidates`: how many to draw, 2 for the anchor, 1 otherwise unless the request says more.
 
 ## Steps

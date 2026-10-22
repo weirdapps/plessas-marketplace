@@ -22,7 +22,9 @@ Versions: `decks` 2.0.2 to **2.1.0**, marketplace 2.3.3 to 2.4.0.
   only: no new dependency. Needs the user's `GEMINI_API_KEY`, from the environment or, on a Mac,
   the Keychain item of that name (sent as a header, never in the URL); without one it exits 3 and
   the deck uses the library. A brief holding a digit, a currency or
-  percent sign, or the bank's name is refused before anything is sent.
+  percent sign, or the bank's name is refused before anything is sent, and so is a reference
+  outside the output's folder or one that is not a picture; a reference goes out re-encoded,
+  pixels only (SonarCloud S8707).
 - **`decks:illustrator`** agent: writes the brief, runs the tool, looks at every candidate (no
   text or glyphs, the palette, the subject whole, the same hand as the anchor) and keeps one.
 - **`decks-py measure`** (`nbg_measure.py`): the line count and box height the builder accepts

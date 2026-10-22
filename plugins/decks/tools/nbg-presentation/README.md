@@ -170,7 +170,9 @@ anchor; pass it as `--ref` to every other one and the set reads as one hand.
   exits 3 and the storyboard's library `fallback` takes the slot.
 - **What leaves the machine**: the brief and any `--ref` picture, to Google's Gemini API
   (`gemini-3-pro-image-preview`; `DECKS_IMAGE_MODEL` overrides). A brief holding a digit,
-  a currency or percent sign, or the bank's name is refused before anything is sent.
+  a currency or percent sign, or the bank's name is refused before anything is sent. A
+  `--ref` must be a PNG or JPEG in the same folder as `--out` (the deck's `images/`); it is
+  decoded and re-encoded, so only its pixels leave, never another file's contents.
 - **Output**: trimmed to the subject, at most `illustration.max_px` (1600) on the long
   side, RGBA with the white joined to the border transparent; whites inside the subject
   stay. With `--candidates N` above 1 the files are `<stem>-c1.png` ... beside `--out`,

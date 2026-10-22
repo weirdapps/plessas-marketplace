@@ -166,12 +166,30 @@ def test_the_request_carries_the_house_style_the_reference_and_no_key_in_the_url
     assert "key=" not in req.full_url and req.get_header("X-goog-api-key") == "test-key"
     body = json.loads(req.data)
     parts = body["contents"][0]["parts"]
-    assert parts[0]["inlineData"]["data"] == base64.b64encode(anchor.read_bytes()).decode()
+    sent = Image.open(io.BytesIO(base64.b64decode(parts[0]["inlineData"]["data"])))
+    assert sent.format == "PNG" and sent.size == (200, 150), "the anchor's pixels, re-encoded"
     text = parts[-1]["text"]
     assert "#007B85" in text and "#003841" in text, "palette from tokens.yaml"
     assert "No text, no letters, no numbers" in text
     assert "reference" in text and text.endswith("Scene: two colleagues talking")
     assert body["generationConfig"]["imageConfig"]["aspectRatio"] == "16:9"
+
+
+def test_a_reference_outside_the_output_folder_or_not_a_picture_is_never_sent(api, tmp_path):
+    """A reference is uploaded to Google, so an agent passing ~/.ssh/id_rsa or a document
+    as --ref must be refused before the file is read (SonarCloud S8707)."""
+    calls, _ = api
+    images = tmp_path / "images"
+    images.mkdir()
+    outside = tmp_path / "secret.png"
+    outside.write_bytes(_scene((50, 50)))
+    not_a_picture = images / "notes.png"
+    not_a_picture.write_text("private notes", encoding="utf-8")
+    out = images / "S02.png"
+    for ref, code in ((outside, 2), (images / ".." / "secret.png", 2), (not_a_picture, 2)):
+        args = ["--brief", "a desk", "--out", str(out), "--ref", str(ref)]
+        assert nbg_illustrate.main(args) == code, ref
+    assert calls == [] and not out.exists()
 
 
 def test_several_candidates_are_written_beside_the_output_for_the_caller_to_choose(api, tmp_path):

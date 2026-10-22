@@ -139,12 +139,40 @@ def nearest_aspect(w: float, h: float) -> str:
     return min(ASPECTS, key=lambda a: abs(ratio(a) / target - 1))
 
 
+def reference(raw: Path, out: Path) -> Path:
+    """The style reference, resolved, or Failure(2).
+
+    A reference is uploaded to Google, so only a picture from the output's own folder
+    (the deck's images folder, where its anchor is) may be one: a path anywhere else, a
+    key file or a document, is refused before anything is read."""
+    base = os.path.realpath(out.parent)
+    path = os.path.realpath(raw)
+    if os.path.commonpath((base, path)) != base:
+        raise Failure(2, f"a reference must sit in the output's folder {base}: {raw}")
+    if Path(path).suffix.lower() not in (".png", ".jpg", ".jpeg") or not os.path.isfile(path):
+        raise Failure(2, f"a reference must be an existing PNG or JPEG: {raw}")
+    return Path(path)
+
+
+def _as_png(ref: Path) -> str:
+    """The reference decoded and saved again as PNG, base64: only its pixels leave the
+    machine, never other bytes or metadata the file carries."""
+    from PIL import Image
+
+    try:
+        with Image.open(ref) as im:
+            picture = im.convert("RGBA")
+    except (OSError, ValueError) as e:
+        raise Failure(2, f"the reference is not a readable picture: {ref.name}") from e
+    buf = io.BytesIO()
+    picture.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
 def request_body(text: str, refs: list[Path], aspect: str) -> dict[str, Any]:
-    parts: list[dict[str, Any]] = []
-    for ref in refs:
-        mime = "image/jpeg" if ref.suffix.lower() in (".jpg", ".jpeg") else "image/png"
-        data = base64.b64encode(ref.read_bytes()).decode("ascii")
-        parts.append({"inlineData": {"mimeType": mime, "data": data}})
+    parts: list[dict[str, Any]] = [
+        {"inlineData": {"mimeType": "image/png", "data": _as_png(ref)}} for ref in refs
+    ]
     parts.append({"text": text})
     return {
         "contents": [{"role": "user", "parts": parts}],
@@ -331,10 +359,11 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    for ref in args.ref:
-        if not ref.is_file():
-            print(f"illustrate: reference not found: {ref}", file=sys.stderr)
-            return 2
+    try:
+        refs = [reference(ref, args.out) for ref in args.ref]
+    except Failure as e:
+        print(f"illustrate: {e}", file=sys.stderr)
+        return e.code
     if not key:
         print(
             "unavailable: no GEMINI_API_KEY (environment or Keychain); use the illustration library"
@@ -345,7 +374,7 @@ def main(argv: list[str] | None = None) -> int:
         written = generate(
             args.brief,
             args.out,
-            refs=args.ref,
+            refs=refs,
             aspect=aspect,
             candidates=args.candidates,
             key=key,
