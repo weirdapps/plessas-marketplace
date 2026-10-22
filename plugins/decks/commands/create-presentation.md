@@ -1,7 +1,7 @@
 ---
 description: "Build a new NBG-branded deck from a brief, notes, a document, an email thread or a deck spec, then deliver a .pptx that passed the QA gate"
 argument-hint: "<brief, file path or deck.yaml> [--from-email <subject>] [folder to save in]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, Skill(manage-nano-banana:manage-nano-banana), mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_get_mail
+allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_get_mail
 ---
 
 <objective>
@@ -108,11 +108,17 @@ any files it needs, and check it.
 
 ### 6. Assets (only when `deck.yaml` has `x-assets`)
 
-In one message, dispatch one agent per request: `decks:icon-designer` (kind `icon`),
+Illustrations first, when there are any (kind `illustration`): dispatch `decks:illustrator` for the
+request marked `anchor: true` with `candidates: 2`, and wait for it. Every other request then goes
+out together in one message, one agent per request: `decks:illustrator` (kind `illustration`, with
+`ref: <WORK>/<anchor output>`), `decks:icon-designer` (kind `icon`),
 `decks:infographic-specialist` (kind `infographic`), `decks:device-mockup` (kind `mockup`). Give
-each its request's fields and `<WORK>/<output>` as the file to write. Generated imagery through
-`Skill(manage-nano-banana:manage-nano-banana)` is used only when the user asked for it and that
-skill is available, and never for anything that carries numbers.
+each its request's fields and `<WORK>/<output>` as the file to write.
+
+An illustrator that returns `unavailable` or `failed` is not retried: put the request's `fallback`
+library path in place of its output path in `deck.yaml`, then run `check`. When the anchor itself
+is unavailable, every illustration request takes its fallback without being dispatched. Pass the
+alt text each illustrator returns to the build.
 
 ### 7. Build
 
@@ -127,7 +133,9 @@ Dispatch `decks:presentation-qa` with `pptx: <WORK>/deck.pptx`, the deck and
 `render: <WORK>/qa/<cycle>` (cycle 0, 1, 2). Its verdict is PASS, FAIL (with fixes written as
 `deck.yaml` edits by slide id) or UNVERIFIED (validator clean, slides not rendered).
 
-On FAIL: apply the fixes to `deck.yaml`, then repeat steps 7 and 8. At most 2 fix cycles.
+On FAIL: apply the fixes to `deck.yaml`; for a fix that asks for an illustration drawn again,
+dispatch `decks:illustrator` for that request once more (with the anchor as `ref`, and QA's reason
+added to the brief). Then repeat steps 7 and 8. At most 2 fix cycles.
 
 ### 9. Deliver
 

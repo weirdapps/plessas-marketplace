@@ -895,6 +895,33 @@ def test_a_small_raster_is_never_enlarged_past_150_dpi_and_check_warns(build, tm
     assert "150" in warning.message and "300" in warning.message
 
 
+def test_a_palette_png_with_a_transparent_index_is_embedded_as_rgba(build, tmp_path):
+    """LibreOffice drew a palette PNG's transparent index as white, so each picture on
+    a tinted card showed a white box (S04 and S09 of the Oct 2026 vision deck). The
+    builder now embeds such a PNG as RGBA, its transparent pixels still transparent."""
+    import io
+
+    from PIL import Image
+
+    img = Image.new("RGBA", (400, 300), (0, 0, 0, 0))
+    img.paste((0, 123, 133, 255), (100, 75, 300, 225))
+    img.quantize(colors=8).save(tmp_path / "palette.png")
+    with Image.open(tmp_path / "palette.png") as saved:
+        assert saved.mode == "P" and "transparency" in saved.info, "the fixture is the defect"
+    slide = {
+        "type": "image",
+        "content": {"title": "A picture on a tinted card"},
+        "image": {"path": str(tmp_path / "palette.png"), "alt_text": "A teal block"},
+    }
+    out = build(deck([slide]))
+    with zipfile.ZipFile(out) as zf:
+        media = [n for n in zf.namelist() if n.startswith("ppt/media/") and n.endswith(".png")]
+        embedded = [Image.open(io.BytesIO(zf.read(n))) for n in media]
+    ours = [im for im in embedded if im.size == (400, 300)]
+    assert ours and ours[0].mode == "RGBA"
+    assert ours[0].getpixel((5, 5))[3] == 0 and ours[0].getpixel((200, 150))[3] == 255
+
+
 def test_an_svg_fills_its_slot_because_it_has_no_pixels_to_blur(build, tmp_path):
     slide = {
         "type": "image",

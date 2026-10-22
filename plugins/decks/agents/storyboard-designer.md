@@ -1,6 +1,6 @@
 ---
 name: storyboard-designer
-description: "Storyboard stage of the decks pipeline: refines an existing deck.yaml by choosing each slide's type, layout and visuals, and plans any icon, infographic or mockup files the build needs. Dispatched by the decks commands; not for general design requests."
+description: "Storyboard stage of the decks pipeline: refines an existing deck.yaml by choosing each slide's type, layout and visuals, and plans any icon, illustration, infographic or mockup files the build needs. Dispatched by the decks commands; not for general design requests."
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -41,6 +41,7 @@ every brand detail (logo, page numbers, colours, type, margins), so you choose, 
 | a sequence, journey or plan (2 to 6 steps) | `process` |
 | two things side by side, or text arguing over an exhibit | `two_column`; `split: 40/60` when text argues over an exhibit |
 | a screenshot, mockup, photo or diagram carries it | `image` |
+| an idea with no numbers: a vision, a way of working, roles, a before and after | an illustration beside the slide's text: `two_column` with an image column, or `custom` with image elements (see Images) |
 | an argument in a few points | `content` |
 | what we ask of another division, as against the work we lead | the two-party ownership coding element, built as `custom` slides exactly as "Two-party ownership coding" in `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/layouts.md` specifies (its asks-table recipe included): asks and our work on separate pages, asks grouped by product, a badge naming the division |
 | a layout none of the above can express | `custom`: positioned elements, last resort |
@@ -76,6 +77,11 @@ Decision rules:
   body zone of `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/tokens.yaml` (`geometry`: x from the
   gutter to the right boundary, y from `body_top` to `body_bottom`), colours as token names from
   its `colors`, text through type-scale `role`s. The builder and validator still enforce all of it.
+  Size every text box with the builder's own measurements instead of guessing:
+  `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" measure text "<text>" --w <in> --size <pt> [--bold] --role <role>`
+  prints the lines and the `h` to give it; `measure image <path> --box X Y W H --deck <deck>` the
+  geometry that keeps a picture's shape, aligned as asked; `measure batch <file.json>` does a whole
+  slide in one call.
 - **Canonical keys only.** Write the schema's keys. Legacy aliases (`recommended_visual`,
   `bar_chart`, `toc`, `items`) still build, but the builder warns on each.
 - **Keynote**: if the brief meets all four entry criteria of Standard #21 (external or bank-wide
@@ -84,7 +90,20 @@ Decision rules:
 
 ## Images and icons
 
-Prefer what the plugin ships, then plan what must be made.
+Choose the visual by what it must carry, then prefer what the plugin ships, then plan what must
+be made.
+
+- **Numbers** go in a chart, KPI tiles or a table, never in a picture.
+- **A structure with labelled parts** (steps, options, a hierarchy) is a native type: `process`,
+  `cards`, `custom` shapes and text. An infographic (an SVG the infographic agent draws) only when
+  no native layout can express it, such as a funnel, a matrix or a cycle.
+- **An idea with no numbers** (a vision, an operating model, people and agents at work, today
+  against tomorrow, an opener for a discussion) is a generated illustration, with every word the
+  idea needs in the slide's own text boxes around it. This is the default for such slides
+  whenever illustrations are available, not a decoration to add when space is left: in a vision
+  or strategy deck that is often a third to a half of the content slides, in a numbers review
+  few or none.
+- **Items in a list or on cards** take library icons.
 
 - **Library first.** Duotone icons: search `${CLAUDE_PLUGIN_ROOT}/assets/icons/INDEX.md` with Grep
   for the concept, confirm the file exists with Glob. App screenshots:
@@ -96,14 +115,25 @@ Prefer what the plugin ships, then plan what must be made.
   resolves a relative path against the folder holding `deck.yaml` first, then the plugin's assets.
 - **Resolution.** The builder never enlarges a PNG or JPEG past 150 DPI: one too small for its slot
   is drawn smaller, and `check` warns with the pixel width it needs. Pick a bigger file or an SVG.
-- **Plan the rest.** For an icon the library lacks, a diagram no slide type expresses (funnel,
-  timeline, matrix), or a phone mockup of a screenshot, choose the file it will become,
+- **Generated illustrations.** First run
+  `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" illustrate --probe`. Exit 0: plan them. Exit 3 (no
+  `GEMINI_API_KEY`): use the library's illustrations and icons instead, and say so in your
+  return. Each request gets a `fallback`, the library file the command puts in its place if
+  generation is unavailable or fails, so the slide still builds. Mark exactly one request
+  `anchor: true`, the deck's central scene (usually the vision): it is drawn first and every other
+  illustration is drawn in its style, so the set reads as one hand. Several illustrations may
+  share a slide when they come from this set, one per card or column at the same size (four
+  shifts, three ways in, today and tomorrow); never mix them with library illustrations on one
+  slide. Write each brief as a scene in words, with no digits, money, percentages or names (the
+  tool refuses them, and the brief is sent to Google).
+- **Plan the rest.** For an icon the library lacks, an illustration, a diagram no slide type
+  expresses (funnel, matrix, cycle), or a phone mockup of a screenshot, choose the file it will become,
   `images/<slide id>_<name>.<svg|png>` (relative to `deck.yaml`), write that path into the target
   field now, and add a request to the slide:
 
   ```yaml
   x-assets:
-    - kind: icon                      # icon | infographic | mockup
+    - kind: icon                      # icon | illustration | infographic | mockup
       output: images/S04_contactless.svg
       brief: "a card with a contactless wave"
     - kind: mockup
@@ -111,6 +141,12 @@ Prefer what the plugin ships, then plan what must be made.
       screenshot: screenshots/retail-mobile/Home.png    # relative to the plugin's assets
       frame: 16_pro_max_black
       fit: contain                    # contain | cover
+    - kind: illustration
+      output: images/S05_vision.png
+      brief: "colleagues and small AI agents working together around one shared data platform"
+      size_in: [6.0, 4.6]             # the box the picture fills: its shape, nothing more
+      anchor: true                    # exactly one per deck, drawn first
+      fallback: illustrations/Growth.png   # library file used if generation is unavailable
     - kind: infographic
       output: images/S07_funnel.svg
       brief: "four-stage funnel: 120k visits, 40k starts, 18k completed, 11k funded"
@@ -154,6 +190,8 @@ slides:
   S05 content -> chart area_line (quarterly trend)
 assets to make:
   S04 icon images/S04_contactless.svg "a card with a contactless wave"
+  S05 illustration images/S05_vision.png anchor size_in [6.0, 4.6] fallback illustrations/Growth.png "colleagues and ..."
   S07 infographic images/S07_funnel.svg size_in [12.59, 4.87] "four-stage funnel: ..."
+illustrations: available | unavailable (library used instead)
 notes: <anything the command must decide, e.g. keynote criteria met, a message that needs rewording>
 ```

@@ -762,6 +762,17 @@ def _image_stream(
             stream = io.BytesIO(path.read_bytes())
         with Image.open(stream) as img:
             size = img.size
+            # A palette or colour-key PNG (one transparent index, binary alpha) is drawn
+            # as a white box on a tinted card by LibreOffice (S04 and S09 of the Oct 2026
+            # vision deck); the same picture as RGBA is drawn clean everywhere.
+            if (
+                not vector
+                and img.format == "PNG"
+                and (img.mode == "PA" or "transparency" in img.info)
+            ):
+                rgba = io.BytesIO()
+                img.convert("RGBA").save(rgba, format="PNG")
+                stream = rgba
     except Exception as e:  # noqa: BLE001 - a bad file is the spec's problem, not the environment's
         raise deck.fit(
             rel,

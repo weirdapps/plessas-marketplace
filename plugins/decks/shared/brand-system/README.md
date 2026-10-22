@@ -191,7 +191,7 @@ follow it. `tokens.yaml` encodes their outcome.
 |----------|-------|------|
 | Icons (duotone PNG) | 338 | `assets/icons/` (20 categories) |
 | Duotone icons (SVG) | 19 files | `assets/icons-duotone/` |
-| Illustrations | 21 PNG, 1 PDF, 9 SVG splash | `assets/illustrations/` |
+| Illustrations | 21 PNG, 1 PDF, 9 SVG splash; generated ones drawn per deck | `assets/illustrations/`; generated: `decks-py illustrate` (asset-library.md, "Generated illustrations") |
 | Logos | 10 PNG, 3 SVG | `assets/logos/` |
 | Screenshots | 117 | `assets/screenshots/` (5 products) |
 

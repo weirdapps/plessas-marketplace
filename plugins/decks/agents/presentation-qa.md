@@ -120,6 +120,10 @@ hollow ring the deck specifies).
   is a doughnut, never a pie.
 - Pill text sits inside its pill. Logo bottom-left on every slide except the back cover, which
   carries only the centred emblem; no page number on the cover, dividers or back cover.
+- Illustrations: no text, letters, numbers, logos or writing anywhere in a picture (a glyph on a
+  screen counts); the deck's illustrations read as one set (same palette, shading, people); no
+  white or grey box behind a picture on a tinted card. A failing picture is a fix that names its
+  file, for the illustrator to draw again.
 
 **E. Structure**: cover first, back cover last, dividers (if any) in one consistent style, sources
 under every exhibit.
