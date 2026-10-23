@@ -5,7 +5,7 @@
     "url": "https://github.com/weirdapps"
   },
   "description": "Cross-platform Claude Code plugins for productivity at NBG: decks, mail, meetings, chat, excel, docs.",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "plugins": [
     {
       "name": "decks",
@@ -19,7 +19,7 @@
     },
     {
       "name": "mail",
-      "version": "1.1.5",
+      "version": "1.1.6",
       "category": "communications",
       "source": "./plugins/mail",
       "description": "Outlook mail with bundled outlook-cli MCP wrapper. Read, draft, triage, style-match, briefings, self-learning.",
@@ -42,7 +42,7 @@
     },
     {
       "name": "chat",
-      "version": "1.1.4",
+      "version": "1.1.5",
       "category": "communications",
       "source": "./plugins/chat",
       "description": "Microsoft Teams interactive commands with bundled teams-bridge MCP. Inbox, reply, summarize, channel digest.",
