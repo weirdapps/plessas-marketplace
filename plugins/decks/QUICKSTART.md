@@ -80,11 +80,26 @@ is wrong.
 
 If the result is 90% there but you want a tighter cover or a different chart on slide 5, edit the file in PowerPoint and run `/presentation-review` (see Common patterns below): the system learns your preferences.
 
+## Pick the format with one word
+
+The word you use picks the format, and the plugin never switches it on its own:
+
+| You ask for | You get | Command |
+|---|---|---|
+| a deck, a presentation («φτιάξε μια παρουσίαση») | a PowerPoint file, checked by the brand validator and QA | `/create-presentation` |
+| an **HTML** deck («HTML παρουσίαση») | one HTML file you edit in Chrome or Edge (text, free layout, pictures, slides) and save as PDF | `/create-html-deck` |
+| a **keynote** deck («keynote παρουσίαση») | the dark full-bleed stage format, as PowerPoint | `/create-keynote` |
+| an **HTML keynote** deck | the same stage format, with photographs, as an editable HTML file | `/create-html-deck --keynote` |
+
+An HTML deck needs Chrome, Edge or Chromium on the machine for its layout check and its PDF; the
+file itself opens in any browser.
+
 ## Top commands
 
 | Command | What it does | When to use |
 |---|---|---|
 | `/create-presentation` | New branded deck from a brief, content, or rough notes | ExCo packs, quarterly reviews, Board updates, sector reviews |
+| `/create-html-deck` | The same deck as one HTML file you edit in the browser and print to PDF; `--keynote` for the stage format | A deck you want to tweak yourself without PowerPoint, a talk you will rehearse and adjust |
 | `/redesign-deck` | Take an existing PPTX and rebuild it to NBG standards | Slides inherited from a partner, a consultancy, or another unit |
 | `/polish-slides` | Fast formatting pass: fonts, colours, alignment, spacing | A deck you wrote yourself that just needs to look the part |
 | `/review-deck` | Check any deck before it ships; changes nothing | The night before the board |
@@ -136,6 +151,8 @@ The rest (`/presentation-review`, `/create-keynote`, `/create-icon`, `/create-in
 | Idea slides use library pictures, not generated illustrations | No key was found: `GEMINI_API_KEY` is not in the environment Claude Code started with, nor (on a Mac) in the Keychain under that name. Add it to either and start a new session; `decks-py illustrate --probe` says `ready` when it is seen. Library pictures are brand-compliant too |
 | No deck appeared in `~/Downloads` | It failed QA after two fix cycles, so it was not copied; the reply says what is wrong. Fix the brief, or ask to ship it anyway |
 | Output landed in an unexpected folder | The finished deck goes to the folder you named, else `~/Downloads/`; working files stay under `~/.claude/plugins/data/decks-plessas-marketplace/work/`. Name the folder in your request |
+| An HTML deck was delivered without its layout check or PDF | No Chrome, Edge or Chromium was found (exit 3). Install one, or set `NBG_BROWSER` to its path; the HTML itself is complete and its PDF button prints the same pages |
+| An HTML keynote has the gradient where a photograph should be | It needs a photograph on the cover, every divider and the closing. With a Gemini key the plugin draws them (`decks-py illustrate --photo`); without one, give it your own pictures |
 | Charts came out as pie charts | Re-run: pie charts are blocked by the builder and at QA. If one slipped through, file an issue |
 | "Thank You" slide appeared | Same as above, blocked at QA. Re-run |
 | Generated deck has too many slides for a 10-min slot | Add a length hint: `/create-presentation … keep it to 8 slides for a 10-min ExCo slot` |

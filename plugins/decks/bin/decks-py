@@ -55,7 +55,17 @@ Deck building (tools/nbg-presentation):
   measure <text|image|batch> ...   size custom-slide text boxes and fit images, as the builder measures
   illustrate --brief <scene> --out <file.png> [--ref <anchor.png>] [--size-in W H]
                                    a house-style illustration with Gemini (needs GEMINI_API_KEY;
+                                   --photo <side> --out <file.jpg> draws a keynote photograph;
                                    exit 3 without one: use the illustration library)
+
+HTML decks (tools/nbg-html; editable in the browser, PDF through Chrome or Edge):
+  html-build <deck.src.html> <deck.html>
+                                   inline the design system, the editor and the pictures
+  html-check <deck.html> [--static] [--format json]
+                                   brand and layout check (exit 1 = violations)
+  html-pdf <deck.html> [-o out.pdf] [--png <dir>]
+                                   verified PDF, one page per slide, plus PNGs for QA
+                                   (exit 3 = no browser, 4 = Aptos not embedded)
 
 Keynote and creative tools:
   keynote <args...>                tools/nbg-keynote/nbg_keynote.py (dark stage keynotes)
@@ -79,13 +89,16 @@ tool_for() {
     record) echo "tools/nbg-presentation|nbg_record.py|" ;;
     measure) echo "tools/nbg-presentation|nbg_measure.py|" ;;
     illustrate) echo "tools/nbg-presentation|nbg_illustrate.py|" ;;
+    html-build) echo "tools/nbg-html|nbg_html.py|build" ;;
+    html-check) echo "tools/nbg-html|nbg_html.py|check" ;;
+    html-pdf) echo "tools/nbg-html|nbg_html.py|pdf" ;;
     keynote) echo "tools/nbg-keynote|nbg_keynote.py|" ;;
     mockup) echo "bundled/creative/tools/device-mockup|iphone_mockup.py|" ;;
     *) return 1 ;;
   esac
 }
 
-ALL_TOOL_DIRS=("tools/nbg-presentation" "tools/nbg-keynote" "bundled/creative/tools/device-mockup")
+ALL_TOOL_DIRS=("tools/nbg-presentation" "tools/nbg-html" "tools/nbg-keynote" "bundled/creative/tools/device-mockup")
 
 # --- helpers ---------------------------------------------------------------
 sha12() {
@@ -287,6 +300,17 @@ doctor() {
       echo "env $name: not built yet (first use builds it; or run: decks-py setup)"
     fi
   done
+  local browser=""
+  if [ -n "$presentation_py" ]; then
+    browser="$("$presentation_py" - "$PLUGIN_ROOT/tools" "$PLUGIN_ROOT/tools/nbg-html" <<'PY' 2>/dev/null || true
+import sys
+sys.path[:0] = sys.argv[1:3]
+import nbg_html
+print(nbg_html.find_browser() or "")
+PY
+)"
+    if [ -n "$browser" ]; then echo "Browser:       $browser (HTML decks: layout check and PDF)"; else echo "Browser:       not found; HTML decks cannot be checked or exported here (install Chrome or Edge, or set NBG_BROWSER)"; fi
+  fi
   if [ -n "$presentation_py" ]; then
     # Ask the tools themselves, so doctor finds exactly what render and the builder
     # will use (DECKS_SOFFICE and DECKS_FONT_DIRS included).

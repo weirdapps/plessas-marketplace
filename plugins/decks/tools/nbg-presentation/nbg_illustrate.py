@@ -67,6 +67,20 @@ STYLE = (
     "rounded-hexagon orbs in cyan with a white four-point sparkle inside. Generous white space "
     "around the subject; the subject is centred and fully inside the frame."
 )
+# Keynote photographs (shared/brand-system/keynote.md "Ground"): the stage format's
+# full-bleed backdrop, so the opposite of the illustration style.
+PHOTO_STYLE = (
+    "Cinematic editorial photograph, full frame, to be the backdrop of a keynote slide "
+    "projected in a dark room. Low-key and dark, colour graded blue-teal: deep teal shadows "
+    "close to #003841, cyan highlights close to #00ADBF, practical lights, dusk or night, "
+    "shallow depth of field, fine film grain, photographic realism, not an illustration. "
+    "Large calm negative space on the {side} of the frame, dark enough for white text over it. "
+    "No text, no letters, no numbers, no logos, no signage, no readable screens. People only "
+    "as distant figures, silhouettes or seen from behind, never posed, never smiling at the "
+    "camera, never stock photography."
+)
+PHOTO_SIDES = ("left", "right", "top", "bottom", "centre")
+PHOTO_PX = (1920, 1080)  # the HTML artboard; the PowerPoint keynote scales its 2560 canvas
 REFERENCE = (
     "Match the reference image exactly in drawing style, palette, proportions, shading and the "
     "way people and agents are drawn. Draw only the scene described next, not the reference's "
@@ -119,7 +133,18 @@ def refused(brief: str) -> str | None:
     return None
 
 
-def prompt(brief: str, *, with_reference: bool) -> str:
+def prompt(brief: str, *, with_reference: bool, photo_side: str | None = None) -> str:
+    if photo_side:
+        parts = [
+            PHOTO_STYLE.format(side="centre" if photo_side == "centre" else f"{photo_side} side")
+        ]
+        if with_reference:
+            parts.append(
+                "Match the reference photograph's grade, light and grain, so the deck reads as "
+                "one series. Photograph only the scene described next."
+            )
+        parts.append(f"Scene: {brief.strip()}")
+        return " ".join(parts)
     colours = nbg_tokens.get("illustration.palette").items()
     palette = ", ".join(f"{name.replace('_', ' ')} #{hexa}" for name, hexa in colours)
     parts = [STYLE.format(palette=palette)]
@@ -298,6 +323,22 @@ def clean(data: bytes, max_px: int) -> Any:
     return out
 
 
+def photo(data: bytes) -> Any:
+    """A keynote photograph: RGB, cropped to 16:9 from the centre, at the artboard size."""
+    from PIL import Image
+
+    with Image.open(io.BytesIO(data)) as raw:
+        rgb = raw.convert("RGB")
+    w, h = PHOTO_PX
+    scale = max(w / rgb.width, h / rgb.height)
+    rgb = rgb.resize(
+        (max(w, round(rgb.width * scale)), max(h, round(rgb.height * scale))),
+        Image.Resampling.LANCZOS,
+    )
+    x, y = (rgb.width - w) // 2, (rgb.height - h) // 2
+    return rgb.crop((x, y, x + w, y + h))
+
+
 def generate(
     brief: str,
     out: Path,
@@ -306,10 +347,14 @@ def generate(
     aspect: str,
     candidates: int,
     key: str,
+    photo_side: str | None = None,
 ) -> list[Path]:
     """Draw `candidates` pictures for the brief; one is written to `out`, more to
-    `<stem>-c1.png` ... beside it, for the caller to look at and choose."""
-    body = request_body(prompt(brief, with_reference=bool(refs)), refs, aspect)
+    `<stem>-c1.png` ... beside it, for the caller to look at and choose. With
+    `photo_side`, a keynote photograph (JPEG, 16:9) instead of an illustration."""
+    body = request_body(
+        prompt(brief, with_reference=bool(refs), photo_side=photo_side), refs, aspect
+    )
     max_px = int(nbg_tokens.get("illustration.max_px"))
     targets = (
         [out]
@@ -318,7 +363,12 @@ def generate(
     )
 
     def one(target: Path) -> Path:
-        picture = clean(image_from(_post(body, key)), max_px)
+        data = image_from(_post(body, key))
+        if photo_side:
+            # keynote.md hard rule 7: JPEG quality 92, 4:4:4 chroma.
+            photo(data).save(target, format="JPEG", quality=92, subsampling=0, optimize=True)
+            return target
+        picture = clean(data, max_px)
         picture.save(target, format="PNG", optimize=True)
         return target
 
@@ -336,6 +386,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--size-in", type=float, nargs=2, metavar=("W", "H"), help="the slot, inches")
     ap.add_argument("--aspect", choices=ASPECTS, help="aspect ratio, when no --size-in")
     ap.add_argument("--candidates", type=int, default=1, choices=range(1, 5))
+    ap.add_argument(
+        "--photo",
+        choices=PHOTO_SIDES,
+        metavar="SIDE",
+        help="a keynote photograph (16:9 JPEG) with its negative space on SIDE: "
+        + ", ".join(PHOTO_SIDES),
+    )
     args = ap.parse_args(argv)
 
     key = api_key()
@@ -349,7 +406,10 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     if not args.brief or not args.out:
         ap.error("--brief and --out are required")
-    if args.out.suffix.lower() != ".png":
+    if args.photo:
+        if args.out.suffix.lower() not in (".jpg", ".jpeg"):
+            ap.error("--out must be a .jpg with --photo")
+    elif args.out.suffix.lower() != ".png":
         ap.error("--out must be a .png")
     why = refused(args.brief)
     if why:
@@ -369,7 +429,10 @@ def main(argv: list[str] | None = None) -> int:
             "unavailable: no GEMINI_API_KEY (environment or Keychain); use the illustration library"
         )
         return 3
-    aspect = nearest_aspect(*args.size_in) if args.size_in else (args.aspect or "4:3")
+    if args.photo:
+        aspect = "16:9"
+    else:
+        aspect = nearest_aspect(*args.size_in) if args.size_in else (args.aspect or "4:3")
     try:
         written = generate(
             args.brief,
@@ -378,6 +441,7 @@ def main(argv: list[str] | None = None) -> int:
             aspect=aspect,
             candidates=args.candidates,
             key=key,
+            photo_side=args.photo,
         )
     except Failure as e:
         print(f"illustrate: {e}", file=sys.stderr)
