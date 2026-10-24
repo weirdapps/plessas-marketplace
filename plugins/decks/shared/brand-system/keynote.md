@@ -11,6 +11,8 @@ bank-wide audience. Everything else (every committee, board and ExCo deck) uses 
 and `tools/nbg-presentation/nbg_build.py` (`decks-py build`).
 
 Generator: `tools/nbg-keynote/nbg_keynote.py`, run as `decks-py keynote` (YAML in, PPTX + PDF out).
+The same format as an editable HTML deck: `/decks:create-html-deck --keynote` (`<main class="deck
+keynote">`, see [html-decks.md](html-decks.md)), whose slides stay editable text, not images.
 
 ## When you may use it
 
@@ -72,6 +74,13 @@ All values below are pixels at 2560 wide. 1px = 0.375pt.
 | Grain | Gaussian σ=4, seeded per slide | Also what stops the dark gradient banding |
 
 ### Ground
+
+A keynote is a photographic format: the cover, every divider and the closing stand on a
+photograph, and so should about a third of the slides or more. Photographs come from the speaker,
+or are drawn for the deck with `decks-py illustrate --photo <side>` (cinematic, dark, blue-teal
+graded, 16:9, calm space on the text side; the first one is the style anchor, passed to the rest
+as `--ref`). The HTML keynote's check enforces the cover, divider and closing rule.
+
 
 Either the house gradient (`ground-top` → `ground-bot`, with a faint cyan bloom lower-left) or a
 full-bleed photograph with a directional scrim: `left`, `right`, `upperleft`, `bottom`, `full`.

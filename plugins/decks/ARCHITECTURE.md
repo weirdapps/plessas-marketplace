@@ -42,6 +42,29 @@ with brand tokens and the validator still checks.
 `/create-keynote` is the one exception to the light-mode rules (Standard #21): it
 renders with `nbg_keynote.py`, a Pillow compositor, through `decks-py keynote`.
 
+`/create-html-deck` is a second medium for the same light-mode brand, not a second brand.
+The storyline architect still writes `deck.yaml`, the content contract; the main
+conversation then writes the slides as HTML with the classes of
+`tools/nbg-html/runtime/deck.css` (guide: `shared/brand-system/html-decks.md`), whose
+`:root` variables `nbg_html.py` generates from `tokens.yaml` at every build, so the two
+media cannot drift. `html-build` inlines that design system, the editor
+(`runtime/editor.js`: text editing, free move and resize with snapping, align and
+distribute, inserts, undo, save, present, print) and every picture into one file;
+`html-check` runs the static brand rules, then opens the deck headless with `?nbg-check`,
+where the same runtime measures every slide and writes a JSON report into the page
+instead of showing its UI; `html-pdf` prints through the browser's own PDF engine and
+verifies one 1920x1080 page per slide. Editing writes only inline `translate`, `width`,
+`height` and style properties over the design system, so Reset is always possible and a
+rebuild of an edited deck keeps the edits. `<main class="deck keynote">` switches the same
+file to the keynote chassis (`--k-*` variables: the 2560 px keynote measures x 0.75, the dark
+palette and gutter from `tokens.yaml`); the static check then adds keynote.md's hard rules
+(a speaker note on every slide, at most two chart slides of seven bars) and the layout check
+uses the keynote gutter, footer row and 24 px floor. The layout check measures WCAG contrast
+against the nearest solid fill; text over a photograph is judged on the rendered PNG. The runtime never touches the network. The
+approach (deterministic asset inlining, a print layout that is the slide box, a
+browser-free static gate before the browser check) follows the BikS2013 nbg-design
+plugin; its AI assistant and API-key storage were deliberately not carried over.
+
 The main conversation orchestrates. Commands dispatch the specialist agents one level
 deep; no agent dispatches another agent (subagents cannot spawn subagents when
 `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1`, and nesting is never required).
@@ -87,10 +110,18 @@ whether or not the install kept the executable bit).
 | `extract <file>` | nbg_extract.py | 0 markdown on stdout; 2 error |
 | `record <deck.pptx> <spec.yaml> --data <dir>` | nbg_record.py | 0 record written; 2 error |
 | `measure text\|image\|batch ...` | nbg_measure.py | 0 measured; 2 bad input |
-| `illustrate --brief <scene> --out <png> [--ref <png>]` | nbg_illustrate.py | 0 written; 1 no image returned; 2 brief refused or API error; 3 no `GEMINI_API_KEY` in the environment or the macOS Keychain (use the library) |
+| `illustrate --brief <scene> --out <png> [--ref <png>] [--photo <side>]` | nbg_illustrate.py | 0 written; 1 no image returned; 2 brief refused or API error; 3 no `GEMINI_API_KEY` in the environment or the macOS Keychain (use the library) |
+| `html-build <src.html> <deck.html>` | nbg-html/nbg_html.py build | 0 built; 2 bad input (no single `main.deck`, a missing or remote picture) |
+| `html-check <deck.html>` | nbg-html/nbg_html.py check | 0 clean; 1 errors; 2 could not run (layout skipped, not failed, without a browser) |
+| `html-pdf <deck.html>` | nbg-html/nbg_html.py pdf | 0 verified; 1 page count or size wrong; 3 no browser; 4 Aptos not embedded; 2 error |
 | `keynote ...` | nbg-keynote/nbg_keynote.py | its own |
 | `mockup ...` | device-mockup/iphone_mockup.py | its own |
 | `setup` / `doctor` | the launcher | 0 ok; 2 environment problem |
+
+`illustrate --photo <side>` draws a keynote photograph through the same call (a different
+prompt: cinematic, dark, teal-graded, 16:9, empty space on `<side>`) and saves a 1920 x 1080
+JPEG at quality 92, 4:4:4. The HTML keynote's check requires a photograph on the cover, every
+divider and the closing.
 
 `illustrate` is the one tool that sends anything off the machine: the brief (a scene in words)
 and the deck's anchor picture go to Google's Gemini API under the user's own key. It refuses a

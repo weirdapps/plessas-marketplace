@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "plugins/decks/tools/nbg-html/runtime/deck.css"
+        ],
+        "createdAt": "2026-10-24T20:42:00.052Z",
+        "reason": "brand rule: tokens.yaml ownership_ask is the 'asks: accent bar' of layouts.md two-party coding (owner set, adopted 2026-09-24)"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "plugins/decks/tools/nbg-html/example/deck.src.html"
+        ],
+        "createdAt": "2026-10-24T20:42:00.077Z",
+        "reason": "NBG type scale in tokens.yaml is mandated (card title 16pt over card body 14pt, Standard #11); not a free design choice"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "plugins/decks/tools/nbg-html/example/keynote.src.html"
+        ],
+        "createdAt": "2026-10-24T21:14:22.261Z",
+        "reason": "keynote type scale is mandated by shared/brand-system/keynote.md (hero 420, statement 80, title 54, body 36 at 2560 px); the rendered example spans 315 px to 27 px"
+      }
+    ]
+  }
+}

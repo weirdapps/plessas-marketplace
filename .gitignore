@@ -22,6 +22,9 @@ build/
 # Playwright MCP debug artifacts (console logs, page snapshots) — scratch output
 .playwright-mcp/
 
+# Keynote photographs are never committed (keynote.md hard rule 6); the example's go here
+plugins/decks/tools/nbg-html/example/photos/
+
 # Logs
 *.log
 npm-debug.log*

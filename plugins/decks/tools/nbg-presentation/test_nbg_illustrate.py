@@ -252,3 +252,34 @@ def test_on_a_mac_the_key_comes_from_the_keychain_when_the_environment_lacks_it(
 
     monkeypatch.setenv("GEMINI_API_KEY", "from-env")
     assert nbg_illustrate.api_key() == "from-env" and len(asked) == 1, "the environment wins"
+
+
+def test_a_keynote_photograph_is_a_16_9_jpeg_at_the_artboard_size(api, tmp_path):
+    calls, _ = api
+    out = tmp_path / "cover.jpg"
+    code = nbg_illustrate.main(
+        ["--brief", "an atrium at dusk", "--out", str(out), "--photo", "left"]
+    )
+    assert code == 0
+    with Image.open(out) as im:
+        assert im.format == "JPEG" and im.size == nbg_illustrate.PHOTO_PX
+    body = json.loads(calls[0].data)
+    text = body["contents"][0]["parts"][-1]["text"]
+    assert "Cinematic editorial photograph" in text and "negative space on the left side" in text
+    assert "No text, no letters, no numbers" in text
+    assert body["generationConfig"]["imageConfig"]["aspectRatio"] == "16:9"
+
+
+def test_a_photograph_is_refused_like_an_illustration_and_must_be_a_jpeg(api, tmp_path):
+    calls, _ = api
+    assert (
+        nbg_illustrate.main(
+            ["--brief", "the NBG tower", "--out", str(tmp_path / "a.jpg"), "--photo", "left"]
+        )
+        == 2
+    )
+    with pytest.raises(SystemExit):
+        nbg_illustrate.main(
+            ["--brief", "a street", "--out", str(tmp_path / "a.png"), "--photo", "left"]
+        )
+    assert calls == []

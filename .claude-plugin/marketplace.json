@@ -5,14 +5,14 @@
     "url": "https://github.com/weirdapps"
   },
   "description": "Cross-platform Claude Code plugins for productivity at NBG: decks, mail, meetings, chat, excel, docs.",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "plugins": [
     {
       "name": "decks",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "category": "presentations",
       "source": "./plugins/decks",
-      "description": "Branded presentation system: agents write and refine a deck spec, one tested builder renders it, QA checks the validator report and every rendered slide. Bundles icon, infographic, device-mockup creative tools.",
+      "description": "Branded presentation system: agents write and refine a deck spec, one tested builder renders it, QA checks the validator report and every rendered slide. Also builds HTML decks edited in the browser and exported to PDF. Bundles icon, infographic, device-mockup creative tools.",
       "homepage": "https://github.com/weirdapps/plessas-marketplace/tree/master/plugins/decks",
       "repository": "https://github.com/weirdapps/plessas-marketplace",
       "license": "MIT"

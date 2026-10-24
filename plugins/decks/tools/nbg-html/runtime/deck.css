@@ -1,0 +1,648 @@
+/* NBG HTML deck: the design system.
+ *
+ * Every colour, size and position below is a custom property. nbg_html.py writes
+ * the :root block that defines them from shared/brand-system/tokens.yaml (inches
+ * x 144 = px, points x 2 = px, so the 1920x1080 artboard is the 13.333 x 7.5 in
+ * PowerPoint slide), so this file holds no brand value of its own and
+ * test_nbg_html.py fails if a hex colour is ever typed here.
+ *
+ * Three media: screen (slides stacked, scaled to the window, editable),
+ * present (html.nbg-present: one slide fills the screen) and print (one page per
+ * slide at the native artboard, which is what the PDF export uses).
+ */
+
+@page { size: 1920px 1080px; margin: 0; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-stack);
+  color: var(--c-body-text);
+  -webkit-font-smoothing: antialiased;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* ---------- the slide ---------------------------------------------------- */
+main.deck { counter-reset: slide; }
+
+.slide {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--c-white);
+  counter-increment: slide;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.slide h1, .slide h2, .slide h3, .slide h4, .slide p, .slide ul, .slide ol,
+.slide figure, .slide blockquote, .slide table { margin: 0; }
+.slide b, .slide strong { font-weight: 700; }
+
+/* Chrome: logo and page number. Drawn by CSS, so nobody edits them by accident. */
+.slide::before {
+  content: "";
+  position: absolute;
+  left: var(--logo-small-x);
+  top: var(--logo-small-y);
+  width: var(--logo-small-w);
+  height: var(--logo-small-h);
+  background: var(--logo-wordmark) left top / contain no-repeat;
+}
+.slide::after {
+  content: counter(slide);
+  position: absolute;
+  left: var(--page-number-x);
+  top: var(--page-number-y);
+  width: var(--page-number-w);
+  font-size: var(--fs-page-number);
+  line-height: 1;
+  color: var(--c-muted-grey);
+  text-align: right;
+}
+.slide.cover::before, .slide.divider::before {
+  left: var(--logo-large-x);
+  top: var(--logo-large-y);
+  width: var(--logo-large-w);
+  height: var(--logo-large-h);
+}
+.slide.back::before {
+  left: var(--logo-back-x);
+  top: var(--logo-back-y);
+  width: var(--logo-back-w);
+  height: var(--logo-back-h);
+  background-image: var(--logo-emblem);
+  background-position: center;
+}
+.slide.cover::after, .slide.divider::after, .slide.back::after,
+.slide.no-number::after { content: none; }
+.slide.no-chrome::before, .slide.no-chrome::after { content: none; }
+
+/* ---------- header: pill, title, owner subtitle ---------------------------- */
+.pill {
+  position: absolute;
+  left: var(--gutter);
+  top: var(--pill-y);
+  height: var(--pill-h);
+  min-width: var(--pill-min-w);
+  padding: 0 var(--pill-pad-x);
+  border-radius: var(--pill-radius);
+  background: var(--c-teal);
+  color: var(--c-white);
+  font-size: var(--fs-pill);
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.04em;
+}
+.slide > h1, .slide > .title {
+  position: absolute;
+  left: var(--gutter);
+  top: var(--title-y);
+  width: var(--content-w);
+  font-size: var(--fs-title);
+  font-weight: 400;
+  line-height: var(--lh-title);
+  color: var(--c-dark-teal);
+}
+.slide:has(> .pill) > h1, .slide:has(> .pill) > .title { top: var(--title-y-pill); }
+.slide > .subtitle {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(var(--title-y) + var(--title-h) + 8px);
+  width: var(--content-w);
+  font-size: var(--fs-subtitle);
+  color: var(--c-caption-grey);
+}
+.slide:has(> .pill) > .subtitle { top: calc(var(--title-y-pill) + var(--title-h) + 8px); }
+
+/* ---------- body ----------------------------------------------------------- */
+.slide > .body {
+  position: absolute;
+  left: var(--gutter);
+  width: var(--content-w);
+  top: var(--body-top);
+  bottom: calc(1080px - var(--body-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+}
+.slide:has(> .source) > .body { bottom: calc(1080px - var(--body-bottom) + var(--source-h) + var(--caption-gap)); }
+.slide > .source {
+  position: absolute;
+  left: var(--gutter);
+  width: var(--content-w);
+  bottom: calc(1080px - var(--body-bottom));
+  font-size: var(--fs-source);
+  line-height: 1.2;
+  color: var(--c-caption-grey);
+}
+.body > .grow, .body .grow { flex: 1 1 auto; min-height: 0; }
+.slide .body > .bottom { margin-top: auto; }
+
+p + p { margin-top: 0.6em; }
+.lead { font-size: var(--fs-body-max); color: var(--c-dark-teal); }
+.caption, figcaption { font-size: var(--fs-caption); color: var(--c-caption-grey); }
+.footnote { font-size: var(--fs-footnote); color: var(--c-caption-grey); }
+.dense { font-size: var(--fs-body-dense); }
+.teal { color: var(--c-teal); }
+.dark { color: var(--c-dark-teal); }
+.muted { color: var(--c-caption-grey); }
+.pos { color: var(--c-teal); }
+.neg { color: var(--c-alert); }
+.center { text-align: center; }
+.right { text-align: right; }
+
+/* Bullets: cyan Arial glyph, level 2 told apart by indent and glyph, never size. */
+.slide ul { list-style: none; padding: 0; }
+.slide ul > li { position: relative; padding-left: var(--bullet-indent); }
+.slide ul > li + li { margin-top: var(--bullet-space); }
+.slide ul > li::before {
+  content: "\2022";
+  position: absolute;
+  left: 0;
+  font-family: var(--bullet-font);
+  color: var(--c-cyan);
+}
+.slide ul ul { margin-top: var(--bullet-space-l2); }
+.slide ul ul > li + li { margin-top: var(--bullet-space-l2); }
+.slide ul ul > li::before { content: "\2013"; }
+
+/* ---------- grids ---------------------------------------------------------- */
+.cols-2, .cols-3, .cols-4, .cols-5 { display: grid; gap: var(--grid-gap); align-items: stretch; }
+.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.split-60 { display: grid; gap: var(--grid-gap); grid-template-columns: 3fr 2fr; }
+.split-40 { display: grid; gap: var(--grid-gap); grid-template-columns: 2fr 3fr; }
+.col-head {
+  font-size: var(--fs-card-title);
+  font-weight: 700;
+  color: var(--c-dark-teal);
+  padding-bottom: var(--two-col-heading-gap);
+  border-bottom: 2px solid var(--c-light-grey);
+  margin-bottom: var(--two-col-heading-gap);
+}
+
+/* ---------- cards ---------------------------------------------------------- */
+.card {
+  position: relative;
+  background: var(--c-off-white);
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+  min-height: var(--card-min-h);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  font-size: var(--fs-card-body);
+}
+.card > h2, .card > h3, .card > .card-title {
+  font-size: var(--fs-card-title);
+  font-weight: 700;
+  color: var(--c-dark-teal);
+  line-height: 1.15;
+}
+.card.highlight { background: var(--c-highlight-tint); }
+.card.recommended {
+  background: var(--c-gold-tint);
+  border: var(--recommended-border) solid var(--c-gold);
+}
+.card .tab {
+  position: absolute;
+  top: 0;
+  right: var(--card-pad);
+  transform: translateY(-50%);
+  height: var(--recommended-tab-h);
+  padding: 0 var(--recommended-tab-pad-x);
+  background: var(--c-gold);
+  color: var(--c-body-text);
+  font-size: var(--fs-recommended-tab);
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+.card.ask { background: var(--c-ownership-ask-fill); border-left: 8px solid var(--c-ownership-ask); }
+.band { background: var(--c-ownership-band); padding: 18px var(--card-pad); border-radius: var(--card-radius); }
+.icon { width: var(--icon-size); height: var(--icon-size); object-fit: contain; flex: none; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--badge-size);
+  height: var(--badge-size);
+  border-radius: 50%;
+  background: var(--c-teal);
+  color: var(--c-white);
+  font-size: var(--fs-badge-number);
+  font-weight: 700;
+  flex: none;
+}
+
+/* ---------- takeaway strip ------------------------------------------------- */
+.slide .takeaway {
+  margin-top: auto;
+  background: var(--c-takeaway-tint);
+  color: var(--c-dark-teal);
+  font-size: var(--fs-takeaway);
+  font-weight: 700;
+  min-height: var(--takeaway-h);
+  padding: 12px var(--takeaway-pad-x);
+  display: flex;
+  align-items: center;
+  border-radius: var(--card-radius);
+}
+
+/* ---------- KPI tiles ------------------------------------------------------ */
+.kpis { display: grid; gap: var(--grid-gap); grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; }
+.kpi {
+  background: var(--c-off-white);
+  border-radius: var(--kpi-radius);
+  padding: var(--kpi-pad);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-height: var(--kpi-min-h);
+}
+.kpi .value { font-size: var(--fs-kpi-value); font-weight: 700; color: var(--c-teal); line-height: 1; }
+.kpi .label { font-size: var(--fs-kpi-label); color: var(--c-caption-grey); }
+.kpi .delta { font-size: var(--fs-kpi-delta); font-weight: 700; color: var(--c-body-text); }
+.kpi .delta.pos { color: var(--c-teal); }
+.kpi .delta.neg { color: var(--c-alert); }
+
+/* ---------- tables --------------------------------------------------------- */
+table.data { width: 100%; border-collapse: collapse; font-size: var(--fs-table-body); }
+table.data th {
+  background: var(--c-dark-teal);
+  color: var(--c-white);
+  font-size: var(--fs-table-header);
+  font-weight: 700;
+  text-align: left;
+  height: var(--table-header-h);
+}
+table.data td { height: var(--table-row-h); color: var(--c-body-text); }
+table.data th, table.data td { padding: 0 var(--table-inset); border: 2px solid var(--c-white); }
+table.data tbody tr:nth-child(even) td { background: var(--c-zebra-tint); }
+table.data .num { text-align: right; font-variant-numeric: tabular-nums; }
+table.data tr.total td { font-weight: 700; color: var(--c-dark-teal); }
+
+/* ---------- process flow --------------------------------------------------- */
+.process { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: calc(var(--process-arrow-w) + 2 * var(--process-gap)); }
+.step { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--process-label-gap); }
+.step .tile {
+  width: var(--process-tile);
+  height: var(--process-tile);
+  border-radius: var(--card-radius);
+  background: var(--c-teal);
+  color: var(--c-white);
+  font-size: var(--fs-step-number);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .tile img { width: var(--icon-size); height: var(--icon-size); }
+.step + .step::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * (var(--process-arrow-w) + var(--process-gap)));
+  top: calc((var(--process-tile) - var(--process-arrow-h)) / 2);
+  width: var(--process-arrow-w);
+  height: var(--process-arrow-h);
+  background: var(--c-muted-grey);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.step h2, .step h3 { font-size: var(--fs-card-title); font-weight: 700; color: var(--c-dark-teal); }
+.step p { font-size: var(--fs-card-body); }
+
+/* ---------- charts drawn in CSS (bars only; anything else is inline SVG) ----- */
+/* Bar height or length is style="--v:0.62", the value over the largest value. */
+.chart-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--bar-gap);
+  align-items: end;
+  height: 100%;
+  min-height: 300px;
+  border-bottom: var(--axis-line) solid var(--c-light-grey);
+}
+.chart-bars .bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; position: relative; }
+.chart-bars .bar i { display: block; width: 100%; height: calc(var(--v, 0) * (100% - 44px)); background: var(--c-cyan); }
+.chart-bars .bar b { font-size: var(--fs-chart-data-label); font-weight: 700; color: var(--c-dark-teal); margin-bottom: 6px; }
+.chart-bars .bar span {
+  position: absolute;
+  top: calc(100% + 10px);
+  font-size: var(--fs-chart-axis);
+  color: var(--c-body-text);
+  white-space: nowrap;
+}
+.chart-bars.highlight .bar i { background: var(--c-light-grey); }
+.chart-bars.highlight .bar.hl i { background: var(--c-cyan); }
+.chart-bars-wrap { padding-bottom: 44px; height: 100%; }
+
+.chart-hbars { display: flex; flex-direction: column; gap: 14px; }
+.chart-hbars .row { display: grid; grid-template-columns: var(--hbar-label-w, 28%) 1fr; align-items: center; gap: 16px; }
+.chart-hbars .row span { font-size: var(--fs-chart-axis); color: var(--c-body-text); text-align: right; }
+.chart-hbars .row div { display: flex; align-items: center; gap: 10px; }
+.chart-hbars .row i { display: block; height: 36px; width: calc(var(--v, 0) * 85%); background: var(--c-cyan); }
+.chart-hbars .row b { font-size: var(--fs-chart-data-label); font-weight: 700; color: var(--c-dark-teal); }
+.chart-hbars.highlight .row i { background: var(--c-light-grey); }
+.chart-hbars.highlight .row.hl i { background: var(--c-cyan); }
+
+.legend { display: flex; gap: 28px; font-size: var(--fs-chart-legend); color: var(--c-body-text); }
+.legend > span { display: inline-flex; align-items: center; gap: 10px; }
+.legend > span::before { content: ""; width: 20px; height: 20px; background: var(--swatch, var(--chart-1)); }
+
+/* ---------- figures -------------------------------------------------------- */
+figure { display: flex; flex-direction: column; gap: var(--image-caption-gap); min-height: 0; }
+figure img, .slide img.fit { max-width: 100%; max-height: 100%; object-fit: contain; min-height: 0; }
+.slide svg text { font-family: var(--font-stack); }
+
+/* ---------- cover, divider, contents, back --------------------------------- */
+.slide.cover h1 {
+  position: absolute;
+  left: var(--cover-title-x);
+  top: var(--cover-title-y);
+  width: var(--cover-title-w);
+  font-size: var(--fs-cover-title);
+  font-weight: 400;
+  line-height: var(--lh-title);
+  color: var(--c-dark-teal);
+}
+.slide.cover .subtitle {
+  position: static;
+  margin-top: var(--cover-subtitle-gap);
+  font-size: var(--fs-cover-subtitle);
+  color: var(--c-teal);
+  width: auto;
+}
+.slide.cover .heading { position: absolute; left: var(--cover-title-x); top: var(--cover-title-y); width: var(--cover-title-w); }
+.slide.cover .heading h1 { position: static; }
+.slide.cover .location, .slide.cover .date {
+  position: absolute;
+  left: var(--cover-location-x);
+  font-size: var(--fs-cover-location);
+}
+.slide.cover .location { top: var(--cover-location-y); color: var(--c-dark-teal); }
+.slide.cover .date { top: var(--cover-date-y); color: var(--c-caption-grey); }
+
+.slide.divider .num, .slide.divider h1 {
+  position: absolute;
+  top: var(--divider-y);
+  line-height: 1;
+  font-weight: 400;
+}
+.slide.divider .num { left: var(--divider-number-x); font-size: var(--fs-divider-number); color: var(--c-teal); }
+.slide.divider h1 {
+  left: var(--divider-title-x);
+  width: var(--divider-title-w);
+  font-size: var(--fs-divider-title);
+  color: var(--c-dark-teal);
+  /* Standard #3: number and title share a baseline (60pt vs 48pt at line-height 1). */
+  padding-top: calc(var(--fs-divider-number) - var(--fs-divider-title));
+}
+
+.slide.contents h1 { font-size: var(--fs-contents-header); top: var(--contents-header-y); }
+ol.toc { list-style: none; padding: 0; counter-reset: toc; position: absolute; left: var(--gutter); top: var(--contents-first-row-y); width: var(--content-w); }
+ol.toc > li { counter-increment: toc; display: grid; grid-template-columns: var(--contents-number-w) 1fr; min-height: var(--contents-row-step); align-content: start; }
+ol.toc > li::before { content: counter(toc, decimal-leading-zero); font-size: var(--fs-contents-number); color: var(--c-teal); grid-row: span 2; }
+ol.toc .t { font-size: var(--fs-contents-title); color: var(--c-dark-teal); }
+ol.toc .d { font-size: var(--fs-contents-description); color: var(--c-caption-grey); }
+
+/* Speaker notes travel with the slide but are never shown or printed. */
+.slide .notes, .slide aside.notes { display: none !important; }
+
+/* ========== keynote: <main class="deck keynote"> =============================
+ * Standard #21, the dark full-bleed stage format of shared/brand-system/keynote.md,
+ * on the same 1920 x 1080 artboard: every keynote measure is its 2560 px value
+ * x 0.75, generated as --k-* from tokens.yaml (keynote.dark, keynote.gutter_px).
+ * No page numbers; a white wordmark; text ends above the footer row.
+ */
+.keynote .slide {
+  color: var(--k-ink-2);
+  font-size: var(--k-fs-body);
+  line-height: 1.25;
+  background:
+    var(--k-grain),
+    radial-gradient(ellipse 70% 60% at 0% 100%, var(--k-bloom), transparent 70%),
+    linear-gradient(180deg, var(--k-ground-from), var(--k-ground-to));
+}
+.keynote .slide::after { content: none; }
+.keynote .slide::before {
+  left: var(--k-gutter);
+  top: var(--k-logo-y);
+  height: var(--k-logo-h);
+  width: calc(var(--k-logo-h) * var(--logo-aspect));
+  background-image: var(--logo-wordmark-white);
+  z-index: 3;
+}
+.keynote .slide.k-cover::before {
+  left: auto;
+  right: var(--k-gutter);
+  top: var(--k-cover-logo-y);
+  height: var(--k-cover-logo-h);
+  width: calc(var(--k-cover-logo-h) * var(--logo-aspect));
+}
+.keynote .slide.k-closing::before { top: var(--k-closing-logo-y); height: var(--k-closing-logo-h); width: calc(var(--k-closing-logo-h) * var(--logo-aspect)); }
+.keynote .slide.k-back::before {
+  left: calc(50% - var(--k-back-logo-h) * var(--logo-aspect) / 2);
+  top: calc(50% - var(--k-back-logo-h) / 2);
+  height: var(--k-back-logo-h);
+  width: calc(var(--k-back-logo-h) * var(--logo-aspect));
+}
+/* (0,2,1): beats the light deck's own .slide > h1 / .subtitle widths. */
+.keynote .slide > *:not(.bg) { position: absolute; z-index: 1; width: auto; }
+.keynote .slide > .bg { position: absolute; }
+.keynote .slide > .notes { position: static; }
+
+/* Full-bleed photograph with a directional scrim: <div class="bg scrim-left"><img src="..."></div> */
+.keynote .bg { inset: 0; z-index: 0; }
+.keynote .bg img { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.82); }
+.keynote .bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 75% 75% at 50% 50%, transparent 55%, var(--k-vignette) 100%),
+    linear-gradient(180deg, transparent 80%, var(--k-band) 100%),
+    var(--k-scrim, linear-gradient(90deg, var(--k-scrim-strong) 0%, transparent 72%));
+}
+.keynote .bg.scrim-right::after { --k-scrim: linear-gradient(270deg, var(--k-scrim-strong) 0%, transparent 72%); }
+.keynote .bg.scrim-upperleft::after { --k-scrim: linear-gradient(140deg, var(--k-scrim-strong) 0%, transparent 65%); }
+.keynote .bg.scrim-bottom::after { --k-scrim: linear-gradient(0deg, var(--k-scrim-strong) 0%, transparent 65%); }
+.keynote .bg.scrim-full::after { --k-scrim: linear-gradient(var(--k-scrim-full), var(--k-scrim-full)); }
+
+/* Kicker: the keynote's section pill (accent square, caps, tracked). */
+.keynote .kicker {
+  left: var(--k-gutter);
+  top: var(--k-kicker-y);
+  padding-left: var(--k-kicker-indent);
+  font-size: var(--k-fs-kicker);
+  font-weight: 600;
+  letter-spacing: var(--k-kicker-track);
+  text-transform: uppercase;
+  color: var(--k-accent);
+  line-height: 1;
+}
+.keynote .kicker::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(50% - var(--k-kicker-square) / 2);
+  width: var(--k-kicker-square);
+  height: var(--k-kicker-square);
+  background: var(--k-accent);
+}
+.keynote .ktitle {
+  left: var(--k-gutter);
+  right: var(--k-gutter);
+  top: var(--k-title-y);
+  font-size: var(--k-fs-title);
+  font-weight: 300;
+  line-height: 1.15;
+  color: var(--k-ink);
+}
+.keynote .accent, .keynote em { color: var(--k-accent); font-style: normal; }
+.keynote .neg { color: var(--k-negative); }
+.keynote b, .keynote strong { font-weight: 800; color: var(--k-ink); }
+
+/* cover */
+.keynote .k-cover h1 {
+  left: var(--k-gutter);
+  right: var(--k-gutter);
+  top: var(--k-cover-title-y);
+  font-size: var(--k-fs-cover-title);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--k-ink);
+}
+.keynote .k-cover .subtitle { left: var(--k-gutter); right: var(--k-gutter); top: var(--k-cover-subtitle-y); font-size: var(--k-fs-caption); font-weight: 300; color: var(--k-ink-2); }
+/* <div class="k-head"><h1>..</h1><p class="subtitle">..</p></div>: the subtitle follows a two-line title down. */
+.keynote .k-cover .k-head { left: var(--k-gutter); right: var(--k-gutter); top: var(--k-cover-title-y); }
+.keynote .k-cover .k-head > h1, .keynote .k-cover .k-head > .subtitle { position: static; }
+.keynote .k-cover .k-head > .subtitle { margin-top: calc(var(--k-cover-subtitle-y) - var(--k-cover-title-y) - var(--k-fs-cover-title)); }
+.keynote .speaker { left: var(--k-gutter); top: var(--k-speaker-y); display: flex; flex-direction: column; gap: 6px; }
+.keynote .speaker .name { font-size: var(--k-fs-kicker); font-weight: 600; color: var(--k-accent); }
+.keynote .speaker .role { font-size: var(--k-fs-role); color: var(--k-ink-2); }
+.keynote .speaker .venue { font-size: var(--k-fs-source); color: var(--k-ink-3); }
+
+/* statement, closing */
+.keynote .statement, .keynote .closing-line {
+  left: var(--k-gutter);
+  right: var(--k-gutter);
+  top: var(--k-statement-y);
+  max-width: var(--k-statement-w);
+  font-size: var(--k-fs-statement);
+  font-weight: 300;
+  line-height: 1.18;
+  color: var(--k-ink);
+}
+.keynote .k-closing .closing-line { top: var(--k-closing-y); }
+/* Over a photograph every text column narrows (keynote.md "Text column widths"), the
+ * coda and takeaway too: a line that runs out of its scrim reads, measurably, and still
+ * looks wrong. Narrow a slide further with an inline max-width when its photograph asks. */
+.keynote .slide:has(> .bg) .statement,
+.keynote .slide:has(> .bg) .closing-line,
+.keynote .slide:has(> .bg) .coda,
+.keynote .slide:has(> .bg) .ktakeaway,
+.keynote .slide:has(> .bg) .points { max-width: var(--k-statement-w-photo); }
+.keynote .coda { left: var(--k-gutter); right: var(--k-gutter); top: var(--k-coda-y); font-size: var(--k-fs-coda); font-weight: 300; color: var(--k-accent); }
+.keynote .k-closing .coda { top: var(--k-closing-coda-y); font-size: var(--k-fs-closing-coda); }
+
+/* hero stat, duo stat */
+.keynote .hero { left: var(--k-gutter); top: var(--k-hero-y); max-width: var(--k-hero-w); display: flex; flex-direction: column; gap: 18px; }
+.keynote .slide:has(> .bg) .hero { max-width: var(--k-hero-w-photo); }
+.keynote .hero.right { left: auto; right: var(--k-gutter); max-width: var(--k-hero-w-right); }
+.keynote .hero .value { font-size: var(--k-fs-hero); font-weight: 800; line-height: 0.95; color: var(--k-ink); letter-spacing: -0.02em; }
+.keynote .hero .caption { font-size: var(--k-fs-caption); font-weight: 300; color: var(--k-accent); }
+.keynote .hero.neg .value { color: var(--k-negative); }
+.keynote .hero.neg .caption { color: var(--k-ink); }
+.keynote .hero .support { font-size: var(--k-fs-body); color: var(--k-ink-2); }
+.keynote .duo { left: var(--k-gutter); right: var(--k-gutter); top: var(--k-duo-y); display: grid; grid-template-columns: calc(var(--k-duo-right-x) - var(--k-gutter)) 1fr; }
+.keynote .duo .value { font-size: var(--k-fs-duo); font-weight: 800; line-height: 0.95; color: var(--k-ink); white-space: nowrap; }
+.keynote .duo > :last-child .value { color: var(--k-accent); }
+.keynote .duo .caption { font-size: var(--k-fs-caption); font-weight: 300; color: var(--k-ink-2); margin-top: 12px; }
+
+/* bars: true zero baseline, at most 7, no axes, no gridlines, no legend */
+.keynote .kbars {
+  left: var(--k-gutter);
+  right: var(--k-gutter);
+  top: calc(var(--k-title-y) + 2 * var(--k-fs-title) + 40px);
+  height: calc(var(--k-bars-base) - var(--k-title-y) - 2 * var(--k-fs-title) - 40px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 48px;
+  border-bottom: 2px solid var(--k-rule);
+}
+.keynote .kbars .kbar { position: relative; width: var(--k-bar-w); height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.keynote .kbars .kbar i { display: block; width: 100%; height: calc(var(--v, 0) * (100% - var(--k-fs-bar-value) - 16px)); background: var(--k-accent-bar); }
+.keynote .kbars.highlight .kbar i { background: var(--k-accent-mute); }
+.keynote .kbars.highlight .kbar.hl i { background: var(--k-accent); }
+.keynote .kbars .kbar b { font-size: var(--k-fs-bar-value); font-weight: 800; color: var(--k-ink); margin-bottom: 12px; line-height: 1; }
+.keynote .kbars .kbar span { position: absolute; top: calc(100% + 14px); font-size: var(--k-fs-bar-cat); color: var(--k-ink-2); white-space: nowrap; }
+.keynote .kbars .kbar.hl span { color: var(--k-ink); }
+.keynote .kbars.many .kbar b { font-size: var(--k-fs-bar-value-many); }
+.keynote .kbars.many .kbar span { font-size: var(--k-fs-bar-cat-many); }
+.keynote .axis-label { left: var(--k-gutter); right: var(--k-gutter); top: var(--k-axis-label-y); text-align: center; font-size: var(--k-fs-source); color: var(--k-ink-3); }
+
+/* points */
+.keynote .points { left: var(--k-gutter); right: var(--k-gutter); top: var(--k-points-y); list-style: none; display: flex; flex-direction: column; gap: 36px; max-width: var(--k-statement-w); }
+.keynote .points > li { position: relative; padding-left: calc(var(--k-points-square) + 28px); font-size: var(--k-fs-body); color: var(--k-ink-2); }
+.keynote .points > li::before { content: ""; position: absolute; left: 0; top: 0.35em; width: var(--k-points-square); height: var(--k-points-square); background: var(--k-accent); }
+.keynote .points > li + li { margin-top: 0; }
+.keynote .points b { color: var(--k-ink); }
+/* The takeaway follows the last point, as nbg_keynote.py draws it: <li class="ktakeaway">. */
+.keynote .points > li.ktakeaway { padding-left: 0; margin-top: 6px; font-size: var(--k-fs-coda); font-weight: 600; color: var(--k-accent); }
+.keynote .points > li.ktakeaway::before { content: none; }
+.keynote .slide > .ktakeaway { left: var(--k-gutter); right: var(--k-gutter); top: var(--k-takeaway-y); font-size: var(--k-fs-caption); font-weight: 300; color: var(--k-accent); }
+
+/* divider: title on the open side of the photograph */
+.keynote .k-divider h1 {
+  left: var(--k-divider-x);
+  right: var(--k-gutter);
+  top: var(--k-divider-y);
+  font-size: var(--k-fs-divider);
+  font-weight: 800;
+  line-height: 1.17;
+  color: var(--k-ink);
+}
+.keynote .k-divider.left h1 { left: var(--k-gutter); right: var(--k-divider-x); }
+
+/* source note: right of the footer logo, never under 24 px at 2560 */
+.keynote .ksource {
+  left: calc(var(--k-gutter) + var(--k-logo-h) * var(--logo-aspect) + 30px);
+  right: var(--k-gutter);
+  top: var(--k-source-y);
+  font-size: var(--k-fs-source);
+  color: var(--k-ink-3);
+  line-height: 1.2;
+}
+@media screen { .keynote .slide { outline-color: var(--k-ground-from); } }
+
+/* ---------- screen: slides stacked, scaled to the window -------------------- */
+@media screen {
+  body { background: var(--c-light-grey); }
+  main.deck { display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 28px 0 96px; }
+  .slide { zoom: var(--nbg-zoom, 0.5); outline: 1px solid var(--c-light-grey); }
+  html.nbg-check .slide { zoom: 1; }
+  html.nbg-present body { background: var(--c-black); overflow: hidden; }
+  html.nbg-present main.deck { padding: 0; gap: 0; height: 100vh; justify-content: center; }
+  html.nbg-present .slide { display: none; outline: none; }
+  html.nbg-present .slide.nbg-current { display: block; }
+}
+
+/* ---------- print: one page per slide at the native artboard ---------------- */
+@media print {
+  html, body { background: var(--c-white); }
+  main.deck { display: block; padding: 0; }
+  .slide { zoom: 1 !important; display: block !important; outline: none !important; break-after: page; page-break-after: always; }
+  .slide:last-child { break-after: auto; page-break-after: auto; }
+  [data-nbg-ui] { display: none !important; }
+}

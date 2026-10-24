@@ -28,9 +28,15 @@ Read `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/keynote.md`. All four must hold:
 3. It is projected large, in a darkened room.
 4. The slides are the backdrop, not the record: the argument lives in the speaker notes.
 
-If any is unclear from the request, ask. If any fails, say so plainly and switch to
+When the user asked for a keynote by name («keynote παρουσίαση», "make it a keynote"), the format
+is decided: build it. If a criterion plainly fails (it is for the board, or someone else will edit
+it), say so in one line, since keynote slides are flattened images that can only be regenerated
+from their YAML, and go on unless the user changes their mind.
+
+When the keynote format was not asked for (this command was suggested, or the request is vague):
+if any criterion is unclear, ask; if any fails, say so plainly and switch to
 `/decks:create-presentation`. Never for ExCo, board, credit committee or a deck someone else will
-edit: keynote slides are flattened images and can only be regenerated from their YAML.
+edit.
 
 ### 2. Set up
 
@@ -61,9 +67,14 @@ slide choose one:
 
 1. A photograph the user already has.
 2. No photograph: leave `image` out and the compositor paints the house gradient.
-3. A generated frame through `Skill(manage-nano-banana:manage-nano-banana)`, when that skill is
-   available: dark, blue-teal graded, cinematic, 16:9, with negative space on the side the text
-   occupies.
+3. A generated photograph: `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" illustrate --photo <side>
+   --brief "<scene>" --out <WORK>/images/<name>.jpg` (dark, blue-teal graded, cinematic, 16:9,
+   with negative space on `<side>`), the first one the anchor and `--ref` for the rest; it needs
+   the user's Gemini key (`--probe`). Otherwise `Skill(manage-nano-banana:manage-nano-banana)`
+   when that skill is available.
+
+   A keynote is a photographic format: the cover, the dividers and the closing take a
+   photograph, and so should about a third of the slides. Use option 2 for data slides.
 
 Copy every image into `<WORK>/images/`, set `meta.assets: <WORK>/images` and give each slide
 `image: <file name>` and a `scrim` on the side the text sits. While some photographs are still to

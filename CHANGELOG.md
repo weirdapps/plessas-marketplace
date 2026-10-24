@@ -2,6 +2,56 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-10-25
+
+`decks` gets a second medium: HTML. A deck can now be one self-contained web page that the person
+who receives it edits in the browser (text, free layout, pictures, slides), saves, presents and
+prints to PDF, in the same NBG brand as the PowerPoint decks. The way the HTML is made editable and
+exported follows the BikS2013 nbg-design plugin (deterministic inlining, a print layout that is the
+slide box, a browser-free check before the browser check); its AI assistant and API-key storage
+were deliberately not carried over. The keynote format comes to HTML too, on generated photographs.
+
+Versions: `decks` 2.1.0 to **2.2.0**, marketplace 2.4.0 to 2.5.0.
+
+### Added: `decks`
+
+- **`/create-html-deck`**, and **`--keynote`** for the stage format. The storyline agent writes the
+  content contract as for PowerPoint; the slides are written with the classes of the HTML design
+  system, built, checked and looked at before delivery.
+- **`tools/nbg-html/`**: `decks-py html-build`, `html-check`, `html-pdf`.
+  - The design system (`runtime/deck.css`) holds no brand value of its own: its variables are
+    generated from `tokens.yaml` at every build (inches x 144, points x 2 on the 1920 x 1080
+    artboard), so HTML and PowerPoint cannot drift. Logo and page numbers are drawn by CSS.
+  - The editor (`runtime/editor.js`, about 45 KB, no network): double-click text editing with B, I,
+    U, size, colour and alignment; click to select (one level in per click), Shift+click and
+    box selection; drag to move with snapping to the gutter, centre and other shapes; handles to
+    resize; X, Y, W, H, fill, border, corners, opacity, front and back, align and distribute,
+    duplicate, delete, Reset; right-click inserts of text boxes, boxes, pictures and slides;
+    undo and redo; edits kept in the browser until saved; Save writes the same editable file;
+    PDF prints one page per slide; Present full screen.
+  - The check: static rules (nothing external, no author script, NBG colours and fonts, no
+    shadows, no em dashes), then a headless-Chrome layout report per slide (pictures, the 10pt
+    floor, slide edges, gutter, footer, body area, clipping, overlaps, fill, WCAG contrast).
+  - The PDF: Chrome's own engine, verified at one 1920 x 1080 page per slide, plus PNGs for QA.
+  - Building an edited deck again keeps its edits and refreshes the editor.
+- **HTML keynote**: `<main class="deck keynote">`, keynote.md's chassis scaled to the artboard,
+  the dark palette, scrims over full-bleed photographs, a white wordmark, no page numbers. The
+  check adds the keynote rules: a speaker note on every slide, at most two chart slides of seven
+  bars, and a photograph on the cover, every divider and the closing.
+- **`decks-py illustrate --photo <side>`**: a keynote photograph (cinematic, dark, blue-teal
+  graded, 16:9, calm space on the text side) through the same Gemini call, refusals and key as
+  the illustrations, saved as a 1920 x 1080 JPEG at quality 92, 4:4:4.
+
+### Changed: `decks`
+
+- The `presentations` skill routes by the word the user chose: a deck is PowerPoint, an HTML
+  deck is HTML, a keynote is the PowerPoint keynote, an HTML keynote is the HTML one. It never
+  switches format on its own.
+- `/create-keynote` builds a keynote asked for by name even when a Standard #21 entry criterion
+  fails, saying so in one line; the gate still applies when the format was only suggested. Its
+  imagery step can draw photographs with `illustrate --photo`.
+- `decks-py doctor` reports the browser HTML decks use.
+
 ## [2.4.0] - 2026-10-22
 
 `decks` draws house-style illustrations. The Analytics, MIS & CRM vision deck (October 2026)

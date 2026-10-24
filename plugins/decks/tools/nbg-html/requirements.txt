@@ -1,0 +1,12 @@
+# NBG HTML decks: nbg_html.py (build, check, pdf).
+# bin/decks-py installs this file into its own environment on first use.
+# The browser work is done by the Chrome, Edge or Chromium already on the machine,
+# driven from the command line: nothing here downloads a browser.
+
+# The brand tokens
+pyyaml>=6.0.3
+# PDF verification: page count, page size, embedded fonts (BSD-3-Clause)
+pypdf>=6.20.1
+# PDF pages to PNG for visual QA (BSD-3-Clause / Apache-2.0), saved through Pillow
+pypdfium2>=5.14.0
+Pillow>=12.3.0

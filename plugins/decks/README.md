@@ -5,10 +5,24 @@ board-ready PowerPoint: a storyline agent writes a deck spec, one tested rendere
 brand validator checks it, and a QA agent looks at every rendered slide before the deck ships.
 Slides that carry an idea, such as a vision, a way of working or today against tomorrow, get
 house-style isometric illustrations drawn in one style for the whole deck. Every word and number
-stays slide text beside them. It also builds dark full-bleed keynotes for stage talks, and icons,
-infographics and iPhone mockups for slides.
+stays slide text beside them. It also builds HTML decks that the reader edits in the browser
+(text, layout, pictures, slides) and saves as PDF, dark full-bleed keynotes for stage talks, and
+icons, infographics and iPhone mockups for slides.
 
 New here? [QUICKSTART.md](QUICKSTART.md) gets you to a first deck in five minutes.
+
+## Four formats, one brand
+
+| Format | What you get | Edited in | Ask for it with |
+|---|---|---|---|
+| **PowerPoint** (the default) | a `.pptx` built by one tested renderer from a deck spec, checked by the brand validator and by QA looking at every slide | PowerPoint | "a deck", «παρουσίαση» → `/create-presentation` |
+| **HTML deck** | one self-contained `.html` file plus its PDF; the reader edits text, moves and resizes anything, adds pictures and slides, saves, presents and prints | Chrome or Edge | "an HTML deck", «HTML παρουσίαση» → `/create-html-deck` |
+| **Keynote** | the dark full-bleed stage format of Standard #21, rendered as images into a `.pptx` and a PDF | regenerated from its YAML | "a keynote", «keynote παρουσίαση» → `/create-keynote` |
+| **HTML keynote** | the same stage format on photographs, as an editable HTML file plus its PDF | Chrome or Edge | "an HTML keynote" → `/create-html-deck --keynote` |
+
+All four read the same brand tokens (`shared/brand-system/tokens.yaml`), so a colour, a size or a
+logo changes in one place for every format. The format follows the word you use; the plugin never
+switches it on its own.
 
 ## Requirements
 
@@ -17,6 +31,7 @@ New here? [QUICKSTART.md](QUICKSTART.md) gets you to a first deck in five minute
 | Claude Code with this marketplace added | The commands and agents | `/plugin` lists `decks` |
 | Python 3.12 or newer, **or** [uv](https://docs.astral.sh/uv/) | The build, validate, render, keynote and mockup tools. The launcher builds their environments itself on first use | `decks-py doctor` |
 | Aptos (Light, Regular, SemiBold, Bold, ExtraBold) | The brand font. Office for Mac and Windows already ship it; renders and keynotes fall back to Calibri or DejaVu without it | `decks-py doctor` |
+| Chrome, Edge or Chromium (HTML decks only) | The layout check and the PDF of an HTML deck, run headless with a throwaway profile. Without one the HTML is still delivered, unchecked | `decks-py doctor` |
 | LibreOffice (optional) | Render-and-look QA: every slide rendered to an image before QA judges it. Without it QA works from the validator report and says so | `decks-py doctor` |
 | A Google Gemini API key (optional) | Generated illustrations. Set `GEMINI_API_KEY` in your shell profile, or on a Mac store it in the Keychain under that name. Google bills it per picture. Without a key the plugin uses its illustration and icon library | `decks-py illustrate --probe` |
 
@@ -47,6 +62,8 @@ bash ~/.claude/plugins/marketplaces/plessas-marketplace/plugins/decks/bin/decks-
 | You want | Command |
 |---|---|
 | A new deck from a brief, notes, a document or an email thread | `/create-presentation` |
+| The same, as an HTML deck: edited in the browser (text, free layout, pictures, slides), saved as PDF | `/create-html-deck` |
+| A keynote as an HTML deck: the dark stage format, still editable in the browser | `/create-html-deck --keynote` |
 | An existing deck rebuilt to NBG standards: content kept, layout redone | `/redesign-deck <file.pptx>` |
 | A deck that is nearly right, tightened without restructuring | `/polish-slides <file.pptx>` |
 | A deck checked before it ships: brand validator, a look at every slide, a fix list; it changes nothing | `/review-deck <file.pptx>` |
@@ -58,7 +75,9 @@ bash ~/.claude/plugins/marketplaces/plessas-marketplace/plugins/decks/bin/decks-
 
 Each command also answers to `/decks:<name>`. You do not have to remember them: ask in plain
 words ("I need something for the board on Thursday", «θέλω κάτι για το ΔΣ») and the
-`presentations` skill picks the command.
+`presentations` skill picks the command. The format follows your word: a "presentation" is
+PowerPoint, an "HTML presentation" is HTML, a "keynote" is a PowerPoint keynote, an "HTML
+keynote" is the keynote format in HTML.
 
 ## How it works
 
@@ -87,6 +106,52 @@ The main conversation runs the pipeline and dispatches each agent directly. `/cr
 the one exception, rendered by `tools/nbg-keynote/nbg_keynote.py`. The contracts between the
 stages (the launcher, the deck spec, the brand tokens) are in [ARCHITECTURE.md](ARCHITECTURE.md).
 
+## HTML decks
+
+An HTML deck is the NBG deck as one web page. Everything it needs is inside the file (the design
+system, the editor, every picture), so it opens from mail, a share or a USB stick with no network
+and nothing installed. It is built the way a PowerPoint deck is: the storyline agent writes the
+content contract, the slides are written with the classes of the HTML design system
+([shared/brand-system/html-decks.md](shared/brand-system/html-decks.md)), and a check plus a look
+at every rendered slide gate it before it is delivered.
+
+### What the reader can do in the browser
+
+| To | Do |
+|---|---|
+| change text | double-click it; B, I, U, size, brand colours and alignment are on the toolbar; Enter applies, Esc cancels |
+| move or resize anything | click it (a second click goes one level in, Tab one level out) and drag, or drag a handle; it snaps to the gutter, the slide centre and the other shapes (hold Alt to place freely) |
+| style a shape | the shape toolbar: X, Y, W, H, fill, border, corners, opacity, text size, colour and alignment, front and back, align and distribute, duplicate, delete, Reset |
+| work on several at once | Shift+click, or draw a box on empty slide space |
+| add things | right-click: a text box, a box, a picture, a new slide; or duplicate, move and delete bullets, cards, rows and slides |
+| undo | Ctrl/Cmd+Z, and Ctrl/Cmd+Y to redo; unsaved edits survive a reload in the same browser |
+| keep the result | **Save** writes the edited deck as the same kind of file, still editable by whoever receives it |
+| send it | **PDF** prints one page per slide (choose Save as PDF); **Present** shows it full screen |
+
+Moves are kept as an offset over the design system's own layout, so **Reset** always brings a
+shape back. Nothing in a deck reaches the network: no fonts, scripts, analytics or AI calls.
+
+**What is checked before you get it.** `decks-py html-check` first reads the file: nothing
+external, no script but the editor, NBG colours and fonts only, no shadows, no em dashes. It then
+opens the deck in headless Chrome and measures every slide: pictures that did not load, text under
+the 10pt floor, anything off the slide, across the side gutter, into the footer or past the body
+area, clipped text, text over other text, a body under half full, and text contrast under WCAG AA.
+`decks-py html-pdf` prints it and verifies one 1920 x 1080 page per slide, then draws each page as
+a PNG for the visual check.
+
+**An edited deck comes back cleanly.** Give Claude the path of a deck someone edited: `html-build`
+on it keeps every edit and refreshes the editor to the current version, and the check and PDF run
+as for a new deck.
+
+**HTML keynote.** `--keynote` switches the same file to the stage format: the house gradient or a
+full-bleed photograph under a directional scrim, a white wordmark, no page numbers, the keynote
+type scale, and a speaker note behind every slide. It is a photographic format: the cover, every
+divider and the closing stand on a photograph (the check fails without one), and about a third of
+the slides or more should. With a Gemini key, `decks-py illustrate --photo <side>` draws them:
+cinematic, dark, teal-graded, with empty space on the side the text sits, the first one the style
+anchor for the rest. Without a key, use your own photographs. Text over a photograph cannot be
+measured, so it is judged on the rendered slide and its column narrowed until it reads.
+
 ## The launcher
 
 Every Python tool runs through `bin/decks-py`, which keeps one environment per tool in
@@ -99,9 +164,13 @@ Every Python tool runs through `bin/decks-py`, which keeps one environment per t
 | `decks-py validate <deck.pptx>` | Brand check of any .pptx |
 | `decks-py render <deck.pptx> <outdir>` | Render to PDF and one PNG per slide |
 | `decks-py extract <file>` | Text, notes, tables and chart data of a .pptx or .pdf, as markdown. A Word document goes in saved as PDF, or as pasted text |
+| `decks-py html-build <deck.src.html> <deck.html>` | Make an HTML deck self-contained: design system, editor and pictures inlined. On a built or edited deck it refreshes the editor and keeps the slides |
+| `decks-py html-check <deck.html>` | Brand check of an HTML deck, then a layout check of every slide in headless Chrome |
+| `decks-py html-pdf <deck.html> [--png <dir>]` | PDF of an HTML deck, one verified 1920x1080 page per slide, plus PNGs to look at |
 | `decks-py keynote <talk.yaml>` | Build a keynote |
 | `decks-py mockup <screenshot>` | Build an iPhone mockup |
 | `decks-py illustrate --brief "<scene>" --out <file.png>` | Draw one house-style illustration with Gemini (`--ref` for the deck's style anchor, `--probe` to check for a key). The brief is sent to Google, so one holding a digit, money or the bank's name is refused |
+| `decks-py illustrate --photo <side> --brief "<scene>" --out <file.jpg>` | Draw one keynote photograph instead: cinematic, dark, teal-graded, 16:9, empty space on `<side>` (left, right, top, bottom, centre). Same key, same refusals |
 | `decks-py measure text\|image\|batch` | Size a custom slide's text boxes and fit its images the way the builder measures them |
 | `decks-py setup` / `decks-py doctor` | Build every environment now / report what the machine has |
 
@@ -147,6 +216,7 @@ decks/
 ├── assets/                  # logos, icons, illustrations, screenshots (each folder has an INDEX.md)
 ├── examples/                # sample deck specs
 ├── tools/nbg-presentation/  # builder, validator and the other light-mode tools
+├── tools/nbg-html/          # HTML decks: design system, in-browser editor, check and PDF
 └── tools/nbg-keynote/       # keynote compositor
 ```
 
