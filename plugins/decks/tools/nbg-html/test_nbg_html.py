@@ -348,3 +348,13 @@ def test_keynote_cover_divider_and_closing_need_a_photograph(tmp_path: Path) -> 
     found = errors(keynote_deck(tmp_path, slides))
     for kind in ("cover", "divider", "closing"):
         assert any(f"a {kind} slide needs a photograph" in e for e in found), found
+
+
+def test_paths_outside_home_work_and_temp_are_refused(tmp_path: Path) -> None:
+    with pytest.raises(nbg_html.DeckError, match="outside"):
+        nbg_html.safe_path("/etc/hosts")
+    with pytest.raises(nbg_html.DeckError, match="picture"):
+        built(tmp_path, body='<img src="/etc/hosts">')
+    with pytest.raises(nbg_html.DeckError, match="expected"):
+        nbg_html.safe_path(tmp_path / "deck.txt", suffixes=nbg_html.HTML_SUFFIXES)
+    assert nbg_html.main(["build", "/etc/hosts", str(tmp_path / "x.html")]) == 2

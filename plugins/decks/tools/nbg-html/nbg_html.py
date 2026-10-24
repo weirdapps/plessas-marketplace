@@ -75,12 +75,41 @@ HEX_RE = re.compile(r"#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b")
 SHADOW_RE = re.compile(r"(box-shadow|text-shadow)\s*:\s*(?!none\b)[^;\"']+|drop-shadow\(", re.I)
 FONT_FAMILY_RE = re.compile(r"font-family\s*:\s*([^;\"'}]+(?:\"[^\"]*\"[^;\"'}]*)*)", re.I)
 GENERIC_FONTS = {"sans-serif", "serif", "monospace", "inherit", "initial", "unset", "system-ui"}
+PICTURE_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")
+HTML_SUFFIXES = (".html", ".htm")
 # Written as a code point: a repository hook refuses literal em dashes in any file.
 EM_DASH = chr(0x2014)
 
 
 class DeckError(Exception):
     """Bad input: reported with exit 2."""
+
+
+def _roots() -> list[str]:
+    """Where a deck, its pictures and its outputs may live: the user's home, the folder
+    the tool runs in and the temp folder (and the plugin's data folder, under home)."""
+    found = [Path.home(), Path.cwd(), Path(tempfile.gettempdir())]
+    return sorted({os.path.realpath(r) for r in found})
+
+
+def safe_path(raw: str | Path, *, suffixes: tuple[str, ...] = (), exists: bool = False) -> Path:
+    """`raw` resolved, or DeckError: the paths come from an agent's command line and from
+    the deck's own markup, so each is resolved (links and .. included) and must sit under
+    one of _roots(), carry an expected suffix, and exist when it is read."""
+    path = os.path.realpath(os.path.expanduser(str(raw)))
+    inside = False
+    for root in _roots():
+        try:
+            inside = inside or os.path.commonpath((root, path)) == root
+        except ValueError:  # another drive on Windows
+            continue
+    if not inside:
+        raise DeckError(f"{raw}: outside your home, working and temp folders")
+    if suffixes and Path(path).suffix.lower() not in suffixes:
+        raise DeckError(f"{raw}: expected {' or '.join(suffixes)}")
+    if exists and not os.path.isfile(path):
+        raise DeckError(f"not found: {raw}")
+    return Path(path)
 
 
 # --------------------------------------------------------------------- tokens
@@ -336,11 +365,15 @@ def embed_images(text: str, base: Path) -> tuple[str, list[str]]:
                 f"external picture {ref[:80]}: download it and reference the local file"
             )
             return None
-        path = Path(ref[7:] if ref.lower().startswith("file://") else ref).expanduser()
-        if not path.is_absolute():
-            path = base / path
-        if not path.is_file():
-            problems.append(f"picture not found: {ref}")
+        raw = Path(ref[7:] if ref.lower().startswith("file://") else ref).expanduser()
+        if not raw.is_absolute():
+            raw = base / raw
+        try:
+            path = safe_path(raw, suffixes=PICTURE_SUFFIXES, exists=True)
+        except DeckError as e:
+            problems.append(
+                f"picture {e}" if "not found" not in str(e) else f"picture not found: {ref}"
+            )
             return None
         if path.stat().st_size > 4 * 1024 * 1024:
             problems.append(f"picture over 4 MB: {ref}; shrink it first (decks-py measure image)")
@@ -654,7 +687,7 @@ def find_browser(explicit: str | None = None) -> str | None:
     if explicit:
         if os.access(explicit, os.X_OK):
             return explicit
-        raise DeckError(f"--browser is not an executable: {explicit}")
+        raise DeckError(f"the browser is not an executable: {explicit}")
     for env in ("NBG_BROWSER", "CHROME_BIN", "CHROME_PATH"):
         p = os.environ.get(env)
         if p and os.access(p, os.X_OK):
@@ -817,6 +850,52 @@ def export_pdf(
 
 
 # ------------------------------------------------------------------------ cli
+def _cmd_build(a: argparse.Namespace) -> int:
+    src = safe_path(a.src, suffixes=HTML_SUFFIXES, exists=True)
+    r = build(src, safe_path(a.out, suffixes=HTML_SUFFIXES))
+    print(f"built {r['out']}: {r['slides']} slide(s), {r['bytes'] // 1024} KB, self-contained")
+    return 0
+
+
+def _print_report(rep: dict[str, Any]) -> None:
+    print(f"{rep['deck']}: {rep['slides']} slide(s)")
+    if rep.get("layout_skipped"):
+        print(f"  layout check skipped: {rep['layout_skipped']}")
+    elif rep.get("layout") and not rep["layout"].get("aptos"):
+        print("  note: Aptos is not installed here, so layout was measured with a fallback font")
+    for i in rep["issues"]:
+        print(f"  {i['level'].upper():7} {i['what']}")
+    verdict = "FAIL" if rep["errors"] else "PASS"
+    print(f"RESULT: {verdict} ({rep['errors']} error(s), {rep['warnings']} warning(s))")
+
+
+def _cmd_check(a: argparse.Namespace) -> int:
+    rep = check(safe_path(a.deck, suffixes=HTML_SUFFIXES, exists=True), a.static, None)
+    if a.format == "json":
+        print(json.dumps(rep, ensure_ascii=False, indent=2))
+    else:
+        _print_report(rep)
+    return 1 if rep["errors"] else 0
+
+
+def _cmd_pdf(a: argparse.Namespace) -> int:
+    deck = safe_path(a.deck, suffixes=HTML_SUFFIXES, exists=True)
+    out = safe_path(a.out or deck.with_suffix(".pdf"), suffixes=(".pdf",))
+    png = safe_path(a.png) if a.png else None
+    res = export_pdf(deck, out, None, png, a.dpi)
+    if res.get("no_browser"):
+        print(
+            "no Chrome, Edge or Chromium found (or set NBG_BROWSER): deliver the HTML; "
+            "its PDF button prints the same pages",
+            file=sys.stderr,
+        )
+        return NO_BROWSER
+    print(json.dumps(res, ensure_ascii=False, indent=2))
+    if res["problems"]:
+        return 1
+    return 0 if res["aptos_embedded"] else FONT_FALLBACK
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="nbg_html", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -829,66 +908,21 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("deck", type=Path)
     c.add_argument("--static", action="store_true", help="skip the browser layout check")
     c.add_argument("--format", choices=("text", "json"), default="text")
-    c.add_argument("--browser")
     p = sub.add_parser("pdf", help="export a verified PDF, one page per slide")
     p.add_argument("deck", type=Path)
     p.add_argument("-o", "--out", type=Path)
     p.add_argument("--png", type=Path, help="also draw every page to <dir>/slide-NN.png")
     p.add_argument("--dpi", type=int, default=80, help="PNG resolution (80 = 1600x900)")
-    p.add_argument("--browser")
     a = ap.parse_args(argv)
-
+    commands = {"build": _cmd_build, "check": _cmd_check, "pdf": _cmd_pdf}
     try:
-        if a.cmd == "build":
-            if not a.src.is_file():
-                raise DeckError(f"not found: {a.src}")
-            r = build(a.src, a.out)
-            print(
-                f"built {r['out']}: {r['slides']} slide(s), {r['bytes'] // 1024} KB, self-contained"
-            )
-            return 0
-        if a.cmd == "check":
-            if not a.deck.is_file():
-                raise DeckError(f"not found: {a.deck}")
-            rep = check(a.deck, a.static, a.browser)
-            if a.format == "json":
-                print(json.dumps(rep, ensure_ascii=False, indent=2))
-            else:
-                print(f"{rep['deck']}: {rep['slides']} slide(s)")
-                if rep.get("layout_skipped"):
-                    print(f"  layout check skipped: {rep['layout_skipped']}")
-                elif rep.get("layout") and not rep["layout"].get("aptos"):
-                    print(
-                        "  note: Aptos is not installed here, so layout was measured with a fallback font"
-                    )
-                for i in rep["issues"]:
-                    print(f"  {i['level'].upper():7} {i['what']}")
-                print(
-                    f"RESULT: {'FAIL' if rep['errors'] else 'PASS'} ({rep['errors']} error(s), {rep['warnings']} warning(s))"
-                )
-            return 1 if rep["errors"] else 0
-        if a.cmd == "pdf":
-            if not a.deck.is_file():
-                raise DeckError(f"not found: {a.deck}")
-            out = a.out or a.deck.with_suffix(".pdf")
-            res = export_pdf(a.deck, out, a.browser, a.png, a.dpi)
-            if res.get("no_browser"):
-                print(
-                    "no Chrome, Edge or Chromium found: deliver the HTML; its PDF button prints the same pages",
-                    file=sys.stderr,
-                )
-                return NO_BROWSER
-            print(json.dumps(res, ensure_ascii=False, indent=2))
-            if res["problems"]:
-                return 1
-            return 0 if res["aptos_embedded"] else FONT_FALLBACK
+        return commands[a.cmd](a)
     except DeckError as e:
         print(f"nbg_html: {e}", file=sys.stderr)
         return 2
     except subprocess.TimeoutExpired:
         print("nbg_html: the browser timed out", file=sys.stderr)
         return 2
-    return 2
 
 
 if __name__ == "__main__":
