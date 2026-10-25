@@ -2,7 +2,7 @@
 # Installed by the plugin launcher: `decks-py mockup ...` builds this environment on first use.
 
 # Image manipulation (frame compositing, masking)
-Pillow>=12.3.0
+Pillow>=13.0.0
 
 # Screen-mask computation and fitting
 numpy>=2.5.4
