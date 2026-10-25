@@ -22,4 +22,4 @@ defusedxml>=0.7.1
 # render: PDF pages to PNG (BSD-3-Clause / Apache-2.0) and the embedded-font check,
 # plus PDF text for extract (BSD-3-Clause)
 pypdfium2>=5.14.0
-pypdf>=6.20.1
+pypdf>=6.21.2
