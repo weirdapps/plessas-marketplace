@@ -15884,6 +15884,15 @@ async function runOutlookCli(args, opts = {}) {
       try {
         return JSON.parse(result.stdout);
       } catch (e) {
+        if (!idempotent) {
+          throw new OutlookCliError(
+            "unconfirmed",
+            0,
+            `outlook-cli exited 0, so the operation most likely completed, but its result could not be read (${e.message}; raw="${result.stdout.slice(0, 200)}")`,
+            false,
+            "State unconfirmed. Do NOT retry: check Sent Items, Drafts or the target folder first, and repeat the operation only if its result is in none of them."
+          );
+        }
         throw new OutlookCliError(
           "internal",
           0,
