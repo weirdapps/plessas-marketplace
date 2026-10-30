@@ -7,7 +7,7 @@ allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outl
 > Path conventions: `<TEMP_DIR>` resolves to the OS temp directory (`$TMPDIR` or `/tmp` on macOS/Linux, `$env:TEMP` on Windows). Resolve before passing to tools.
 
 <objective>
-Read emails via the outlook-bridge MCP wrapper around `outlook-cli`, provide a comprehensive briefing with insights, recommend actions, and draft replies matching the user's communication style (defined in `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`).
+Read emails via the outlook-bridge MCP wrapper around `outlook-cli`, provide a comprehensive briefing with insights, recommend actions, and draft replies matching the user's communication style (defined in `${CLAUDE_PLUGIN_DATA}/style-guide.md`).
 
 **Architecture**: outlook-bridge MCP for reading AND sending (Microsoft Graph via `outlook-cli`). New mail goes through `/send-mail` (creates a draft via `mcp__plugin_mail_outlook-bridge__outlook_send_mail`). Replies are drafted as text in the conversation; the user pastes manually into Outlook Reply so they retain final review and signature/threading control.
 
@@ -31,7 +31,7 @@ Do NOT restate the comparison specification here. If the two ever disagree, `dra
 
 ### 1. Load Context
 
-- Read the communication style guide from `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`
+- Read the communication style guide from `${CLAUDE_PLUGIN_DATA}/style-guide.md`. If it is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first.
 - Read `~/.claude/drafts/inbox-state.json` to know which emails were seen in the previous run
 
 ### 2-6. Read, classify, recommend, and present the briefing

@@ -38,7 +38,7 @@ Prepare the user's NEW reply content as HTML:
 
 - Convert any markdown to HTML
 - Aptos Light 12pt #404040, no `<p>` tags, `<br>`/`<br><br>` for spacing
-- Keep it brief and on-tone, matching the user's style from `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`
+- Keep it brief and on-tone, matching the user's style from `${CLAUDE_PLUGIN_DATA}/style-guide.md`. If it is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first.
 - The auto-quoted original AND the signature are appended automatically; do NOT include either in your HTML
 
 Example:

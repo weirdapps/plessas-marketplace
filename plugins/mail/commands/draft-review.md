@@ -116,13 +116,13 @@ TRIAGE ACCURACY:
 
 ### 6. Update Style Guide
 
-**Before updating**, save a timestamped backup of the current style guide:
+**Before updating**, save a timestamped backup of the current style guide. If `${CLAUDE_PLUGIN_DATA}/style-guide.md` is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first:
 
 ```bash
-cp "${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md" ~/.claude/drafts/style-guide-backups/$(TZ='Europe/Athens' date '+%Y%m%d%H%M')_style-guide.md
+cp "${CLAUDE_PLUGIN_DATA}/style-guide.md" ~/.claude/drafts/style-guide-backups/$(TZ='Europe/Athens' date '+%Y%m%d%H%M')_style-guide.md
 ```
 
-Update `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` with:
+Update `${CLAUDE_PLUGIN_DATA}/style-guide.md` with:
 
 - New patterns discovered
 - Corrections to existing patterns

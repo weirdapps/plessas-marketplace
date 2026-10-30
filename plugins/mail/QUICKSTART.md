@@ -147,7 +147,7 @@ Pulls the thread, drafts the reply, opens Outlook with the draft pre-loaded for 
 - **Drafts pending review**: `~/.claude/drafts/pending/` (JSON files)
 - **Reviewed drafts** (after the learning loop classifies them): `~/.claude/drafts/reviewed/`
 - **Inbox state** (which emails were seen last run): `~/.claude/drafts/inbox-state.json`
-- **Style guide** (your personal communication patterns): `plugins/mail/shared/style-guide.md`. Gitignored, lives only on your laptop. Generic template at `style-guide-example.md`
+- **Style guide** (your personal communication patterns): `${CLAUDE_PLUGIN_DATA}/style-guide.md`, the plugin's data folder (normally `~/.claude/plugins/data/<plugin id>/`). Lives only on your laptop and survives plugin updates. Generic template at `style-guide-example.md`
 - **Outlook auth + signature**: `~/.outlook-cli/` (not inside the marketplace dir)
 
 ## Want more?

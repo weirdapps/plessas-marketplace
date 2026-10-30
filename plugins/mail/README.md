@@ -67,7 +67,7 @@ No manual `/draft-review` needed; learning runs automatically at the start of ev
 | `~/.claude/drafts/reviewed/` | Processed drafts with actual vs draft diffs |
 | `~/.claude/drafts/inbox-state.json` | Last-seen emails for new vs seen tracking |
 | `~/.claude/drafts/learnings.md` | Historical log of accuracy improvements |
-| `shared/style-guide.md` | Communication style guide (updated by learning) |
+| `${CLAUDE_PLUGIN_DATA}/style-guide.md` | Communication style guide (updated by learning). Lives in the plugin's data folder, outside the plugin, so updates keep it |
 
 ## Setup
 
@@ -87,7 +87,7 @@ The legacy AppleScript send path is preserved in git history but no longer wired
 
 ## Style Guide
 
-Built by analyzing thousands of actual emails from your sent folder. The style guide lives at `shared/style-guide.md` (gitignored, yours stays local). A sanitized template is at `shared/style-guide-example.md` to show the structure.
+Built by analyzing thousands of actual emails from your sent folder. The style guide lives at `${CLAUDE_PLUGIN_DATA}/style-guide.md`, the plugin's data folder (normally `~/.claude/plugins/data/<plugin id>/`), outside the plugin folder, so plugin updates do not replace it and it stays local. A sanitized template is at `shared/style-guide-example.md` to show the structure.
 
 The shipped reference style guide (NBG context) is characterized by:
 
@@ -100,6 +100,6 @@ The shipped reference style guide (NBG context) is characterized by:
 
 **To generate your own style guide**, in order of least to most setup:
 
-1. Just use `/mail-review`. The first run creates `shared/style-guide.md` from the template, and the self-learning loop refines it per recipient on every subsequent run. No extra dependency.
+1. Just use `/mail-review`. The first run creates `${CLAUDE_PLUGIN_DATA}/style-guide.md` from the template, and the self-learning loop refines it per recipient on every subsequent run. No extra dependency.
 2. `/style-sync` for a batch update from sent mail. With no prior sync state it processes your whole history. It prefers the `second-brain` knowledge store and falls back to your Archive mailbox via `outlook-bridge` (Sent Items is deliberately never read).
 3. `/style-rebuild`, a full statistical rebuild, is **not in this plugin**. It lives in the optional `mail-pro` plugin in the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace and requires the private `second-brain` knowledge store.

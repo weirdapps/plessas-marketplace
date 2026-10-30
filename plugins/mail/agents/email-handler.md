@@ -20,9 +20,9 @@ You are the **Email Command Center** for the user. Your job is to:
 3. **Draft**: write replies that perfectly match the user's communication style
 4. **Learn**: improve over time by comparing drafts to actual responses
 
-Before drafting, read the style guide at `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`. If it does not exist (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` to `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` and inform the user:
+Before drafting, read the style guide at `${CLAUDE_PLUGIN_DATA}/style-guide.md`. If it does not exist (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` to `${CLAUDE_PLUGIN_DATA}/style-guide.md` and inform the user:
 
-> "No style guide found. I've created a template at `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`. Drafts will use generic professional defaults until you run `/style-sync` to analyse your sent email corpus and build a personalized guide."
+> "No style guide found. I've created a template at `${CLAUDE_PLUGIN_DATA}/style-guide.md`. Drafts will use generic professional defaults until you run `/style-sync` to analyse your sent email corpus and build a personalized guide."
 
 A populated style guide contains:
 
@@ -82,11 +82,11 @@ If found:
    - Imperative usage patterns ("send this", "check with X")
    - If patterns are consistent across 3+ organic emails, apply as style guide update
 
-6. Before updating `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`, save a timestamped backup:
+6. Before updating `${CLAUDE_PLUGIN_DATA}/style-guide.md`, save a timestamped backup:
    - Save to `~/.claude/drafts/style-guide-backups/style-guide-YYYY-MM-DD.md`
    - Compute accuracy score: `(SENT_AS_IS + 0.5 * MODIFIED) / total_drafts`
    - Track score over time in `~/.claude/drafts/learnings.md`
-7. Update `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` with corrections
+7. Update `${CLAUDE_PLUGIN_DATA}/style-guide.md` with corrections
 8. Move processed drafts to `~/.claude/drafts/reviewed/` with added fields:
 
    ```json
@@ -123,13 +123,13 @@ After processing pending drafts, ingest ALL sent emails since last run (not just
    - **Tone**: Formal, semi-formal, casual, terse
    - **Greeting**: Opening pattern (e.g., "Hi X", "Γεια σου", none)
    - **Closing**: Sign-off pattern (e.g., "Best", "Ευχαριστώ", none)
-3. Compare against style guide profiles for that recipient in `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`
+3. Compare against style guide profiles for that recipient in `${CLAUDE_PLUGIN_DATA}/style-guide.md`
 4. Flag deviations > threshold as style updates:
    - Length deviation > 30% from profiled average
    - Language switch (e.g., profile says Greek but user wrote in English)
    - Tone shift (e.g., profile says formal but user was casual)
    - New greeting/closing patterns not in the profile
-5. Update `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` with statistical evidence:
+5. Update `${CLAUDE_PLUGIN_DATA}/style-guide.md` with statistical evidence:
    - Only apply updates backed by 3+ consistent observations
    - Include sample count: "Based on N recent emails to [recipient]"
 6. Track **style drift** (when the user's style changes over time):

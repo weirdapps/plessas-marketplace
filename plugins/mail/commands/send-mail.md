@@ -9,7 +9,7 @@ Compose and send a NEW email (no thread context) via the `outlook-bridge` MCP pl
 
 For **replies** to an existing thread (with auto-quote + signature), use `/reply` or `/reply-all`. For **forwards**, use `/forward`. This `/send-mail` skill is for new emails ONLY.
 
-Sender identity (UPN, default CC-self) is configured in `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` (Identity section).
+Sender identity (UPN, default CC-self) is configured in `${CLAUDE_PLUGIN_DATA}/style-guide.md` (Identity section). If it is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first.
 
 User request: $ARGUMENTS
 </objective>
@@ -21,7 +21,7 @@ User request: $ARGUMENTS
 Extract:
 
 - **To**: One or more recipient email addresses (REQUIRED)
-- **CC**: Optional CC recipients (the user's UPN from `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` is automatically CC'd unless `--no-cc-self` is requested)
+- **CC**: Optional CC recipients (the user's UPN from `${CLAUDE_PLUGIN_DATA}/style-guide.md` is automatically CC'd unless `--no-cc-self` is requested)
 - **BCC**: Optional BCC recipients
 - **Subject**: Email subject line (REQUIRED)
 - **Body**: Email body content; convert to HTML for Outlook compatibility
