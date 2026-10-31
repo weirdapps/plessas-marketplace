@@ -30,7 +30,7 @@ Deferred work captured during the 2026-05-22 introduction of `/mail:auth-setup` 
 - `SECURITY.md:18` — update scope list
 - `CHANGELOG.md` — add `### Removed` entry
 
-`docs/superpowers/plans/2026-05-11-share-readiness.md` references should NOT be touched — that's a historical plan document.
+`docs/superpowers/plans/2026-05-11-share-readiness.md` (archived on branch archive/plans-2026-10-31) references should NOT be touched — that's a historical plan document.
 
 ## 2. Trim the install.sh / install.ps1 CLI install block
 

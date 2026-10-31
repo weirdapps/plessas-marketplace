@@ -98,7 +98,7 @@ The one exception is `chat-reply`, which auto-sends. See D4.
 ### D4: `chat-reply` keeps auto-send; only its portability is fixed
 
 Owner decision, 2026-08-16. This **reverses** the decision recorded at
-`docs/superpowers/plans/2026-05-11-share-readiness.md` line 14, which kept the
+`docs/superpowers/plans/2026-05-11-share-readiness.md` line 14 (archived on branch archive/plans-2026-10-31), which kept the
 public default at "NEVER auto-send" and had the maintainer override locally.
 
 The reversal is recorded in `CHANGELOG.md` and `plugins/chat/README.md` so the
