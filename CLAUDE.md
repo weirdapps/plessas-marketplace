@@ -22,8 +22,10 @@ plugins/<name>/
   .claude-plugin/plugin.json   # Manifest: name, description, version, commands path
   commands/*.md                # Each command: YAML frontmatter + prompt body
   agents/*.md                  # Agent definitions (decks, mail, meetings)
+  skills/<name>/SKILL.md       # One router skill per plugin
   shared/                      # Brand assets, style guides loaded by commands
   mcp-server/                  # Bundled Node.js MCP server (mail, chat only)
+  bin/                         # decks only: decks-py, runs a decks tool in its own Python env
 installers/                    # install.sh / install.ps1 + pii-gauntlet.sh
 scripts/                       # validate_consistency.py, ooxml-xsd/ (schemas for the built-deck test)
 shared/                        # Cross-plugin shared assets (brand-system, email-style-template)
@@ -46,7 +48,7 @@ shared/                        # Cross-plugin shared assets (brand-system, email
 Three workflows run tests and checks, and all of them can go red.
 
 - **`tests.yml`** is the authoritative gate. `pytest plugins scripts -q` on Python 3.12, and
-  `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 20.
+  `npm ci` + `npm run typecheck` + `npm test` for both bundled MCP servers on Node 22.
   Unconditional: no repo-visibility gate, no token gate, no `continue-on-error`. It also
   asserts each server's `tests/` directory is non-empty, so a suite cannot pass by being
   deleted.
@@ -151,7 +153,7 @@ zero-candidate pass as unverified.
 
 ## Key Dependencies
 
-- `mail` and `chat` bundle their own MCP servers (Node.js 20+, TypeScript). `mcp-server/dist/` is
+- `mail` and `chat` bundle their own MCP servers (Node.js >=22.12 per `engines`, TypeScript). `mcp-server/dist/` is
   gitignored and NOT committed. Both servers now ship a committed single-file esbuild bundle at
   `mcp-server/bundle/server.mjs` with the SDK inlined, and `run.sh` prefers it, which is why a cold
   start is 0.09s rather than a 15-60s `npm ci` inside the MCP handshake. `run.sh` does NOT build:
