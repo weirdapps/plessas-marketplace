@@ -90,7 +90,7 @@ The marketplace itself is a PUBLIC GitHub repo — but it contains only code, no
 
 ## What about Plessas's personal email-style data — is that in the public repo?
 
-**No.** Plessas's personal style guide (`plugins/mail/shared/style-guide.md`) is gitignored — it stays on his laptop and never enters the public repo. The shipping artefact is `style-guide-example.md` (a sanitised template). When you install the `mail` plugin, your own style guide will start blank and the `/mail-review` self-learning loop will populate it from your sent folder over time.
+**No.** Plessas's personal style guide lives at `${CLAUDE_PLUGIN_DATA}/style-guide.md`, the plugin's data folder (normally `~/.claude/plugins/data/<plugin id>/`), outside the repo: it stays on his laptop and never enters the public repo. The shipping artefact is `style-guide-example.md` (a sanitised template). When you install the `mail` plugin, your own style guide will start blank and the `/mail-review` self-learning loop will populate it from your sent folder over time.
 
 A custom CI gate (`pii-gauntlet.sh` + GitHub Actions workflow) runs on every push to scan for PII patterns (Plessas's name, peer names, NBG-internal project names, personal phone, etc.). The gate must pass before any commit lands on master.
 

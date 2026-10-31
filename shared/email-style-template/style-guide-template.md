@@ -1,6 +1,6 @@
 # Email Style Guide Template
 
-> **What this is:** A template for the `mail` plugin's style guide. The plugin uses this to match your voice when drafting replies. Copy to `<plugin-root>/shared/style-guide.md` and customise the `<< REPLACE >>` blocks. For best results, update it from your actual sent mail using `/style-sync` after a few weeks of usage.
+> **What this is:** A template for the `mail` plugin's style guide. The plugin uses this to match your voice when drafting replies. Copy to `${CLAUDE_PLUGIN_DATA}/style-guide.md` (the plugin's data folder, normally `~/.claude/plugins/data/<plugin id>/`) and customise the `<< REPLACE >>` blocks. For best results, update it from your actual sent mail using `/style-sync` after a few weeks of usage.
 
 ---
 

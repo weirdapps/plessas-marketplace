@@ -27,6 +27,6 @@ Claude: 23 unread messages. 3 need action...
 
 ## Tips
 
-- The style guide at `plugins/mail/shared/style-guide.md` controls tone, language, and formatting
+- The style guide at `${CLAUDE_PLUGIN_DATA}/style-guide.md` (the plugin's data folder, normally `~/.claude/plugins/data/<plugin id>/`) controls tone, language, and formatting
 - After 1-2 weeks of usage, run `/style-rebuild` (in `mail-pro` from the `plessas-lab` marketplace) to personalise the style guide from your actual sent mail. If you don't have second-brain access, hand-edit the file or work from the template in `shared/email-style-template/style-guide-template.md`.
 - Emails are always drafted as Outlook drafts first — never auto-sent

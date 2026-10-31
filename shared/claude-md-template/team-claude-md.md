@@ -137,7 +137,7 @@ Default email/text colour: `#404040`. Default font: Aptos Light 12pt (emails); A
 
 ## Email Style
 
-A baseline email style guide lives at `shared/email-style-template/style-guide-template.md`. The `mail` plugin reads from `<plugin-root>/shared/style-guide.md`. Point that at the template, OR overlay your personal style customisations in `~/.claude/private/email-style-personal.md` (if you maintain one).
+A baseline email style guide lives at `shared/email-style-template/style-guide-template.md`. The `mail` plugin reads from `${CLAUDE_PLUGIN_DATA}/style-guide.md` (normally `~/.claude/plugins/data/<plugin id>/`). Point that at the template, OR overlay your personal style customisations in `~/.claude/private/email-style-personal.md` (if you maintain one).
 
 ---
 
