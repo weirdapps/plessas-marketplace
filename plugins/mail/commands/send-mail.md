@@ -106,5 +106,5 @@ Report to the user:
 </instructions>
 
 <rollback>
-The previous AppleScript-based version of this skill (using `tell application "Microsoft Outlook" to make new outgoing message`) is preserved in git history before the email-handler send-side migration commit. The current implementation depends on `outlook-bridge` plugin v0.2.0+ and `outlook-cli` v1.3.0+ being present and authenticated.
+The previous AppleScript-based version of this skill (using `tell application "Microsoft Outlook" to make new outgoing message`) is preserved in git history before the send-side migration to outlook-bridge. The current implementation depends on `outlook-bridge` plugin v0.2.0+ and `outlook-cli` v1.3.0+ being present and authenticated.
 </rollback>

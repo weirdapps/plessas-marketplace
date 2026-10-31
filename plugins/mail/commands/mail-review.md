@@ -24,14 +24,18 @@ The draft-vs-actual comparison is specified once, in `${CLAUDE_PLUGIN_ROOT}/comm
 Three differences apply when running under `/mail-review`:
 
 - Run it silently. Emit one line, `LEARNING: Processed N drafts, accuracy X/10`, rather than the full delta report; `/draft-review` is the command for the formal report.
-- **First run**: if the `~/.claude/drafts/` directory structure does not exist, create it automatically. If no `inbox-state.json` exists, treat all emails as NEW.
+- **First run**: if `~/.claude/drafts/` does not exist, create it with its `pending/`, `reviewed/` and `style-guide-backups/` subdirectories. If `inbox-state.json` is missing or corrupted, treat all emails as NEW and log `FIRST RUN: No previous state found. All emails treated as new.` (first run only).
 - If `~/.claude/drafts/pending/` is empty, skip the whole step without comment.
 
 Do NOT restate the comparison specification here. If the two ever disagree, `draft-review.md` wins.
 
 ### 1. Load Context
 
-- Read the communication style guide from `${CLAUDE_PLUGIN_DATA}/style-guide.md`. If it is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first.
+- Read the communication style guide from `${CLAUDE_PLUGIN_DATA}/style-guide.md`. If it is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first and tell the user:
+
+  > "No style guide found. I've created a template at `${CLAUDE_PLUGIN_DATA}/style-guide.md`. Drafts will use generic professional defaults until you run `/style-sync` to analyse your sent email corpus and build a personalized guide."
+
+  Until the guide is personalized, draft with professional defaults: BRIEF format for internal mail, FULL for external, in the sender's language. A populated guide holds the user's identity (name, role, email, signature), core style rules (brevity, format, language, tone), reply patterns by type, per-recipient profiles and anti-patterns.
 - Read `~/.claude/drafts/inbox-state.json` to know which emails were seen in the previous run
 
 ### 2-6. Read, classify, recommend, and present the briefing
@@ -44,6 +48,8 @@ Two differences apply when running under `/mail-review`:
 
 - Default to `top: 50`. Drafting needs a wider sweep than a plain briefing.
 - More than one action may apply to a single email (for example URGENT + REPLY). Keep every action that fits, because the drafting step below keys off them.
+- When `mcp__second-brain__*` tools are available, add a `CONTEXT:` line under each email's GIST: call `mcp__second-brain__person_context` with the sender's address (the name only when the message holds no address; read `resolved_by` and `match_count` before trusting a name match) for frequency, related decisions and open items, plus `query_actions` (`owner=<sender>`, `status="open"`) and `query_decisions` (`topic=<email topic>`) where useful. Without second-brain, omit the line.
+- Urgency signals: the boss asking directly (identify the boss from the style guide's per-recipient profiles), urgent words in the subject, repeated follow-ups from the same person, the user in TO rather than CC, customer-facing issues.
 
 Do NOT restate the briefing specification here. If the two ever disagree, `inbox-briefing.md` wins.
 
@@ -78,16 +84,59 @@ If `second-brain` is available, query it to enrich draft context. The style guid
 
 ### 7. Draft Replies
 
+**SKIP pre-filter (apply BEFORE drafting).** The default action is SKIP. Draft only if ALL of these hold:
+
+1. The user is in TO (not just CC)
+2. The sender is asking something specific from the user
+3. The email is not a status update, FYI, newsletter or auto-notification
+4. There is no recent reply from the user in the thread already
+
+If in doubt, classify as MONITOR, not REPLY.
+
+**Calibration examples.** Before drafting each reply, recall how the user actually replies:
+
+| Scenario | Draft Instinct | What User Actually Did |
+|----------|---------------|----------------------|
+| Team asks about UNITY entity | 20-word delegation + justification | "θα το κυνηγήσω εγώ" (5 words) |
+| External consultant follow-up | "Good to hear from you..." | "Hi T! we are progressing quite fast..." (200 words, showcase) |
+| Boss-originated escalation | "I agree this is unacceptable..." | FW only (no body) |
+| Scheduling with external | "When works for you?" | "θα οργανωθεί από [assistant name]" |
+| Delegated meeting | "I'll attend" | "εγώ optional" |
+
+**Core principles**, all taken from the style guide: match the user's typical reply length and never write more than necessary; follow its BRIEF vs FULL rules; adjust formality per recipient profile; follow its language rules (which language for internal vs external) and its capitalization, punctuation, greeting and closing rules.
+
 For each email marked REPLY or DELEGATE:
 
-- Generate a reply following the style guide exactly
-- Adapt tone per recipient using per-recipient profiles
-- Incorporate context from step 6b to make drafts substantively accurate
-- For DELEGATE: draft a forwarding message or a reply that assigns ownership
+1. Identify the recipient and look up their profile in the style guide
+2. Determine the reply type (approval, delegation, decision, thank-you, etc.)
+3. Draft the reply following the style guide's patterns, with context from step 6b to make it substantively accurate
+4. For DELEGATE: draft a forwarding message or a reply that assigns ownership
+5. Validate against the style guide's anti-patterns ("NEVER DO" list)
 
 For each email marked FORWARD:
 
-- Suggest who to forward to and draft forwarding text (if any)
+- Suggest who to forward to and draft forwarding text (or none, if it is a plain FW with signature)
+
+**Quality checklist** before presenting a draft:
+
+- [ ] Is it shorter than or equal to what the user would actually write? (check style guide)
+- [ ] Does it follow the style guide's capitalization rules?
+- [ ] If BRIEF: no greeting, no closing?
+- [ ] If FULL: proper format per style guide?
+- [ ] Is it in the correct language per style guide rules?
+- [ ] Does the tone match the specific recipient's profile?
+- [ ] Is the reply type correct (delegation vs. decision vs. approval)?
+- [ ] Would the user actually reply to this email, or would they skip it?
+
+**What NOT to do:**
+
+- Don't draft replies for informational/FYI emails
+- Don't use formal language where the style guide says to be informal
+- Don't write paragraphs; if your draft exceeds 3 sentences, reconsider
+- Don't add the signature block; Outlook handles that
+- Don't draft in the wrong language for the recipient
+- Don't be polite where the user would be direct
+- Don't second-guess decisions; be decisive like the user
 
 ### 8. Save State
 

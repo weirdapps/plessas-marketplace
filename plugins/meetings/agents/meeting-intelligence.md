@@ -319,7 +319,6 @@ If a decision tracker exists at `~/.claude/meetings/decision-tracker/`:
 
 1. Append decisions to the tracker
 2. Append action items to the tracker
-3. This integrates with the email-handler's decision tracking
 
 ## Calendar Access
 

@@ -135,7 +135,7 @@ plugins/
     assets/                          # logos, illustrations, icons, screenshots
   mail/
     commands/                        # 15 slash commands (see table)
-    agents/                          # email-handler, triage-engine
+    agents/                          # triage-engine
     skills/outlook-mail/             # natural-language router
     mcp-server/                      # outlook-bridge MCP (TypeScript, Node 20+)
       src/tools/                     # 16 MCP tools (see below)

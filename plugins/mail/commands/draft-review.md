@@ -64,6 +64,8 @@ Classify each:
 - **REWRITTEN**: Substantially different (score: miss, analyze why)
 - **NOT_SENT**: No matching email found (score: triage error, should have been SKIP)
 
+**Stale drafts**: any draft in `pending/` older than 72 hours with no matching sent email is classified NOT_SENT automatically. These are triage errors: the user chose not to reply where we suggested they should. Record why (was the email low-priority? was the recommended action wrong?).
+
 ### 4. Scan Organic Emails
 
 Also scan last 20 sent items for emails NOT matching any draft.
@@ -85,13 +87,36 @@ For organic emails found in step 4, perform full style analysis:
 - Flag any new patterns not captured in the guide (e.g., new closing phrases, emerging tone shifts)
 - If patterns are consistent across 3+ organic emails, propose a style guide update
 
+### 4C. Continuous Sent-Email Learning
+
+After the drafts, ingest ALL mail the user sent since the last run, not only draft matches:
+
+```
+Tool: mcp__plugin_mail_outlook-bridge__outlook_list_mail
+Args: { "folder": "Archive", "top": 20, "select": "Id,Subject,From,ToRecipients,CcRecipients,ReceivedDateTime,ConversationId,HasAttachments" }
+# Incremental: { "folder": "Archive", "since": "<last_run from inbox-state.json>", "all": true, "max": 200, "select": "..." }
+```
+
+Filter client-side to the user's own address (case-insensitive) and fetch bodies with `outlook_get_mail`. For each sent email extract the recipient (name + address), length (words and sentences), language (Greek, English or mixed), tone (formal, semi-formal, casual, terse), greeting and closing.
+
+Compare against that recipient's profile in `${CLAUDE_PLUGIN_DATA}/style-guide.md` and flag as a style update:
+
+- Length deviating more than 30% from the profiled average
+- A language switch (the profile says Greek, the user wrote English)
+- A tone shift (the profile says formal, the user was casual)
+- A greeting or closing not yet in the profile
+
+Apply an update only when 3+ consistent observations back it, and record the sample count ("Based on N recent emails to [recipient]"). Track style drift against the baselines in `~/.claude/drafts/learnings.md`, log its direction ("User trending shorter with [recipient]", "Switching to English for [topic]"), and refresh the baselines quarterly.
+
+The style guide can be rebuilt from the full corpus with `/style-rebuild`, in the optional `mail-pro` plugin of the [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace (needs the private `second-brain` knowledge store).
+
 ### 5. Generate Delta Report
 
 ```
 STYLE DELTA REPORT: [date]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ACCURACY SCORE: X/10
+ACCURACY SCORE: X/10   (10 x (SENT_AS_IS + 0.5 x MODIFIED) / total drafts)
 
 DRAFTS PROCESSED: N
   SENT_AS_IS:  X (perfect matches)
