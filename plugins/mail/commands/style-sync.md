@@ -77,7 +77,7 @@ WHERE ep.email_id = ? AND ep.role_in_email IN ('to', 'cc');
 For each recipient with new emails:
 
 - Compute the same metrics as `/style-rebuild` but only on new data
-- Compare against existing profile in `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`
+- Compare against existing profile in `${CLAUDE_PLUGIN_DATA}/style-guide.md`. If it is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first.
 
 ### 5. Detect Style Drift
 
@@ -94,7 +94,7 @@ Flag when new patterns diverge from existing profile:
 ### 6. Backup and Update Style Guide
 
 - Create timestamped backup in `~/.claude/drafts/style-guide-backups/`
-- Update `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` with:
+- Update `${CLAUDE_PLUGIN_DATA}/style-guide.md` with:
   - Updated per-recipient profiles (merge new data with existing)
   - New recipient profiles (if min threshold met)
   - Updated global patterns

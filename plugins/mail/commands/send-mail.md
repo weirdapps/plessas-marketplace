@@ -9,7 +9,7 @@ Compose and send a NEW email (no thread context) via the `outlook-bridge` MCP pl
 
 For **replies** to an existing thread (with auto-quote + signature), use `/reply` or `/reply-all`. For **forwards**, use `/forward`. This `/send-mail` skill is for new emails ONLY.
 
-Sender identity (UPN, default CC-self) is configured in `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` (Identity section).
+Sender identity (UPN, default CC-self) is configured in `${CLAUDE_PLUGIN_DATA}/style-guide.md` (Identity section). If it is missing (first run), copy `${CLAUDE_PLUGIN_ROOT}/shared/style-guide-example.md` there first.
 
 User request: $ARGUMENTS
 </objective>
@@ -21,7 +21,7 @@ User request: $ARGUMENTS
 Extract:
 
 - **To**: One or more recipient email addresses (REQUIRED)
-- **CC**: Optional CC recipients (the user's UPN from `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md` is automatically CC'd unless `--no-cc-self` is requested)
+- **CC**: Optional CC recipients (the user's UPN from `${CLAUDE_PLUGIN_DATA}/style-guide.md` is automatically CC'd unless `--no-cc-self` is requested)
 - **BCC**: Optional BCC recipients
 - **Subject**: Email subject line (REQUIRED)
 - **Body**: Email body content; convert to HTML for Outlook compatibility
@@ -106,5 +106,5 @@ Report to the user:
 </instructions>
 
 <rollback>
-The previous AppleScript-based version of this skill (using `tell application "Microsoft Outlook" to make new outgoing message`) is preserved in git history before the email-handler send-side migration commit. The current implementation depends on `outlook-bridge` plugin v0.2.0+ and `outlook-cli` v1.3.0+ being present and authenticated.
+The previous AppleScript-based version of this skill (using `tell application "Microsoft Outlook" to make new outgoing message`) is preserved in git history before the send-side migration to outlook-bridge. The current implementation depends on `outlook-bridge` plugin v0.2.0+ and `outlook-cli` v1.3.0+ being present and authenticated.
 </rollback>

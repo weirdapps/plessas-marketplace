@@ -150,6 +150,41 @@ describe('retry policy on exit 5', () => {
   }, 15_000);
 });
 
+describe('exit 0 without a parseable payload', () => {
+  afterEach(() => __setSpawnForTests(undefined));
+
+  it('reports a non-idempotent write as most likely completed, not as a failure', async () => {
+    const { spawn, calls } = countingSpawn({ stdout: '', exitCode: 0 });
+    __setSpawnForTests(spawn);
+    const err = (await runOutlookCli(['send-mail'], { idempotent: false })
+      .catch((e: unknown) => e)) as OutlookCliError;
+    expect(err).toBeInstanceOf(OutlookCliError);
+    expect(err.code).toBe('unconfirmed');
+    expect(err.exitCode).toBe(0);
+    expect(err.retryable).toBe(false);
+    expect(err.message).toMatch(/most likely completed/);
+    expect(err.remediation).toMatch(/Do NOT retry/);
+    expect(err.remediation).toMatch(/Sent Items/);
+    expect(err.remediation).toMatch(/Drafts/);
+    expect(calls()).toBe(1);
+  });
+
+  it('treats unparseable stdout on a non-idempotent write the same way', async () => {
+    __setSpawnForTests(countingSpawn({ stdout: 'Sent.\n', exitCode: 0 }).spawn);
+    await expect(runOutlookCli(['reply'], { idempotent: false }))
+      .rejects.toMatchObject({ code: 'unconfirmed', retryable: false });
+  });
+
+  it('keeps an idempotent read on the plain internal error', async () => {
+    __setSpawnForTests(countingSpawn({ stdout: '', exitCode: 0 }).spawn);
+    const err = (await runOutlookCli(['list-mail'])
+      .catch((e: unknown) => e)) as OutlookCliError;
+    expect(err.code).toBe('internal');
+    expect(err.message).toMatch(/Failed to parse JSON stdout/);
+    expect(err.remediation).toBeUndefined();
+  });
+});
+
 describe('partial batch failure', () => {
   afterEach(() => __setSpawnForTests(undefined));
 

@@ -15884,6 +15884,15 @@ async function runOutlookCli(args, opts = {}) {
       try {
         return JSON.parse(result.stdout);
       } catch (e) {
+        if (!idempotent) {
+          throw new OutlookCliError(
+            "unconfirmed",
+            0,
+            `outlook-cli exited 0, so the operation most likely completed, but its result could not be read (${e.message}; raw="${result.stdout.slice(0, 200)}")`,
+            false,
+            "State unconfirmed. Do NOT retry: check Sent Items, Drafts or the target folder first, and repeat the operation only if its result is in none of them."
+          );
+        }
         throw new OutlookCliError(
           "internal",
           0,
@@ -16482,7 +16491,7 @@ var package_default = {
   },
   dependencies: {
     "@modelcontextprotocol/sdk": "^1.32.1",
-    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#3bc256730d140e1a54c3db40bda56c78175b0be0"
+    "outlook-tool": "git+https://x@github.com/weirdapps/outlook-access.git#10f39684154ad84a41d5bfdb8c52bc354eabeade"
   },
   devDependencies: {
     "@types/node": "~26.6.5",

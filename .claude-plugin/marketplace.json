@@ -5,7 +5,7 @@
     "url": "https://github.com/weirdapps"
   },
   "description": "Cross-platform Claude Code plugins for productivity at NBG: decks, mail, meetings, chat, excel, docs.",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "plugins": [
     {
       "name": "decks",
@@ -19,7 +19,7 @@
     },
     {
       "name": "mail",
-      "version": "1.1.5",
+      "version": "1.1.6",
       "category": "communications",
       "source": "./plugins/mail",
       "description": "Outlook mail with bundled outlook-cli MCP wrapper. Read, draft, triage, style-match, briefings, self-learning.",
@@ -29,7 +29,7 @@
     },
     {
       "name": "meetings",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "category": "communications",
       "source": "./plugins/meetings",
       "description": "Calendar-aware meeting briefings with attendee dossiers, post-meeting decision capture.",

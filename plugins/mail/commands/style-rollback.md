@@ -42,13 +42,13 @@ Before overwriting, save the current style guide:
 
 ```bash
 TZ='Europe/Athens' date '+%Y%m%d%H%M'
-cp "${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md" \
+cp "${CLAUDE_PLUGIN_DATA}/style-guide.md" \
    ~/.claude/drafts/style-guide-backups/YYYYMMDDHHMM_style-guide.md
 ```
 
 ### 4. Restore Selected Version
 
-Copy the selected backup to `${CLAUDE_PLUGIN_ROOT}/shared/style-guide.md`.
+Copy the selected backup to `${CLAUDE_PLUGIN_DATA}/style-guide.md`.
 
 ### 5. Show Diff Summary
 

@@ -109,7 +109,7 @@ iwr https://raw.githubusercontent.com/weirdapps/plessas-marketplace/master/insta
 
 ## What you may need to redo
 
-- **Personal email style guide**: if you customised `email-handler/shared/style-guide.md`, that's specific to the old plugin. After installing the new marketplace, run `/style-sync` to regenerate from your sent mail corpus. (`/style-rebuild` now lives in the `mail-pro` plugin in `plessas-lab` and needs the private `second-brain` knowledge store.)
+- **Personal email style guide**: if you customised `email-handler/shared/style-guide.md`, that's specific to the old plugin. After installing the new marketplace, run `/style-sync` to regenerate from your sent mail corpus; the new plugin keeps it at `${CLAUDE_PLUGIN_DATA}/style-guide.md`. (`/style-rebuild` now lives in the `mail-pro` plugin in `plessas-lab` and needs the private `second-brain` knowledge store.)
 - **Recipient profiles**: the `recipient-profiles.db` was user-generated. It rebuilds organically from your `/reply` usage. No action needed unless you want to accelerate it.
 - **Triage rules**: if you customised triage rules in the old email-handler, copy them to `plugins/mail/shared/triage-rules-starter.yaml` in the new marketplace.
 
@@ -174,7 +174,7 @@ If any of the above fails, run the relevant doctor command first (`/mail-doctor`
 
 ## Background scripts
 
-The daily style-guide sync was ported from `communications-marketplace/scripts/style-sync.py` to the `mail-pro` plugin in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. The script writes to `plugins/mail/shared/style-guide.md` (gitignored — the user's real personal style guide). If you had a launchd wrapper pointing at the old path, update it to the `plessas-lab` location; no other action needed.
+The daily style-guide sync was ported from `communications-marketplace/scripts/style-sync.py` to the `mail-pro` plugin in the separate [`plessas-lab`](https://github.com/weirdapps/plessas-lab) marketplace. The `mail` plugin now reads the user's real personal style guide from `${CLAUDE_PLUGIN_DATA}/style-guide.md` (the plugin's data folder, normally `~/.claude/plugins/data/<plugin id>/`), so point the script's output there. If you had a launchd wrapper pointing at the old path, update it to the `plessas-lab` location; no other action needed.
 
 ## Need help?
 

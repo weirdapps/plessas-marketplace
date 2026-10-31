@@ -35,6 +35,7 @@ export type OutlookCliErrorCode =
   | 'auth_required'      // exit 4
   | 'upstream'           // exit 5 (after retries exhausted)
   | 'io'                 // exit 6
+  | 'unconfirmed'        // exit 0, no parseable stdout, non-idempotent write
   | 'internal';          // exit 1 or any other
 
 export class OutlookCliError extends Error {
@@ -164,6 +165,15 @@ export async function runOutlookCli<T = unknown>(
     if (result.exitCode === 0) {
       try { return JSON.parse(result.stdout) as T; }
       catch (e) {
+        // Exit 0 means the CLI finished without an error, so a write most likely
+        // landed even though its JSON report never arrived. Reporting that as a
+        // plain failure invites the caller to send the same mail again.
+        if (!idempotent) {
+          throw new OutlookCliError('unconfirmed', 0,
+            `outlook-cli exited 0, so the operation most likely completed, but its result could not be read (${(e as Error).message}; raw="${result.stdout.slice(0, 200)}")`,
+            false,
+            'State unconfirmed. Do NOT retry: check Sent Items, Drafts or the target folder first, and repeat the operation only if its result is in none of them.');
+        }
         throw new OutlookCliError('internal', 0,
           `Failed to parse JSON stdout: ${(e as Error).message}; raw="${result.stdout.slice(0, 200)}"`,
           false);
