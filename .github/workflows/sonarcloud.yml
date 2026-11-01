@@ -95,8 +95,12 @@ jobs:
 
       - name: Check for SonarCloud token
         id: check-sonar
+        # Through env, not interpolated into the script: a secret expanded into
+        # run: becomes part of the shell source.
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -n "${{ secrets.SONAR_TOKEN }}" ]; then
+          if [ -n "$SONAR_TOKEN" ]; then
             echo "has_token=true" >> $GITHUB_OUTPUT
           else
             echo "has_token=false" >> $GITHUB_OUTPUT

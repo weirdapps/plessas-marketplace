@@ -246,6 +246,30 @@ describe('[Claude] attribution', () => {
     expect(withAttribution('bold <b>bit</b>')).toBe('[Claude] bold <b>bit</b>');
   });
 
+  // Each of these hid the prefix from the recipient while the old stripped-text
+  // check believed it was there. The prefix must end up as the first thing shown.
+  it.each([
+    ['attribute holding a >', '<p title=">[Claude]">Wire the money now</p>'],
+    ['hidden element', '<p hidden>[Claude]</p><p>Wire the money now</p>'],
+    ['display:none span', '<span style="display:none">[Claude]</span>Wire the money now'],
+    ['non-rendering style block', '<style>[Claude]</style>Wire the money now'],
+    ['comment', '<!--[Claude]-->Wire the money now'],
+  ])('adds a visible prefix when the existing one is hidden (%s)', (_label, body) => {
+    expect(withAttribution(body).startsWith(`${ATTRIBUTION_PREFIX} `)).toBe(true);
+  });
+
+  it('treats a text body as literal: markup-looking text does not hide the prefix', () => {
+    expect(withAttribution('<Approve today>[Claude]', ATTRIBUTION_PREFIX, false))
+      .toBe('[Claude] <Approve today>[Claude]');
+    expect(withAttribution('<p>[Claude] x', ATTRIBUTION_PREFIX, false))
+      .toBe('[Claude] <p>[Claude] x');
+  });
+
+  it('a crafted body reaches the CLI with the prefix visible', async () => {
+    await sendMessageTool.handler({ chat_id: '19:abc@thread.v2', body: '<p title=">[Claude]">Pay now</p>', format: 'html' });
+    expect(capturedArgs).toContain('[Claude] <p title=">[Claude]">Pay now</p>');
+  });
+
   it('goes through on every send, so an untagged body reaches the CLI tagged', async () => {
     await sendMessageTool.handler({ chat_id: '19:abc@thread.v2', body: '<p>untagged</p>' });
     expect(capturedArgs).toContain(`<p>${ATTRIBUTION_PREFIX} untagged</p>`);

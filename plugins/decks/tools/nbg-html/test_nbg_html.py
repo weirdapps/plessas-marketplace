@@ -175,6 +175,50 @@ def test_static_check_catches(tmp_path: Path, kw: dict[str, str], message: str) 
     assert any(message in e for e in found), found
 
 
+@pytest.mark.parametrize(
+    "smuggled",
+    [
+        # A ">" inside an attribute ended the strip regex early, so the marker survived
+        # the build and the scanner then exempted the block as ours.
+        '<script title=">" data-nbg-runtime>fetch("https://x.invalid/")</script>',
+        '<script title=">" id="nbg-deck-runtime" data-nbg-runtime>fetch(1)</script>',
+    ],
+)
+def test_a_script_wearing_the_runtime_marker_is_still_an_author_script(
+    tmp_path: Path, smuggled: str
+) -> None:
+    out = built(tmp_path, body=smuggled)
+    assert any("author <script>" in e for e in errors(out)) or "fetch" not in out.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_a_hand_added_marked_script_after_the_build_is_caught(tmp_path: Path) -> None:
+    out = built(tmp_path)
+    out.write_text(
+        out.read_text(encoding="utf-8").replace(
+            "</head>", '<script data-nbg-runtime>fetch("https://x.invalid/")</script></head>'
+        ),
+        encoding="utf-8",
+    )
+    assert any("author <script>" in e for e in errors(out))
+
+
+def test_a_marked_style_is_still_checked_for_network_css(tmp_path: Path) -> None:
+    out = built(tmp_path)
+    out.write_text(
+        out.read_text(encoding="utf-8").replace(
+            "</head>", "<style data-nbg-runtime>@import 'https://x/y.css';</style></head>"
+        ),
+        encoding="utf-8",
+    )
+    assert any("network" in e for e in errors(out))
+
+
+def test_the_real_runtime_alone_passes(tmp_path: Path) -> None:
+    assert errors(built(tmp_path)) == []
+
+
 def test_static_check_catches_network_css_added_after_the_build(tmp_path: Path) -> None:
     # build refuses it; a hand edit to a built file is what check has to catch
     out = built(tmp_path)

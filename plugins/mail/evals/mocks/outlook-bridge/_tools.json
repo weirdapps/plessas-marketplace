@@ -504,10 +504,6 @@
           "from_message": {
             "type": "string",
             "description": "Override: source message id (default: latest in SentItems)"
-          },
-          "out": {
-            "type": "string",
-            "description": "Override output path (default: ~/.outlook-cli/signature.html)"
           }
         },
         "additionalProperties": false

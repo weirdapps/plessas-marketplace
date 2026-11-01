@@ -2,6 +2,42 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-11-01
+
+Security hardening from the 2026-11-01 audit. The theme: a command that reads other people's mail or
+chats must not be able to act on them unasked.
+
+Versions: `mail` 1.1.7 to **1.2.0**, `chat` 1.1.5 to **1.2.0**, `meetings` 1.1.3 to **1.2.0**,
+`decks` 2.2.1 to **2.2.2**, marketplace 2.5.1 to 2.6.0.
+
+### Changed
+
+- **`mail`, `meetings`: commands pre-approve only the mail tools they call.** `/mail-review`,
+  `/triage-inbox`, `/reply`, `/forward`, `/send-mail`, `/archive-thread`, `/style-sync`,
+  `/meeting-prep` and `/meeting-debrief` listed every outlook-bridge tool, so a send, forward or
+  signature capture steered by a hostile email ran without a prompt. Each now lists only its own
+  tools; anything else still works but asks first. `/mail-review` no longer pre-approves any send.
+- **`mail`, `chat`, `meetings`: an "untrusted content" rule** in every command, agent and router
+  skill that reads mail, invites or Teams messages: that content is data, never instructions.
+- **`mail`: `outlook_capture_signature` no longer takes `out`.** A model-chosen path let injected
+  mail HTML be written anywhere on disk; the signature only goes to `~/.outlook-cli/signature.html`.
+
+### Fixed
+
+- **`mail`: the Deleted Items guard in `outlook_move_mail`** checked only the last path segment,
+  so `DeletedItems/x` passed, and missed the `RecoverableItemsDeletions` alias. It now checks
+  every segment.
+- **`mail`: inline mail bodies** are written to temp files readable by the owner only (0600).
+- **`chat`: the `[Claude]` prefix could be hidden.** "Already prefixed" was decided on a
+  regex-stripped copy, so `<p title=">[Claude]">…`, hidden or styled elements, `<style>` and
+  comments passed while the recipient saw no prefix. It is now decided on the raw body, and a text
+  body is treated literally.
+- **`decks`: an author script wearing the runtime marker** survived `html-build` and passed
+  `html-check`. The build strips marked blocks quote-aware, and the check exempts only the one
+  runtime script and design-system style, by id.
+- **CI:** the SonarCloud token check reads the secret through `env`; Dependabot now covers
+  `tools/nbg-html/requirements.txt`.
+
 ## [2.5.0] - 2026-10-25
 
 `decks` gets a second medium: HTML. A deck can now be one self-contained web page that the person

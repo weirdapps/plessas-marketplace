@@ -17318,19 +17318,13 @@ var listMessagesTool = {
 
 // src/tools/send-message.ts
 var ATTRIBUTION_PREFIX = "[Claude]";
-function withAttribution(body, prefix = ATTRIBUTION_PREFIX) {
-  if (visibleText(body).startsWith(prefix)) return body;
-  const lead = /^(?:\s*<[^>]+>)*\s*/.exec(body)?.[0] ?? "";
-  return `${body.slice(0, lead.length)}${prefix} ${body.slice(lead.length)}`;
+function withAttribution(body, prefix = ATTRIBUTION_PREFIX, isHtml = true) {
+  const leadRe = isHtml ? LEADING_FORMATTING_TAGS : /^\s*/;
+  const lead = leadRe.exec(body)?.[0] ?? "";
+  if (body.slice(lead.length).startsWith(prefix)) return body;
+  return `${lead}${prefix} ${body.slice(lead.length)}`;
 }
-function visibleText(body) {
-  let out = body;
-  for (; ; ) {
-    const next = out.replace(/<[^>]*>/g, "");
-    if (next === out) return next.trimStart();
-    out = next;
-  }
-}
+var LEADING_FORMATTING_TAGS = /^(?:\s*<(?:p|div|span|b|strong|i|em|u|blockquote|h[1-6])>)*\s*/i;
 var PAIRED_TAG = /<([a-z][a-z0-9]*)\b[^>]*>[\s\S]*<\/\1\s*>/i;
 var VOID_TAG = /<(?:br|hr|img|input)\b[^>]*\/?>/i;
 function looksLikeHtml(body) {
@@ -17356,7 +17350,7 @@ var sendMessageTool = {
   handler: async (args) => {
     const raw = String(args.body ?? "");
     const isHtml = args.format === "html" || args.format === "text" ? args.format === "html" : looksLikeHtml(raw);
-    const body = withAttribution(raw);
+    const body = withAttribution(raw, ATTRIBUTION_PREFIX, isHtml);
     const bodyFlag = isHtml ? "--html" : "--text";
     return runTeamsCli(["send-message", "--chat", args.chat_id, bodyFlag, body], { idempotent: false });
   }

@@ -58,14 +58,14 @@ async function buildReplyCliArgs(
     cliArgs.push('--html', args.html_file);
   } else if (typeof args.html_body === 'string') {
     const p = path.join(os.tmpdir(), `outlook-cli-reply-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
-    await fs.writeFile(p, args.html_body, 'utf-8');
+    await fs.writeFile(p, args.html_body, { encoding: 'utf-8', mode: 0o600 });
     cliArgs.push('--html', p);
     cleanup.push(p);
   } else if (typeof args.text_file === 'string') {
     cliArgs.push('--text', args.text_file);
   } else if (typeof args.text_body === 'string') {
     const p = path.join(os.tmpdir(), `outlook-cli-reply-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-    await fs.writeFile(p, args.text_body, 'utf-8');
+    await fs.writeFile(p, args.text_body, { encoding: 'utf-8', mode: 0o600 });
     cliArgs.push('--text', p);
     cleanup.push(p);
   }

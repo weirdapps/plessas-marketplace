@@ -12,6 +12,7 @@ import { runOutlookCli, OutlookCliError } from '../subprocess.js';
  */
 const BLOCKED_DESTINATIONS = new Set([
   'deleteditems', 'junkemail', 'junk', 'trash', 'recoverableitems',
+  'recoverableitemsdeletions',
 ]);
 
 /**
@@ -21,8 +22,11 @@ const BLOCKED_DESTINATIONS = new Set([
  * one, and should not be described as a complete guarantee.
  */
 export function isBlockedDestination(to: string): boolean {
-  const leaf = to.split(/[/\\]/).pop() ?? '';
-  return BLOCKED_DESTINATIONS.has(leaf.replace(/\s+/g, '').toLowerCase());
+  // Every segment, not just the leaf: "DeletedItems/x" is still inside Deleted
+  // Items, and outlook_create_folder can make that subfolder first.
+  return to
+    .split(/[/\\]/)
+    .some((segment) => BLOCKED_DESTINATIONS.has(segment.replace(/\s+/g, '').toLowerCase()));
 }
 
 export const moveMailTool: Tool = {

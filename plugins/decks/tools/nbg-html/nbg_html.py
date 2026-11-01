@@ -63,9 +63,16 @@ NO_BROWSER = 3
 FONT_FALLBACK = 4
 
 # Our own blocks carry this attribute, so a rebuild finds and replaces them.
+# Attributes are matched quote-aware: a bare [^>]* stopped at a ">" inside a quoted
+# value, so a block whose marker came after such an attribute was never stripped.
+_ATTRS = r"""(?:[^>"']|"[^"]*"|'[^']*')*"""
 RUNTIME_BLOCK_RE = re.compile(
-    r"<(style|script|meta)\b[^>]*\bdata-nbg-runtime\b[^>]*>(?:.*?</\1>)?\s*", re.S | re.I
+    rf"<(style|script|meta)\b{_ATTRS}\bdata-nbg-runtime\b{_ATTRS}>(?:.*?</\1>)?\s*",
+    re.S | re.I,
 )
+# The only blocks the scanner exempts as ours. The marker alone is something any
+# author, or an injected instruction, can write.
+RUNTIME_IDS = {"script": "nbg-deck-runtime", "style": "nbg-deck-css"}
 IMG_SRC_RE = re.compile(
     r"""(<(?:img|image|source)\b[^>]*?\s(?:src|href|xlink:href)\s*=\s*)(["'])(.*?)\2""", re.S | re.I
 )
@@ -469,10 +476,20 @@ class _Scan(HTMLParser):
         self._in_style = False
         self._in_notes = False
         self._skip = 0  # inside a script or our runtime style
+        self._runtime_seen: set[str] = set()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         a = {k.lower(): (v or "") for k, v in attrs}
-        runtime = "data-nbg-runtime" in a
+        # Ours only with the marker AND our id, and only the first of each: a built
+        # deck holds exactly one runtime script and one design-system style.
+        runtime = (
+            "data-nbg-runtime" in a
+            and tag in RUNTIME_IDS
+            and a.get("id") == RUNTIME_IDS[tag]
+            and tag not in self._runtime_seen
+        )
+        if runtime:
+            self._runtime_seen.add(tag)
         classes = a.get("class", "").split()
         if tag == "html" and a.get("lang"):
             self.lang = True
