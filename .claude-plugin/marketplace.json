@@ -19,7 +19,7 @@
     },
     {
       "name": "mail",
-      "version": "1.1.6",
+      "version": "1.1.7",
       "category": "communications",
       "source": "./plugins/mail",
       "description": "Outlook mail with bundled outlook-cli MCP wrapper. Read, draft, triage, style-match, briefings, self-learning.",
