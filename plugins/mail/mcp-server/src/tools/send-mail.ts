@@ -129,7 +129,7 @@ async function materializeBodies(args: any): Promise<MaterializedBodies> {
     out.html = args.html_file;
   } else if (typeof args.html_body === 'string' && args.html_body.length > 0) {
     const p = path.join(os.tmpdir(), `outlook-cli-body-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
-    await fs.writeFile(p, args.html_body, 'utf-8');
+    await fs.writeFile(p, args.html_body, { encoding: 'utf-8', mode: 0o600 });
     out.html = p;
     out.cleanup.push(p);
   }
@@ -138,7 +138,7 @@ async function materializeBodies(args: any): Promise<MaterializedBodies> {
     out.text = args.text_file;
   } else if (typeof args.text_body === 'string' && args.text_body.length > 0) {
     const p = path.join(os.tmpdir(), `outlook-cli-body-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-    await fs.writeFile(p, args.text_body, 'utf-8');
+    await fs.writeFile(p, args.text_body, { encoding: 'utf-8', mode: 0o600 });
     out.text = p;
     out.cleanup.push(p);
   }

@@ -1,7 +1,7 @@
 ---
 description: "Send a new email via outlook-bridge MCP (draft-first by default)"
 argument-hint: "[describe what to send, to whom, subject, and optionally attach files]"
-allowed-tools: Bash, Read, Glob, mcp__plugin_mail_outlook-bridge__*
+allowed-tools: Bash, Read, Glob, mcp__plugin_mail_outlook-bridge__outlook_get_mail, mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_send_mail
 ---
 
 <objective>

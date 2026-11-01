@@ -20,10 +20,6 @@ export const captureSignatureTool: Tool = {
         type: 'string',
         description: 'Override: source message id (default: latest in SentItems)',
       },
-      out: {
-        type: 'string',
-        description: 'Override output path (default: ~/.outlook-cli/signature.html)',
-      },
     },
     additionalProperties: false,
   },
@@ -32,9 +28,9 @@ export const captureSignatureTool: Tool = {
     if (typeof args.from_message === 'string' && args.from_message.length > 0) {
       cliArgs.push('--from-message', args.from_message);
     }
-    if (typeof args.out === 'string' && args.out.length > 0) {
-      cliArgs.push('--out', args.out);
-    }
+    // No `out`: a model-chosen path would let injected mail HTML be written
+    // anywhere on disk. The CLI's default (~/.outlook-cli/signature.html) is the
+    // only destination this tool offers.
     // Not idempotent: it overwrites signature.html from a live SentItems read.
     return runOutlookCli(cliArgs, { idempotent: false });
   },

@@ -14,35 +14,31 @@ export const ATTRIBUTION_PREFIX = '[Claude]';
  * passing. Prepending, never rejecting: a silently failed send is worse than an
  * attributed one.
  *
- * The prefix goes INSIDE any leading tags so it renders as visible text rather
- * than sitting outside the first block element.
+ * The prefix goes INSIDE leading formatting tags so it renders as visible text
+ * rather than sitting outside the first block element.
+ *
+ * "Already prefixed" is decided on the raw body, never on a tag-stripped copy.
+ * A regex strip is not how HTML parses: `<p title=">[Claude]">Pay</p>` strips to
+ * text starting "[Claude]" while the recipient sees only "Pay", and hidden,
+ * styled or non-rendering elements hide a prefix that is technically present.
+ * So only a run of attribute-free formatting tags may precede an existing prefix;
+ * anything else gets a fresh one in front. A plain-text body (isHtml=false) is
+ * shown literally, so there nothing may precede it but whitespace.
  */
-export function withAttribution(body: string, prefix: string = ATTRIBUTION_PREFIX): string {
-  if (visibleText(body).startsWith(prefix)) return body;
-  const lead = /^(?:\s*<[^>]+>)*\s*/.exec(body)?.[0] ?? '';
-  return `${body.slice(0, lead.length)}${prefix} ${body.slice(lead.length)}`;
+export function withAttribution(
+  body: string,
+  prefix: string = ATTRIBUTION_PREFIX,
+  isHtml: boolean = true,
+): string {
+  const leadRe = isHtml ? LEADING_FORMATTING_TAGS : /^\s*/;
+  const lead = leadRe.exec(body)?.[0] ?? '';
+  if (body.slice(lead.length).startsWith(prefix)) return body;
+  return `${lead}${prefix} ${body.slice(lead.length)}`;
 }
 
-/**
- * The text a recipient actually sees, with markup removed.
- *
- * A single `body.replace(/<[^>]*>/g, '')` is not enough, and the failure is not
- * theoretical here. One pass over `<<p>>[Claude] hi` removes the inner `<p>` and
- * leaves `<>[Claude] hi`, so the caller sees a string that does NOT start with the
- * prefix and prepends a second one. Run it the other way and a body can be crafted
- * whose stripped form starts with the prefix while the rendered message shows no
- * attribution at all, which defeats the one guarantee this function exists to make.
- * Strip to a fixed point instead, so no arrangement of nested or malformed angle
- * brackets can leave a tag behind.
- */
-function visibleText(body: string): string {
-  let out = body;
-  for (;;) {
-    const next = out.replace(/<[^>]*>/g, '');
-    if (next === out) return next.trimStart();
-    out = next;
-  }
-}
+/** Whitespace and attribute-free opening tags that render their text normally. */
+const LEADING_FORMATTING_TAGS =
+  /^(?:\s*<(?:p|div|span|b|strong|i|em|u|blockquote|h[1-6])>)*\s*/i;
 
 /** A tag paired with its own closing tag: <p>x</p>, <b>x</b>, <div ...>x</div>. */
 const PAIRED_TAG = /<([a-z][a-z0-9]*)\b[^>]*>[\s\S]*<\/\1\s*>/i;
@@ -97,7 +93,7 @@ export const sendMessageTool: Tool = {
     const isHtml = args.format === 'html' || args.format === 'text'
       ? args.format === 'html'
       : looksLikeHtml(raw);
-    const body = withAttribution(raw);
+    const body = withAttribution(raw, ATTRIBUTION_PREFIX, isHtml);
     const bodyFlag = isHtml ? '--html' : '--text';
     // Not idempotent: a retried exit 5 posts the same message to the chat again.
     return runTeamsCli(['send-message', '--chat', args.chat_id, bodyFlag, body], { idempotent: false });

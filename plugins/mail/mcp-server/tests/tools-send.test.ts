@@ -275,6 +275,10 @@ describe('outlook_move_mail destination guard', () => {
     'Deleted Items', 'DeletedItems', 'deleted items',
     'Junk Email', 'JunkEmail', 'Junk', 'Trash', 'RecoverableItems',
     'Inbox/Junk', 'Archive/2026/Deleted Items',
+    // A subfolder of a blocked folder is still inside it, and its retention still applies.
+    'DeletedItems/x', 'Deleted Items/Kept', 'Junk Email\\Reviewed',
+    // Well-known alias the CLI resolves to the Recoverable Items dumpster.
+    'RecoverableItemsDeletions', 'recoverable items deletions',
   ])('refuses to move into %s without spawning anything', async (to) => {
     const { spawn, calls } = failingSpawn({ stdout: '{}', exitCode: 0 });
     __setSpawnForTests(spawn);
@@ -310,15 +314,19 @@ describe('outlook_capture_signature', () => {
     expect(capturedArgs).not.toContain('--out');
   });
 
-  it('passes --from-message and --out when supplied', async () => {
-    await captureSignatureTool.handler({
-      from_message: 'AAMk-99',
-      out: `${tmpDir}/custom-sig.html`,
-    });
+  it('passes --from-message when supplied', async () => {
+    await captureSignatureTool.handler({ from_message: 'AAMk-99' });
     expect(capturedArgs).toContain('--from-message');
     expect(capturedArgs).toContain('AAMk-99');
-    expect(capturedArgs).toContain('--out');
-    expect(capturedArgs).toContain(`${tmpDir}/custom-sig.html`);
+  });
+
+  it('never forwards an output path: the signature only ever lands in its default file', async () => {
+    // An `out` from the model would let a prompt-injected call write mail HTML
+    // anywhere on disk (~/.zshrc, LaunchAgents). The tool no longer offers it.
+    expect((captureSignatureTool.inputSchema as { properties: object }).properties).not.toHaveProperty('out');
+    await captureSignatureTool.handler({ out: `${tmpDir}/evil.sh` });
+    expect(capturedArgs).not.toContain('--out');
+    expect(capturedArgs).not.toContain(`${tmpDir}/evil.sh`);
   });
 });
 

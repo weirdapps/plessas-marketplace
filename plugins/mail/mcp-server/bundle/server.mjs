@@ -17367,11 +17367,11 @@ var BLOCKED_DESTINATIONS = /* @__PURE__ */ new Set([
   "junkemail",
   "junk",
   "trash",
-  "recoverableitems"
+  "recoverableitems",
+  "recoverableitemsdeletions"
 ]);
 function isBlockedDestination(to) {
-  const leaf = to.split(/[/\\]/).pop() ?? "";
-  return BLOCKED_DESTINATIONS.has(leaf.replace(/\s+/g, "").toLowerCase());
+  return to.split(/[/\\]/).some((segment) => BLOCKED_DESTINATIONS.has(segment.replace(/\s+/g, "").toLowerCase()));
 }
 var moveMailTool = {
   name: "outlook_move_mail",
@@ -17502,7 +17502,7 @@ async function materializeBodies(args) {
     out.html = args.html_file;
   } else if (typeof args.html_body === "string" && args.html_body.length > 0) {
     const p = path.join(os.tmpdir(), `outlook-cli-body-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
-    await fs.writeFile(p, args.html_body, "utf-8");
+    await fs.writeFile(p, args.html_body, { encoding: "utf-8", mode: 384 });
     out.html = p;
     out.cleanup.push(p);
   }
@@ -17510,7 +17510,7 @@ async function materializeBodies(args) {
     out.text = args.text_file;
   } else if (typeof args.text_body === "string" && args.text_body.length > 0) {
     const p = path.join(os.tmpdir(), `outlook-cli-body-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-    await fs.writeFile(p, args.text_body, "utf-8");
+    await fs.writeFile(p, args.text_body, { encoding: "utf-8", mode: 384 });
     out.text = p;
     out.cleanup.push(p);
   }
@@ -17559,14 +17559,14 @@ async function buildReplyCliArgs(command, args) {
     cliArgs.push("--html", args.html_file);
   } else if (typeof args.html_body === "string") {
     const p = path.join(os.tmpdir(), `outlook-cli-reply-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
-    await fs.writeFile(p, args.html_body, "utf-8");
+    await fs.writeFile(p, args.html_body, { encoding: "utf-8", mode: 384 });
     cliArgs.push("--html", p);
     cleanup.push(p);
   } else if (typeof args.text_file === "string") {
     cliArgs.push("--text", args.text_file);
   } else if (typeof args.text_body === "string") {
     const p = path.join(os.tmpdir(), `outlook-cli-reply-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-    await fs.writeFile(p, args.text_body, "utf-8");
+    await fs.writeFile(p, args.text_body, { encoding: "utf-8", mode: 384 });
     cliArgs.push("--text", p);
     cleanup.push(p);
   }
@@ -17659,14 +17659,14 @@ var forwardTool = {
       cliArgs.push("--html", args.html_file);
     } else if (typeof args.html_body === "string") {
       const p = path.join(os.tmpdir(), `outlook-cli-fwd-${Date.now()}-${Math.random().toString(36).slice(2)}.html`);
-      await fs.writeFile(p, args.html_body, "utf-8");
+      await fs.writeFile(p, args.html_body, { encoding: "utf-8", mode: 384 });
       cliArgs.push("--html", p);
       cleanup.push(p);
     } else if (typeof args.text_file === "string") {
       cliArgs.push("--text", args.text_file);
     } else if (typeof args.text_body === "string") {
       const p = path.join(os.tmpdir(), `outlook-cli-fwd-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-      await fs.writeFile(p, args.text_body, "utf-8");
+      await fs.writeFile(p, args.text_body, { encoding: "utf-8", mode: 384 });
       cliArgs.push("--text", p);
       cleanup.push(p);
     }
@@ -17696,10 +17696,6 @@ var captureSignatureTool = {
       from_message: {
         type: "string",
         description: "Override: source message id (default: latest in SentItems)"
-      },
-      out: {
-        type: "string",
-        description: "Override output path (default: ~/.outlook-cli/signature.html)"
       }
     },
     additionalProperties: false
@@ -17708,9 +17704,6 @@ var captureSignatureTool = {
     const cliArgs = ["capture-signature"];
     if (typeof args.from_message === "string" && args.from_message.length > 0) {
       cliArgs.push("--from-message", args.from_message);
-    }
-    if (typeof args.out === "string" && args.out.length > 0) {
-      cliArgs.push("--out", args.out);
     }
     return runOutlookCli(cliArgs, { idempotent: false });
   }
