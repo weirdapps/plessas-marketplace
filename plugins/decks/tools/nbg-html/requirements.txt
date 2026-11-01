@@ -9,4 +9,4 @@ pyyaml>=6.0.3
 pypdf>=6.21.4
 # PDF pages to PNG for visual QA (BSD-3-Clause / Apache-2.0), saved through Pillow
 pypdfium2>=5.14.0
-Pillow>=12.3.0
+Pillow>=13.0.0
