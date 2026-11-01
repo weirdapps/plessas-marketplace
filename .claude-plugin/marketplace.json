@@ -19,7 +19,7 @@
     },
     {
       "name": "mail",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "category": "communications",
       "source": "./plugins/mail",
       "description": "Outlook mail with bundled outlook-cli MCP wrapper. Read, draft, triage, style-match, briefings, self-learning.",
@@ -42,7 +42,7 @@
     },
     {
       "name": "chat",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "category": "communications",
       "source": "./plugins/chat",
       "description": "Microsoft Teams interactive commands with bundled teams-bridge MCP. Inbox, reply, summarize, channel digest.",

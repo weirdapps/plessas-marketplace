@@ -17395,11 +17395,11 @@ var package_default = {
     "test:watch": "vitest"
   },
   dependencies: {
-    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "teams-cli": "git+https://x@github.com/weirdapps/teams-access.git#8463e2421d6bc8ed07482817c8e2fb1ee9f7d086"
   },
   devDependencies: {
-    "@types/node": "~26.6.5",
+    "@types/node": "~26.6.6",
     esbuild: "0.28.2",
     typescript: "~7.0.2",
     vitest: "~5.0.5"
