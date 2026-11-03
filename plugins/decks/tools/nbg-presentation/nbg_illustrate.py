@@ -75,9 +75,18 @@ PHOTO_STYLE = (
     "close to #003841, cyan highlights close to #00ADBF, practical lights, dusk or night, "
     "shallow depth of field, fine film grain, photographic realism, not an illustration. "
     "Large calm negative space on the {side} of the frame, dark enough for white text over it. "
-    "No text, no letters, no numbers, no logos, no signage, no readable screens. People only "
+    "{marks} People only "
     "as distant figures, silhouettes or seen from behind, never posed, never smiling at the "
     "camera, never stock photography."
+)
+# --keep-brand: the scene shows the bank itself (a branch, the head office, the app, the card),
+# so the branding the reference pictures show is reproduced instead of stripped.
+PHOTO_NO_TEXT = "No text, no letters, no numbers, no logos, no signage, no readable screens."
+PHOTO_KEEP_BRAND = (
+    "The reference pictures show the bank's real brand: reproduce its branding faithfully "
+    "wherever the scene shows the bank (the facade band, the wordmark with its emblem, the ATM "
+    "surrounds, the app's interface, the card), with the colours and shapes of the references. "
+    "No other text or numbers anywhere."
 )
 PHOTO_SIDES = ("left", "right", "top", "bottom", "centre")
 PHOTO_PX = (1920, 1080)  # the HTML artboard; the PowerPoint keynote scales its 2560 canvas
@@ -133,10 +142,19 @@ def refused(brief: str) -> str | None:
     return None
 
 
-def prompt(brief: str, *, with_reference: bool, photo_side: str | None = None) -> str:
+def prompt(
+    brief: str,
+    *,
+    with_reference: bool,
+    photo_side: str | None = None,
+    keep_brand: bool = False,
+) -> str:
     if photo_side:
         parts = [
-            PHOTO_STYLE.format(side="centre" if photo_side == "centre" else f"{photo_side} side")
+            PHOTO_STYLE.format(
+                side="centre" if photo_side == "centre" else f"{photo_side} side",
+                marks=PHOTO_KEEP_BRAND if keep_brand else PHOTO_NO_TEXT,
+            )
         ]
         if with_reference:
             parts.append(
@@ -348,12 +366,15 @@ def generate(
     candidates: int,
     key: str,
     photo_side: str | None = None,
+    keep_brand: bool = False,
 ) -> list[Path]:
     """Draw `candidates` pictures for the brief; one is written to `out`, more to
     `<stem>-c1.png` ... beside it, for the caller to look at and choose. With
     `photo_side`, a keynote photograph (JPEG, 16:9) instead of an illustration."""
     body = request_body(
-        prompt(brief, with_reference=bool(refs), photo_side=photo_side), refs, aspect
+        prompt(brief, with_reference=bool(refs), photo_side=photo_side, keep_brand=keep_brand),
+        refs,
+        aspect,
     )
     max_px = int(nbg_tokens.get("illustration.max_px"))
     targets = (
@@ -393,6 +414,12 @@ def main(argv: list[str] | None = None) -> int:
         help="a keynote photograph (16:9 JPEG) with its negative space on SIDE: "
         + ", ".join(PHOTO_SIDES),
     )
+    ap.add_argument(
+        "--keep-brand",
+        action="store_true",
+        help="with --photo and --ref: keep the bank's branding the references show (facade, "
+        "wordmark, app, card) instead of removing every logo",
+    )
     args = ap.parse_args(argv)
 
     key = api_key()
@@ -406,6 +433,8 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     if not args.brief or not args.out:
         ap.error("--brief and --out are required")
+    if args.keep_brand and not (args.photo and args.ref):
+        ap.error("--keep-brand needs --photo and at least one --ref showing the branding")
     if args.photo:
         if args.out.suffix.lower() not in (".jpg", ".jpeg"):
             ap.error("--out must be a .jpg with --photo")
@@ -442,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
             candidates=args.candidates,
             key=key,
             photo_side=args.photo,
+            keep_brand=args.keep_brand,
         )
     except Failure as e:
         print(f"illustrate: {e}", file=sys.stderr)

@@ -2,6 +2,30 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-11-03
+
+A keynote is an HTML keynote by default, and its photographs can show the bank as it really looks.
+
+Versions: `decks` 2.2.2 to **2.3.0**, marketplace 2.6.0 to 2.7.0.
+
+### Changed
+
+- **`decks`: «keynote» routes to `/create-html-deck --keynote`.** The PowerPoint keynote ships
+  flattened slide images nobody can edit; the HTML keynote keeps every infographic editable and
+  exports its PDF from the same file. `/create-keynote` now runs only when the keynote is asked
+  for as PowerPoint or a .pptx, and hands any other keynote request to the HTML command.
+- **`decks`: keynote content rules in `html-decks.md`**: infographics drawn in the page (never
+  baked images, diagram lines under solid boxes), photo cards for product and pillar slides,
+  numbers written in full, market share as a stock share unless the slide says otherwise.
+
+### Added
+
+- **`decks`: `decks-py illustrate --photo ... --keep-brand`.** With real pictures of the bank as
+  `--ref` (a branch, the head office, the app, the card), the photograph reproduces the branding
+  they show instead of removing every logo, so a branch reads as this bank and not any bank. It
+  needs `--photo` and at least one `--ref`; the brief is still refused if it names the bank or
+  holds a digit.
+
 ## [2.6.0] - 2026-11-01
 
 Security hardening from the 2026-11-01 audit. The theme: a command that reads other people's mail or

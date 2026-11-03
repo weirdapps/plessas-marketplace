@@ -11,6 +11,10 @@ User request: $ARGUMENTS
 </objective>
 
 <critical>
+A keynote is built as an HTML keynote by default (`/decks:create-html-deck --keynote`): editable
+infographics, one file for the PDF. Use this command only when the user asked for the keynote as
+PowerPoint or a .pptx; otherwise hand the request to `/decks:create-html-deck --keynote`.
+
 This is NOT the command for normal decks. Keynote mode is Standard #21, the single sanctioned
 exception to the light NBG format, and it is fenced. Check the entry criteria first. If the deck
 does not qualify, stop and use `/decks:create-presentation`.

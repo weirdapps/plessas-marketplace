@@ -12,8 +12,12 @@ format of a new deck follows the word the user chose, and you never switch it on
 |---|---|---|
 | a presentation, deck or slides, nothing more («φτιάξε μια παρουσίαση») | PowerPoint | `/decks:create-presentation` |
 | an **HTML** presentation («φτιάξε μια HTML παρουσίαση»), or a deck to edit in the browser and send as PDF | HTML | `/decks:create-html-deck` |
-| a **keynote** («keynote παρουσίαση»), or a dark full-bleed deck for a stage talk | Keynote (PowerPoint) | `/decks:create-keynote` |
-| an **HTML keynote** («HTML keynote»): the keynote format, editable in the browser | Keynote (HTML) | `/decks:create-html-deck --keynote` |
+| a **keynote** («keynote παρουσίαση», «HTML keynote»), or a dark full-bleed deck for a stage talk | Keynote (HTML) | `/decks:create-html-deck --keynote` |
+| a **PowerPoint keynote** («keynote σε PowerPoint», a keynote as a .pptx) | Keynote (PowerPoint) | `/decks:create-keynote` |
+
+A keynote is HTML by default: its infographics stay editable and its PDF comes from the same
+file, while the PowerPoint keynote ships flattened slide images. Build the PowerPoint one only
+when the user names PowerPoint or a .pptx.
 
 | The user wants to | Run |
 |---|---|
