@@ -17,8 +17,8 @@ New here? [QUICKSTART.md](QUICKSTART.md) gets you to a first deck in five minute
 |---|---|---|---|
 | **PowerPoint** (the default) | a `.pptx` built by one tested renderer from a deck spec, checked by the brand validator and by QA looking at every slide | PowerPoint | "a deck", «παρουσίαση» → `/create-presentation` |
 | **HTML deck** | one self-contained `.html` file plus its PDF; the reader edits text, moves and resizes anything, adds pictures and slides, saves, presents and prints | Chrome or Edge | "an HTML deck", «HTML παρουσίαση» → `/create-html-deck` |
-| **Keynote** | the dark full-bleed stage format of Standard #21, rendered as images into a `.pptx` and a PDF | regenerated from its YAML | "a keynote", «keynote παρουσίαση» → `/create-keynote` |
-| **HTML keynote** | the same stage format on photographs, as an editable HTML file plus its PDF | Chrome or Edge | "an HTML keynote" → `/create-html-deck --keynote` |
+| **HTML keynote** (the default keynote) | the dark full-bleed stage format of Standard #21 on photographs, as an editable HTML file plus its PDF | Chrome or Edge | "a keynote", «keynote παρουσίαση», "an HTML keynote" → `/create-html-deck --keynote` |
+| **PowerPoint keynote** | the same stage format, rendered as images into a `.pptx` and a PDF | regenerated from its YAML | "a keynote in PowerPoint" → `/create-keynote` |
 
 All four read the same brand tokens (`shared/brand-system/tokens.yaml`), so a colour, a size or a
 logo changes in one place for every format. The format follows the word you use; the plugin never
@@ -63,12 +63,12 @@ bash ~/.claude/plugins/marketplaces/plessas-marketplace/plugins/decks/bin/decks-
 |---|---|
 | A new deck from a brief, notes, a document or an email thread | `/create-presentation` |
 | The same, as an HTML deck: edited in the browser (text, free layout, pictures, slides), saved as PDF | `/create-html-deck` |
-| A keynote as an HTML deck: the dark stage format, still editable in the browser | `/create-html-deck --keynote` |
+| A keynote: the dark stage format on photographs, editable in the browser (the default keynote) | `/create-html-deck --keynote` |
 | An existing deck rebuilt to NBG standards: content kept, layout redone | `/redesign-deck <file.pptx>` |
 | A deck that is nearly right, tightened without restructuring | `/polish-slides <file.pptx>` |
 | A deck checked before it ships: brand validator, a look at every slide, a fix list; it changes nothing | `/review-deck <file.pptx>` |
 | The system to learn from the edits you made to a deck it generated | `/presentation-review <final.pptx>` |
-| A talk from a stage to an external or bank-wide audience: dark, full-bleed, photographs (Standard #21 and its four entry criteria) | `/create-keynote` |
+| The same keynote as a PowerPoint file of flattened slide images (Standard #21 and its four entry criteria) | `/create-keynote` |
 | A new icon in the NBG duotone style | `/create-icon` |
 | A chart or diagram as an image for a slide | `/create-infographic` |
 | A screenshot placed inside an iPhone frame | `/create-mockup <screenshot>` |
@@ -76,8 +76,8 @@ bash ~/.claude/plugins/marketplaces/plessas-marketplace/plugins/decks/bin/decks-
 Each command also answers to `/decks:<name>`. You do not have to remember them: ask in plain
 words ("I need something for the board on Thursday", «θέλω κάτι για το ΔΣ») and the
 `presentations` skill picks the command. The format follows your word: a "presentation" is
-PowerPoint, an "HTML presentation" is HTML, a "keynote" is a PowerPoint keynote, an "HTML
-keynote" is the keynote format in HTML.
+PowerPoint, an "HTML presentation" is HTML, a "keynote" (or "HTML keynote") is the keynote
+format in HTML, and only a "PowerPoint keynote" is a `.pptx`.
 
 ## How it works
 

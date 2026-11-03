@@ -283,3 +283,51 @@ def test_a_photograph_is_refused_like_an_illustration_and_must_be_a_jpeg(api, tm
             ["--brief", "a street", "--out", str(tmp_path / "a.png"), "--photo", "left"]
         )
     assert calls == []
+
+
+def test_keep_brand_photographs_the_real_branding_of_the_references(api, tmp_path):
+    """--keep-brand reproduces the bank's branding shown in the reference pictures (facade,
+    wordmark, app screens) instead of stripping every logo, and still sends no name in the
+    brief."""
+    calls, _ = api
+    branch = tmp_path / "branch.png"
+    branch.write_bytes(_scene((200, 150)))
+    out = tmp_path / "S04_cards.jpg"
+    args = ["--brief", "a branch frontage at dusk", "--out", str(out), "--photo", "left"]
+    code = nbg_illustrate.main([*args, "--ref", str(branch), "--keep-brand"])
+    assert code == 0
+    text = json.loads(calls[0].data)["contents"][0]["parts"][-1]["text"]
+    assert "reproduce" in text and "branding" in text
+    assert "no logos" not in text, "the branding of the references is kept"
+    assert "no other text or numbers" in text.lower()
+
+
+def test_keep_brand_needs_a_photograph_and_a_reference(api, tmp_path):
+    calls, _ = api
+    ref = tmp_path / "branch.png"
+    ref.write_bytes(_scene((50, 50)))
+    with pytest.raises(SystemExit):
+        nbg_illustrate.main(
+            [
+                "--brief",
+                "a street",
+                "--out",
+                str(tmp_path / "a.jpg"),
+                "--photo",
+                "left",
+                "--keep-brand",
+            ]
+        )
+    with pytest.raises(SystemExit):
+        nbg_illustrate.main(
+            [
+                "--brief",
+                "a street",
+                "--out",
+                str(tmp_path / "a.png"),
+                "--ref",
+                str(ref),
+                "--keep-brand",
+            ]
+        )
+    assert calls == []

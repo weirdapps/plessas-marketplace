@@ -14,9 +14,10 @@ User request: $ARGUMENTS
 <rules>
 - Use this command when the user asks for an **HTML** presentation (in Greek, «HTML παρουσίαση»),
   and with `--keynote` when they ask for an **HTML keynote** («HTML keynote»): the dark stage
-  format of Standard #21 as an editable HTML deck. A plain "presentation" is PowerPoint
-  (`/decks:create-presentation`); a plain keynote is `/decks:create-keynote`. Do not switch
-  formats on your own.
+  format of Standard #21 as an editable HTML deck. A plain keynote («keynote παρουσίαση») is
+  also built here with `--keynote`: the HTML keynote is the default keynote. Only a keynote asked
+  for as PowerPoint or a .pptx goes to `/decks:create-keynote`. A plain "presentation" is
+  PowerPoint (`/decks:create-presentation`). Do not switch formats on your own.
 - **Keynote mode** (`--keynote`, or the request says keynote): also read
   `${CLAUDE_PLUGIN_ROOT}/shared/brand-system/keynote.md` (archetypes, type scale, hard rules) and
   the keynote section of the component guide. The deck is `<main class="deck keynote">`; every
@@ -95,7 +96,10 @@ closing stand on one, and so should about a third of the slides. Use the user's 
 when `decks-py illustrate --probe` says `ready`, draw them: the cover first as the anchor
 (`decks-py illustrate --photo left --brief "<scene>" --out <WORK>/images/cover.jpg`), then every
 other one with `--ref <WORK>/images/cover.jpg`, sending them together. Pick each scene for what
-the slide says; `--photo` names the side left empty for the text. Without a key and without the
+the slide says; `--photo` names the side left empty for the text. A scene that shows the bank
+itself (a branch, the head office, the app, the card) must look like the bank: pass the user's
+real pictures of it as `--ref` with `--keep-brand`, which keeps their branding instead of
+removing every logo. Without a key and without the
 user's pictures, ask for them: do not ship a keynote on the gradient alone. Place each as
 `<div class="bg scrim-left"><img src="images/...">` with the scrim on the side the text sits.
 Text over a photograph is not measured by the check: judge its contrast on the rendered PNG in

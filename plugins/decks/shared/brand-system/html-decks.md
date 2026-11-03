@@ -10,8 +10,8 @@ size and position comes from [`tokens.yaml`](tokens.yaml), and the numbered Stan
 |---|---|
 | a deck to edit in PowerPoint, the bank's default | PowerPoint (`/decks:create-presentation`) |
 | a deck to edit in the browser and send as PDF | **HTML** (`/decks:create-html-deck`) |
-| a dark full-bleed deck for a stage | Keynote (`/decks:create-keynote`) |
-| a dark full-bleed stage deck, editable in the browser | **HTML keynote** (`/decks:create-html-deck --keynote`) |
+| a dark full-bleed deck for a stage, editable in the browser (the default keynote) | **HTML keynote** (`/decks:create-html-deck --keynote`) |
+| the same keynote as a PowerPoint file of slide images | PowerPoint keynote (`/decks:create-keynote`) |
 
 ## How it is made
 
@@ -189,6 +189,11 @@ space on the side the text will sit.
   words>" --out <WORK>/images/cover.jpg`. Draw the cover first; it is the style anchor, so pass
   `--ref <WORK>/images/cover.jpg` for every other one and the deck reads as one series. The brief
   goes to Google and may hold no digit, amount or the bank's name.
+- **The bank itself in the scene** (a branch, the head office, the app, the card): a generic
+  photograph reads as any bank. Pass real pictures of it as `--ref` and add `--keep-brand`, which
+  reproduces the branding they show (facade band, wordmark, app screens) instead of removing
+  every logo: `decks-py illustrate --photo left --keep-brand --ref <WORK>/refs/branch.jpg
+  --brief "<scene>" --out <WORK>/images/branch.jpg`. The references stay in the work folder.
 - **Your own**, any JPEG or PNG at 1920 px or wider. Photographs are never committed to a repo
   (keynote.md hard rule 6).
 
@@ -198,6 +203,18 @@ text sits. Over a photograph the statement and hero columns narrow, as keynote.m
 The check measures contrast on the gradient; over a photograph it cannot, so judge it on the PNG:
 where a line runs into the bright part of the picture, narrow that element with an inline
 `style="max-width:900px"` (keynote.md's per-slide `maxw`), or move the scrim to the other side.
+
+### Keynote content rules
+
+- **Draw infographics in the page**, as HTML or inline SVG (pyramids, hubs, waffles, flows,
+  timelines), never as a baked image: the reader edits every label. Lines of a diagram sit
+  under its boxes, and the boxes are solid, so no line shows through.
+- **Product and pillar slides use photo cards**: one photograph per item, the label over it.
+  Do not mix white and dark icons on one slide.
+- **Numbers in full, with their thousands separators** (4.500.000, 200.000), never «χιλ.» or
+  «εκ.»; euro amounts may keep «δισ.».
+- **A market share is a stock share** (balances), unless the slide says it is a share of new
+  business, and names its period and source.
 
 ## What the reader can do in the browser
 
