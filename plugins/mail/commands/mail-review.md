@@ -50,7 +50,7 @@ Two differences apply when running under `/mail-review`:
 
 - Default to `top: 50`. Drafting needs a wider sweep than a plain briefing.
 - More than one action may apply to a single email (for example URGENT + REPLY). Keep every action that fits, because the drafting step below keys off them.
-- When `mcp__second-brain__*` tools are available, add a `CONTEXT:` line under each email's GIST: call `mcp__second-brain__person_context` with the sender's address (the name only when the message holds no address; read `resolved_by` and `match_count` before trusting a name match) for frequency, related decisions and open items, plus `query_actions` (`owner=<sender>`, `status="open"`) and `query_decisions` (`topic=<email topic>`) where useful. Without second-brain, omit the line.
+- When `mcp__second-brain__*` tools are available, add a `CONTEXT:` line under each email's GIST: call `mcp__second-brain__person_context` with the sender's address (the name only when the message holds no address; read `resolved_by` and `match_count` before trusting a name match) for frequency, related decisions and open items, plus `query_items` (`kind="actions"`, `status="open"`, `filter.person=<sender>`) and `query_items` (`kind="decisions"`, `filter.topic=<email topic>`) where useful. Without second-brain, omit the line.
 - Urgency signals: the boss asking directly (identify the boss from the style guide's per-recipient profiles), urgent words in the subject, repeated follow-ups from the same person, the user in TO rather than CC, customer-facing issues.
 
 Do NOT restate the briefing specification here. If the two ever disagree, `inbox-briefing.md` wins.
@@ -63,11 +63,11 @@ If `second-brain` is available, query it to enrich draft context. The style guid
 
 **For each email marked REPLY, DELEGATE, FOLLOW-UP, or FORWARD, run in parallel:**
 
-1. `mcp__second-brain__search_emails`: search by subject keywords to find thread history and prior decisions
+1. `mcp__second-brain__search`: search by subject keywords to find thread history and prior decisions (`read` on a hit opens its thread)
 2. `mcp__second-brain__topic_context`: get broader topic context (related threads, key people, open actions)
 3. `mcp__second-brain__person_context`: for senders/recipients where relationship context would sharpen the draft
-4. `mcp__second-brain__query_decisions`: if the thread involves a pending decision or approval
-5. `mcp__second-brain__query_emails`: filter by person + date range for recent exchanges on the topic
+4. `mcp__second-brain__query_items` with `kind="decisions"`: if the thread involves a pending decision or approval
+5. `mcp__second-brain__search` with `filter.person` and `filter.since`/`filter.until`: recent exchanges with that person on the topic
 
 **Use the gathered context to:**
 
