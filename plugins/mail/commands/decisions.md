@@ -1,7 +1,7 @@
 ---
 description: "Surface recent decisions, track delegations, and check decision consistency"
 argument-hint: "[today|week|TOPIC] [--pending]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__second-brain__query_actions, mcp__second-brain__query_decisions
+allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__second-brain__query_items
 ---
 
 <objective>
@@ -27,22 +27,22 @@ If the file doesn't exist, create it with an empty array.
 
 ### 3. Query Knowledge Store Decisions (via MCP)
 
-Use `mcp__second-brain__query_decisions` with:
+Use `mcp__second-brain__query_items` with `kind="decisions"` and a `filter` object:
 
-- `days=7` (for week scope) or `days=1` (for today scope)
-- `topic="[topic]"` if a topic filter was specified
-- `person="[person]"` if filtering by decision-maker
+- `filter.days=7` (for week scope) or `filter.days=1` (for today scope)
+- `filter.topic="[topic]"` if a topic filter was specified
+- `filter.person="[person]"` if filtering by decision-maker
 
 ### 4. Query Action Items (via MCP)
 
-Use `mcp__second-brain__query_actions` with:
+Use `mcp__second-brain__query_items` with `kind="actions"`:
 
 - `status="open"` for pending items
-- `owner="[owner]"` if filtering by owner
+- `filter.person="[owner]"` if filtering by owner
 
 ### 5. Filter by Topic (if specified)
 
-Use `mcp__second-brain__query_decisions` with `topic="[topic]"`
+Use `mcp__second-brain__query_items` with `kind="decisions"` and `filter.topic="[topic]"`
 
 ### 6. Cross-Reference Local and DB
 

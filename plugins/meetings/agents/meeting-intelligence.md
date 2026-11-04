@@ -94,8 +94,8 @@ Pass the attendee's address; use the name only when the invite holds no address,
 
 **Supplementary (if deeper context needed):**
 
-- `mcp__second-brain__query_actions` with `owner="<attendee_email>"`, `status="open"`: focused action item lookup
-- `mcp__second-brain__query_decisions` with `person="<attendee_email>"`, `days=90`: focused decision lookup
+- `mcp__second-brain__query_items` with `kind="actions"`, `status="open"`, `filter.person="<attendee_email>"`: focused action item lookup
+- `mcp__second-brain__query_items` with `kind="decisions"`, `filter.person="<attendee_email>"`, `filter.days=90`: focused decision lookup
 - `mcp__second-brain__topic_context` with `topic="<meeting_topic>"`: topic-specific context
 
 #### Option B: Outlook email search (fallback if no knowledge store)
