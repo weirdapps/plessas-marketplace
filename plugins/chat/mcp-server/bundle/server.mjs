@@ -17402,7 +17402,7 @@ var package_default = {
     "@types/node": "~26.6.6",
     esbuild: "0.28.2",
     typescript: "~7.0.2",
-    vitest: "~5.0.5"
+    vitest: "~5.1.0"
   }
 };
 
