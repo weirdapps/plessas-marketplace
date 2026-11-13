@@ -2,6 +2,29 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.2] - 2026-11-13
+
+Standardised against Claude Code 2.1.323 best practice: least-privilege agents and commands.
+
+Versions: `chat` 1.2.1 to **1.2.2**, `mail` 1.2.2 to **1.2.3**, `meetings` 1.2.1 to **1.2.2**,
+marketplace 2.7.1 to 2.7.2.
+
+### Changed
+
+- **`mail`, `meetings`: both agents declare `tools`.** `triage-engine` had no `tools` field, so it
+  inherited every tool, including the send and move tools, while it reads untrusted mail. It now
+  gets file tools and `outlook_get_mail` only; `/triage-inbox` still does every move.
+  `meeting-intelligence` gets the file tools, Bash for its AppleScript fallback, the four
+  calendar and mail read tools and the three second-brain tools its body calls. Both descriptions
+  now say when they are dispatched and what they are not for.
+- **`chat`, `mail`: no server-wide wildcard grants.** `/chat:chat-reply` and the two `auth-setup`
+  commands pre-approved every tool of their bridge (`__*`), send and move tools included. Each
+  now lists only the tools its body calls.
+- **`mail`: `/archive-thread` description** no longer holds `<current-year>`, which the skill
+  listing showed as `&lt;current-year&gt;`.
+- **`chat`, `mail`, `meetings`: README install line**
+  (`/plugin install <name> --marketplace weirdapps/plessas-marketplace`).
+
 ## [2.7.0] - 2026-11-03
 
 A keynote is an HTML keynote by default, and its photographs can show the bank as it really looks.
