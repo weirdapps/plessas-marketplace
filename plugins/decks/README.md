@@ -40,7 +40,13 @@ font (exit 4); install Aptos where LibreOffice looks and render again.
 
 ## Install
 
-Inside Claude Code:
+Inside Claude Code (this also adds the marketplace):
+
+```text
+/plugin install decks --marketplace weirdapps/plessas-marketplace
+```
+
+Or in two steps:
 
 ```text
 /plugin marketplace add weirdapps/plessas-marketplace

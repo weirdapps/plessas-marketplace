@@ -7,7 +7,7 @@ All notable changes to `plessas-marketplace` are documented here. Format follows
 Standardised against Claude Code 2.1.323 best practice: least-privilege agents and commands.
 
 Versions: `chat` 1.2.1 to **1.2.2**, `mail` 1.2.2 to **1.2.3**, `meetings` 1.2.1 to **1.2.2**,
-marketplace 2.7.1 to 2.7.2.
+`decks` 2.3.0 to **2.3.1**, `docs` 1.1.2 to **1.1.3**, `excel` 1.2.0 to **1.2.1**, marketplace 2.7.1 to 2.7.2.
 
 ### Changed
 
@@ -17,13 +17,28 @@ marketplace 2.7.1 to 2.7.2.
   `meeting-intelligence` gets the file tools, Bash for its AppleScript fallback, the four
   calendar and mail read tools and the three second-brain tools its body calls. Both descriptions
   now say when they are dispatched and what they are not for.
-- **`chat`, `mail`: no server-wide wildcard grants.** `/chat:chat-reply` and the two `auth-setup`
-  commands pre-approved every tool of their bridge (`__*`), send and move tools included. Each
-  now lists only the tools its body calls.
+- **`chat`, `mail`, `meetings`: no server-wide wildcard grants.** `/chat:chat-reply` and the two
+  `auth-setup` commands pre-approved every tool of their bridge (`__*`), send and move tools
+  included; `/mail:mail-review` and `/meetings:meeting-prep` pre-approved every second-brain tool.
+  Each now lists only the tools its body calls.
+- **`meetings`: `meeting-intelligence` no longer tells itself to run `/send-mail`**, which its
+  tools do not allow; it returns the summary and `/meetings:meeting-debrief` step 5 sends it. It
+  gains `outlook_auth_check`, which `shared/calendar-access.md` tells it to call.
 - **`mail`: `/archive-thread` description** no longer holds `<current-year>`, which the skill
   listing showed as `&lt;current-year&gt;`.
-- **`chat`, `mail`, `meetings`: README install line**
+- **`chat`, `mail`, `meetings`, `decks`, `docs`, `excel`: README install line**
   (`/plugin install <name> --marketplace weirdapps/plessas-marketplace`).
+
+## [2.7.1] - 2026-11-04
+
+Versions: `mail` 1.2.1 to **1.2.2**, `meetings` 1.2.0 to **1.2.1**, marketplace 2.7.0 to 2.7.1.
+
+### Fixed
+
+- **`mail`, `meetings`: call the second brain's consolidated tools.** `query_decisions`,
+  `query_actions`, `query_emails` and `search_emails` are gone from the second-brain MCP server;
+  `query_items` (kind decisions or actions, narrowing in one filter object) and `search` replace
+  them in `/mail:decisions`, `/mail:mail-review` and `meeting-intelligence` (#178).
 
 ## [2.7.0] - 2026-11-03
 

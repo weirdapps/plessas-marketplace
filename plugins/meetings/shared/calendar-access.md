@@ -4,7 +4,7 @@
 
 Calendar access for meeting intelligence. The outlook-bridge MCP wrapper around `outlook-cli` is the primary method (Microsoft Graph, structured JSON). Outlook AppleScript is a last-resort emergency fallback.
 
-> **IMPORTANT**: macOS Calendar is NOT reliable; it is out of sync with M365. NEVER use macOS Calendar AppleScript.
+> macOS Calendar is out of sync with M365, so never read the calendar through macOS Calendar AppleScript.
 
 ## PRIMARY: outlook-cli via outlook-bridge MCP
 

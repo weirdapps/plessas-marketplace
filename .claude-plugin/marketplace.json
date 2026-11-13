@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "decks",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "category": "presentations",
       "source": "./plugins/decks",
       "description": "Branded presentation system: agents write and refine a deck spec, one tested builder renders it, QA checks the validator report and every rendered slide. Also builds HTML decks edited in the browser and exported to PDF. Bundles icon, infographic, device-mockup creative tools.",
@@ -52,7 +52,7 @@
     },
     {
       "name": "excel",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "category": "analysis",
       "source": "./plugins/excel",
       "description": "Excel analysis: summary, pivot, variance, deck handoff. Wraps document-skills:xlsx.",
@@ -62,7 +62,7 @@
     },
     {
       "name": "docs",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "category": "documents",
       "source": "./plugins/docs",
       "description": "Word document creation: reports, formal letters, internal memos. Wraps document-skills:docx.",
