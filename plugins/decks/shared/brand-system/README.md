@@ -6,11 +6,11 @@
 
 **Single Source of Truth** for all NBG presentation brand guidelines.
 
-All agents and commands should reference these specifications. Do NOT create duplicate specifications elsewhere.
+All agents and commands should reference these specifications. Do not create duplicate specifications elsewhere.
 
 ## Quick Reference
 
-### Slide Dimensions (CRITICAL)
+### Slide Dimensions
 
 ```yaml
 width: 13.333"      # 16:9 widescreen
@@ -31,7 +31,7 @@ aspect_ratio: 16:9
 | Caption Grey | `5A5F5A` | Captions, sources, footnotes, TOC descriptions, table notes |
 | Muted Grey | `939793` | Page numbers, process arrows, muted axis labels; never body or label text |
 | Light Grey | `BEC1BE` | Dividers, axis lines, hairlines |
-| White | `FFFFFF` | **ALWAYS** for slide backgrounds |
+| White | `FFFFFF` | Always, for slide backgrounds |
 | Off-white | `F5F8F6` | Default card and KPI-card fill |
 
 ### Fonts
@@ -110,7 +110,7 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 - **Position**: 12.71", 7.1554" (0.33" x 0.152")
 - **Font**: Aptos 10pt, color `939793`
 - **On**: Content, chart, table, infographic slides
-- **NOT on**: Cover, divider, back cover
+- **Not on**: Cover, divider, back cover
 
 ## Critical Rules
 
@@ -118,26 +118,26 @@ Never Aptos SemiBold on a slide: titles are Regular (Standard #16), emphasis is 
 |------|-------------|
 | **ONE RENDERER** | Light-mode decks are built by `nbg_build.py` (`decks-py build`) from a deck spec. No agent writes PptxGenJS, python-pptx or OOXML by hand. See `generation-methods.md`. |
 | **BUILD FROM SCRATCH** | **Never use NBG template files** (`Presentation()` not `Presentation(template)`). Templates carry phantom "Placeholder text" artifacts. |
-| **White backgrounds ONLY** | Never use dark themes, dark dividers, or colored cover backgrounds. **One exception: keynote mode**, see [keynote.md](keynote.md) and Standard #21 |
-| **ALWAYS use Greek logo** | Use `nbg-logo-gr.png` for ALL presentations; NEVER use the English logo |
+| **White backgrounds only** | Never use dark themes, dark dividers, or colored cover backgrounds. **One exception: keynote mode**, see [keynote.md](keynote.md) and Standard #21 |
+| **Always use the Greek logo** | Use `nbg-logo-gr.png` for every presentation; never use the English logo |
 | **NO Bright Cyan backgrounds** | `00DFF8` is TOO BRIGHT for box/card backgrounds; use `F5F8F6` (off-white) instead |
 | **NO dark bg + light text** | Fails accessibility. Use light backgrounds (#F5F8F6, #FFFFFF) with dark text (#003841 titles, #202020 text). **Keynote mode inverts this** under a measured WCAG guard; see [keynote.md](keynote.md) |
 | **Dark text on a light fill** | `#202020`, never a third dark (Standard #22). Measured ratios: [colors.md](colors.md#color-contrast-rules-standard-22) |
 | **NO pie charts** | Always use doughnut instead |
 | **NO "Thank You" slides** | Use plain back cover with centered logo |
-| **Title weight** | Aptos Regular (NOT SemiBold, NOT Bold) |
-| **Text boxes** | `margin: 0`, `valign: 'top'` ALWAYS |
-| **Content title size** | 24pt (NOT 44pt or larger) |
+| **Title weight** | Aptos Regular (not SemiBold, not Bold) |
+| **Text boxes** | `margin: 0`, `valign: 'top'`, always |
+| **Content title size** | 24pt (not 44pt or larger) |
 | **Body text size** | 14pt minimum, 16pt preferred; the builder grows a sparse slide's bullets toward 20pt. The full per-element floor table is `presentation-style-guide.md` Standard #11. |
 | **Cover subtitle** | 24pt: the presenting unit(s), pipe-separated, no trailing period (for example `Unit A \| Unit B`). A user's own unit list belongs in their style preferences, not here. |
 | **Dividers** | Title only, no subtitle/description. White background. Large logo (same as cover). |
 | **Line charts** | 3.5pt lines, straight segments, hollow circle markers size 6 (white fill, a 2pt ring in the series colour). A time series is an area-line, never a bare line (Standards #2.8, #5) |
-| **Chart colors** | ALWAYS specify explicit NBG colors. Same `#00ADBF` for both column AND bar charts. |
+| **Chart colors** | Always specify explicit NBG colors. Same `#00ADBF` for both column and bar charts. |
 | **Table numbers** | Right-aligned. Text columns left-aligned. Zebra rows: alternate #FFFFFF / #F5F8F6. |
 | **NO shadows** | All shapes, pills, boxes must have no shadow |
 | **Section pill** | Rounded rect, fill 007B85, 9pt Bold white ALL CAPS, sized to its text (spec above) |
-| **Charts are native** | Use proper native charts, NOT shape-drawn boxes |
-| **Page numbers** | On content/chart/table slides ONLY. Not on cover, dividers, back cover. Position: see Quick Reference above and [dimensions.md](dimensions.md#page-number-placement). |
+| **Charts are native** | Use proper native charts, not shape-drawn boxes |
+| **Page numbers** | On content/chart/table slides only. Not on cover, dividers, back cover. Position: see Quick Reference above and [dimensions.md](dimensions.md#page-number-placement). |
 | **No periods in titles** | Titles and subtitles have no trailing periods |
 
 ## Chart Color Sequence
@@ -183,7 +183,7 @@ follow it. `tokens.yaml` encodes their outcome.
 | [pillar-ds.md](pillar-ds.md) | **NBG Pillar Design System** - Digital product tokens |
 | [asset-library.md](asset-library.md) | **Asset Library** - Icons, illustrations, screenshots |
 | [generation-methods.md](generation-methods.md) | **Generation Methods** - the one renderer, and which tool does what |
-| [keynote.md](keynote.md) | **Keynote Mode** - dark full-bleed format for stage talks (Standard #21, the ONLY exception to the rules above) |
+| [keynote.md](keynote.md) | **Keynote Mode** - dark full-bleed format for stage talks (Standard #21, the only exception to the rules above) |
 
 ## Asset Library
 
@@ -200,12 +200,12 @@ Paths are relative to the plugin root (`${CLAUDE_PLUGIN_ROOT}`). See
 
 ## Logo Assets
 
-**IMPORTANT: ALWAYS use the Greek logo (`nbg-logo-gr.png`) for ALL presentations, regardless of language.**
+**Always use the Greek logo (`nbg-logo-gr.png`) for every presentation, whatever its language.**
 
 | Asset | Path | Usage |
 |-------|------|-------|
 | **Greek Logo (DEFAULT)** | `assets/nbg-logo-gr.png` | **ALL presentations** - this is the standard logo |
-| English Logo | `assets/nbg-logo.svg` | DO NOT USE - kept for legacy only |
+| English Logo | `assets/nbg-logo.svg` | Do not use; kept for legacy only |
 | English wordmark (PNG) | `assets/nbg-logo-fallback.png` | Never on slides (Standard #10); the validator fails it. Not a fallback for the Greek logo |
 | Back Cover Logo | `assets/nbg-back-cover-logo.png` | Centered on back cover |
 
@@ -215,6 +215,6 @@ content, falling back to their pixel size: if you ever re-encode one, keep its p
 
 ## Text Box Defaults
 
-**ALWAYS apply these to all text boxes:** zero internal margin (`margin: 0`) and top vertical
+**Apply these to every text box:** zero internal margin (`margin: 0`) and top vertical
 anchor (`valign: top`). The one pair that shares a baseline instead is the divider number and
 title (Standard #3).

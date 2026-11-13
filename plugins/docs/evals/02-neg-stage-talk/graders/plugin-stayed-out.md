@@ -1,7 +1,7 @@
 ---
 type: tool_used
 tool: Skill
-input_match: word-documents
+input_match: 'word-documents|(^|[^a-z-])docs:[a-z-]+'
 min: 0
 max: 0
 arm: both

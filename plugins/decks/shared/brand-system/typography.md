@@ -178,7 +178,7 @@ charts hide their value axis.
 
 ## Text Box Settings
 
-**CRITICAL**: All text boxes use zero internal margin, top vertical anchor and left alignment
+All text boxes use zero internal margin, top vertical anchor and left alignment
 unless a layout says otherwise. The divider number and title are the one pair aligned to a shared
 baseline instead (Standard #3).
 

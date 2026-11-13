@@ -366,6 +366,16 @@ Two consequences of the standalone registration:
   `min: 0, max: 0` guard that never matches passes silently. Do not assume a
   passing guard fired: cross-check `out/mock-calls.jsonl`, which logs the tool
   name and the input of every mock call actually made.
+- **Since 2.1.323 that holds only for a server the plugin does not declare.** A
+  mock for a server the plugin under test declares in its own `.mcp.json`
+  replaces that server inside the plugin: the progress line prints
+  `mocked: outlook-bridge(...)` with no `[standalone]`, and the trace records the
+  namespaced `mcp__plugin_mail_outlook-bridge__outlook_list_mail`. `meetings`,
+  which borrows mail's bridge, still prints `outlook-bridge[standalone]` and
+  records the bare form. Seen on 2026-11-13: mail and chat case 01 called
+  `mcp__plugin_<plugin>_<server>__*` tools while their bare mcp-matcher-control
+  graders scored 0x. `validate_consistency.py` now requires the namespaced
+  spelling for a declared server and the bare one otherwise.
 - The runner prints `not granted (missing --allow-tools grant, or a malformed
   entry): mcp__<server>__*` for the case's `allowed_tools` entry even though the
   mocked tools are served anyway. Alarming, harmless.

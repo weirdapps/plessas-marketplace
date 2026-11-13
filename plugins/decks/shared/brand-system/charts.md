@@ -6,7 +6,7 @@
 
 ## Critical Rules
 
-### NEVER Use Pie Charts
+### Never Use Pie Charts
 
 **Pie charts are PROHIBITED.** Always use **doughnut charts** instead:
 
@@ -16,7 +16,7 @@
 
 ### Always Specify Explicit Colors
 
-**CRITICAL:** Every chart part carries an explicit NBG colour: series fills and lines, data
+Every chart part carries an explicit NBG colour: series fills and lines, data
 labels, axis labels, axis lines and legend text. A part left to inherit takes the Office theme
 (`#4F81BD` blue, `#C0504D` red, Calibri), which is how line charts shipped in Office colours.
 `nbg_build.py` writes both the explicit colours and an NBG theme, so a chart a colleague adds in
@@ -48,7 +48,7 @@ Standard #22): they are secondary to the direct data labels, never the only way 
 
 | Priority | Chart Type | Use For |
 |----------|------------|---------|
-| 1 | **Doughnut** | Proportions, percentages (ALWAYS instead of pie) |
+| 1 | **Doughnut** | Proportions, percentages (always instead of pie) |
 | 2 | **Column Clustered** | Comparisons, rankings, categories (vertical) |
 | 3 | **Bar Clustered** | Horizontal comparisons (same color as column, `#00ADBF`) |
 | 4 | **Stacked Column** | Composition over time (3-4 series max) |
@@ -90,7 +90,7 @@ series directly rather than relying on a colour-only legend (Standard #22).
 
 ## Doughnut Charts
 
-**ALWAYS use doughnut instead of pie charts.** Hole 55%. The slices take the ring order
+**Always use a doughnut instead of a pie chart.** Hole 55%. The slices take the ring order
 (`charts.doughnut.slice_palette`: `#00ADBF`, `#003841`, `#007B85`, `#BEC1BE`, `#00DFF8`,
 `#939793`), the chart sequence reordered so NBG Teal never sits beside Medium Gray (1.70:1),
 including where the last slice meets the first. 1pt white lines separate the slices.

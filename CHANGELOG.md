@@ -24,6 +24,37 @@ Versions: `chat` 1.2.1 to **1.2.2**, `mail` 1.2.2 to **1.2.3**, `meetings` 1.2.1
 - **`meetings`: `meeting-intelligence` no longer tells itself to run `/send-mail`**, which its
   tools do not allow; it returns the summary and `/meetings:meeting-debrief` step 5 sends it. It
   gains `outlook_auth_check`, which `shared/calendar-access.md` tells it to call.
+- **`meetings`: `meeting-intelligence` description matches its body.** It said the agent was not
+  for the follow-up email, while its debrief Phase 4 drafts the attendee summary. The description
+  now says it drafts that summary for `/meetings:meeting-debrief` to send and never sends mail
+  itself; Phase 4 runs only on `--distribute` or a user request; the stale note that `/send-mail`
+  is an AppleScript path is gone.
+- **`meetings`: eval cases grant named outlook-bridge tools** instead of `mcp__outlook-bridge__*`:
+  the calendar and mail reads each case needs, plus `outlook_send_mail`, `outlook_reply` and
+  `outlook_reply_all`, kept so the never-sends graders still test something.
+- **`mail`, `chat`: MCP graders use the namespaced name.** On 2.1.323 a mock for a server the
+  plugin declares in its own `.mcp.json` replaces it inside the plugin, so the trace records
+  `mcp__plugin_mail_outlook-bridge__*` and `mcp__plugin_chat_teams-bridge__*`; the bare graders,
+  never-sends and never-posts included, matched nothing (their mcp-matcher-control scored 0x).
+  `validate_consistency.py` now requires the namespaced form for a declared server and the bare
+  form otherwise (`meetings`), with tests both ways; `docs/evals.md` records it.
+- **All suites: `skill-fired-is-ours` and `plugin-stayed-out` count the plugin's commands.**
+  Sonnet 5.5 often invokes `/meetings:meeting-prep` or `/mail:inbox-briefing` directly instead
+  of the router skill, which the positive graders scored as a miss and the negative ones let
+  through.
+- **`meetings`: `/meeting-debrief` description** says it is not for sending a note the user has
+  already written (the negative eval routed there), and both it and `meeting-intelligence` save
+  the debrief with the Write tool, which creates the folder. The `meeting-workflows` description
+  names recalling what the user promised a counterparty.
+- **`docs`: `/docs-letter` drafts with labelled placeholders** for missing facts instead of
+  stopping to ask, and lists them after the draft.
+- **`excel`: `/excel-to-deck` writes the spec with `as_of: "TBC"`** when the period is unknown,
+  asks for it first, and hands off only once it is filled.
+- **`decks`: an agreed outline is the storyline.** `storyline-architect` keeps its points, order,
+  wording and figures, adding only the cover and back cover.
+- **`decks`: `presentations` description under 1,024 bytes** (was 1,046).
+- **`decks`: plain wording in `shared/brand-system/*.md`.** Caps emphasis (IMPORTANT, CRITICAL,
+  ALWAYS, NEVER, DO NOT) is now ordinary case; every rule says the same thing.
 - **`mail`: `/archive-thread` description** no longer holds `<current-year>`, which the skill
   listing showed as `&lt;current-year&gt;`.
 - **`chat`, `mail`, `meetings`, `decks`, `docs`, `excel`: README install line**
