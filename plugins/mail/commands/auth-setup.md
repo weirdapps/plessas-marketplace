@@ -1,7 +1,7 @@
 ---
 description: "First-run auth for the outlook-bridge MCP: sign in to M365, capture signature, ready in one command"
 argument-hint: "[--force-reauth] [--skip-signature]"
-allowed-tools: Bash, Read, mcp__plugin_mail_outlook-bridge__*
+allowed-tools: Bash, Read, mcp__plugin_mail_outlook-bridge__outlook_doctor, mcp__plugin_mail_outlook-bridge__outlook_capture_signature
 ---
 
 # /mail:auth-setup

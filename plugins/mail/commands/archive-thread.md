@@ -1,5 +1,5 @@
 ---
-description: "Move a conversation thread to Inbox/Archive-<current-year>, creating the folder if needed"
+description: "Move a conversation thread to Inbox/Archive-YYYY (the current year), creating the folder if needed"
 argument-hint: "[subject or ConversationId] [--undo]"
 allowed-tools: Bash, Read, Write, mcp__plugin_mail_outlook-bridge__outlook_create_folder, mcp__plugin_mail_outlook-bridge__outlook_find_folder, mcp__plugin_mail_outlook-bridge__outlook_get_mail, mcp__plugin_mail_outlook-bridge__outlook_list_folders, mcp__plugin_mail_outlook-bridge__outlook_list_mail, mcp__plugin_mail_outlook-bridge__outlook_move_mail
 ---
