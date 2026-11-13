@@ -32,6 +32,12 @@ To approve every message instead, say so at the start of the session.
 
 ## Setup
 
+Install it inside Claude Code (this also adds the marketplace):
+
+```text
+/plugin install chat --marketplace weirdapps/plessas-marketplace
+```
+
 The marketplace setup script (`installers/install.sh`) handles all dependencies:
 
 1. Clones and `npm link`s the `teams-cli` package (from `weirdapps/teams-access`)
