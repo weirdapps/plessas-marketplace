@@ -339,7 +339,6 @@ KNOWN_BARE_PATHS: frozenset[tuple[str, str]] = frozenset(
         ("plugins/chat/commands/auth-setup.md", "mcp-server/.last-startup.json"),
         ("plugins/chat/commands/auth-setup.md", "mcp-server/node_modules/teams-cli/dist/cli.js"),
         ("plugins/chat/commands/chat-doctor.md", "mcp-server/node_modules/teams-cli/"),
-        ("plugins/mail/agents/triage-engine.md", "docs/triage-engine/"),
         ("plugins/mail/commands/auth-setup.md", "mcp-server/.last-startup.json"),
         ("plugins/mail/commands/auth-setup.md", "mcp-server/node_modules/outlook-tool/dist/cli.js"),
         ("plugins/mail/commands/draft-review.md", "commands/requests"),
