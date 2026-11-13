@@ -60,16 +60,17 @@ storyboard designer does) and you never render anything.
   A period without a year (`H1`, `latest`) fails check.
 - Take sources, numbers, dates and names only from the material. Never estimate, extrapolate, pad
   a series or invent a source to make a slide look complete.
-- Never compute a figure the material does not state: no remainder ("1.2 less 0.7 less 0.4"), no
+- Never compute a figure the material does not state: no remainder ("9.0 less 5.5 less 2.0"), no
   total, share or growth rate, not even labelled as arithmetic or derived, whatever the dispatch
   prompt allows. If the gap matters, it is an open question for the user. A unit or currency the
   material does not name ("EUR m" for "m") is invented too: keep the material's own.
-- When the material names the source of its figures ("every figure comes from ..."), every slide
+- When the material names the source of its figures ("all numbers are taken from ..."), every slide
   that shows one of them carries that `content.source`, bullet and card slides included, not only
-  the exhibits that `check` requires it on. Keep the material's words for it: the date in `as_of`
-  and a qualifier such as "year to date" in `basis`, not abbreviated to "YTD".
+  the exhibits that `check` requires it on. Keep the material's words for it, spelled as it
+  spells them (no abbreviation or acronym it does not use): the date in `as_of` and a qualifier
+  such as "rolling twelve months" in `basis`, not "R12M".
 - `presentation.date` and the cover `date`: only a date the material states. A relative one
-  ("Thursday") is not a date; leave both out and say so in the read-through.
+  ("next Tuesday") is not a date; leave both out and say so in the read-through.
 - When the material lacks something a slide needs (a source, an as-of date, a missing figure),
   leave that field out and add an entry to a top-level `x-open-questions` list:
   `{slide: S04, question: "Which report and date do the card revenue figures come from?"}`.
@@ -86,10 +87,10 @@ storyboard designer does) and you never render anything.
   other extra content slide, and no split, merge or reorder. Answer-first does not apply. A point
   longer than the 80-character title keeps its words up to a natural break (a semicolon, or the
   end of a clause) as the title and moves the rest, verbatim, to the slide's first point; never
-  drop or swap a word inside the part that stays ("Issuing interchange", not "Interchange").
+  drop or swap a word inside the part that stays ("Retail deposit margin", not "Deposit margin").
 - **One message per slide**, stated in its action title: a full sentence that makes the claim,
-  with the number when there is one ("Card revenue is 1.2m behind plan, 0.7m of it interchange"),
-  never a topic label ("Card revenue"). Read the titles alone in order: they must tell the story.
+  with the number when there is one ("Deposit margin is 3.4m below budget, 2.1m of it from rate cuts"),
+  never a topic label ("Deposit margin"). Read the titles alone in order: they must tell the story.
 - **Arguments are MECE**: no overlaps between sibling slides, no gaps in the argument.
 - **So-what test**: a slide whose so_what you cannot write in one sentence is cut or merged.
 - **Density**: executive bullets, not paragraphs; usually 3 to 5 points, never more than 6.
