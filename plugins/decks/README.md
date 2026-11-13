@@ -196,6 +196,10 @@ Every Python tool runs through `bin/decks-py`, which keeps one environment per t
 `${CLAUDE_PLUGIN_DATA}` is `~/.claude/plugins/data/decks-plessas-marketplace/`. It survives plugin
 updates and is yours alone: nothing in it is ever committed to this repository.
 
+When a folder cannot be written (a sandboxed session protects `~/.claude`, or the cache is
+read-only), `decks-py` puts the work folder and the tool environments under
+`${TMPDIR:-/tmp}/nbg-decks/` instead and says so; if that fails too it exits 2 naming both folders.
+
 ## Brand
 
 - [shared/presentation-style-guide.md](shared/presentation-style-guide.md): the numbered NBG

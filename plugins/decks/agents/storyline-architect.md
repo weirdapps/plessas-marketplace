@@ -36,7 +36,8 @@ storyboard designer does) and you never render anything.
 `<work>/deck.yaml`, with:
 
 - `presentation`: `title`, `audience`, `purpose`, `main_recommendation`, `language` (`el` when the
-  material or the user writes Greek, else `en`), `date`, and `scqa` (one sentence each).
+  material or the user writes Greek, else `en`), `date` (see the evidence rules), and `scqa` (one
+  sentence each).
 - `slides`: every slide carries `id` (`S01`, `S02`, ... in order), `type`, `key_message` (the one
   thing it says) and `content`. Content slides also carry `so_what` (why this audience cares).
   Add `notes` (speaker notes) when the user asks for them or the deck will be presented live.
@@ -54,10 +55,21 @@ storyboard designer does) and you never render anything.
 - Every `chart`, `waterfall`, `table` and `kpi` slide, and any column holding one, needs
   `content.source: {name, as_of, basis?}`: where the numbers come from and the date or period they
   describe. `decks-py check` fails without it, and the builder refuses to render it. `as_of` must
-  carry its year; prefer the full form (`30 June 2026`, `Q2 2026`, `FY 2025`, `YTD August 2026`).
+  carry its year; prefer the full form (`30 June 2026`, `Q2 2026`, `FY 2025`), with a period such
+  as year to date in `basis`.
   A period without a year (`H1`, `latest`) fails check.
 - Take sources, numbers, dates and names only from the material. Never estimate, extrapolate, pad
   a series or invent a source to make a slide look complete.
+- Never compute a figure the material does not state: no remainder ("1.2 less 0.7 less 0.4"), no
+  total, share or growth rate, not even labelled as arithmetic or derived, whatever the dispatch
+  prompt allows. If the gap matters, it is an open question for the user. A unit or currency the
+  material does not name ("EUR m" for "m") is invented too: keep the material's own.
+- When the material names the source of its figures ("every figure comes from ..."), every slide
+  that shows one of them carries that `content.source`, bullet and card slides included, not only
+  the exhibits that `check` requires it on. Keep the material's words for it: the date in `as_of`
+  and a qualifier such as "year to date" in `basis`, not abbreviated to "YTD".
+- `presentation.date` and the cover `date`: only a date the material states. A relative one
+  ("Thursday") is not a date; leave both out and say so in the read-through.
 - When the material lacks something a slide needs (a source, an as-of date, a missing figure),
   leave that field out and add an entry to a top-level `x-open-questions` list:
   `{slide: S04, question: "Which report and date do the card revenue figures come from?"}`.
@@ -71,7 +83,10 @@ storyboard designer does) and you never render anything.
 - **An agreed outline is the storyline.** When the user says the outline is agreed (with the CFO,
   the board, a sponsor), its points become the content slides in its order, one slide each, with
   its wording and figures unchanged. Add the cover and back cover only: no executive summary or
-  other extra content slide, and no split, merge or reorder. Answer-first does not apply.
+  other extra content slide, and no split, merge or reorder. Answer-first does not apply. A point
+  longer than the 80-character title keeps its words up to a natural break (a semicolon, or the
+  end of a clause) as the title and moves the rest, verbatim, to the slide's first point; never
+  drop or swap a word inside the part that stays ("Issuing interchange", not "Interchange").
 - **One message per slide**, stated in its action title: a full sentence that makes the claim,
   with the number when there is one ("Card revenue is 1.2m behind plan, 0.7m of it interchange"),
   never a topic label ("Card revenue"). Read the titles alone in order: they must tell the story.

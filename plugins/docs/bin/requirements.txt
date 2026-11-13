@@ -1,0 +1,4 @@
+# docs plugin: the python-docx fallback, used when document-skills:docx is not installed.
+# bin/docs-py installs this file into its own environment on first use; nothing else needs to.
+# Wheels only: python-docx is pure Python, lxml publishes wheels for macOS, Linux and Windows.
+python-docx>=1.2.0

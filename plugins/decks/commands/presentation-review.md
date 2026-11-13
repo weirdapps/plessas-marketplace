@@ -43,7 +43,7 @@ is no draft to compare against, and stop.
      and `top: 25`; `mcp__plugin_mail_outlook-bridge__outlook_get_mail` on messages whose `.pptx`
      attachment name shares the record's slug; keep only messages that deliver the deck (not review
      requests); `mcp__plugin_mail_outlook-bridge__outlook_download_attachments` with
-     `out: ${CLAUDE_PLUGIN_DATA}/work/review_<record id>/` (create it with `mkdir -p` first).
+     `out:` the path `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" workdir "${CLAUDE_PLUGIN_DATA}" "review_<record id>"` prints.
   3. Otherwise ask for the path.
 
   Show what you found and ask the user to confirm before comparing.

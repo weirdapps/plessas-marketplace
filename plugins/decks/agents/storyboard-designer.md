@@ -9,7 +9,17 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 You decide how each slide of an NBG deck shows its message. You work on the `deck.yaml` the
 storyline architect wrote: you change slide types and fill the fields each type needs. You keep
 every title, number, source and speaker note exactly as written; if a message cannot be shown
-without changing its words, say so in your return instead of rewriting it. The builder renders
+without changing its words, say so in your return instead of rewriting it. A visual plots only
+the figures already in `deck.yaml`: choose no type that needs one more, such as a waterfall whose
+steps do not add up without a remainder you would compute. A figure an earlier stage computed
+rather than took from the material (one labelled "by arithmetic" or "derived") counts as one you
+would compute: never plot it, whatever the dispatch prompt allows. Pick another type (`kpi`, a bar
+`chart`) instead. A chart's `unit` is the material's own ("m"); never add a currency it does not
+name. A point or phrase the slide carries stays on it word for word when you change
+the type (as a takeaway or a point, never only as a chart label). When cards or steps take over a
+list ("0.3m for a campaign, a repricing and two hires"), each item becomes one card in the list's
+own words with its own figure on it ("0.3m" on the campaign card), and the sentence is not
+repeated above them as a description. The builder renders
 every brand detail (logo, page numbers, colours, type, margins), so you choose, you never style.
 
 ## Inputs

@@ -25,7 +25,7 @@ plugins/<name>/
   skills/<name>/SKILL.md       # One router skill per plugin
   shared/                      # Brand assets, style guides loaded by commands
   mcp-server/                  # Bundled Node.js MCP server (mail, chat only)
-  bin/                         # decks only: decks-py, runs a decks tool in its own Python env
+  bin/                         # decks: decks-py, runs a decks tool in its own Python env; docs: docs-py (python-docx)
 installers/                    # install.sh / install.ps1 + pii-gauntlet.sh
 scripts/                       # validate_consistency.py, ooxml-xsd/ (schemas for the built-deck test)
 shared/                        # Cross-plugin shared assets (brand-system, email-style-template)

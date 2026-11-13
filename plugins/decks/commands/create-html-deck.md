@@ -34,7 +34,9 @@ User request: $ARGUMENTS
   checked in a browser.
 - Write colours and sizes through the design-system variables (`var(--c-teal)`, `var(--fs-body)`),
   never as raw numbers. No `<script>`, no external URL, no shadows.
-- Never invent a figure, source, date or name. What the material does not say is a question for
+- Never invent a figure, source, date or name, and never compute one the material does not state
+  (a remainder, total or share), nor a unit or currency it does not name. Never give a stage leave
+  to add one in a dispatch prompt. What the material does not say is a question for
   the user.
 - If the Agent tool is unavailable or denied, do the stage yourself: Read
   `${CLAUDE_PLUGIN_ROOT}/agents/<agent>.md` and follow it.
@@ -46,7 +48,8 @@ User request: $ARGUMENTS
 
 - Deck id `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, slug two
   to five lowercase words joined by underscores, no version suffix).
-- WORK = `${CLAUDE_PLUGIN_DATA}/work/<deck id>/`, with `images/` (`mkdir -p`).
+- WORK = the path `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" workdir "${CLAUDE_PLUGIN_DATA}" "<deck id>"` prints
+  (it creates `<WORK>/images`; exit 2: tell the user its message and stop).
 - Output folder: the one the user named, else `$HOME/Downloads`, as an absolute path. The deck
   ships as `<folder>/<deck id>.html` and `<folder>/<deck id>.pdf`.
 - Preferences: `${CLAUDE_PLUGIN_DATA}/style-preferences.md` if it exists, else none.

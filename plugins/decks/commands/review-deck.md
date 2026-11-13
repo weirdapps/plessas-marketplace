@@ -24,7 +24,8 @@ User request: $ARGUMENTS
    the plugin shipped it, and that record's `spec_path` is the spec. With no match (the deck was
    edited after it shipped, or the plugin never built it), fixes name slide numbers.
 
-3. **Review.** Render folder: `${CLAUDE_PLUGIN_DATA}/work/review_<timestamp>/`, the timestamp from
+3. **Review.** Render folder: the path
+   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" workdir "${CLAUDE_PLUGIN_DATA}" "review_<timestamp>"` prints, the timestamp from
    `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. Dispatch `decks:presentation-qa` with `pptx: <file>`, the
    spec or `none`, and `render: <that folder>`. If the Agent tool is unavailable or denied, Read
    `${CLAUDE_PLUGIN_ROOT}/agents/presentation-qa.md` and run the review yourself, reading any

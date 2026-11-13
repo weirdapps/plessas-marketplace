@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: 01-letter-to-regulator
+context:
+  # The letter is saved in ~/Downloads, as the command specifies, but a `files`
+  # grader sees only files created in the run's workspace. The scaffold makes the
+  # run's ~/Downloads that workspace, so house-file-naming grades the real output.
+  scaffold_script: downloads-is-the-workspace.sh

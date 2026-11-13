@@ -26,7 +26,9 @@ User request: $ARGUMENTS
 - The builder renders the deck. Nobody writes PptxGenJS, python-pptx or OOXML, and the
   `document-skills:pptx` skill is not used here; if it loads anyway, the NBG Standards override its
   typography and margin advice.
-- Never invent a figure, source, date or name. What the material does not say is a question for
+- Never invent a figure, source, date or name, and never compute one the material does not state
+  (a remainder, total or share), nor a unit or currency it does not name. Never give a stage leave
+  to add one in a dispatch prompt. What the material does not say is a question for
   the user.
 </rules>
 
@@ -36,7 +38,10 @@ User request: $ARGUMENTS
 
 - Deck id: `<timestamp>_<slug>`, the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, the slug
   two to five lowercase words from the topic joined by underscores (no version suffix).
-- Work folder, called WORK below: `mkdir -p "${CLAUDE_PLUGIN_DATA}/work/<deck id>/images"`.
+- Work folder, called WORK below: the path
+  `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" workdir "${CLAUDE_PLUGIN_DATA}" "<deck id>"` prints. It creates
+  `<WORK>/images` and falls back to a temp folder (saying so) when the data folder cannot be written;
+  exit 2 means no folder could be written: tell the user its message and stop.
 - Output: the folder the user named, else their Downloads folder, always as an absolute path
   (`$HOME/Downloads`; a quoted `~` does not expand). The deck ships as `<folder>/<deck id>.pptx`.
 - Preferences: `${CLAUDE_PLUGIN_DATA}/style-preferences.md` if it exists, else `none`. It is the
@@ -88,10 +93,15 @@ returns the read-through, open questions and the check result.
 
 ### 4. Outline checkpoint (Standard #14)
 
-Show the user the read-through (id, type, action title per slide) and every open question in one
-message, and wait for agreement. Skip the wait only if the user already said the outline is agreed
-or asked you not to stop; open questions are asked either way, because the builder refuses an
-exhibit without a source. Apply the answers to `deck.yaml` (fill `content.source`, with an `as_of`
+Show the user the read-through and every open question in one message, and wait for agreement.
+The read-through is the detailed outline Standard #14 asks for: per slide its id, type, action
+title, and the figures, points or asks it carries, so the user can agree to what will be on the
+slides and not to titles alone.
+
+Skip the wait only if the user already said the outline is agreed or asked you not to stop. Then
+stop only for a question that blocks the build: an exhibit without a source, which the builder
+refuses. Go on with every other open question unanswered, leave the slide saying only what the
+material says, and list those questions with the delivered deck. Apply the answers to `deck.yaml` (fill `content.source`, with an `as_of`
 that carries its year, in the full form where you can, such as `Q2 2026` or `FY 2025`; remove the
 answered `x-open-questions`), then:
 
@@ -146,8 +156,17 @@ added to the brief). Then repeat steps 7 and 8. At most 2 fix cycles.
   bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" record "<folder>/<deck id>.pptx" "<WORK>/deck.yaml" --data "${CLAUDE_PLUGIN_DATA}"
   ```
 
-  Report the path, the slide count and the verdict in one line.
-- UNVERIFIED: copy and record the same way, and say plainly: "The validator passed; the slides were
+  Report the path, the slide count and the verdict in one line. Then read the delivered file back
+  with `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<folder>/<deck id>.pptx"` and, from that
+  output rather than from memory, list the deck as built, one line per slide: its id, its action
+  title word for word, the figures it shows and its source line, so the user can check it against
+  what they agreed without opening the file. The open questions you add are only what the
+  material leaves open: do not question what the user stated (a source they named for every
+  figure, wording they agreed), and the reply follows the figure rule too (no sums, remainders
+  or shares the material does not state). If `record` exits 2 (the data
+  folder cannot be written), the deck still ships: add one line saying the draft record was not
+  saved, so `/decks:presentation-review` cannot compare against this deck.
+- UNVERIFIED: copy, record and report the same way, and say plainly: "The validator passed; the slides were
   not visually checked because <reason QA gave>."
 - FAIL after 2 cycles: do not copy. Say plainly that the deck did not pass, list the remaining
   fixes, and give the path of `<WORK>/deck.pptx`. Copy and record it only if the user then asks to

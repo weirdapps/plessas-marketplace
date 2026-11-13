@@ -45,8 +45,9 @@ edit.
 ### 2. Set up
 
 - Deck id `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`; no version
-  suffix), work folder WORK = `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` with an `images/` folder
-  (`mkdir -p`).
+  suffix), work folder WORK = the path
+  `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" workdir "${CLAUDE_PLUGIN_DATA}" "<deck id>"` prints (it creates `<WORK>/images`;
+  exit 2: tell the user its message and stop).
 - Output stem: `<folder>/<deck id>`, where folder is the one the user named, else `$HOME/Downloads`,
   always as an absolute path. The compositor writes `<stem>.pptx`, `<stem>.pdf` and a
   `<stem>_frames/` folder beside them: every slide as a full-size JPEG plus a hidden `.cache/` that

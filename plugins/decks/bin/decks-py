@@ -18,6 +18,11 @@
 # Only prebuilt wheels are installed (no package build code runs on your machine);
 # DECKS_ALLOW_SOURCE_BUILDS=1 lifts that for a platform with no wheel.
 #
+# When a folder cannot be written (a sandboxed session protects the plugin data
+# folder under ~/.claude, a locked-down machine can make the cache read-only), the
+# environments and the work folder fall back to ${TMPDIR:-/tmp}/nbg-decks, and the
+# launcher says so on stderr. When that fails too, it exits 2 naming both folders.
+#
 # Exit codes: the tool's own code is passed through (0 ok, 1 a check failed);
 # 2 means the environment could not be prepared, with the fix printed on stderr.
 
@@ -26,6 +31,12 @@ set -euo pipefail
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 VENV_HOME="${DECKS_VENV_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}/nbg-decks}"
 MIN_PY_MINOR=12
+# The newest Python every requirements.txt here has wheels for. uv picks the newest
+# interpreter it finds, and a newer one (3.15: no pyyaml wheel yet) fails the
+# wheels-only install, so uv tries this range first and any 3.12+ after it.
+MAX_PY_MINOR=14
+TMP_HOME="${TMPDIR:-/tmp}"
+TMP_HOME="${TMP_HOME%/}/nbg-decks"
 STALE_DAYS=30
 # A uv.toml or pyproject in the caller's folder must not reshape a shared tool env.
 export UV_NO_CONFIG=1
@@ -48,6 +59,8 @@ Deck building (tools/nbg-presentation):
   check <spec.yaml>                validate a deck spec against deck.schema.json, no build
   validate <deck.pptx> [--format json]
                                    brand-compliance check of any .pptx (exit 1 = violations)
+  workdir <data dir> <deck id>     create and print the deck's work folder: <data dir>/work/<deck id>,
+                                   or one under $TMPDIR when the data folder cannot be written
   render <deck.pptx> <outdir>      LibreOffice render to PDF + one PNG per slide, with a font check
   extract <file.pptx|.pdf>         text, notes, tables and chart data as markdown (for redesign)
   record <deck.pptx> <spec.yaml> --data <dir>
@@ -101,6 +114,49 @@ tool_for() {
 ALL_TOOL_DIRS=("tools/nbg-presentation" "tools/nbg-html" "tools/nbg-keynote" "bundled/creative/tools/device-mockup")
 
 # --- helpers ---------------------------------------------------------------
+# can_write <dir>: create it if needed and prove a file can be written there. A test
+# of the permission bits is not enough: a sandbox denies writes the bits allow.
+can_write() {
+  local probe
+  [ -n "$1" ] || return 1
+  mkdir -p "$1" 2>/dev/null || return 1
+  probe="$1/.decks-write-probe.$$"
+  : >"$probe" 2>/dev/null || return 1
+  rm -f "$probe"
+}
+
+# Point VENV_HOME at a folder environments can be built in.
+resolve_venv_home() {
+  can_write "$VENV_HOME" && return 0
+  can_write "$TMP_HOME" ||
+    die "cannot write the environment folder $VENV_HOME, nor the temp folder $TMP_HOME; set DECKS_VENV_HOME to a writable folder"
+  echo "decks-py: cannot write $VENV_HOME; falling back to $TMP_HOME for the tool environments (rebuilt if the temp folder is cleared; set DECKS_VENV_HOME to keep them)" >&2
+  VENV_HOME="$TMP_HOME"
+  # uv and pip keep their caches beside the default folder, which is not writable either.
+  export UV_CACHE_DIR="${UV_CACHE_DIR:-$VENV_HOME/.uv-cache}"
+  export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$VENV_HOME/.pip-cache}"
+}
+
+# workdir <data dir> <deck id>: echo a writable work folder for one deck, with images/.
+workdir() {
+  local data="${1:-}" id="${2:-}" work="" fallback
+  case "$id" in
+    "" | . | .. | */* | *\\*) die "workdir needs a deck id that is one folder name, got '$id'" ;;
+  esac
+  if [ -n "$data" ]; then
+    work="${data%/}/work/$id"
+    if can_write "$work/images"; then
+      echo "$work"
+      return 0
+    fi
+  fi
+  fallback="$TMP_HOME/work/$id"
+  can_write "$fallback/images" ||
+    die "cannot write the work folder ${work:+$work nor }$fallback; set TMPDIR to a writable folder"
+  echo "decks-py: cannot write ${work:-the plugin data folder (it is empty)}; this deck's working files go to $fallback" >&2
+  echo "$fallback"
+}
+
 sha12() {
   if command -v shasum >/dev/null 2>&1; then
     shasum -a 256 "$1" | cut -c1-12
@@ -223,8 +279,15 @@ ensure_env() {
     return 0
   fi
 
-  mkdir -p "$VENV_HOME" 2>/dev/null && [ -w "$VENV_HOME" ] ||
-    die "cannot write the environment folder $VENV_HOME; set DECKS_VENV_HOME to a writable folder"
+  resolve_venv_home
+  venv="$VENV_HOME/$name-$hash"
+  stamp="$venv/.decks-ready"
+  if [ -f "$stamp" ] && py="$(venv_python "$venv")"; then
+    # Built in the fallback folder by an earlier call.
+    touch "$stamp" 2>/dev/null || true
+    echo "$py"
+    return 0
+  fi
 
   lock_acquire "$venv.lock"
   # From here until the stamp is written, an interruption must not leave a half-built
@@ -240,14 +303,18 @@ ensure_env() {
   rm -rf "$venv"
   echo "decks-py: preparing the $name environment (first run only)..." >&2
 
-  local ok=0 wheels
+  local ok=0 wheels want
   wheels="$(only_binary)"
   if command -v uv >/dev/null 2>&1; then
-    # shellcheck disable=SC2086  # $wheels is empty or one flag
-    if uv venv -q --python ">=3.$MIN_PY_MINOR" "$venv" >&2 && py="$(venv_python "$venv")" &&
-      uv pip install -q $wheels --python "$py" -r "$req" >&2; then
-      ok=1
-    fi
+    for want in ">=3.$MIN_PY_MINOR,<3.$((MAX_PY_MINOR + 1))" ">=3.$MIN_PY_MINOR"; do
+      rm -rf "$venv"
+      # shellcheck disable=SC2086  # $wheels is empty or one flag
+      if uv venv -q --python "$want" "$venv" >&2 && py="$(venv_python "$venv")" &&
+        uv pip install -q $wheels --python "$py" -r "$req" >&2; then
+        ok=1
+        break
+      fi
+    done
   fi
   if [ "$ok" -eq 0 ]; then
     rm -rf "$venv"
@@ -278,6 +345,7 @@ ensure_env() {
 
 doctor() {
   local status=0 py base
+  resolve_venv_home
   echo "plugin root:   $PLUGIN_ROOT"
   echo "venv home:     $VENV_HOME"
   if base="$(find_python)"; then
@@ -350,6 +418,10 @@ case "$cmd" in
   doctor)
     doctor
     exit $?
+    ;;
+  workdir)
+    workdir "$@"
+    exit 0
     ;;
   setup)
     for d in "${ALL_TOOL_DIRS[@]}"; do

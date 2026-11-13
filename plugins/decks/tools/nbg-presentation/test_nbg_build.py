@@ -1059,3 +1059,30 @@ def test_environment_is_utf8_capable():
     assert "utf" in (sys.getfilesystemencoding() or "").lower() or os.name == "nt"
     assert yaml.safe_load("x: π")["x"] == "π"
     assert emu(1) == 914400
+
+
+@pytest.mark.parametrize(
+    "slide",
+    [
+        {
+            "type": "cards",
+            "content": {"title": "Three approvals close most of it next year", "source": SOURCE},
+            "cards": [
+                {"title": "Reactivation campaign", "body": "0.3m"},
+                {"title": "Commercial card repricing"},
+            ],
+        },
+        {
+            "type": "process",
+            "content": {"title": "The campaign runs in two steps", "source": SOURCE},
+            "steps": [{"title": "Target 0.3m of dormant balances"}, {"title": "Reactivate"}],
+        },
+    ],
+    ids=["cards", "process"],
+)
+def test_cards_and_process_slides_carry_a_source_line(build, slide):
+    """A costed ask on a card (0.3m) had no way to cite where the figure came from: the
+    cards and process content refused `source`, so the evidence rule could not hold."""
+    out = build(deck([slide]))
+    root = slide_xml(out, 2)
+    shape_by_text(root, "Source: Management accounts, as of 30 June 2026")

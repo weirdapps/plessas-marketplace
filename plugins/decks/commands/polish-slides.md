@@ -50,7 +50,8 @@ User request: $ARGUMENTS
 
 3. **Review.** Create the polish's work folder, called WORK: a new deck id
    `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`, the slug of the
-   original name), then `mkdir -p "${CLAUDE_PLUGIN_DATA}/work/<new deck id>/images"`. On the spec
+   original name), then WORK is the path
+   `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" workdir "${CLAUDE_PLUGIN_DATA}" "<new deck id>"` prints. On the spec
    route, copy the spec and every file it references in first, keeping their relative paths:
    `cp -R "<OLD>/." "<WORK>/"`, then `rm -rf "<WORK>/qa"` so no old render is reused.
    Dispatch `decks:presentation-qa` with `pptx: <the user's file>`, `deck: <WORK>/deck.yaml` on the
