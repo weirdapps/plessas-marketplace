@@ -2,6 +2,27 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.4] - 2026-11-14
+
+The decks and excel prompts no longer quote their own eval cases, and they keep the material's
+words in labels, units and source lines.
+
+Versions: `decks` 2.3.2 to **2.3.3**, `excel` 1.2.1 to **1.2.2**, marketplace 2.7.3 to 2.7.4.
+
+### Fixed
+
+- **`decks` and `excel`: examples no longer carry the eval cases' figures and phrases.** The
+  storyline, storyboard and QA agents and the `excel-to-deck` spec example used the decks 04 and
+  excel 03 numbers and wording, which taught to the test. They now use neutral examples.
+- **`excel`: `excel-to-deck` writes the spec with the Write tool**, not a shell heredoc, and its
+  example unit is the material's own (`m`) rather than an invented `EUR m`, which a run copied
+  into a spec as an assumed currency.
+- **`decks`: labels and source lines keep the material's words.** A series name, KPI label or
+  takeaway the storyboard adds takes the material's words or the slide's own, never a coined
+  phrase; a source period is spelled as the material spells it (no abbreviation it does not
+  use); dispatch prompts quote the material as written; and the delivered-deck list quotes each
+  slide's points, cards or takeaway word for word, so the user can check agreed wording.
+
 ## [2.7.3] - 2026-11-13
 
 The decks and docs tools work when their folders cannot be written or the network is filtered,

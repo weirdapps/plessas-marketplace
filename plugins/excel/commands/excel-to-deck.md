@@ -23,7 +23,7 @@ Bridge from data analysis to presentation creation.
 
 3. **Find the provenance.** Every slide that shows numbers needs a source: the workbook's file name and sheet, and the period the figures describe (`as_of`, e.g. `YTD August 2026`). It must carry its year, and the full form reads best (`FY 2025`, `H1 2026`); a period without a year fails the decks check. Take the period from the workbook itself (sheet names, headers, a date cell). If the workbook does not state it, ask the user; never guess one. Do not stop there: write the spec (step 4) with `as_of: "TBC"` on the affected slides, put the question first among the open questions in step 5, and hand off (step 6) only once the user has answered and the spec carries the real period.
 
-4. **Write the deck spec** to `$HOME/Downloads/YYYYMMDDHHMM_deck_spec_<workbook-slug>.yaml` (as an absolute path), taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. It is the decks plugin's input format (`deck.schema.json` in that plugin), in this shape:
+4. **Write the deck spec** to `$HOME/Downloads/YYYYMMDDHHMM_deck_spec_<workbook-slug>.yaml` (as an absolute path), taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. Run only that `date` in Bash; create the file with the Write tool (it makes `~/Downloads` if missing), never through a shell heredoc or `echo`, so the spec shows as a file write the user can review. It is the decks plugin's input format (`deck.schema.json` in that plugin), in this shape:
 
    ```yaml
    presentation:
@@ -45,13 +45,13 @@ Bridge from data analysis to presentation creation.
        chart:
          type: bar           # bar | bar_horizontal | bar_stacked | area_line (trends) | doughnut (never pie)
          data:
-           categories: ["Issuing", "Acquiring"]
-           series: [{name: "YTD actual", values: [5.42, 4.71]}]
-         unit: "EUR m"       # the builder adds it to the caption
+           categories: ["North", "South"]
+           series: [{name: "Actual", values: [12.6, 9.3]}]
+         unit: "m"           # the material's own unit; never add a currency it does not name
      - {id: S09, type: back_cover}
    ```
 
-   A `table` slide carries `table: {headers: [...], rows: [[...], ...]}` (14 rows at most), a `kpi` slide `kpis: [{value: "5.4m", label: "YTD issuing revenue"}]` (4 at most), a `content` slide `content.points` (3 to 6). Use 5-8 slides, one message each, exact numbers only. The spec carries no colours or fonts: the decks builder applies the brand.
+   A `table` slide carries `table: {headers: [...], rows: [[...], ...]}` (14 rows at most), a `kpi` slide `kpis: [{value: "12.6m", label: "North region revenue"}]` (4 at most), a `content` slide `content.points` (3 to 6). Use 5-8 slides, one message each, exact numbers only. The spec carries no colours or fonts: the decks builder applies the brand.
 
 5. **Show the outline in your reply**: one line per slide with its id, type, chart type where it has one, and the action title carrying its exact figures, followed by every open question (a missing `as_of` period above all). The user sees what will be built even when the decks plugin is not installed.
 

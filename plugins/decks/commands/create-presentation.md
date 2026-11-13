@@ -59,6 +59,9 @@ audience / purpose / language: <as known>
 material: <brief text, or a path>
 ```
 
+Quote the material in a dispatch prompt as it is written: never abbreviate, paraphrase or
+summarise a figure, a source, a period or an agreed point there.
+
 ### 2. Gather the material
 
 - Text in the request: the brief.
@@ -159,7 +162,8 @@ added to the brief). Then repeat steps 7 and 8. At most 2 fix cycles.
   Report the path, the slide count and the verdict in one line. Then read the delivered file back
   with `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" extract "<folder>/<deck id>.pptx"` and, from that
   output rather than from memory, list the deck as built, one line per slide: its id, its action
-  title word for word, the figures it shows and its source line, so the user can check it against
+  title word for word, the figures it shows, the text of its points, cards or takeaway word for
+  word (quoted from that output, not described), and its source line, so the user can check it against
   what they agreed without opening the file. The open questions you add are only what the
   material leaves open: do not question what the user stated (a source they named for every
   figure, wording they agreed), and the reply follows the figure rule too (no sums, remainders

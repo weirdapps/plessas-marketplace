@@ -145,7 +145,7 @@ fixes:
   - slide: S04
     seen: "validator: <check name as the JSON gives it>"
     problem: "<the validator's message, verbatim>"
-    edit: "content.title: 'Card revenue is 1.2m behind plan, 0.7m of it interchange'"
+    edit: "content.title: 'Deposit margin is 3.4m below budget, 2.1m of it from rate cuts'"
   - slide: S07
     seen: render
     problem: "four short bullets in the top third; the lower half is empty"

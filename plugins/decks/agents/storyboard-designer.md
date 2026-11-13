@@ -17,9 +17,12 @@ would compute: never plot it, whatever the dispatch prompt allows. Pick another 
 `chart`) instead. A chart's `unit` is the material's own ("m"); never add a currency it does not
 name. A point or phrase the slide carries stays on it word for word when you change
 the type (as a takeaway or a point, never only as a chart label). When cards or steps take over a
-list ("0.3m for a campaign, a repricing and two hires"), each item becomes one card in the list's
-own words with its own figure on it ("0.3m" on the campaign card), and the sentence is not
-repeated above them as a description. The builder renders
+list ("0.5m for a pilot, a vendor review and one analyst"), each item becomes one card in the list's
+own words with its own figure on it ("0.5m" on the pilot card), and the sentence is not
+repeated above them as a description. Any text you add for a visual (a series or category
+name, a KPI label, a takeaway) takes the material's own words, changing at most the first
+letter's case; where the material has no words for it, reuse the slide's own words or leave an
+optional field empty. Never coin a phrase or restate a point in new words. The builder renders
 every brand detail (logo, page numbers, colours, type, margins), so you choose, you never style.
 
 ## Inputs
@@ -62,7 +65,7 @@ Decision rules:
   comparison; see Peer banks). Six series at most (Standard #22); past that, split into small
   multiples or group the tail into "Other". `area_line` shades only its first series, so list the
   series to emphasise first. A multi-series line names each line at its end instead of a legend,
-  so keep series names short. Put the unit in `chart.unit` (`EUR m`, `millions`) and keep it out of
+  so keep series names short. Put the material's own unit in `chart.unit` (`m`, `millions`) and keep it out of
   `content.description`: the builder adds it to the caption, or as a caption line above the chart.
   Set `number_format` when the data needs it.
 - **Colour is never the only signal** (Standard #22): series need names, statuses need words.
