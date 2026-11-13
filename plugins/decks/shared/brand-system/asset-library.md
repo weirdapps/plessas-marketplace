@@ -72,7 +72,7 @@ Comprehensive library of NBG brand assets for presentations.
 - Benefits lists: one icon per benefit, aligned left
 - Section dividers: single large icon for reinforcement
 
-**Do NOT use icons** on text-heavy slides or slides with screenshots.
+**Do not use icons** on text-heavy slides or slides with screenshots.
 
 See `assets/icons/INDEX.md` for complete icon reference.
 
@@ -284,7 +284,7 @@ See `assets/logos/INDEX.md` for complete reference.
 1. **Fit whole screenshot** inside placeholder, centered (preferred)
 2. **Crop only as fallback**: if fit looks bad
 
-**NEVER crop these products, always fit:**
+**Never crop these products; always fit them:**
 
 - `retail-mobile` (mobile UI would be cut off)
 - `next-app` (mobile UI would be cut off)

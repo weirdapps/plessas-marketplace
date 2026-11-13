@@ -26,6 +26,12 @@ Generate a formal business letter in Word format (.docx).
    - Closing ("Με εκτίμηση," / "Sincerely,")
    - Signature block
 
+   When the request lacks a fact the letter needs (the recipient's reference, dates, figures, the
+   signatory), still draft the letter: put a labelled placeholder such as `[Their reference]` or
+   `[Date the service was restored]` where the fact goes, never an invented value, and list every
+   placeholder after the draft so the user can fill them in. Ask before drafting only when the
+   recipient or the letter's purpose is unclear.
+
 3. **Apply formatting**:
    - Font: Aptos 11pt body, Aptos 14pt headings
    - Colour: `#404040` body text, `#007B85` headings (NBG Teal)

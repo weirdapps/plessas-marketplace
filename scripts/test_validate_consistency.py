@@ -110,6 +110,40 @@ def test_bare_grader_is_accepted(vc):
     assert vc.errors == []
 
 
+def _declare_server(plugin_dir, server):
+    (plugin_dir / ".mcp.json").write_text('{"mcpServers": {"' + server + '": {"command": "x"}}}')
+
+
+def test_bare_grader_is_rejected_when_the_plugin_declares_the_server(vc):
+    """2.1.323: a mock for a server the plugin itself declares replaces that
+    server inside the plugin, so the trace records the namespaced name. mail's
+    and chat's bare graders matched nothing on that version."""
+    p = _plugin(vc, "mail")
+    _declare_server(p, "outlook-bridge")
+    _grader(
+        p,
+        "01-x",
+        "never-sends.md",
+        "type: tool_used\ntool: mcp__outlook-bridge__outlook_send_mail\nmin: 0\nmax: 0",
+    )
+    vc.check_eval_grader_tool_names()
+    assert len(vc.errors) == 1
+    assert "mcp__plugin_mail_outlook-bridge__outlook_send_mail" in vc.errors[0]
+
+
+def test_namespaced_grader_is_accepted_when_the_plugin_declares_the_server(vc):
+    p = _plugin(vc, "mail")
+    _declare_server(p, "outlook-bridge")
+    _grader(
+        p,
+        "01-x",
+        "never-sends.md",
+        "type: tool_used\ntool: mcp__plugin_mail_outlook-bridge__outlook_send_mail\nmin: 0\nmax: 0",
+    )
+    vc.check_eval_grader_tool_names()
+    assert vc.errors == []
+
+
 def test_non_mcp_graders_are_ignored(vc):
     """`tool: Skill` and `tool: Write` are not namespaced and never should be."""
     p = _plugin(vc, "decks")

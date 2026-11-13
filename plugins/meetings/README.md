@@ -4,6 +4,14 @@ Meeting intelligence for `plessas-marketplace`. Reads your calendar, builds per-
 
 > **Requires the `mail` plugin.** This plugin uses the `outlook-bridge` MCP server bundled inside `mail` to read your calendar. Install `mail` first (or alongside): `/plugin install mail@plessas-marketplace`.
 
+## Install
+
+Install it inside Claude Code (this also adds the marketplace and installs `mail`, its declared dependency):
+
+```text
+/plugin install meetings --marketplace weirdapps/plessas-marketplace
+```
+
 ## Commands
 
 | Command | Description |

@@ -178,9 +178,9 @@ Standard #11.
 
 ## Back Cover / Closing Slides
 
-**IMPORTANT**: NBG presentations should NOT use "Thank You" or "Questions" text. Use a **plain back cover** instead.
+NBG presentations do not use "Thank You" or "Questions" text. Use a **plain back cover** instead.
 
-### Plain Back Cover (REQUIRED)
+### Plain Back Cover (required)
 
 - White background
 - Centered oval NBG building logo
@@ -188,7 +188,7 @@ Standard #11.
 - **NO corner logo**
 - **NO page number**
 
-### What NOT to Include
+### What Not to Include
 
 - "Thank You" text
 - "Questions?" text
@@ -441,7 +441,7 @@ Positions: [dimensions.md → Cover Slide](dimensions.md#cover-slide) and
 | **NBG logo (large)** | n/a | n/a | n/a | always Greek logo (`assets/nbg-logo-gr.png`) |
 
 **Subtitle convention**: the presenting unit(s), pipe-separated, no trailing period, e.g.
-`Unit A | Unit B`. NOT a generic department-name string.
+`Unit A | Unit B`, not a generic department-name string.
 
 **Decoration policy**: white background, NO colored bars, NO decorative shapes. Decoration is purely typographic (size/weight/color contrast).
 
@@ -532,7 +532,7 @@ A table starts at the gutter (x 0.374") and may span the content width (12.585")
 | Ellipse | Icons, bullets |
 | Line | Dividers, timelines |
 
-## Element Sequences (starting points, NOT separate formats)
+## Element Sequences (starting points, not separate formats)
 
 There is ONE NBG deck format (see `presentation-style-guide.md` Standard #20). The rows below are **common element sequences**, not deck-type templates: every deck uses the same chassis (cover, logo, page numbers, palette, cards) and simply selects the elements its message needs. Start from the closest sequence, then add or drop elements by what each slide must say; never invent a new format per topic.
 

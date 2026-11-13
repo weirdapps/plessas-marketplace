@@ -1,5 +1,5 @@
 ---
-description: "Post-meeting debrief: capture decisions, action items, and distribute summary"
+description: "Post-meeting debrief: capture decisions and action items into the structured meeting record, optionally mailing attendees the summary. Not for sending a note whose content the user already has (use /mail:send-mail)"
 argument-hint: "[meeting name or number] [--distribute]"
 allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep, mcp__plugin_mail_outlook-bridge__outlook_auth_check, mcp__plugin_mail_outlook-bridge__outlook_get_event, mcp__plugin_mail_outlook-bridge__outlook_list_calendar
 ---
@@ -67,7 +67,7 @@ Parse and structure the user's input.
 
 ### 4. Save Debrief
 
-Ensure `~/.claude/meetings/debriefs/` exists.
+Save with the Write tool, which creates `~/.claude/meetings/debriefs/` when it is missing (no `mkdir` or shell heredoc needed).
 Save as `YYYY-MM-DD-meeting-name.json` (lowercase, spaces to hyphens) using exactly these field names, so later runs can read the file back:
 
 ```json

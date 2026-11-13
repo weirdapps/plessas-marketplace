@@ -44,7 +44,7 @@ inline, because a spec block has to be complete to be usable.
 
 ## Text Box Rules
 
-**CRITICAL**: All text boxes must follow these rules:
+All text boxes must follow these rules:
 
 | Property | Value | Reason |
 |----------|-------|--------|
@@ -105,7 +105,7 @@ logo_back:
 
 ## Page Number Placement
 
-Page numbers appear on **content slides only** - NOT on cover, dividers, or back cover.
+Page numbers appear on **content slides only**, not on the cover, dividers or back cover.
 
 ```yaml
 page_number:

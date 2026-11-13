@@ -339,7 +339,7 @@ const PILLAR_DS = {
 
 ### Recommended Approach
 
-**IMPORTANT**: Choose your color palette based on the output medium:
+Choose your color palette based on the output medium:
 
 | Output Medium | Color Source | Rationale |
 |---------------|--------------|-----------|
@@ -348,7 +348,7 @@ const PILLAR_DS = {
 | **Charts in presentations** | NBG chart colors | Consistent with slides |
 | **Charts in digital products** | PFM category colors | Matches app palette |
 
-**Do NOT mix color systems within a single deliverable.**
+**Do not mix color systems within a single deliverable.**
 
 ### Quick Color Reference by Use Case
 

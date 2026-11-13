@@ -25,11 +25,13 @@ Variance and pivot requests are interpreted from your natural-language descripti
 
 ## Setup
 
-No setup required beyond installing the plugin:
+No setup required beyond installing the plugin (this also adds the marketplace):
 
+```text
+/plugin install excel --marketplace weirdapps/plessas-marketplace
 ```
-/plugin install excel@plessas-marketplace
-```
+
+With the marketplace already added, `/plugin install excel@plessas-marketplace` is enough.
 
 For best results, install Anthropic's `document-skills` plugin (`/plugin install document-skills@anthropic-agent-skills`). Without it, the commands fall back to `openpyxl`/`pandas` (auto-installed on first use).
 

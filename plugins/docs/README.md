@@ -54,11 +54,13 @@ TO/FROM/DATE/RE header block · introduction · structured body (one section per
 
 ## Setup
 
-No setup required beyond installing the plugin:
+No setup required beyond installing the plugin (this also adds the marketplace):
 
+```text
+/plugin install docs --marketplace weirdapps/plessas-marketplace
 ```
-/plugin install docs@plessas-marketplace
-```
+
+With the marketplace already added, `/plugin install docs@plessas-marketplace` is enough.
 
 For best results, install Anthropic's `document-skills` plugin (`/plugin install document-skills`). Without it, the commands fall back to `python-docx` (auto-installed on first use).
 

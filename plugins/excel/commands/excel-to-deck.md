@@ -21,7 +21,7 @@ Bridge from data analysis to presentation creation.
    - Any anomalies or risks
    - A recommended narrative arc (what story does this data tell?)
 
-3. **Find the provenance.** Every slide that shows numbers needs a source: the workbook's file name and sheet, and the period the figures describe (`as_of`, e.g. `YTD August 2026`). It must carry its year, and the full form reads best (`FY 2025`, `H1 2026`); a period without a year fails the decks check. Take the period from the workbook itself (sheet names, headers, a date cell). If the workbook does not state it, ask the user; never guess one.
+3. **Find the provenance.** Every slide that shows numbers needs a source: the workbook's file name and sheet, and the period the figures describe (`as_of`, e.g. `YTD August 2026`). It must carry its year, and the full form reads best (`FY 2025`, `H1 2026`); a period without a year fails the decks check. Take the period from the workbook itself (sheet names, headers, a date cell). If the workbook does not state it, ask the user; never guess one. Do not stop there: write the spec (step 4) with `as_of: "TBC"` on the affected slides, put the question first among the open questions in step 5, and hand off (step 6) only once the user has answered and the spec carries the real period.
 
 4. **Write the deck spec** to `$HOME/Downloads/YYYYMMDDHHMM_deck_spec_<workbook-slug>.yaml` (as an absolute path), taking the timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`. It is the decks plugin's input format (`deck.schema.json` in that plugin), in this shape:
 

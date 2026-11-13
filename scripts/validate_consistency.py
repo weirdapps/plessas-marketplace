@@ -339,7 +339,6 @@ KNOWN_BARE_PATHS: frozenset[tuple[str, str]] = frozenset(
         ("plugins/chat/commands/auth-setup.md", "mcp-server/.last-startup.json"),
         ("plugins/chat/commands/auth-setup.md", "mcp-server/node_modules/teams-cli/dist/cli.js"),
         ("plugins/chat/commands/chat-doctor.md", "mcp-server/node_modules/teams-cli/"),
-        ("plugins/mail/agents/triage-engine.md", "docs/triage-engine/"),
         ("plugins/mail/commands/auth-setup.md", "mcp-server/.last-startup.json"),
         ("plugins/mail/commands/auth-setup.md", "mcp-server/node_modules/outlook-tool/dist/cli.js"),
         ("plugins/mail/commands/draft-review.md", "commands/requests"),
@@ -558,27 +557,47 @@ def check_plugin_dependencies() -> None:
         ok(f"no plugin.json declares dependencies ({examined} manifests examined)")
 
 
+def _declared_mcp_servers(plugin_dir: Path) -> set[str]:
+    """Server names the plugin itself declares (.mcp.json or plugin.json)."""
+    names: set[str] = set()
+    for path, key in (
+        (plugin_dir / ".mcp.json", None),
+        (plugin_dir / ".claude-plugin" / "plugin.json", "mcpServers"),
+    ):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if key is not None:
+            data = data.get(key) if isinstance(data, dict) else None
+        if isinstance(data, dict) and isinstance(data.get("mcpServers"), dict):
+            data = data["mcpServers"]
+        if isinstance(data, dict):
+            names.update(data)
+    return names
+
+
 def check_eval_grader_tool_names() -> None:
-    """Eval graders name MCP tools BARE; commands name them NAMESPACED.
+    """Eval graders name an MCP tool the way the eval trace records it.
 
-    The two contexts genuinely disagree and both spellings are correct in
-    their own place. In production a plugin-bundled server is
-    `mcp__plugin_<plugin>_<server>__<tool>`, which is what `allowed-tools`
-    must say. Inside a `claude plugin eval` sandbox the mocks register as
-    standalone stand-ins, so the trace records the BARE
-    `mcp__<server>__<tool>` and a namespaced grader matches nothing.
+    In production a plugin-bundled server is `mcp__plugin_<plugin>_<server>__<tool>`,
+    which is what `allowed-tools` must say. Inside a `claude plugin eval`
+    sandbox (2.1.323) the spelling depends on who declares the server:
 
-    Nothing caught that, because every MCP grader in the repo was
-    `min: 0, max: 0`. An absence assertion passes when it matches nothing,
-    so a grader naming an impossible tool reports a cheerful tick forever.
-    Five of them did: mail's never-sends and never-replies-all, chat's
-    never-posts, and both suites' negative-case equivalents. Those are the
-    guards asserting that a plugin does not mail or message real people,
-    and none of them had ever matched anything.
+    - a mock for a server the plugin under test declares in its own
+      `.mcp.json` replaces that server inside the plugin, so the trace
+      records the NAMESPACED `mcp__plugin_<plugin>_<server>__<tool>`
+      (mail and chat; seen in their traces on 2026-11-13);
+    - a mock for a server the plugin does not declare registers as a
+      standalone stand-in, so the trace records the BARE
+      `mcp__<server>__<tool>` (meetings, which borrows mail's bridge).
 
-    Proven, not inferred: mcp-matcher-control on meetings case 04 is a
-    `min: 1` grader on the bare spelling, and it passed 1x and 2x on the
-    run that motivated this check."""
+    A grader in the wrong spelling matches nothing, and an absence
+    assertion (`min: 0, max: 0`) that matches nothing passes forever. Those
+    are the guards asserting that a plugin does not mail or message real
+    people. The `min: 1` mcp-matcher-control graders are what exposed both
+    directions: meetings case 04 on the bare form, then mail and chat case
+    01 failing on it once the CLI began namespacing in-plugin mocks."""
     heading("Eval grader tool namespacing")
 
     examined = 0
@@ -587,6 +606,8 @@ def check_eval_grader_tool_names() -> None:
         evals = plugin_dir / "evals"
         if not evals.is_dir():
             continue
+        declared = _declared_mcp_servers(plugin_dir)
+        own_prefix = f"plugin_{plugin_dir.name}_"
         for grader in sorted(evals.glob("*/graders/*.md")):
             data, _body, _reason = _split_frontmatter(grader)
             if not data:
@@ -595,20 +616,39 @@ def check_eval_grader_tool_names() -> None:
             if not tool.startswith("mcp__"):
                 continue
             examined += 1
-            if tool.startswith("mcp__plugin_"):
-                found += 1
-                bare = (
-                    "mcp__" + tool.split("__", 2)[1].split("_", 2)[-1] + "__" + tool.split("__")[-1]
+            parts = tool.split("__")
+            if len(parts) < 3:
+                continue
+            middle, name = parts[1], "__".join(parts[2:])
+            if middle.startswith(own_prefix):
+                server = middle[len(own_prefix) :]
+            elif middle.startswith("plugin_"):
+                server = middle.split("_", 2)[-1]
+            else:
+                server = middle
+            if server in declared:
+                expected = f"mcp__{own_prefix}{server}__{name}"
+                why = (
+                    f"'{plugin_dir.name}' declares '{server}' itself, so its eval mock "
+                    f"replaces that server inside the plugin and the trace records the "
+                    f"namespaced form"
                 )
+            else:
+                expected = f"mcp__{server}__{name}"
+                why = (
+                    f"'{plugin_dir.name}' does not declare '{server}', so its eval mock "
+                    f"registers as a standalone stand-in and the trace records the bare form"
+                )
+            if tool != expected:
+                found += 1
                 error(
-                    f"{grader.relative_to(ROOT)}: grader names '{tool}'. Eval mocks "
-                    f"register as standalone stand-ins, so the trace records the bare "
-                    f"form and this matches nothing. Use '{bare}'. A min:0/max:0 guard "
-                    f"will pass anyway, which is how this stayed hidden."
+                    f"{grader.relative_to(ROOT)}: grader names '{tool}'. {why}, so this "
+                    f"matches nothing. Use '{expected}'. A min:0/max:0 guard will pass "
+                    f"anyway, which is how this stays hidden."
                 )
 
     if found == 0:
-        ok(f"all MCP graders use the bare form ({examined} examined)")
+        ok(f"all MCP graders use the spelling the eval trace records ({examined} examined)")
 
 
 def check_eval_absence_guards_have_a_control() -> None:

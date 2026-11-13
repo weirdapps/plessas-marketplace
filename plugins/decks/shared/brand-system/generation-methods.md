@@ -3,7 +3,7 @@
 > Machine source for every brand value a method applies: [`tokens.yaml`](tokens.yaml). The flow
 > and contracts are in the plugin's `ARCHITECTURE.md`.
 
-## CRITICAL RULE: One Renderer
+## Rule: One Renderer
 
 Every light-mode NBG deck is built by **`nbg_build.py`**, run through the plugin launcher:
 
@@ -27,9 +27,9 @@ The input is a **deck spec** (`deck.yaml`), validated against
 - **Keynote mode** (Standard #21) is the one exception: `decks-py keynote`, a Pillow compositor
   with its own YAML (`keynote.md`).
 
-## CRITICAL RULE: Always Build From Scratch, Never Use NBG Templates
+## Rule: Always Build From Scratch, Never Use NBG Templates
 
-**Do NOT open a template file** (`Presentation(template_path)`). No template ships with this
+**Do not open a template file** (`Presentation(template_path)`). No template ships with this
 plugin, and the builder never opens one: it starts from a blank presentation at 13.333" × 7.5"
 and adds every element itself.
 

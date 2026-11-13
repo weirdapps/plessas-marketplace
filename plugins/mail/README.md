@@ -71,6 +71,12 @@ No manual `/draft-review` needed; learning runs automatically at the start of ev
 
 ## Setup
 
+Install it inside Claude Code (this also adds the marketplace):
+
+```text
+/plugin install mail --marketplace weirdapps/plessas-marketplace
+```
+
 Requires:
 
 - The bundled `outlook-bridge` MCP server built (`installers/install.sh` does this; otherwise `run.sh` builds it on the first MCP call)

@@ -68,6 +68,10 @@ storyboard designer does) and you never render anything.
 
 - **Answer first.** The main recommendation appears on slide 2 or 3 (an executive summary in
   situation, complication, resolution form), then the supporting arguments, each with its evidence.
+- **An agreed outline is the storyline.** When the user says the outline is agreed (with the CFO,
+  the board, a sponsor), its points become the content slides in its order, one slide each, with
+  its wording and figures unchanged. Add the cover and back cover only: no executive summary or
+  other extra content slide, and no split, merge or reorder. Answer-first does not apply.
 - **One message per slide**, stated in its action title: a full sentence that makes the claim,
   with the number when there is one ("Card revenue is 1.2m behind plan, 0.7m of it interchange"),
   never a topic label ("Card revenue"). Read the titles alone in order: they must tell the story.

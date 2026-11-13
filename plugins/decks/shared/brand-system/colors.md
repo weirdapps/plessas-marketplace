@@ -83,7 +83,7 @@ validator enforces).
 
 ### Grey hierarchy (avoid drift: one grey per role)
 
-Three greys, three jobs. Do NOT introduce others (`#666666`, `#595959`, `#5B5B69`; all seen drifting across reference decks):
+Three greys, three jobs. Do not introduce others (`#666666`, `#595959`, `#5B5B69`; all seen drifting across reference decks):
 
 | Grey | Role |
 |------|------|
@@ -209,15 +209,15 @@ directly (Standard #22).
 
 ## Background Guidelines
 
-### IMPORTANT: White Backgrounds Only
+### White Backgrounds Only
 
-**Standard #2: ALWAYS use white backgrounds. Never use dark themes.** Keynote mode (Standard #21) is the one exception.
+**Standard #2: always use white backgrounds. Never use dark themes.** Keynote mode (Standard #21) is the one exception.
 
-### Light Theme (REQUIRED)
+### Light Theme (required)
 
 | Element | Color |
 |---------|-------|
-| Slide background | `#FFFFFF` (white) - **ALWAYS** |
+| Slide background | `#FFFFFF` (white), always |
 | Title text | `#003841` |
 | Body text | `#202020` |
 | Accents | `#007B85`; `#00DFF8` only as a mark, never as text |
@@ -239,7 +239,7 @@ alone: no border, no shadow.
 
 **Tint hierarchy**: `#F5F8F6` = default card; `#E6F5F6` = soft pale-teal takeaway/callout strip (the bottom "bottom line" bar); `#CBFAFF` = stronger cyan highlight card; `#FBF3E4` + gold border = the recommended option (see Recommended-option highlight above). Pick `#E6F5F6` for takeaway strips consistently; do not drift to `#EAF4F5` or other one-off tints.
 
-### Dark Theme (DO NOT USE)
+### Dark Theme (do not use)
 
 Dark backgrounds are not used (Standard #2). All slides are white.
 
@@ -254,7 +254,7 @@ palette in code loads it through `tools/nbg_tokens.py` (`color("teal")`, `chart_
 
 | Purpose | Recommended Color |
 |---------|------------------|
-| Slide background | `#FFFFFF` (White) - **ALWAYS** |
+| Slide background | `#FFFFFF` (White), always |
 | Slide title | `#003841` (Dark Teal) |
 | Body text | `#202020` (Dark Text) |
 | Section numbers (divider) | `#007B85` (NBG Teal) |
@@ -330,7 +330,7 @@ The builder's automatic chart-label picker is a separate case: it chooses pure b
 by luminance (threshold 0.179), which clears AA on any fill. That is a property of the picker, not
 a brand colour; hand-specified dark text stays `#202020` (Standard #22).
 
-### Cover Slide Contrast: CRITICAL
+### Cover Slide Contrast
 
 Cover layouts may have overlapping graphic elements. Rules:
 
@@ -349,7 +349,7 @@ A new icon for a dark fill swaps both teals for off-white `#F5F8F6` (`icons.md`)
 
 ---
 
-## Dark-Mode Tokens: Keynote Mode ONLY
+## Dark-Mode Tokens: Keynote Mode Only
 
 These apply **only** to the dark full-bleed keynote format (Standard #21, spec in
 [keynote.md](keynote.md)). They are not available to normal decks, documents, emails or charts.

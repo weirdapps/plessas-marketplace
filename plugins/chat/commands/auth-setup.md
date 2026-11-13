@@ -1,7 +1,7 @@
 ---
 description: "First-run auth for the teams-bridge MCP: sign in to Microsoft Teams in one command"
 argument-hint: "[--force-reauth]"
-allowed-tools: Bash, mcp__plugin_chat_teams-bridge__*
+allowed-tools: Bash, mcp__plugin_chat_teams-bridge__teams_doctor
 ---
 
 # /chat:auth-setup

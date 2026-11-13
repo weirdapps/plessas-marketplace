@@ -33,7 +33,7 @@ Every icon must use **both** primary and accent to achieve the duotone effect. R
 
 ### Stroke vs Fill System
 
-**CRITICAL**: NBG duotone icons are **stroke-based outlines**, not solid fills.
+NBG duotone icons are **stroke-based outlines**, not solid fills.
 
 - Main shapes: `stroke="#087681"` with `fill="none"` (outlines only, never filled)
 - Small accent details (dots, indicator circles, euro cut): may use `fill="#13A4AD"` (or `#087681`)
@@ -204,7 +204,7 @@ Before outputting any icon, verify:
 - Output only raw SVG code
 - No preamble or explanation
 
-### What NOT to Do
+### What Not to Do
 
 - Never use solid fills on large/main shapes (they are outlines)
 - Never use a single color (icons must be duotone)
