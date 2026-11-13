@@ -62,7 +62,7 @@ No setup required beyond installing the plugin (this also adds the marketplace):
 
 With the marketplace already added, `/plugin install docs@plessas-marketplace` is enough.
 
-For best results, install Anthropic's `document-skills` plugin (`/plugin install document-skills`). Without it, the commands fall back to `python-docx` (auto-installed on first use).
+For best results, install Anthropic's `document-skills` plugin (`/plugin install document-skills`). Without it, the commands fall back to `python-docx` through `bin/docs-py`, which builds a cached environment on first use (`~/.cache/nbg-docs/`, or `${TMPDIR:-/tmp}/nbg-docs/` when the cache cannot be written) and exits 2 with the fix when it cannot (for example, no network access to pypi.org).
 
 ## Tips
 

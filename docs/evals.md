@@ -58,6 +58,25 @@ export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/application_default_
 Keep this in the environment, not in a case file. Case files are committed and
 must contain no absolute paths.
 
+## Third prerequisite: network for the Python tool environments
+
+Granting `Bash` puts every command under the OS sandbox, and its network starts
+empty. `decks` and `docs` build their Python environments on first use
+(`bin/decks-py`, `bin/docs-py`), so without a grant every build case ends with
+"pypi.org refused" and scores as if the plugin could not make a deck or a
+letter. Grant the two package hosts, and nothing else:
+
+```bash
+--allow-tools Write Edit Bash \
+  "WebFetch(domain:pypi.org)" "WebFetch(domain:files.pythonhosted.org)"
+```
+
+A `WebFetch(domain:...)` grant is what opens a domain to sandboxed shell
+commands; it also lets the agent call WebFetch on those two hosts, which no case
+grades. The sandbox also protects the plugin data folder (it sits under the
+run's `~/.claude`), so `decks-py` puts work folders under the sandbox's
+`$TMPDIR` and says so on stderr, as it does for a user in a sandboxed session.
+
 ---
 
 ## Layout
@@ -99,7 +118,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/application_default_
 # one plugin, both arms, one run per case (the pilot form)
 claude plugin eval plugins/docs \
   --runs 1 --ablation with-without --no-scaffold --no-publish \
-  --allow-tools Write Bash
+  --allow-tools Write Bash "WebFetch(domain:pypi.org)" "WebFetch(domain:files.pythonhosted.org)"
 
 # the full suite as authored (runs: 3 per case)
 claude plugin eval plugins/docs --ablation with-without --no-publish

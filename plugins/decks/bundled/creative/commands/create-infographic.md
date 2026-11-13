@@ -26,7 +26,8 @@ User request: $ARGUMENTS
 <process>
 
 1. **Set up.** Deck id `<timestamp>_<slug>` (timestamp from `TZ='Europe/Athens' date '+%Y%m%d%H%M'`),
-   WORK = `${CLAUDE_PLUGIN_DATA}/work/<deck id>/` (`mkdir -p "<WORK>/images"`), output folder the
+   WORK = the path `bash "${CLAUDE_PLUGIN_ROOT}/bin/decks-py" workdir "${CLAUDE_PLUGIN_DATA}" "<deck id>"` prints (it creates
+   `<WORK>/images`; exit 2: tell the user its message and stop), output folder the
    one the user named or `$HOME/Downloads`, as an absolute path.
 
 2. **Choose the route.** Read `${CLAUDE_PLUGIN_ROOT}/tools/nbg-presentation/deck.schema.json` first.

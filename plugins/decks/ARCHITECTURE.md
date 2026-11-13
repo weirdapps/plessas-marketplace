@@ -130,7 +130,10 @@ leaves; without a key it exits 3 and the storyboard's library `fallback` takes t
 
 Environments are caches, kept outside the plugin in
 `${DECKS_VENV_HOME:-~/.cache/nbg-decks}/<tool>-<requirements hash>`, built on first use
-with uv when present, else Python 3.12+ `venv` and pip. Exit 2 always prints the fix.
+with uv when present (Python 3.12 to 3.14 first, the range every requirement has wheels for),
+else Python 3.12+ `venv` and pip. `decks-py workdir <data dir> <deck id>` creates a deck's work
+folder. Either falls back to `${TMPDIR:-/tmp}/nbg-decks/` when its folder cannot be written,
+saying so on stderr. Exit 2 always prints the fix.
 
 ## The deck spec
 

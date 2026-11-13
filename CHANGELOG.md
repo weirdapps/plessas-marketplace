@@ -2,6 +2,59 @@
 
 All notable changes to `plessas-marketplace` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.3] - 2026-11-13
+
+The decks and docs tools work when their folders cannot be written or the network is filtered,
+and the eval suites test the plugins rather than the sandbox.
+
+Versions: `decks` 2.3.1 to **2.3.2**, `docs` 1.1.3 to **1.1.4**, `meetings` 1.2.2 to **1.2.3**,
+marketplace 2.7.2 to 2.7.3.
+
+### Fixed
+
+- **`decks`: `decks-py` falls back to `${TMPDIR:-/tmp}/nbg-decks` when a folder cannot be
+  written.** A sandboxed session protects the plugin data folder under `~/.claude`, so
+  `mkdir -p "${CLAUDE_PLUGIN_DATA}/work/..."` failed with "Operation not permitted" and the build
+  stopped. The new `decks-py workdir <data dir> <deck id>` creates the work folder, falls back to
+  the temp folder and says so, or exits 2 naming both folders; every command now gets WORK from
+  it. The tool environments fall back the same way.
+- **`decks`: uv builds the tool environments on Python 3.12 to 3.14 first.** On a machine whose
+  newest Python is 3.15, uv picked it and the wheels-only install failed (no pyyaml wheel yet).
+- **`decks`: an agreed outline is built without stopping for non-blocking questions.** Only an
+  exhibit without a source stops the build; other open questions are listed with the delivered
+  deck. The outline checkpoint shows each slide's figures and points (Standard #14), a long agreed
+  point keeps its own words in the title, a named source goes on every slide that shows its
+  figures, and no cover date is set that the material does not state.
+- **`decks`: no stage computes a figure.** The storyline and storyboard agents and both build
+  commands now forbid remainders, totals and shares the material does not state, and units or
+  currencies it does not name, and the orchestrator may not license one in a dispatch prompt. A
+  waterfall that only adds up with a computed remainder is not chosen. Cards and steps take a
+  list item by item, each figure on its own card.
+- **`decks`: cards and process slides accept `content.source`.** A costed ask on a card could not
+  cite its source, so the evidence rule could not hold on those slides.
+- **`decks`: the delivery report is read back from the file.** `/create-presentation` lists each
+  slide's title, figures and source line from `decks-py extract` of the delivered deck.
+- **`docs`: `bin/docs-py` is the python-docx fallback.** It replaces three copies of improvised
+  prose (uv, else a `.venv` in the user's folder, else pip), builds a cached environment, falls
+  back to the temp folder, and exits 2 with the fix. `docs-py outdir` picks `~/Downloads`, else
+  the current folder. On exit 2 the command still gives the document's full text.
+
+### Changed
+
+- **Evals.** `docs/evals.md` documents the two package-host grants
+  (`WebFetch(domain:pypi.org)`, `WebFetch(domain:files.pythonhosted.org)`) that open the sandbox
+  network to the tool environments. `docs` case 01 maps the run's `~/Downloads` to the workspace
+  with a scaffold script, since a `files` grader sees only the workspace (run with `--scaffold`).
+  `meetings` cases 01 and 04 pin the scenario date to 9 September 2026, the day before the
+  fixture calendar's vendor meeting; "tomorrow" pointed at a date with no fixture data.
+- **`decks` case 04 grader `spec-keeps-the-numbers` (a grader change, stated as such).** It now
+  quotes the agreed outline (the judge never sees the user's message), grades the slide-by-slide
+  list in the final reply instead of a trace whose middle, where the spec is written, is always
+  elided, and says how a house-correct deck keeps a point: titles are capped at 80 characters and
+  flagged with a closing full stop, every deck has a cover title, and the builder writes source
+  lines as "<name>, as of <date>; <basis>". As worded before, no deck that passes `decks-py check`
+  could satisfy it. A computed figure, a reworded title or a missing source still fails it.
+
 ## [2.7.2] - 2026-11-13
 
 Standardised against Claude Code 2.1.323 best practice: least-privilege agents and commands.

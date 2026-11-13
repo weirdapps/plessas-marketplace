@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# docs-py: run a Python script with python-docx, wherever the docs plugin lives.
+#
+#   bash "${CLAUDE_PLUGIN_ROOT}/bin/docs-py" <script.py> [args...]
+#   bash "${CLAUDE_PLUGIN_ROOT}/bin/docs-py" - [args...] <<'PY' ... PY   # the script on stdin
+#   bash "${CLAUDE_PLUGIN_ROOT}/bin/docs-py" outdir     # print the folder to save a document in
+#   bash "${CLAUDE_PLUGIN_ROOT}/bin/docs-py" doctor
+#
+# The python-docx fallback used to be a line of prose in each command (uv run, else a
+# .venv in the current folder, else pip), so each run improvised it and a failure left
+# no file and no clear reason. This launcher is that fallback, done once.
+#
+# The environment is a cache outside the plugin, in
+# ${DOCS_VENV_HOME:-${XDG_CACHE_HOME:-~/.cache}/nbg-docs}/env-<hash of requirements.txt>,
+# built on first use with uv when installed, else python3 -m venv and pip, from
+# prebuilt wheels only. When that folder cannot be written (a sandboxed session, a
+# read-only cache), it falls back to ${TMPDIR:-/tmp}/nbg-docs and says so on stderr.
+#
+# Exit codes: the script's own code is passed through; 2 means the environment or
+# the output folder could not be prepared, with the reason and the fix on stderr.
+
+set -euo pipefail
+
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+REQ="$PLUGIN_ROOT/bin/requirements.txt"
+VENV_HOME="${DOCS_VENV_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}/nbg-docs}"
+TMP_HOME="${TMPDIR:-/tmp}"
+TMP_HOME="${TMP_HOME%/}/nbg-docs"
+# uv picks the newest interpreter it finds; a brand-new one can lack an lxml wheel,
+# so the tested range goes first and any 3.10+ after it.
+MIN_PY_MINOR=10
+MAX_PY_MINOR=14
+export UV_NO_CONFIG=1
+export PYTHONUTF8=1
+
+die() {
+  echo "docs-py: $*" >&2
+  exit 2
+}
+
+usage() {
+  cat >&2 <<'EOF'
+usage: docs-py <script.py> [args...]   run a script with python-docx available
+       docs-py - [args...]             the same, the script read from stdin
+       docs-py outdir                  print (and create) the folder to save a document in:
+                                       ~/Downloads, else the current folder
+       docs-py doctor                  report the Python and the environment
+EOF
+}
+
+# can_write <dir>: create it if needed and prove a file can be written there. The
+# permission bits are not enough: a sandbox denies writes the bits allow.
+can_write() {
+  local probe
+  [ -n "$1" ] || return 1
+  mkdir -p "$1" 2>/dev/null || return 1
+  probe="$1/.docs-write-probe.$$"
+  : >"$probe" 2>/dev/null || return 1
+  rm -f "$probe"
+}
+
+resolve_venv_home() {
+  can_write "$VENV_HOME" && return 0
+  can_write "$TMP_HOME" ||
+    die "cannot write the environment folder $VENV_HOME, nor the temp folder $TMP_HOME; set DOCS_VENV_HOME to a writable folder"
+  echo "docs-py: cannot write $VENV_HOME; falling back to $TMP_HOME (rebuilt if the temp folder is cleared)" >&2
+  VENV_HOME="$TMP_HOME"
+  export UV_CACHE_DIR="${UV_CACHE_DIR:-$VENV_HOME/.uv-cache}"
+  export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$VENV_HOME/.pip-cache}"
+}
+
+outdir() {
+  local downloads="$HOME/Downloads"
+  if can_write "$downloads"; then
+    echo "$downloads"
+    return 0
+  fi
+  can_write "$PWD" || die "cannot write $downloads nor the current folder $PWD; name a writable folder to save in"
+  echo "docs-py: cannot write $downloads; saving in the current folder $PWD" >&2
+  echo "$PWD"
+}
+
+venv_python() {
+  if [ -x "$1/bin/python" ]; then
+    echo "$1/bin/python"
+  elif [ -f "$1/Scripts/python.exe" ]; then
+    echo "$1/Scripts/python.exe"
+  else
+    return 1
+  fi
+}
+
+py_ok() {
+  "$@" -c "import sys; sys.exit(0 if sys.version_info >= (3, $MIN_PY_MINOR) else 1)" >/dev/null 2>&1
+}
+
+find_python() {
+  local c
+  for c in python3.14 python3.13 python3.12 python3.11 python3.10 python3 python; do
+    if command -v "$c" >/dev/null 2>&1 && py_ok "$c"; then
+      echo "$c"
+      return 0
+    fi
+  done
+  return 1
+}
+
+hash12() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | cut -c1-12
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -c1-12
+  else
+    cksum "$1" | awk '{print $1}'
+  fi
+}
+
+# ensure_env -> echoes the interpreter
+ensure_env() {
+  [ -f "$REQ" ] || die "missing $REQ; the plugin install is incomplete"
+  local venv py want base ok=0
+  venv="$VENV_HOME/env-$(hash12 "$REQ")"
+  if [ -f "$venv/.docs-ready" ] && py="$(venv_python "$venv")"; then
+    echo "$py"
+    return 0
+  fi
+  resolve_venv_home
+  venv="$VENV_HOME/env-$(hash12 "$REQ")"
+  if [ -f "$venv/.docs-ready" ] && py="$(venv_python "$venv")"; then
+    echo "$py"
+    return 0
+  fi
+  echo "docs-py: preparing the python-docx environment in $venv (first run only)..." >&2
+  if command -v uv >/dev/null 2>&1; then
+    for want in ">=3.$MIN_PY_MINOR,<3.$((MAX_PY_MINOR + 1))" ">=3.$MIN_PY_MINOR"; do
+      rm -rf "$venv"
+      if uv venv -q --python "$want" "$venv" >&2 && py="$(venv_python "$venv")" &&
+        uv pip install -q --only-binary=:all: --python "$py" -r "$REQ" >&2; then
+        ok=1
+        break
+      fi
+    done
+  fi
+  if [ "$ok" -eq 0 ]; then
+    rm -rf "$venv"
+    base="$(find_python)" || die "no Python 3.$MIN_PY_MINOR+ found. Install Python 3.12 or newer, or uv (https://docs.astral.sh/uv/), then retry"
+    if "$base" -m venv "$venv" >&2 && py="$(venv_python "$venv")" &&
+      "$py" -m pip install -q --disable-pip-version-check --only-binary=:all: -r "$REQ" >&2; then
+      ok=1
+    fi
+  fi
+  if [ "$ok" -eq 0 ]; then
+    rm -rf "$venv"
+    die "could not install python-docx into $venv (see the uv/pip output above). Check network access to pypi.org and files.pythonhosted.org, or a proxy, then retry"
+  fi
+  date >"$venv/.docs-ready"
+  echo "$py"
+}
+
+[ "$#" -ge 1 ] || {
+  usage
+  exit 2
+}
+
+case "$1" in
+  -h | --help | help)
+    usage
+    exit 0
+    ;;
+  outdir)
+    outdir
+    exit 0
+    ;;
+  doctor)
+    resolve_venv_home
+    echo "plugin root: $PLUGIN_ROOT"
+    echo "venv home:   $VENV_HOME"
+    if base="$(find_python)"; then echo "python:      $base"; else echo "python:      MISSING (need 3.$MIN_PY_MINOR+)"; fi
+    if command -v uv >/dev/null 2>&1; then echo "uv:          $(command -v uv)"; else echo "uv:          not installed (optional)"; fi
+    if [ -f "$VENV_HOME/env-$(hash12 "$REQ")/.docs-ready" ]; then echo "environment: ready"; else echo "environment: not built yet (the first script builds it)"; fi
+    exit 0
+    ;;
+esac
+
+script="$1"
+shift
+[ "$script" = "-" ] || [ -f "$script" ] || die "no such script: $script"
+py="$(ensure_env)"
+exec "$py" "$script" "$@"
