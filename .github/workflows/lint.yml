@@ -105,7 +105,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7
         with:
-          node-version: '20'
+          node-version: '22'
 
       # .pre-commit-config.yaml excludes plugins/*/{agents,commands,skills,...}
       # from markdownlint entirely, and that exclusion is right for the prose
@@ -157,7 +157,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7
         with:
-          node-version: '20'
+          node-version: '22'
 
       # Pinned like every other tool here. An unpinned CLI can add a --strict
       # rule in a patch release and take master red with no change to this
